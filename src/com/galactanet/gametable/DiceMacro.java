@@ -11,6 +11,10 @@ import java.util.List;
 
 public class DiceMacro
 {
+    List   m_dieTypes = new ArrayList(); // full of DiceMacro_RollType instances
+    String m_name;
+    String m_macro;
+
     public DiceMacro()
     {
     }
@@ -89,7 +93,7 @@ public class DiceMacro
 
     public String getRollString()
     {
-        String ret = "";
+        String ret = m_name + " (";
         boolean bIsFirst = true;
 
         for (int i = 0; i < m_dieTypes.size(); i++)
@@ -116,7 +120,7 @@ public class DiceMacro
             }
             bIsFirst = false;
         }
-
+        ret += ") ";
         return ret;
     }
 
@@ -311,12 +315,6 @@ public class DiceMacro
         String macro = dis.readUTF();
         init(macro, name);
     }
-
-
-
-    List   m_dieTypes = new ArrayList(); // full of DiceMacro_RollType instances
-    String m_name;
-    String m_macro;
 }
 
 
