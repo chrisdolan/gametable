@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="gametable" basedir="." default="build">
+    <!-- import environment -->
+    <property environment="env" />
+
+    <!-- project specific properties -->
+    <property name="projectdisplayname" value="GameTable" />
+    <property name="projectname" value="gametable" />
+    <property name="entrypoint" value="com.galactanet.gametable.GametableApp" />
+    <property name="icon" value="icon.png" />
+
+    <!-- set top-level dir properties -->
+    <property name="doc" value="doc" />
+    <property name="src" value="src" />
+    <property name="gen" value="gen" />
+    <property name="lib" value="lib" />
+    <property name="dist" value="dist" />
+
+    <!-- set misc dir properties -->
+    <property name="jar.src" value="${gen}/jar" />
+    <property name="assets.src" value="assets" />
+    <property name="assets.dest" value="${jar.src}/assets" />
+    <property name="classes.dest" value="${jar.src}" />
+    <property name="java.src" value="${src}" />
+    <property name="zip.src" value="${gen}/zip" />
+    <property name="jar.filename" value="${projectname}.jar" />
+    <property name="jar.preopt.filename" value="${projectname}.preopt.jar" />
+    <property name="jar.preopt.dest" value="${gen}/${jar.preopt.filename}" />
+    <property name="jar.dest" value="${jar.filename}" />
+
+    <property name="doc.dest" value="${doc}" />
+    <property name="api.dest" value="${doc}/api" />
+
+    <target name="init0">
+        <!-- Create the time stamp -->
+        <tstamp />
+
+        <!-- Create the build directory structure used by compile -->
+        <mkdir dir="${jar.src}" />
+    </target>
+
+    <target name="init" depends="init0" />
+
+    <target name="assets" depends="init">
+        <mkdir dir="${assets.dest}" />
+        <copy todir="${assets.dest}">
+            <fileset dir="${assets.src}">
+                <include name="**/*.png" />
+            </fileset>
+        </copy>
+    </target>
+
+
+    <target name="compile" depends="init">
+        <mkdir dir="${classes.dest}" />
+
+        <!-- Compile the java code -->
+        <javac srcdir="${java.src}"
+               includes="**/*.java"
+               destdir="${classes.dest}"
+               optimize="true"
+               deprecation="true"
+               debug="true"
+               listfiles="true"
+               fork="true"
+               source="1.4"
+               target="1.4">
+            <compilerarg value="-Xlint:deprecation" />
+            <compilerarg value="-Xlint:unchecked" />
+            <classpath>
+                <fileset dir="lib">
+                    <include name="**/*.jar" />
+                </fileset>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="build" depends="assets, compile" description="Builds ${projectdisplayname} into an executable jar.">
+        <mkdir dir="${zip.src}" />
+
+        <!-- create jar -->
+        <jar destfile="${jar.preopt.dest}" basedir="${jar.src}">
+            <manifest>
+                <attribute name="Main-Class" value="${entrypoint}" />
+            </manifest>
+        </jar>
+
+        <!-- obfuscate -->
+        <copy file="${jar.preopt.dest}" tofile="${jar.dest}" />
+    </target>
+
+    <target name="dist0" depends="distclean,build">
+        <!-- Create the distribution directory -->
+        <mkdir dir="${dist}" />
+
+        <copy todir="${zip.src}" >
+            <fileset dir=".">
+                <include name="pogs/**/*.png" />
+                <include name="underlays/**/*.png" />
+            </fileset>
+        </copy>
+
+        <!-- Package jars into timestamped zip -->
+        <zip zipfile="${dist}/${projectname}-${DSTAMP}.zip">
+            <zipfileset prefix="${projectname}-${DSTAMP}" dir="${zip.src}" />
+            <zipfileset prefix="${projectname}-${DSTAMP}" dir=".">
+                <include name="lib/**/*.jar" />
+                <include name="lib/**/*.dll" />
+                <include name="*.bat" />
+                <include name="${jar.dest}" />
+            </zipfileset>
+        </zip>
+    </target>
+
+    <target name="run" depends="build" description="Exectutes ${projectdisplayname}.">
+        <path id="path.runtime">
+            <fileset dir="lib">
+                <include name="**/*.jar" />
+            </fileset>
+            <pathelement location="${jar.dest}" />
+        </path>
+        <path id="path.library">
+            <pathelement path="${java.library.path}" />
+            <pathelement location="lib/" />
+        </path>
+        <property name="path.library" refid="path.library" />
+        <java classname="${entrypoint}" fork="true">
+            <jvmarg value="-Xrs" />
+            <jvmarg value="-Xincgc" />
+            <sysproperty key="java.library.path" value="${path.library}" />
+            <classpath refid="path.runtime" />
+        </java>
+    </target>
+
+    <target name="dist" depends="distclean,dist0,clean" />
+
+    <target name="rebuild" depends="clean,build" />
+
+    <target name="clean">
+        <delete dir="${gen}" />
+        <delete>
+            <fileset dir="." defaultexcludes="false">
+                <include name="**/*~" />
+                <include name="**/*.bak" />
+            </fileset>
+        </delete>
+    </target>
+
+    <target name="distclean" depends="clean">
+        <delete dir="${dist}" />
+        <delete dir="${doc}" />
+        <delete file="${jar.dest}" />
+        <delete file="prefs.prf" />
+        <delete file="autosave.grm" />
+    </target>
+
+    <target name="fixcrlf">
+        <fixcrlf srcdir="${src}" eol="lf" eof="remove" tab="remove" javafiles="yes">
+            <include name="**/*.java" />
+        </fixcrlf>
+        <fixcrlf srcdir="." eol="lf" eof="remove" tab="remove" javafiles="no">
+            <include name="${src}/**/*.xml" />
+            <include name="${src}/**/*.xsl" />
+            <include name="${src}/**/*.xsd" />
+            <include name="${src}/**/*.txt" />
+            <include name="${src}/**/*.html" />
+            <include name="${src}/**/*.xhtml" />
+            <include name="${src}/**/*.css" />
+        </fixcrlf>
+    </target>
+</project>
