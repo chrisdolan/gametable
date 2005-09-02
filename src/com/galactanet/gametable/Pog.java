@@ -15,7 +15,7 @@ import java.io.IOException;
 
 public class Pog
 {
-    public static int       g_nextID          = 10;
+    public static int        g_nextID          = 10;
     public static final Font FONT              = new Font("Arial", 0, 14);
 
     private Image[]          m_images          = new Image[GametableCanvas.NUM_ZOOM_LEVELS];
@@ -23,14 +23,14 @@ public class Pog
     private GametableCanvas  m_canvas;
 
     // model coordinates
-    public int              m_x;
-    public int              m_y;
+    public int               m_x;
+    public int               m_y;
 
     // size
     private int              m_face;
-    public String           m_fileName;
+    public String            m_fileName;
 
-    public  String                   m_dataStr         = "";
+    public String            m_dataStr         = "";
 
     public int               m_ID              = 0;
     public boolean           m_bIsUnderlay     = false;
