@@ -59,7 +59,7 @@ public class NewMacroDialog extends JDialog implements FocusListener
         setTitle("Add a Dice Macro");
         setResizable(false);
         m_rollEntry.setText("d20");
-        m_nameEntry.setText("Roll");
+        m_nameEntry.setText("");
         m_ok.setActionCommand("OK");
         m_ok.setText("OK");
         m_ok.addActionListener(new NewMacroDialog_m_ok_actionAdapter(this));
@@ -121,7 +121,7 @@ public class NewMacroDialog extends JDialog implements FocusListener
 
     public void m_ok_actionPerformed(ActionEvent e)
     {
-        if (m_nameEntry.getText().length() > 0 && m_rollEntry.getText().length() > 0)
+        if (m_rollEntry.getText().length() > 0)
         {
             m_bAccepted = true;
         }

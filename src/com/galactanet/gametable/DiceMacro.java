@@ -15,6 +15,8 @@ public class DiceMacro
     String m_name;
     String m_macro;
 
+
+
     public DiceMacro()
     {
     }
@@ -47,7 +49,6 @@ public class DiceMacro
             // special case: straight bonus
             if (dieType.m_die < 2)
             {
-                total += dieType.m_qty;
                 if (dieType.m_qty > 0)
                 {
                     ret += "+" + dieType.m_qty;
@@ -56,6 +57,8 @@ public class DiceMacro
                 {
                     ret += "" + dieType.m_qty;
                 }
+                bFirstAdd = false;
+                total += dieType.m_qty;
             }
             else
             {
@@ -77,7 +80,7 @@ public class DiceMacro
             }
         }
 
-        ret += "]: ";
+        ret += "] = ";
         ret += "" + total;
         return ret;
     }
@@ -93,7 +96,18 @@ public class DiceMacro
 
     public String getRollString()
     {
-        String ret = m_name + " (";
+        String ret = getMacroString();
+
+        if (!ret.equals(m_name))
+        {
+            return m_name + " (" + ret + ")";
+        }
+        return ret;
+    }
+
+    public String getMacroString()
+    {
+        String ret = "";
         boolean bIsFirst = true;
 
         for (int i = 0; i < m_dieTypes.size(); i++)
@@ -120,7 +134,7 @@ public class DiceMacro
             }
             bIsFirst = false;
         }
-        ret += ") ";
+
         return ret;
     }
 
@@ -128,8 +142,8 @@ public class DiceMacro
     {
         try
         {
-            m_name = name;
             m_macro = macro;
+            m_name = name;
 
             // the string will be something like "3d6 + 4" or "2d4 + 3d6 + 8"
             boolean bDone = false;
@@ -195,6 +209,11 @@ public class DiceMacro
                 {
                     // invalid character
                     return false;
+                }
+                
+                if (segment.length() == 0)
+                {
+                    continue;
                 }
 
                 // now look for a die instruction.
@@ -268,10 +287,16 @@ public class DiceMacro
                 }
             }
 
+            if (m_name == null || m_name.length() == 0)
+            {
+                m_name = getMacroString();
+            }
+
             return true;
         }
         catch (Exception ex)
         {
+            ex.printStackTrace();
             return false;
         }
     }
@@ -320,11 +345,18 @@ public class DiceMacro
 
 class DiceMacro_RollType
 {
+    // note, a "1" sided die is a bonus
+    // and qty can be negative
+    int m_die;
+    int m_qty;
+
+
+
     public DiceMacro_RollType()
     {
     }
 
-    public boolean sameType(DiceMacro_RollType comp)
+    public boolean equals(DiceMacro_RollType comp)
     {
         if (m_die != comp.m_die)
             return false;
@@ -343,10 +375,13 @@ class DiceMacro_RollType
         return name;
     }
 
+    public String toString()
+    {
+        if (m_die == 1)
+        {
+            return String.valueOf(m_qty);
+        }
 
-
-    // note, a "1" sided die is a bonus
-    // and qty can be negative
-    int m_die;
-    int m_qty;
+        return m_qty + "d" + m_die;
+    }
 }
