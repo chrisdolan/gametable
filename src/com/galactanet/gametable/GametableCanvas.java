@@ -1362,6 +1362,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         for (int i = 0; i < m_lines.size(); i++)
         {
             LineSegment ls = (LineSegment)m_lines.get(i);
+
+            // LineSegments police themselves, performance wise. If they won't touch the current viewport, they don't draw
             ls.draw(g, this);
         }
 
@@ -1572,8 +1574,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             }
             for (int i = 0; i < hLines; i++)
             {
-                g
-                    .drawLine(topLeftX, i * m_squareSize + linesYOffset, width + topLeftX, i * m_squareSize
+                g.drawLine(topLeftX, i * m_squareSize + linesYOffset, width + topLeftX, i * m_squareSize
                         + linesYOffset);
             }
         }

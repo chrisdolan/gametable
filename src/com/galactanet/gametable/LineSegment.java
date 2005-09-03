@@ -243,14 +243,80 @@ public class LineSegment
          * Graphics2D g2d = (Graphics2D)g; g2d.setStroke(new
          * BasicStroke(canvas.getLineStrokeWidth()));
          */
+    	
+        // convert to draw coordinates
+        Point drawStart = canvas.modelToDraw(m_start.x, m_start.y);
+        Point drawEnd = canvas.modelToDraw(m_end.x, m_end.y);
+        
+    	// don't draw if we're not touching the viewport at any point
+    	
+    	// get the draw coords of the top-left of the viewable area
+    	// and of the lower right
+    	Point portalDrawTL = new Point(canvas.m_scrollX, canvas.m_scrollY);
+    	Point portalDrawBR = new Point(canvas.m_scrollX + canvas.getWidth(), canvas.m_scrollY + canvas.getHeight());
+    	Rectangle portalRect = new Rectangle((int)portalDrawTL.getX(), (int)portalDrawTL.getY(), (int)portalDrawBR.getX() - (int)portalDrawTL.getX(), (int)portalDrawBR.getY() - (int)portalDrawTL.getY());
+    	
+    	// now we can start comparing to see if the line is in the rect at all
+    	boolean bDrawLine = false;
+    	
+    	// first off, if either terminus point is in the box, draw the line.
+    	if ( portalRect.contains(drawStart) )
+    	{
+    		bDrawLine = true;
+    	}
+    	else if ( portalRect.contains(drawEnd) )
+    	{
+    		bDrawLine = true;
+    	}
+    	else
+    	{
+    		// neither point is inside the rect. Now we have to do things the slightly harder way.
+    		// presume it IS in view, now and work backward
+    		bDrawLine = true;
+    		
+    		// if both ends of the line are on the outside of one of the walls of the visible
+    		// area, it can't possibly be onscrene. For instance, if both endpoints'
+    		// x-values are less than the wall's left side, it can't be on screen.
+    		if ( drawStart.getX() < portalRect.getX() && drawEnd.getX() < portalRect.getX() )
+    		{
+    			// the line segment is entirely on the left. don't draw it
+    			return;
+    		}
+    		if ( drawStart.getX() > portalRect.getX()+portalRect.getWidth() && drawEnd.getX() > portalRect.getX()+portalRect.getWidth() )
+    		{
+    			// the line segment is entirely on the right. don't draw it
+    			return;
+    		}
+    		if ( drawStart.getY() < portalRect.getY() && drawEnd.getY() < portalRect.getY() )
+    		{
+    			// the line segment is entirely above. don't draw it
+    			return;
+    		}
+    		if ( drawStart.getY() > portalRect.getY()+portalRect.getHeight() && drawEnd.getY() > portalRect.getY()+portalRect.getHeight() )
+    		{
+    			// the line segment is entirely below. don't draw it
+    			return;
+    		}
+    		
+    		// if we're here, it means the line segment:
+    		// 1) Has neither point within the rect
+    		// 2) Has points on both sides of a vertical or horizontal wall.
+    		
+    		// in some cases, there will be lines told to draw that didn't need to (if they intersect
+    		// a vertical or horizontal line that is colinear with one of the edges of the viewable rect).
+    		// but that inefficiency is preferable to the slope-intersection calculations needed to check
+    		// to see if the line 
+    	}
+    	
+    	if ( !bDrawLine )
+    	{
+    		return;
+    	}
+    	
         g.setColor(m_color);
 
         int width = canvas.getLineStrokeWidth();
         int halfWidth = width / 2;
-
-        // convert to draw coordinates
-        Point drawStart = canvas.modelToDraw(m_start.x, m_start.y);
-        Point drawEnd = canvas.modelToDraw(m_end.x, m_end.y);
 
         int dx = Math.abs(m_end.x - m_start.x);
         int dy = Math.abs(m_end.y - m_start.y);
@@ -282,8 +348,6 @@ public class LineSegment
             y2 += nudgeY;
         }
     }
-
-
 
     protected Point m_start = new Point();
     protected Point m_end   = new Point();
