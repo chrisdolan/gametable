@@ -36,7 +36,7 @@ public class PacketManager
     public static final int PACKET_ADDPOG     = 5;
 
     // Pog removed
-    public static final int PACKET_REMOVEPOG  = 6;
+    public static final int PACKET_REMOVEPOGS  = 6;
 
     // Pog moved
     public static final int PACKET_MOVEPOG    = 7;
@@ -119,9 +119,9 @@ public class PacketManager
                 }
                     break;
 
-                case PACKET_REMOVEPOG:
+                case PACKET_REMOVEPOGS:
                 {
-                    readRemovePogPacket(dis);
+                    readRemovePogsPacket(dis);
                 }
                     break;
 
@@ -192,8 +192,8 @@ public class PacketManager
                 return "PACKET_ERASE";
             case PACKET_ADDPOG:
                 return "PACKET_ADDPOG";
-            case PACKET_REMOVEPOG:
-                return "PACKET_REMOVEPOG";
+            case PACKET_REMOVEPOGS:
+                return "PACKET_REMOVEPOGS";
             case PACKET_MOVEPOG:
                 return "PACKET_MOVEPOG";
             case PACKET_POINT:
@@ -539,15 +539,23 @@ public class PacketManager
     }
 
     /** *********************** REMOVEPOG PACKET *********************************** */
-    public static byte[] makeRemovePogPacket(int id)
+    public static byte[] makeRemovePogsPacket(int ids[])
     {
         try
         {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(baos);
 
-            dos.writeInt(PACKET_REMOVEPOG); // type
-            dos.writeInt(id);
+            dos.writeInt(PACKET_REMOVEPOGS); // type
+
+            // the number of pogs to be removed is first
+            dos.writeInt(ids.length);
+            
+            // then the IDs of the pogs.
+            for ( int i=0 ; i<ids.length ; i++ )
+            {
+            	dos.writeInt(ids[i]);
+            }
 
             return baos.toByteArray();
         }
@@ -558,16 +566,23 @@ public class PacketManager
         }
     }
 
-    public static void readRemovePogPacket(DataInputStream dis)
+    public static void readRemovePogsPacket(DataInputStream dis)
     {
 
         try
         {
-            int id = dis.readInt();
+        	// the number of pogs to be removed is first
+            int ids[] = new int[dis.readInt()];
+            
+            // then the IDs of the pogs.
+            for ( int i=0 ; i<ids.length ; i++ )
+            {
+            	ids[i] = dis.readInt();
+            }
 
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
-            gtFrame.removePogPacketReceived(id);
+            gtFrame.removePogsPacketReceived(ids);
         }
         catch (IOException ex)
         {

@@ -498,7 +498,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 if (!pogInViewport(m_pogBeingDragged))
                 {
                     // they removed this pog
-                    removePog(m_pogBeingDragged.m_ID);
+                	int removeArray[] = new int[1];
+                	removeArray[0] = m_pogBeingDragged.m_ID;
+                    removePogs(removeArray);
                 }
                 else
                 {
@@ -634,16 +636,24 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         repaint();
     }
 
-    public void removePog(int id)
+    public void removePogs(int ids[])
     {
-        m_gametableFrame.push(PacketManager.makeRemovePogPacket(id));
+        m_gametableFrame.push(PacketManager.makeRemovePogsPacket(ids));
 
         if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
         {
-            doRemovePog(id);
+            doRemovePogs(ids);
         }
     }
 
+    public void doRemovePogs(int ids[])
+    {
+    	for ( int i=0 ; i<ids.length ; i++ )
+    	{
+    		doRemovePog(ids[i]);
+    	}
+    }
+    
     public void doRemovePog(int id)
     {
         Pog toRemove = getPogByID(id);
