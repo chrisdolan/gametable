@@ -854,7 +854,7 @@ public class PacketManager
             // validate PNG file
             if (!UtilityFunctions.isPngData(pngFile))
             {
-                GametableFrame.g_gameTableFrame.addToTextLog("!!! Illegal pog data: \"" + filename
+                GametableFrame.g_gameTableFrame.logAlertMessage("Illegal pog data: \"" + filename
                     + "\", aborting transfer.");
                 return;
             }
@@ -866,7 +866,7 @@ public class PacketManager
                 + UtilityFunctions.isAncestorFile(here, target));
             if (!UtilityFunctions.isAncestorFile(here, target))
             {
-                GametableFrame.g_gameTableFrame.addToTextLog("!!! Malicious pog path? \"" + filename + "\"");
+                GametableFrame.g_gameTableFrame.logAlertMessage("Malicious pog path? \"" + filename + "\"");
                 String temp = filename.toLowerCase();
                 if (temp.contains("underlay"))
                 {
@@ -878,7 +878,7 @@ public class PacketManager
                 }
                 else
                 {
-                    GametableFrame.g_gameTableFrame.addToTextLog("!!! Illegal pog path: \"" + filename
+                    GametableFrame.g_gameTableFrame.logAlertMessage("Illegal pog path: \"" + filename
                         + "\", aborting transfer.");
                     return;
                 }

@@ -239,13 +239,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             case REJECT_INVALID_PASSWORD:
             {
-                addToTextLog(">>> Invalid Password. Connection refused.");
+                logSystemMessage("Invalid Password. Connection refused.");
             }
                 break;
 
             case REJECT_VERSION_MISMATCH:
             {
-                addToTextLog(">>> The host is running a different comm-version of Gametable. Connection refused.");
+                logSystemMessage("The host is running a different comm-version of Gametable. Connection refused.");
             }
                 break;
         }
@@ -358,12 +358,12 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (m_netStatus == NETSTATE_HOST)
         {
             // if you're the host, push to all players
-            postText(text);
+            postMessage(text);
         }
         else
         {
             // otherwise, just add it
-            addToTextLog(text);
+            logMessage(text);
         }
 
     }
@@ -392,7 +392,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (m_netStatus == NETSTATE_JOINED)
         {
             // we lost our connection to the host
-            addToTextLog(">>> Your connection to the host was lost.");
+            logSystemMessage("Your connection to the host was lost.");
             disconnect();
 
             m_netStatus = NETSTATE_NONE;
@@ -410,11 +410,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_players.remove(dead);
             refreshPlayerListBox();
             sendCastInfo();
-            postText("" + dead.getPlayerName() + " has left the session");
+            postSystemMessage("" + dead.getPlayerName() + " has left the session");
         }
         else
         {
-            postText(">>> Someone tried to log in, but was rejected.");
+            postSystemMessage("Someone tried to log in, but was rejected.");
         }
     }
 
@@ -533,7 +533,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         player.setConnection(connection);
 
         // tell everyone about the new guy
-        postText(">>> " + player.getPlayerName() + " has joined the session");
+        postSystemMessage(player.getPlayerName() + " has joined the session");
         addPlayer(player);
 
         sendCastInfo();
@@ -597,12 +597,12 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     {
         if (m_netStatus == NETSTATE_HOST)
         {
-            addToTextLog(">>> You are already hosting.");
+            logSystemMessage("You are already hosting.");
             return;
         }
         if (m_netStatus == NETSTATE_JOINED)
         {
-            addToTextLog(">>> You can not host until you disconnect from the game you joined.");
+            logSystemMessage("You can not host until you disconnect from the game you joined.");
             return;
         }
 
@@ -626,7 +626,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_hostListenThread.start();
         m_poller.activate(true);
 
-        addToTextLog(">>> Hosting on port: " + m_defaultPort);
+        logSystemMessage("Hosting on port: " + m_defaultPort);
 
         m_host.setEnabled(false);
         m_join.setEnabled(false);
@@ -635,7 +635,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     public void hostThreadFailed()
     {
-        addToTextLog(">>> Failed to host.");
+        logAlertMessage("Failed to host.");
         m_hostListenThread = null;
         disconnect();
     }
@@ -644,12 +644,12 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     {
         if (m_netStatus == NETSTATE_HOST)
         {
-            addToTextLog(">>> You are hosting. If you wish to join a game, disconnect first.");
+            logSystemMessage("You are hosting. If you wish to join a game, disconnect first.");
             return;
         }
         if (m_netStatus == NETSTATE_JOINED)
         {
-            addToTextLog(">>> You are already in a game. You must disconnect before joining another.");
+            logSystemMessage("You are already in a game. You must disconnect before joining another.");
             return;
         }
 
@@ -667,7 +667,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         catch (UnknownHostException ex)
         {
-            addToTextLog(">>> Unable to resolve address. Failed to connect.");
+            logSystemMessage("Unable to resolve address. Failed to connect.");
             return;
         }
 
@@ -707,7 +707,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             conn.start();
             m_poller.activate(true);
 
-            addToTextLog(">>> Joined game");
+            logSystemMessage("Joined game");
 
             m_host.setEnabled(false);
             m_join.setEnabled(false);
@@ -715,7 +715,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         catch (Exception ex)
         {
-            addToTextLog(">>> Failed to connect.");
+            Log.log(Log.SYS, ex);
+            logSystemMessage("Failed to connect.");
         }
     }
 
@@ -723,7 +724,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     {
         if (m_netStatus == NETSTATE_NONE)
         {
-            addToTextLog(">>> Nothing to disconnect from.");
+            logSystemMessage("Nothing to disconnect from.");
             return;
         }
 
@@ -747,7 +748,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
 
         m_netStatus = NETSTATE_NONE;
-        addToTextLog(">>> Disconnected.");
+        logSystemMessage("Disconnected.");
 
         m_host.setEnabled(true);
         m_join.setEnabled(true);
@@ -854,7 +855,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 // convert to model coordinates
                 Point modelCenter = m_gametableCanvas.viewToModel(viewCenterX, viewCenterY);
                 m_gametableCanvas.recenterView(modelCenter.x, modelCenter.y, m_gametableCanvas.m_zoom);
-                postText(">>> " + getMePlayer().getPlayerName() + " Recenters everyone's view!");
+                postSystemMessage(getMePlayer().getPlayerName() + " Recenters everyone's view!");
             }
         }
 
@@ -900,7 +901,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 // found our man
                 DiceMacro macro = (DiceMacro)m_macros.elementAt(i);
                 String result = macro.doMacro();
-                postText(result);
+                postMessage(result);
 
                 // send focus back where it belongs
                 m_gametableCanvas.requestFocus();
@@ -1145,7 +1146,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         boolean res = newMacro.init(macro, name);
         if (!res)
         {
-            addToTextLog(">>> Error in macro");
+            logSystemMessage("Error in macro");
             return;
         }
         addMacroButton(newMacro);
@@ -1182,7 +1183,18 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         repaint();
     }
 
-    public void addToTextLog(String text)
+    
+    public void logSystemMessage(String text)
+    {
+        logMessage(">>> " + text);
+    }
+    
+    public void logAlertMessage(String text)
+    {
+        logMessage("!!! " + text);
+    }
+
+    public void logMessage(String text)
     {
         double prevHeight = m_textLog.getPreferredSize().getHeight();
         String log = m_textLog.getText();
@@ -1279,7 +1291,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         else
         {
-            postText(getMePlayer().getCharacterName() + ">" + entered);
+            postMessage(getMePlayer().getCharacterName() + ">" + entered);
         }
 
         m_textEntry.setText("");
@@ -1301,8 +1313,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             if (words.length < 3)
             {
                 // tell them the usage and bail
-                addToTextLog(">>> /macro usage: /macro macroName <dice roll in standard format>");
-                addToTextLog(">>> Examples: /macro Attack d20+8 ; /macro SneakDmg d4 + 2 + 4d6");
+                logSystemMessage("/macro usage: /macro macroName <dice roll in standard format>");
+                logSystemMessage("Examples: /macro Attack d20+8 ; /macro SneakDmg d4 + 2 + 4d6");
                 return;
             }
 
@@ -1326,7 +1338,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             // req. 1 param
             if (words.length == 1)
             {
-                addToTextLog(">>> /macrodelete usage: /macrodelete macroName (Case sensitive)");
+                logSystemMessage("/macrodelete usage: /macrodelete macroName (Case sensitive)");
                 return;
             }
 
@@ -1352,8 +1364,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             // req. 1 param
             if (words.length == 1)
             {
-                addToTextLog(">>> /roll usage: /roll <dice roll in standard format>");
-                addToTextLog(">>> Example: /roll 2d6 + 3d4 + 8");
+                logSystemMessage("/roll usage: /roll <dice roll in standard format>");
+                logSystemMessage("Example: /roll 2d6 + 3d4 + 8");
                 return;
             }
 
@@ -1370,21 +1382,21 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             if (res)
             {
                 String result = dm.doMacro();
-                postText(result);
+                postMessage(result);
             }
             else
             {
-                addToTextLog(">>> Invalid dice command.");
+                logSystemMessage("Invalid dice command.");
             }
         }
 
         if (words[0].equals("//") || words[0].equals("/help"))
         {
             // list macro commands
-            addToTextLog(">>> /macro: macro a die roll");
-            addToTextLog(">>> /macrodelete: deletes an unwanted macro");
-            addToTextLog(">>> /roll: roll dice");
-            addToTextLog(">>> // list all slash commands");
+            logSystemMessage("/macro: macro a die roll");
+            logSystemMessage("/macrodelete: deletes an unwanted macro");
+            logSystemMessage("/roll: roll dice");
+            logSystemMessage("// list all slash commands");
         }
     }
 
@@ -1426,7 +1438,17 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         return ret;
     }
 
-    public void postText(String toSay)
+    public void postSystemMessage(String toSay)
+    {
+        postMessage(">>> " + toSay);
+    }
+
+    public void postAlertMessage(String toSay)
+    {
+        postMessage("!!! " + toSay);
+    }
+
+    public void postMessage(String toSay)
     {
         if (m_netStatus == NETSTATE_HOST)
         {
@@ -1434,7 +1456,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             push(PacketManager.makeTextPacket(toSay));
 
             // add it to your own text log
-            addToTextLog(toSay);
+            logMessage(toSay);
         }
         else if (m_netStatus == NETSTATE_JOINED)
         {
@@ -1444,7 +1466,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         else
         {
             // if you're offline, just add it to the log
-            addToTextLog(toSay);
+            logMessage(toSay);
         }
     }
 

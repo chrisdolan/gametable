@@ -450,64 +450,72 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         Point modelStart = viewToModel(m_clickX, m_clickY);
         Point modelEnd = viewToModel(m_dragX, m_dragY);
 
-        if (m_toolMode == TOOL_MODE_PEN)
+        switch (m_toolMode)
         {
-            // get the line segments and add them in
-            m_penAsset.smooth();
-            LineSegment[] lines = m_penAsset.getLineSegments();
-            m_penAsset = null;
+            case TOOL_MODE_PEN:
+            {
+                // get the line segments and add them in
+                m_penAsset.smooth();
+                LineSegment[] lines = m_penAsset.getLineSegments();
+                m_penAsset = null;
 
-            if (lines != null)
-            {
-                addLineSegments(lines);
-            }
-        }
-        if (m_toolMode == TOOL_MODE_ERASER)
-        {
-            // erase stuff. Lots of segments will probably
-            // be deleted. So we make a new container to hold the
-            // survivors
-            Rectangle r = new Rectangle(modelStart.x, modelStart.y, modelEnd.x - modelStart.x, modelEnd.y
-                - modelStart.y);
-            if (m_gametableFrame.m_colorEraserButton.isSelected())
-            {
-                // they're doing a color erase
-                erase(r, true, m_gametableFrame.m_drawColor.getRGB());
-            }
-            else
-            {
-                // full erase. clear everything.
-                erase(r, false, 0);
-            }
-        }
-
-        if (m_toolMode == TOOL_MODE_LINE)
-        {
-            // easy. They made a line. We add it to the lines vector
-            LineSegment ls = new LineSegment();
-            ls.init(modelStart, modelEnd, m_gametableFrame.m_drawColor);
-            LineSegment[] lines = new LineSegment[1];
-            lines[0] = ls;
-            addLineSegments(lines);
-        }
-
-        if (m_toolMode == TOOL_MODE_ARROW)
-        {
-            if (m_pogBeingDragged != null)
-            {
-                if (!pogInViewport(m_pogBeingDragged))
+                if (lines != null)
                 {
-                    // they removed this pog
-                	int removeArray[] = new int[1];
-                	removeArray[0] = m_pogBeingDragged.m_ID;
-                    removePogs(removeArray);
+                    addLineSegments(lines);
+                }
+            }
+                break;
+
+            case TOOL_MODE_ERASER:
+            {
+                // erase stuff. Lots of segments will probably
+                // be deleted. So we make a new container to hold the
+                // survivors
+                Rectangle r = new Rectangle(modelStart.x, modelStart.y, modelEnd.x - modelStart.x, modelEnd.y
+                    - modelStart.y);
+                if (m_gametableFrame.m_colorEraserButton.isSelected())
+                {
+                    // they're doing a color erase
+                    erase(r, true, m_gametableFrame.m_drawColor.getRGB());
                 }
                 else
                 {
-                    movePog(m_pogBeingDragged.m_ID, m_pogBeingDragged.m_x, m_pogBeingDragged.m_y);
+                    // full erase. clear everything.
+                    erase(r, false, 0);
                 }
             }
-            m_pogBeingDragged = null;
+                break;
+
+            case TOOL_MODE_LINE:
+            {
+                // easy. They made a line. We add it to the lines vector
+                LineSegment ls = new LineSegment();
+                ls.init(modelStart, modelEnd, m_gametableFrame.m_drawColor);
+                LineSegment[] lines = new LineSegment[1];
+                lines[0] = ls;
+                addLineSegments(lines);
+            }
+                break;
+
+            case TOOL_MODE_ARROW:
+            {
+                if (m_pogBeingDragged != null)
+                {
+                    if (!pogInViewport(m_pogBeingDragged))
+                    {
+                        // they removed this pog
+                        int removeArray[] = new int[1];
+                        removeArray[0] = m_pogBeingDragged.m_ID;
+                        removePogs(removeArray);
+                    }
+                    else
+                    {
+                        movePog(m_pogBeingDragged.m_ID, m_pogBeingDragged.m_x, m_pogBeingDragged.m_y);
+                    }
+                }
+                m_pogBeingDragged = null;
+            }
+                break;
         }
 
         updateToolState();
@@ -648,12 +656,12 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void doRemovePogs(int ids[])
     {
-    	for ( int i=0 ; i<ids.length ; i++ )
-    	{
-    		doRemovePog(ids[i]);
-    	}
+        for (int i = 0; i < ids.length; i++)
+        {
+            doRemovePog(ids[i]);
+        }
     }
-    
+
     public void doRemovePog(int id)
     {
         Pog toRemove = getPogByID(id);
@@ -666,7 +674,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         if (m_bLDragging && m_pogBeingDragged != null && m_pogBeingDragged.m_ID == id)
         {
             m_pogBeingDragged = null;
-            m_gametableFrame.addToTextLog(">>> The pog you were holding disappears out of your hands!");
+            m_gametableFrame.logSystemMessage("The pog you were holding disappears out of your hands!");
         }
         repaint();
     }
@@ -1373,7 +1381,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         {
             LineSegment ls = (LineSegment)m_lines.get(i);
 
-            // LineSegments police themselves, performance wise. If they won't touch the current viewport, they don't draw
+            // LineSegments police themselves, performance wise. If they won't touch the current
+            // viewport, they don't draw
             ls.draw(g, this);
         }
 
@@ -1381,7 +1390,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         if (m_bLDragging)
         {
             // ******************** PEN ASSET ***********************/
-            if (m_toolMode == TOOL_MODE_PEN)
+            if (m_penAsset != null)
             {
                 LineSegment[] lines = m_penAsset.getLineSegments();
                 if (lines != null)
@@ -1584,7 +1593,10 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             }
             for (int i = 0; i < hLines; i++)
             {
-                g.drawLine(topLeftX, i * m_squareSize + linesYOffset, width + topLeftX, i * m_squareSize
+                g.drawLine(topLeftX, 
+                    i * m_squareSize + linesYOffset, 
+                    width + topLeftX, 
+                    i * m_squareSize
                         + linesYOffset);
             }
         }
