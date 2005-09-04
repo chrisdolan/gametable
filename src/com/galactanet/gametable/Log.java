@@ -35,7 +35,7 @@ public class Log
     // --- Constants ---
 
     private static final String     DIVIDER           = " *************************";
-    private static final String     DIVIDER_PREFIX    = "\n**** ";
+    private static final String     DIVIDER_PREFIX    = "**** ";
     private static final DateFormat DATE_FORMAT       = new SimpleDateFormat("yyyy-MM-dd\' \'HH:mm:ss.SSS");
     private static final Object     G_LOCK            = new Object();
 
@@ -161,6 +161,7 @@ public class Log
                 log(ffne);
             }
 
+            out.println(" ");
             out.print(DIVIDER_PREFIX);
             out.print(getLogName(context));
             out.print(' ');
@@ -173,8 +174,10 @@ public class Log
     {
         synchronized (LOCK)
         {
+            out.print(DATE_FORMAT.format(new GregorianCalendar().getTime()));
+            out.print(" [");
             out.print(getLogName(context));
-            out.print(": ");
+            out.print("] ");
             out.println(s);
         }
     }
@@ -183,8 +186,10 @@ public class Log
     {
         synchronized (LOCK)
         {
+            out.print(DATE_FORMAT.format(new GregorianCalendar().getTime()));
+            out.print(" [");
             out.print(getLogName(context));
-            out.print(": ");
+            out.print("] ");
             t.printStackTrace(out);
             out.println("");
         }
