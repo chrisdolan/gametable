@@ -31,7 +31,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public static GametableFrame  g_gameTableFrame;
 
     // this gets bumped up every time the comm protocols change
-    public final static int       COMM_VERSION               = 7;
+    public final static int       COMM_VERSION               = 8;
     boolean                       m_bInitted;
     Dimension                     m_prevRightSize            = new Dimension(-1, -1);
 
@@ -301,14 +301,14 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
     }
 
-    public void removePogPacketReceived(int id)
+    public void removePogsPacketReceived(int ids[])
     {
-        m_gametableCanvas.doRemovePog(id);
+        m_gametableCanvas.doRemovePogs(ids);
 
         if (m_netStatus == NETSTATE_HOST)
         {
             // if we're the host, send it to the clients
-            push(PacketManager.makeRemovePogPacket(id));
+            push(PacketManager.makeRemovePogsPacket(ids));
         }
     }
 
@@ -785,8 +785,15 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 "This will remove all pogs from the entire map. Are you sure?", "Remove all Pogs");
             if (res == UtilityFunctions.YES)
             {
+            	// make an int array of all the IDs
+            	int removeArray[] = new int[m_gametableCanvas.m_pogs.size()];
+            	
                 for (int i = 0; i < m_gametableCanvas.m_pogs.size(); i++)
                 {
+                    Pog pog = (Pog)m_gametableCanvas.m_pogs.get(i);
+                	removeArray[i] = pog.m_ID;
+                	
+                	/*
                     int siz = m_gametableCanvas.m_pogs.size();
                     Pog pog = (Pog)m_gametableCanvas.m_pogs.get(i);
                     m_gametableCanvas.removePog(pog.m_ID);
@@ -795,7 +802,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                         // ensure we don't step over anyone
                         i--;
                     }
+                    */
                 }
+                
+                m_gametableCanvas.removePogs(removeArray);
                 repaint();
             }
         }
