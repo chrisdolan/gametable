@@ -9,7 +9,13 @@ import java.util.Vector;
 
 public class PacketManager
 {
-    // everything's static. No constructor
+    // prevent instantiation
+    private PacketManager()
+    {
+        throw new RuntimeException("PacketManager should not be instantiated!");
+    }
+
+
 
     // packet sent by a new joiner as soon as he joins
     public static final int PACKET_PLAYER     = 0;
@@ -53,6 +59,9 @@ public class PacketManager
     // request for a png
     public static final int PACKET_PNGREQUEST = 13;
 
+    /**
+     * Holding ground for POGs with no images yet.
+     */
     public static Vector    g_imagelessPogs   = new Vector();
 
 
@@ -64,6 +73,7 @@ public class PacketManager
             DataInputStream dis = new DataInputStream(new ByteArrayInputStream(packet));
             int type = dis.readInt();
 
+            Log.log(Log.NET, "Received " + getPacketName(type));
             // find the player responsible for this
             switch (type)
             {
@@ -159,7 +169,45 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
+            Log.log(Log.SYS, ex.toString());
+        }
+    }
+
+    public static String getPacketName(int type)
+    {
+        switch (type)
+        {
+            case PACKET_PLAYER:
+                return "PACKET_PLAYER";
+            case PACKET_REJECT:
+                return "PACKET_REJECT";
+            case PACKET_CAST:
+                return "PACKET_CAST";
+            case PACKET_TEXT:
+                return "PACKET_TEXT";
+            case PACKET_LINES:
+                return "PACKET_LINES";
+            case PACKET_ERASE:
+                return "PACKET_ERASE";
+            case PACKET_ADDPOG:
+                return "PACKET_ADDPOG";
+            case PACKET_REMOVEPOG:
+                return "PACKET_REMOVEPOG";
+            case PACKET_MOVEPOG:
+                return "PACKET_MOVEPOG";
+            case PACKET_POINT:
+                return "PACKET_POINT";
+            case PACKET_POGDATA:
+                return "PACKET_POGDATA";
+            case PACKET_RECENTER:
+                return "PACKET_RECENTER";
+            case PACKET_PNG:
+                return "PACKET_PNG";
+            case PACKET_PNGREQUEST:
+                return "PACKET_PNGREQUEST";
+            default:
+                return "PACKET_UNKNOWN";
         }
     }
 
@@ -191,7 +239,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -219,7 +267,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
         }
     }
 
@@ -242,7 +290,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -273,7 +321,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
         }
     }
 
@@ -292,7 +340,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -310,7 +358,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
         }
     }
 
@@ -333,7 +381,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -359,7 +407,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
         }
     }
 
@@ -383,7 +431,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -409,7 +457,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
         }
     }
 
@@ -428,7 +476,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -455,7 +503,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.NET, ex);
         }
     }
 
@@ -505,7 +553,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -523,7 +571,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
         }
     }
 
@@ -544,7 +592,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -564,7 +612,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
         }
     }
 
@@ -586,7 +634,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -607,7 +655,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
         }
     }
 
@@ -627,7 +675,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -645,7 +693,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
         }
     }
 
@@ -666,7 +714,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -685,7 +733,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
         }
     }
 
@@ -704,7 +752,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -722,7 +770,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
         }
     }
 
@@ -734,25 +782,27 @@ public class PacketManager
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(baos);
 
-            dos.writeInt(PACKET_PNG); // type
+            // write the packet type
+            dos.writeInt(PACKET_PNG);
+
+            // write the filename
+            dos.writeUTF(filename);
 
             // load the entire png file
             // java makes this a pain in the ass
-            FileInputStream input = new FileInputStream(filename);
-            DataInputStream infile = new DataInputStream(input);
+            DataInputStream infile = new DataInputStream(new FileInputStream(filename));
             byte[] buffer = new byte[1024];
             ByteArrayOutputStream pngFile = new ByteArrayOutputStream();
-            boolean bDone = false;
-            while (!bDone)
+            while (true)
             {
                 int bytesRead = infile.read(buffer);
                 if (bytesRead > 0)
                 {
                     pngFile.write(buffer, 0, bytesRead);
                 }
-                if (bytesRead < buffer.length)
+                else
                 {
-                    bDone = true;
+                    break;
                 }
             }
             byte[] pngFileData = pngFile.toByteArray();
@@ -767,7 +817,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -795,8 +845,10 @@ public class PacketManager
             }
 
             // validate file location
-            File here = new File(".");
-            File target = new File(filename);
+            File here = new File("").getAbsoluteFile();
+            File target = new File(filename).getAbsoluteFile();
+            Log.log(Log.NET, "here: " + here + ", target: " + target + ", ancestor?: "
+                + UtilityFunctions.isAncestorFile(here, target));
             if (!UtilityFunctions.isAncestorFile(here, target))
             {
                 GametableFrame.g_gameTableFrame.addToTextLog("!!! Malicious pog path? \"" + filename + "\"");
@@ -841,7 +893,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
         }
     }
 
@@ -860,7 +912,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return null;
         }
     }
@@ -882,7 +934,7 @@ public class PacketManager
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
         }
     }
 

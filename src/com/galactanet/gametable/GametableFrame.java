@@ -378,7 +378,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         for (int i = 0; i < m_players.size(); i++)
         {
             Player plr = (Player)m_players.elementAt(i);
-            if (conn == plr.getCconnection())
+            if (conn == plr.getConnection())
             {
                 return plr;
             }
@@ -436,13 +436,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     public void send(byte[] packet, Player recipient)
     {
-        if (recipient.getCconnection() == null)
+        if (recipient.getConnection() == null)
         {
             // uh...
             return;
         }
 
-        recipient.getCconnection().sendPacket(packet);
+        recipient.getConnection().sendPacket(packet);
     }
 
     public void send(byte[] packet, Connection recipient)

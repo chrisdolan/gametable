@@ -86,7 +86,17 @@ public class Connection extends Thread
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
+        }
+
+        try
+        {
+            DataInputStream dis = new DataInputStream(new ByteArrayInputStream(packet));
+            Log.log(Log.NET, "Sent " + PacketManager.getPacketName(dis.readInt()));
+        }
+        catch (IOException e)
+        {
+            Log.log(Log.SYS, e);
         }
     }
 

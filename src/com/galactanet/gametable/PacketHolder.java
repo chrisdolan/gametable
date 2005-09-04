@@ -9,9 +9,15 @@ import javax.swing.SwingUtilities;
 
 public class PacketHolder
 {
-    public final static int OPERATION_PACKET = 0;
-    public final static int OPERATION_JOIN   = 1;
-    public final static int OPERATION_DROP   = 2;
+    public final static int    OPERATION_PACKET = 0;
+    public final static int    OPERATION_JOIN   = 1;
+    public final static int    OPERATION_DROP   = 2;
+
+    public static final Object SYNCH            = new Object();
+
+    private static Vector      m_packets        = new Vector();
+    private static Vector      m_connections    = new Vector();
+    private static Vector      m_operations     = new Vector();
 
 
 
@@ -39,6 +45,11 @@ public class PacketHolder
             byte[] packet = (byte[])m_packets.elementAt(0);
             Connection conn = (Connection)m_connections.elementAt(0);
 
+            // No more infinite loopings on exceptions
+            m_packets.remove(0);
+            m_connections.remove(0);
+            m_operations.remove(0);
+
             switch (op.intValue())
             {
                 case OPERATION_JOIN:
@@ -59,10 +70,6 @@ public class PacketHolder
                 }
                     break;
             }
-
-            m_packets.remove(0);
-            m_connections.remove(0);
-            m_operations.remove(0);
         }
     }
 
@@ -95,18 +102,18 @@ public class PacketHolder
                 {
                     public void run()
                     {
-                        pop();
+                        try
+                        {
+                            pop();
+                        }
+                        catch (Throwable t)
+                        {
+                            t.printStackTrace();
+                            Log.log(Log.SYS, t);
+                        }
                     }
                 });
             }
         }
     }
-
-
-
-    public static final Object SYNCH         = new Object();
-
-    private static Vector      m_packets     = new Vector();
-    private static Vector      m_connections = new Vector();
-    private static Vector      m_operations  = new Vector();
 }

@@ -80,7 +80,7 @@ public class Player
     /**
      * @return Returns the connection.
      */
-    public Connection getCconnection()
+    public Connection getConnection()
     {
         return m_connection;
     }

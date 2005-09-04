@@ -172,12 +172,14 @@ public class UtilityFunctions
         {
             return false;
         }
+        
         if (parent.equals(ancestor))
         {
             return true;
         }
 
-        return isAncestorFile(ancestor, parent);
+        boolean b = isAncestorFile(ancestor, parent);
+        return b;
     }
 
     private static final byte[] PNG_SIGNATURE = 
