@@ -107,6 +107,7 @@
                 <include name="lib/**/*.jar" />
                 <include name="lib/**/*.dll" />
                 <include name="*.bat" />
+                <include name="readme.txt" />
                 <include name="${jar.dest}" />
             </zipfileset>
         </zip>
@@ -152,6 +153,11 @@
         <delete file="${jar.dest}" />
         <delete file="prefs.prf" />
         <delete file="autosave.grm" />
+        <delete>
+            <fileset dir=".">
+                <include name="*.log" />
+            </fileset>
+        </delete>
     </target>
 
     <target name="fixcrlf">
