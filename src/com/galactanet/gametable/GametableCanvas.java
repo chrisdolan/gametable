@@ -666,7 +666,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         if (m_bLDragging && m_pogBeingDragged != null && m_pogBeingDragged.m_ID == id)
         {
             m_pogBeingDragged = null;
-            m_gametableFrame.addToTextLog(">>>The pog you were holding disappears out of your hands!");
+            m_gametableFrame.addToTextLog(">>> The pog you were holding disappears out of your hands!");
         }
         repaint();
     }

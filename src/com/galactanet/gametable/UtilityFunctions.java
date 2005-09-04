@@ -245,7 +245,7 @@ public class UtilityFunctions
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            Log.log(Log.SYS, e);
         }
         pMT = null;
         return pImage;
@@ -261,7 +261,7 @@ public class UtilityFunctions
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            Log.log(Log.SYS, e);
         }
         return pImage;
     }

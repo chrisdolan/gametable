@@ -108,7 +108,6 @@ public class PacketHolder
                         }
                         catch (Throwable t)
                         {
-                            t.printStackTrace();
                             Log.log(Log.SYS, t);
                         }
                     }

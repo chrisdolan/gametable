@@ -190,7 +190,6 @@ public class Log
             out.print(" [");
             out.print(getLogName(context));
             out.print("] ");
-            t.printStackTrace(out);
             out.println("");
         }
     }

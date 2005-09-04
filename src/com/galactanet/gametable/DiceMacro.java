@@ -296,7 +296,7 @@ public class DiceMacro
         }
         catch (Exception ex)
         {
-            ex.printStackTrace();
+            Log.log(Log.SYS, ex);
             return false;
         }
     }

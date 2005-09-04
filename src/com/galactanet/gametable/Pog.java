@@ -227,7 +227,7 @@ public class Pog
         }
         catch (InterruptedException e)
         {
-            e.printStackTrace();
+            Log.log(Log.SYS, e);
         }
     }
 

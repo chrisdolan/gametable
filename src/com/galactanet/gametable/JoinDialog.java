@@ -39,7 +39,7 @@ public class JoinDialog extends JDialog implements FocusListener
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            Log.log(Log.SYS, e);
         }
 
         // pack yourself
