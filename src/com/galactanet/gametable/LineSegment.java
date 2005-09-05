@@ -1,3 +1,6 @@
+/*
+ * LineSegment.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -8,6 +11,11 @@ import java.io.*;
 
 
 
+/**
+ * TODO: comment
+ *
+ * @author sephalon
+ */
 public class LineSegment
 {
     public LineSegment()

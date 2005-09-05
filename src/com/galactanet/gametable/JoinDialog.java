@@ -1,3 +1,6 @@
+/*
+ * JoinDialog.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -10,6 +13,11 @@ import java.awt.event.FocusListener;
 import javax.swing.*;
 
 
+/**
+ * TODO: comment
+ *
+ * @author sephalon
+ */
 public class JoinDialog extends JDialog implements FocusListener
 {
     boolean    m_bAccepted;

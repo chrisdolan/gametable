@@ -1,3 +1,6 @@
+/*
+ * NewMacroDialog.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -13,6 +16,11 @@ import java.awt.event.FocusListener;
 import javax.swing.*;
 
 
+/**
+ * TODO: comment
+ *
+ * @author sephalon
+ */
 public class NewMacroDialog extends JDialog implements FocusListener
 {
     JButton    m_ok        = new JButton();

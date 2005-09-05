@@ -1,3 +1,6 @@
+/*
+ * GametableFrame.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -17,6 +20,11 @@ import javax.swing.*;
 import javax.swing.border.TitledBorder;
 
 
+/**
+ * TODO: comment
+ *
+ * @author sephalon
+ */
 public class GametableFrame extends JFrame implements ComponentListener, DropTargetListener, DragGestureListener,
     PropertyChangeListener, ActionListener, KeyListener
 {

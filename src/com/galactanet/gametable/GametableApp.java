@@ -1,3 +1,6 @@
+/*
+ * GametableApp.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -8,13 +11,18 @@ import java.awt.Toolkit;
 import javax.swing.UIManager;
 
 
+/**
+ * TODO: comment
+ * 
+ * @author sephalon
+ */
 public class GametableApp
 {
-    public static final String   VERSION    = "Gametable v1.0.3 - built 2005.09.02";
-    public static final String   SYS_LOG_FILE   = "gt.sys.log";
-    public static final String   NET_LOG_FILE   = "gt.net.log";
+    public static final String   VERSION      = "Gametable v1.0.3 - built 2005.09.02";
+    public static final String   SYS_LOG_FILE = "gt.sys.log";
+    public static final String   NET_LOG_FILE = "gt.net.log";
 
-    private static final boolean PACK_FRAME = false;
+    private static final boolean PACK_FRAME   = false;
 
 
 

@@ -1,3 +1,6 @@
+/*
+ * HostListenThread.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -9,6 +12,11 @@ import java.net.Socket;
 import javax.swing.SwingUtilities;
 
 
+/**
+ * TODO: comment
+ *
+ * @author sephalon
+ */
 public class HostListenThread extends Thread
 {
     public HostListenThread()

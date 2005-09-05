@@ -1,3 +1,6 @@
+/*
+ * Log.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;

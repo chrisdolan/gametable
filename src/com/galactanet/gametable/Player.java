@@ -1,3 +1,6 @@
+/*
+ * Player.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -5,6 +8,11 @@ package com.galactanet.gametable;
 import java.awt.Point;
 
 
+/**
+ * TODO: comment
+ * 
+ * @author iffy
+ */
 public class Player
 {
     private String     m_playerName;

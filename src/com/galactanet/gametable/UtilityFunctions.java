@@ -1,3 +1,6 @@
+/*
+ * UtilityFunctions.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -17,41 +20,53 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
 
+/**
+ * TODO: comment
+ * 
+ * @author sephalon
+ */
 public class UtilityFunctions
 {
+    /**
+     * The PNG signature to verify PNG data with.
+     */
+    private static final byte[] PNG_SIGNATURE = {
+        (byte)(137 & 0xFF), 80, 78, 71, 13, 10, 26, 10
+                                              };
 
-    public final static int NO     = 0;
-    public final static int YES    = 1;
-    public final static int CANCEL = -1;
+    public final static int     NO            = 0;
+    public final static int     YES           = 1;
+    public final static int     CANCEL        = -1;
+
 
 
     public static byte[] loadFileToArray(String filename)
     {
-    	File theFile = new File(filename);
-    	return loadFileToArray(theFile);
+        File theFile = new File(filename);
+        return loadFileToArray(theFile);
     }
-    
+
     public static byte[] loadFileToArray(File file)
     {
-    	try
-		{
-	        DataInputStream infile = new DataInputStream(new FileInputStream(file));
-	        byte[] buffer = new byte[1024];
-	        ByteArrayOutputStream fileData = new ByteArrayOutputStream();
-	        while (true)
-	        {
-	            int bytesRead = infile.read(buffer);
-	            if (bytesRead > 0)
-	            {
-	            	fileData.write(buffer, 0, bytesRead);
-	            }
-	            else
-	            {
-	                break;
-	            }
-	        }
-	        return fileData.toByteArray();
-		}
+        try
+        {
+            DataInputStream infile = new DataInputStream(new FileInputStream(file));
+            byte[] buffer = new byte[1024];
+            ByteArrayOutputStream fileData = new ByteArrayOutputStream();
+            while (true)
+            {
+                int bytesRead = infile.read(buffer);
+                if (bytesRead > 0)
+                {
+                    fileData.write(buffer, 0, bytesRead);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            return fileData.toByteArray();
+        }
         catch (IOException ex)
         {
             Log.log(Log.SYS, ex);
@@ -201,6 +216,13 @@ public class UtilityFunctions
         return true;
     }
 
+    /**
+     * Checks to see whether one file is an ancestor of another.
+     * 
+     * @param ancestor The potential ancestor File.
+     * @param child The child file.
+     * @return True if ancestor is an ancestor of child.
+     */
     public static boolean isAncestorFile(File ancestor, File child)
     {
         File parent = child.getParentFile();
@@ -208,7 +230,7 @@ public class UtilityFunctions
         {
             return false;
         }
-        
+
         if (parent.equals(ancestor))
         {
             return true;
@@ -218,11 +240,13 @@ public class UtilityFunctions
         return b;
     }
 
-    private static final byte[] PNG_SIGNATURE = 
-    {
-        (byte)(137 & 0xFF), 80, 78, 71, 13, 10, 26, 10
-    };
-    
+    /**
+     * Checks the given binary date to see if it is a valid PNG file. It does this by checking the
+     * PNG signature.
+     * 
+     * @param data binary data to check
+     * @return true if the binary data is a valid PNG file, false otherwise.
+     */
     public static boolean isPngData(byte[] data)
     {
         for (int i = 0; i < PNG_SIGNATURE.length; i++)

@@ -1,3 +1,6 @@
+/*
+ * DiceMacro.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -9,6 +12,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+/**
+ * TODO: comment
+ * 
+ * @author sephalon
+ */
 public class DiceMacro
 {
     List   m_dieTypes = new ArrayList(); // full of DiceMacro_RollType instances
@@ -210,7 +218,7 @@ public class DiceMacro
                     // invalid character
                     return false;
                 }
-                
+
                 if (segment.length() == 0)
                 {
                     continue;

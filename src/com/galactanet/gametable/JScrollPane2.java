@@ -1,3 +1,6 @@
+/*
+ * JScrollPane2.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -7,6 +10,11 @@ import java.awt.*;
 import java.awt.image.*;
 
 
+/**
+ * TODO: comment
+ *
+ * @author sephalon
+ */
 public class JScrollPane2 extends JScrollPane
 {
     private boolean m_bDisregardNextPaint;

@@ -1,3 +1,6 @@
+/*
+ * Connection.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -6,6 +9,11 @@ import java.io.*;
 import java.net.Socket;
 
 
+/**
+ * TODO: comment
+ * 
+ * @author sephalon
+ */
 public class Connection extends Thread
 {
     private InputStream    m_inputStream;

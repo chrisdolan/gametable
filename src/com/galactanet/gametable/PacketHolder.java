@@ -1,3 +1,6 @@
+/*
+ * PacketHolder.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -7,6 +10,11 @@ import java.util.Vector;
 import javax.swing.SwingUtilities;
 
 
+/**
+ * TODO: comment
+ *
+ * @author sephalon
+ */
 public class PacketHolder
 {
     public final static int    OPERATION_PACKET = 0;

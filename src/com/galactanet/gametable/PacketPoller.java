@@ -1,7 +1,15 @@
+/*
+ * PacketPoller.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
 
+/**
+ * TODO: comment
+ *
+ * @author sephalon
+ */
 public class PacketPoller extends Thread
 {
     public void run()

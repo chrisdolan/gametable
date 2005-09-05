@@ -1,3 +1,6 @@
+/*
+ * PogsPanel.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -12,8 +15,13 @@ import java.util.Vector;
 import javax.swing.JButton;
 
 
-
-public class PogsPanel extends JButton implements MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener
+/**
+ * TODO: comment
+ * 
+ * @author sephalon
+ */
+public class PogsPanel extends JButton implements MouseListener, MouseMotionListener, MouseWheelListener,
+    ComponentListener
 {
     public final static int MAX_FACE  = 5;
 

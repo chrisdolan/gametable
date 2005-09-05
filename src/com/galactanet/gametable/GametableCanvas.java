@@ -1,3 +1,6 @@
+/*
+ * GametableCanvas.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -12,6 +15,11 @@ import javax.swing.JButton;
 import javax.swing.JOptionPane;
 
 
+/**
+ * TODO: comment
+ * 
+ * @author sephalon
+ */
 public class GametableCanvas extends JButton implements MouseListener, MouseMotionListener, KeyListener,
     ComponentListener, ItemSelectable, MouseWheelListener
 {
@@ -1593,10 +1601,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             }
             for (int i = 0; i < hLines; i++)
             {
-                g.drawLine(topLeftX, 
-                    i * m_squareSize + linesYOffset, 
-                    width + topLeftX, 
-                    i * m_squareSize
+                g
+                    .drawLine(topLeftX, i * m_squareSize + linesYOffset, width + topLeftX, i * m_squareSize
                         + linesYOffset);
             }
         }

@@ -1,3 +1,6 @@
+/*
+ * Pog.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -13,6 +16,11 @@ import java.io.File;
 import java.io.IOException;
 
 
+/**
+ * TODO: comment
+ *
+ * @author sephalon
+ */
 public class Pog
 {
     public static int        g_nextID          = 10;

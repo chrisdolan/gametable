@@ -1,3 +1,6 @@
+/*
+ * PlayerListCellRenderer.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -10,6 +13,11 @@ import javax.swing.JList;
 import javax.swing.ListCellRenderer;
 
 
+/**
+ * TODO: comment
+ *
+ * @author sephalon
+ */
 public class PlayerListCellRenderer extends JLabel implements ListCellRenderer
 {
     public ImageIcon[] m_icons;

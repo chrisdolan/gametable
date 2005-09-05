@@ -1,3 +1,6 @@
+/*
+ * ColorComboCellRenderer.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -10,6 +13,11 @@ import javax.swing.JList;
 import javax.swing.ListCellRenderer;
 
 
+/**
+ * TODO: comment
+ * 
+ * @author sephalon
+ */
 public class ColorComboCellRenderer extends JLabel implements ListCellRenderer
 {
     private ImageIcon[] m_icons;
@@ -28,14 +36,16 @@ public class ColorComboCellRenderer extends JLabel implements ListCellRenderer
         for (int i = 0; i < m_icons.length; i++)
         {
             Color col = new Color(GametableFrame.g_comboColors[i].intValue());
-            Image img = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(width, height, Transparency.BITMASK);
+            Image img = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice()
+                .getDefaultConfiguration().createCompatibleImage(width, height, Transparency.BITMASK);
             createImage(width, height);
             Graphics g = img.getGraphics();
             g.setColor(col);
             g.fillRect(2, 2, img.getWidth(null) - 4, img.getHeight(null) - 4);
             m_icons[i] = new ImageIcon(img);
 
-            img = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(width, height, Transparency.BITMASK);
+            img = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration()
+                .createCompatibleImage(width, height, Transparency.BITMASK);
             g = img.getGraphics();
             g.setColor(Color.BLACK);
             g.fillRect(0, 0, img.getWidth(null), img.getHeight(null));
@@ -75,7 +85,7 @@ public class ColorComboCellRenderer extends JLabel implements ListCellRenderer
         {
             return this;
         }
-        
+
         setText("");
 
         if (isSelected)

@@ -1,3 +1,6 @@
+/*
+ * PenAsset.java: GameTable is in the Public Domain.
+ */
 
 
 package com.galactanet.gametable;
@@ -7,6 +10,11 @@ import java.awt.Point;
 import java.util.Vector;
 
 
+/**
+ * TODO: comment
+ *
+ * @author sephalon
+ */
 public class PenAsset
 {
 
