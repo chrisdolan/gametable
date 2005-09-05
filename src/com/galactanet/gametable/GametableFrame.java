@@ -100,6 +100,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     JMenuItem                     m_addDiceMacro             = new JMenuItem();
     JMenuItem                     m_removeDiceMacro          = new JMenuItem();
     JMenuItem                     m_version                  = new JMenuItem();
+    JMenuItem                     jMenuSave 				 = new JMenuItem();
+    JMenuItem                     jMenuSaveAs 				 = new JMenuItem();
+    JMenuItem                     jMenuOpen					 = new JMenuItem();
 
     public Color                  m_drawColor                = Color.BLACK;
 
@@ -130,7 +133,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         new Integer(Color.GREEN.getRGB()), new Integer(Color.ORANGE.getRGB()), new Integer(Color.WHITE.getRGB()),
                                                              };
 
-
+    public File m_actingFile; // the current file path used by save and open. NULL if unset
 
     /**
      * Construct the frame
@@ -269,6 +272,17 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (m_netStatus == NETSTATE_HOST)
         {
             push(PacketManager.makePogDataPacket(id, s));
+        }
+    }
+    
+    public void grmPacketReceived(byte grmFile[])
+    {
+    	// only the host should ever get this packet. If a joiner gets it
+    	// for some reason, it should ignore it.
+    	// if we're offline, then sure, go ahead and load
+        if (m_netStatus != NETSTATE_JOINED)
+        {
+        	loadStateFromRawFileData(grmFile);
         }
     }
 
@@ -757,6 +771,42 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_players = new Vector();
         refreshPlayerListBox();
     }
+    
+    public void eraseAllLines()
+    {
+        // erase with a rect big enough to nail everything
+        Rectangle toErase = new Rectangle();
+
+        toErase.x = Integer.MIN_VALUE / 2;
+        toErase.y = Integer.MIN_VALUE / 2;
+        toErase.width = Integer.MAX_VALUE;
+        toErase.height = Integer.MAX_VALUE;
+
+        // go to town
+        m_gametableCanvas.erase(toErase, false, 0);
+
+        repaint();
+    }
+    
+    public void eraseAllPogs()
+    {
+    	// make an int array of all the IDs
+    	int removeArray[] = new int[m_gametableCanvas.m_pogs.size()];
+    	
+        for (int i = 0; i < m_gametableCanvas.m_pogs.size(); i++)
+        {
+            Pog pog = (Pog)m_gametableCanvas.m_pogs.get(i);
+        	removeArray[i] = pog.m_ID;
+        }
+        
+        m_gametableCanvas.removePogs(removeArray);
+    }
+    
+    public void eraseAll()
+    {
+    	eraseAllLines();
+    	eraseAllPogs();
+    }
 
     public void actionPerformed(ActionEvent e)
     {
@@ -766,17 +816,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 "This will erase all pen markings on the entire map. Are you sure?", "Erase all lines");
             if (res == UtilityFunctions.YES)
             {
-                // erase with a rect big enough to nail everything
-                Rectangle toErase = new Rectangle();
-
-                toErase.x = Integer.MIN_VALUE / 2;
-                toErase.y = Integer.MIN_VALUE / 2;
-                toErase.width = Integer.MAX_VALUE;
-                toErase.height = Integer.MAX_VALUE;
-
-                // go to town
-                m_gametableCanvas.erase(toErase, false, 0);
-
+            	eraseAllLines();
                 repaint();
             }
         }
@@ -786,27 +826,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 "This will remove all pogs from the entire map. Are you sure?", "Remove all Pogs");
             if (res == UtilityFunctions.YES)
             {
-            	// make an int array of all the IDs
-            	int removeArray[] = new int[m_gametableCanvas.m_pogs.size()];
-            	
-                for (int i = 0; i < m_gametableCanvas.m_pogs.size(); i++)
-                {
-                    Pog pog = (Pog)m_gametableCanvas.m_pogs.get(i);
-                	removeArray[i] = pog.m_ID;
-                	
-                	/*
-                    int siz = m_gametableCanvas.m_pogs.size();
-                    Pog pog = (Pog)m_gametableCanvas.m_pogs.get(i);
-                    m_gametableCanvas.removePog(pog.m_ID);
-                    if (siz != m_gametableCanvas.m_pogs.size())
-                    {
-                        // ensure we don't step over anyone
-                        i--;
-                    }
-                    */
-                }
-                
-                m_gametableCanvas.removePogs(removeArray);
+            	eraseAllPogs();
                 repaint();
             }
         }
@@ -819,9 +839,59 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         if (e.getSource() == jMenuFileExit)
         {
-            saveState();
+            saveState(new File("autosave.grm"));
+            savePrefs();
             System.exit(0);
         }
+        if (e.getSource() == jMenuOpen)
+        {
+        	m_actingFile = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
+        	if ( m_actingFile != null )
+        	{
+        		// clear the state
+        		eraseAll();
+        		
+        		// load
+        		if ( m_netStatus == NETSTATE_JOINED )
+        		{
+        			// joiners dispatch the save file to the host 
+        			// for processing
+        			byte grmFile[] = UtilityFunctions.loadFileToArray(m_actingFile);
+        			if ( grmFile != null )
+        			{
+        	            push(PacketManager.makeGrmPacket(grmFile));
+        			}
+        		}
+        		else
+        		{
+            		// actually do the load if we're the host or offline
+        			loadState(m_actingFile);
+        		}
+        	}
+        }
+        if (e.getSource() == jMenuSave)
+        {
+        	if ( m_actingFile == null )
+        	{
+        		m_actingFile = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+        	}
+        	
+        	if ( m_actingFile != null )
+        	{
+	    		// save the file
+                saveState(m_actingFile);
+        	}
+        }
+        if (e.getSource() == jMenuSaveAs)
+        {
+        	m_actingFile = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+	    	if ( m_actingFile != null )
+	    	{
+	    		// save the file
+                saveState(m_actingFile);
+	    	}
+        }
+        
         if (e.getSource() == m_host)
         {
             host();
@@ -938,6 +1008,12 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         this.setTitle("GameTable");
         this.setSize(new Dimension(570, 489));
         jMenuFile.setText("File");
+        jMenuOpen.setText("Open");
+        jMenuOpen.addActionListener(this);
+        jMenuSave.setText("Save");
+        jMenuSave.addActionListener(this);
+        jMenuSaveAs.setText("Save As");
+        jMenuSaveAs.addActionListener(this);
         jMenuFileExit.setText("Exit");
         jMenuFileExit.addActionListener(this);
         contentPane.setLayout(borderLayout1);
@@ -1017,6 +1093,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         jToolBar1.add(m_lineButton, null);
         jToolBar1.add(m_colorEraserButton, null);
         jToolBar1.add(m_eraserButton, null);
+        jMenuFile.add(jMenuOpen);
+        jMenuFile.add(jMenuSave);
+        jMenuFile.add(jMenuSaveAs);
         jMenuFile.add(m_version);
         jMenuFile.add(jMenuFileExit);
         jMenuBar1.add(jMenuFile);
@@ -1094,7 +1173,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         // start the poll thread
         m_poller.start();
 
-        loadState();
+        loadState(new File("autosave.grm"));
+        loadPrefs();
 
         addPlayer(new Player(m_defaultName, m_defaultCharName));
 
@@ -1214,7 +1294,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         super.processWindowEvent(e);
         if (e.getID() == WindowEvent.WINDOW_CLOSING)
         {
-            saveState();
+            saveState(new File("autosave.grm"));
+            savePrefs();
             System.exit(0);
         }
     }
@@ -1500,51 +1581,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_gametableCanvas.requestFocus();
     }
 
-    public void saveState()
+    public void savePrefs()
     {
-        // save out all our data. The best way to do this is with packets, cause they're
-        // already designed to pass data around.
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
-
-        try
-        {
-            LineSegment[] lines = new LineSegment[m_gametableCanvas.m_lines.size()];
-            for (int i = 0; i < m_gametableCanvas.m_lines.size(); i++)
-            {
-                lines[i] = (LineSegment)m_gametableCanvas.m_lines.get(i);
-            }
-            byte[] linesPacket = PacketManager.makeLinesPacket(lines);
-            dos.writeInt(linesPacket.length);
-            dos.write(linesPacket);
-
-            // pogs
-            for (int i = 0; i < m_gametableCanvas.m_pogs.size(); i++)
-            {
-                Pog pog = (Pog)m_gametableCanvas.m_pogs.get(i);
-                byte[] pogsPacket = PacketManager.makeAddPogPacket(pog);
-                dos.writeInt(pogsPacket.length);
-                dos.write(pogsPacket);
-            }
-
-            byte[] saveFileData = baos.toByteArray();
-            FileOutputStream output = new FileOutputStream("autosave.grm");
-            DataOutputStream fileOut = new DataOutputStream(output);
-            fileOut.writeInt(saveFileData.length);
-            fileOut.write(saveFileData);
-            output.close();
-            fileOut.close();
-            baos.close();
-            dos.close();
-        }
-        catch (IOException ex)
-        {
-            // failed to save. give up
-        }
-
-        // unrelated to all that, save the user's preferences
-        // pretty small. Just name, character name, and the last IP.
-        // they connected to
         try
         {
             FileOutputStream prefFile = new FileOutputStream("prefs.prf");
@@ -1585,50 +1623,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         catch (IOException ex1)
         {
         }
-
     }
-
-    public void loadState()
+    
+    public void loadPrefs()
     {
-        try
-        {
-            FileInputStream input = new FileInputStream("autosave.grm");
-            DataInputStream infile = new DataInputStream(input);
-
-            // get the big hunk o daya
-            int len = infile.readInt();
-            byte[] saveFileData = new byte[len];
-            infile.read(saveFileData);
-
-            input.close();
-            infile.close();
-
-            // now we have to pick out the packets and send them in for processing one at a time
-            DataInputStream walker = new DataInputStream(new ByteArrayInputStream(saveFileData));
-            int read = 0;
-            while (read < saveFileData.length)
-            {
-                int packetLen = walker.readInt();
-                read += 4;
-
-                byte[] packet = new byte[packetLen];
-                walker.read(packet);
-                read += packetLen;
-
-                // dispatch the packet
-                PacketManager.readPacket(null, packet);
-            }
-        }
-        catch (FileNotFoundException ex)
-        {
-        }
-        catch (IOException ex)
-        {
-        }
-
-        // unrelated to all that, load the user's preferences
-        // pretty small. Just name, character name, and the last IP.
-        // they connected to
         try
         {
             FileInputStream prefFile = new FileInputStream("prefs.prf");
@@ -1683,6 +1681,109 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
         }
         catch (IOException ex1)
+        {
+        }
+    }
+    
+    public void saveState(File file)
+    {
+        // save out all our data. The best way to do this is with packets, cause they're
+        // already designed to pass data around.
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+
+        try
+        {
+            LineSegment[] lines = new LineSegment[m_gametableCanvas.m_lines.size()];
+            for (int i = 0; i < m_gametableCanvas.m_lines.size(); i++)
+            {
+                lines[i] = (LineSegment)m_gametableCanvas.m_lines.get(i);
+            }
+            byte[] linesPacket = PacketManager.makeLinesPacket(lines);
+            dos.writeInt(linesPacket.length);
+            dos.write(linesPacket);
+
+            // pogs
+            for (int i = 0; i < m_gametableCanvas.m_pogs.size(); i++)
+            {
+                Pog pog = (Pog)m_gametableCanvas.m_pogs.get(i);
+                byte[] pogsPacket = PacketManager.makeAddPogPacket(pog);
+                dos.writeInt(pogsPacket.length);
+                dos.write(pogsPacket);
+            }
+
+            byte[] saveFileData = baos.toByteArray();
+            FileOutputStream output = new FileOutputStream(file);
+            DataOutputStream fileOut = new DataOutputStream(output);
+            fileOut.writeInt(saveFileData.length);
+            fileOut.write(saveFileData);
+            output.close();
+            fileOut.close();
+            baos.close();
+            dos.close();
+        }
+        catch (IOException ex)
+        {
+            // failed to save. give up
+        }
+    }
+    
+    public void loadState(File file)
+    {
+    	try
+		{
+	        FileInputStream input = new FileInputStream(file);
+	        DataInputStream infile = new DataInputStream(input);
+	
+	        // get the big hunk o daya
+	        int len = infile.readInt();
+	        byte[] saveFileData = new byte[len];
+	        infile.read(saveFileData);
+	        
+	        loadState(saveFileData);
+	
+	        input.close();
+	        infile.close();
+		}
+        catch (FileNotFoundException ex)
+        {
+        }
+        catch (IOException ex)
+        {
+        }
+    }
+    
+    public void loadStateFromRawFileData(byte rawFileData[])
+    {
+    	byte saveFileData[] = new byte[rawFileData.length-4]; // a new array that lacks the first int
+    	System.arraycopy(rawFileData, 4, saveFileData, 0, saveFileData.length);
+    	loadState(saveFileData);
+    }
+    
+    public void loadState(byte saveFileData[])
+    {
+        try
+        {
+            // now we have to pick out the packets and send them in for processing one at a time
+            DataInputStream walker = new DataInputStream(new ByteArrayInputStream(saveFileData));
+            int read = 0;
+            while (read < saveFileData.length)
+            {
+                int packetLen = walker.readInt();
+                read += 4;
+
+                byte[] packet = new byte[packetLen];
+                walker.read(packet);
+                read += packetLen;
+
+                // dispatch the packet
+                PacketManager.readPacket(null, packet);
+            }
+        }
+        catch (FileNotFoundException ex)
+        {
+        }
+        catch (IOException ex)
         {
         }
 
