@@ -6,8 +6,11 @@ import java.awt.Component;
 import java.awt.Image;
 import java.awt.MediaTracker;
 import java.awt.Toolkit;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URL;
 
 import javax.swing.JFileChooser;
@@ -22,8 +25,41 @@ public class UtilityFunctions
     public final static int CANCEL = -1;
 
 
+    public static byte[] loadFileToArray(String filename)
+    {
+    	File theFile = new File(filename);
+    	return loadFileToArray(theFile);
+    }
+    
+    public static byte[] loadFileToArray(File file)
+    {
+    	try
+		{
+	        DataInputStream infile = new DataInputStream(new FileInputStream(file));
+	        byte[] buffer = new byte[1024];
+	        ByteArrayOutputStream fileData = new ByteArrayOutputStream();
+	        while (true)
+	        {
+	            int bytesRead = infile.read(buffer);
+	            if (bytesRead > 0)
+	            {
+	            	fileData.write(buffer, 0, bytesRead);
+	            }
+	            else
+	            {
+	                break;
+	            }
+	        }
+	        return fileData.toByteArray();
+		}
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
 
-    public static String doFileOpenDialog(String title, String extension, boolean filterFiles)
+    public static File doFileOpenDialog(String title, String extension, boolean filterFiles)
     {
         JFileChooser chooser = new JFileChooser();
 
@@ -33,13 +69,13 @@ public class UtilityFunctions
         if (returnVal == JFileChooser.APPROVE_OPTION)
         {
             lastDir = chooser.getSelectedFile().getParent();
-            return chooser.getSelectedFile().getPath();
+            return chooser.getSelectedFile();
         }
 
         return null;
     }
 
-    public static String doFileSaveDialog(String title, String extension, boolean filterFiles)
+    public static File doFileSaveDialog(String title, String extension, boolean filterFiles)
     {
         JFileChooser chooser = new JFileChooser();
 
@@ -49,7 +85,7 @@ public class UtilityFunctions
         if (returnVal == JFileChooser.APPROVE_OPTION)
         {
             lastDir = chooser.getSelectedFile().getParent();
-            return chooser.getSelectedFile().getName();
+            return chooser.getSelectedFile();
         }
 
         return null;
