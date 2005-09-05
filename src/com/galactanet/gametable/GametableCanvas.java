@@ -274,24 +274,29 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     }
 
     // conversion from model to view coordinates
-    public Point modelToDraw(int modelX, int modelY)
+    public Point modelToDraw(Point modelPoint)
     {
-        double squaresX = (double)modelX / (double)BASE_SQUARE_SIZE;
-        double squaresY = (double)modelY / (double)BASE_SQUARE_SIZE;
+        double squaresX = (double)modelPoint.x / (double)BASE_SQUARE_SIZE;
+        double squaresY = (double)modelPoint.y / (double)BASE_SQUARE_SIZE;
 
-        int viewX = (int)(squaresX * m_squareSize);
-        int viewY = (int)(squaresY * m_squareSize);
+        int viewX = (int)Math.round(squaresX * m_squareSize);
+        int viewY = (int)Math.round(squaresY * m_squareSize);
 
         return new Point(viewX, viewY);
     }
 
-    public Point modelToView(int modelX, int modelY)
+    public Point modelToDraw(int modelX, int modelY)
     {
-        double squaresX = (double)modelX / (double)BASE_SQUARE_SIZE;
-        double squaresY = (double)modelY / (double)BASE_SQUARE_SIZE;
+        return modelToDraw(new Point(modelX, modelY));
+    }
 
-        int viewX = (int)(squaresX * m_squareSize);
-        int viewY = (int)(squaresY * m_squareSize);
+    public Point modelToView(Point modelPoint)
+    {
+        double squaresX = (double)modelPoint.x / (double)BASE_SQUARE_SIZE;
+        double squaresY = (double)modelPoint.y / (double)BASE_SQUARE_SIZE;
+
+        int viewX = (int)Math.round(squaresX * m_squareSize);
+        int viewY = (int)Math.round(squaresY * m_squareSize);
 
         viewX -= m_scrollX;
         viewY -= m_scrollY;
@@ -299,18 +304,25 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         return new Point(viewX, viewY);
     }
 
-    public Point viewToModel(int viewX, int viewY)
+    public Point modelToView(int modelX, int modelY)
     {
-        viewX += m_scrollX;
-        viewY += m_scrollY;
+        return modelToView(new Point(modelX, modelY));
+    }
 
-        double squaresX = (double)viewX / (double)m_squareSize;
-        double squaresY = (double)viewY / (double)m_squareSize;
+    public Point viewToModel(Point viewPoint)
+    {
+        double squaresX = (double)(viewPoint.x + m_scrollX) / (double)m_squareSize;
+        double squaresY = (double)(viewPoint.y + m_scrollY) / (double)m_squareSize;
 
         int modelX = (int)(squaresX * BASE_SQUARE_SIZE);
         int modelY = (int)(squaresY * BASE_SQUARE_SIZE);
 
         return new Point(modelX, modelY);
+    }
+
+    public Point viewToModel(int viewX, int viewY)
+    {
+        return viewToModel(new Point(viewX, viewY));
     }
 
     /** *********************************************************** */
@@ -391,11 +403,11 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 // one drawn last (topmost)
                 Point modelClick = viewToModel(m_clickX, m_clickY);
                 m_pogBeingDragged = getPogAt(modelClick);
-
+                System.out.println("m_pogBeingDragged: " + m_pogBeingDragged);
                 if (m_pogBeingDragged != null)
                 {
-                    m_pogDragInsetX = modelClick.x - m_pogBeingDragged.m_x;
-                    m_pogDragInsetY = modelClick.y - m_pogBeingDragged.m_y;
+                    m_pogDragInsetX = modelClick.x - m_pogBeingDragged.getX();
+                    m_pogDragInsetY = modelClick.y - m_pogBeingDragged.getY();
                 }
                 break;
         }
@@ -416,7 +428,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     /**
      * @return The pog/underlay a the given model coordinates, or null.
      */
-    private Pog getPogAt(Point modelPosition)
+    public Pog getPogAt(Point modelPosition)
     {
         Pog pogHit = null;
         Pog underlayHit = null;
@@ -518,7 +530,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                     }
                     else
                     {
-                        movePog(m_pogBeingDragged.m_ID, m_pogBeingDragged.m_x, m_pogBeingDragged.m_y);
+                        movePog(m_pogBeingDragged.m_ID, m_pogBeingDragged.getX(), m_pogBeingDragged.getY());
                     }
                 }
                 m_pogBeingDragged = null;
@@ -642,8 +654,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             return;
         }
 
-        toMove.m_x = newX;
-        toMove.m_y = newY;
+        toMove.setPosition(newX, newY);
 
         // this pog moves to the end of the array
         m_pogs.remove(toMove);
@@ -835,25 +846,25 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     public boolean pogInViewport(Pog pog)
     {
         // only add the pog if they dropped it in the visible area
-        int width = pog.getFace() * BASE_SQUARE_SIZE;
+        int width = pog.getFaceSize() * BASE_SQUARE_SIZE;
 
         // get the model coords of the viewable area
         Point portalTL = viewToModel(0, 0);
         Point portalBR = viewToModel(getWidth(), getHeight());
 
-        if (pog.m_x > portalBR.x)
+        if (pog.getX() > portalBR.x)
         {
             return false;
         }
-        if (pog.m_y > portalBR.y)
+        if (pog.getY() > portalBR.y)
         {
             return false;
         }
-        if (pog.m_x + width < portalTL.x)
+        if (pog.getX() + width < portalTL.x)
         {
             return false;
         }
-        if (pog.m_y + width < portalTL.y)
+        if (pog.getY() + width < portalTL.y)
         {
             return false;
         }
@@ -876,7 +887,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         // massage the pog location
         m_pogDragInsetX = getActivePogsArea().m_pogDragMouseInsetX;
         m_pogDragInsetY = getActivePogsArea().m_pogDragMouseInsetY;
-        getActivePogsArea().m_selectedPog.setLoc(canvasModel.x - m_pogDragInsetX, canvasModel.y - m_pogDragInsetY);
+        getActivePogsArea().m_selectedPog.setPosition(canvasModel.x - m_pogDragInsetX, canvasModel.y - m_pogDragInsetY);
 
         // this function is only called when we're dragging from the pogs
         // area. So we have to cheexe our "current Mouse" coordinates
@@ -885,11 +896,11 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
         if (!m_bControlKeyDown)
         {
-            snapPogTopGrid(getActivePogsArea().m_selectedPog);
+            snapPogToGrid(getActivePogsArea().m_selectedPog);
         }
     }
 
-    public void snapPogTopGrid(Pog pog)
+    public void snapPogToGrid(Pog pog)
     {
         // get the view location of the top left corner of the pog
 
@@ -910,8 +921,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         Point modelLoc = viewToModel(snapX, snapY);
 
         // position the pog.
-        pog.m_x = modelLoc.x;
-        pog.m_y = modelLoc.y;
+        pog.setPosition(modelLoc);
     }
 
     public void updateDrag(MouseEvent e)
@@ -962,19 +972,19 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
             if (m_pogBeingDragged != null)
             {
-                m_pogBeingDragged.m_x = modelClick.x;
-                m_pogBeingDragged.m_y = modelClick.y;
+                m_pogBeingDragged.setPosition(modelClick);
 
                 if (m_bControlKeyDown)
                 {
-                    m_pogBeingDragged.m_x -= m_pogDragInsetX;
-                    m_pogBeingDragged.m_y -= m_pogDragInsetY;
+                    m_pogBeingDragged.setPosition(m_pogBeingDragged.getX() - m_pogDragInsetX, m_pogBeingDragged.getY()
+                        - m_pogDragInsetY);
                 }
                 else
                 {
-                    m_pogBeingDragged.m_x -= m_pogBeingDragged.getFace() * BASE_SQUARE_SIZE / 2;
-                    m_pogBeingDragged.m_y -= m_pogBeingDragged.getFace() * BASE_SQUARE_SIZE / 2;
-                    snapPogTopGrid(m_pogBeingDragged);
+                    m_pogBeingDragged.setPosition(m_pogBeingDragged.getX() - m_pogBeingDragged.getFaceSize()
+                        * BASE_SQUARE_SIZE / 2, m_pogBeingDragged.getY() - m_pogBeingDragged.getFaceSize()
+                        * BASE_SQUARE_SIZE / 2);
+                    snapPogToGrid(m_pogBeingDragged);
                 }
             }
         }

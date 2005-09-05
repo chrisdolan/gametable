@@ -218,7 +218,7 @@ public class PogsPanel extends JButton implements MouseListener, MouseMotionList
             toDraw.draw(g, x, y, this);
 
             // note it's position
-            toDraw.setLoc(x, y);
+            toDraw.setPosition(x, y);
 
             // advance the x and y
             x += toDraw.getWidth();
@@ -397,7 +397,7 @@ public class PogsPanel extends JButton implements MouseListener, MouseMotionList
             {
                 Pog pog = (Pog)getPogs().elementAt(j);
 
-                int distAbove = m_scrollY - pog.m_y;
+                int distAbove = m_scrollY - pog.getY();
                 if (distAbove > 0)
                 {
                     if (distAbove < nextScrollUpDist)
@@ -406,7 +406,7 @@ public class PogsPanel extends JButton implements MouseListener, MouseMotionList
                     }
                 }
 
-                int distBelow = pog.m_y - m_scrollY;
+                int distBelow = pog.getY() - m_scrollY;
                 if (distBelow > 0)
                 {
                     if (distBelow < nextScrollDownDist)

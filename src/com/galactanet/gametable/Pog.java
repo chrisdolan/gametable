@@ -18,7 +18,7 @@ import java.io.IOException;
 
 /**
  * TODO: comment
- *
+ * 
  * @author sephalon
  */
 public class Pog
@@ -31,11 +31,10 @@ public class Pog
     private GametableCanvas  m_canvas;
 
     // model coordinates
-    public int               m_x;
-    public int               m_y;
+    private Point            m_position;
 
     // size
-    private int              m_face;
+    private int              m_faceSize;
     public String            m_fileName;
 
     public String            m_dataStr         = "";
@@ -73,9 +72,9 @@ public class Pog
     public void writeToPacket(DataOutputStream dos) throws IOException
     {
         dos.writeUTF(m_fileName);
-        dos.writeInt(m_x);
-        dos.writeInt(m_y);
-        dos.writeInt(m_face);
+        dos.writeInt(getX());
+        dos.writeInt(getY());
+        dos.writeInt(m_faceSize);
         dos.writeInt(m_ID);
         dos.writeUTF(m_dataStr);
         dos.writeBoolean(m_bIsUnderlay);
@@ -84,9 +83,10 @@ public class Pog
     public void initFromPacket(DataInputStream dis) throws IOException
     {
         m_fileName = dis.readUTF();
-        m_x = dis.readInt();
-        m_y = dis.readInt();
-        m_face = dis.readInt();
+        int x = dis.readInt();
+        int y = dis.readInt();
+        m_position = new Point(x, y);
+        m_faceSize = dis.readInt();
         m_ID = dis.readInt();
         m_dataStr = dis.readUTF();
         m_bIsUnderlay = dis.readBoolean();
@@ -99,7 +99,7 @@ public class Pog
         {
             String fileToLoad = "assets/pog_unk_1.png";
             // the file doesn't exist. load up the default instead
-            switch (m_face)
+            switch (m_faceSize)
             {
                 case 2:
                 {
@@ -130,9 +130,8 @@ public class Pog
 
     public void init(Pog orig)
     {
-        m_x = orig.m_x;
-        m_y = orig.m_y;
-        m_face = orig.m_face;
+        setPosition(orig.getPosition());
+        m_faceSize = orig.getFaceSize();
 
         for (int i = 0; i < GametableCanvas.NUM_ZOOM_LEVELS; i++)
         {
@@ -162,10 +161,10 @@ public class Pog
         m_canvas = canvas;
 
         // note the size of the pog
-        m_face = fullSizeImage.getWidth(null) / GametableCanvas.BASE_SQUARE_SIZE;
-        if (m_face < 0)
+        m_faceSize = fullSizeImage.getWidth(null) / GametableCanvas.BASE_SQUARE_SIZE;
+        if (m_faceSize < 0)
         {
-            m_face = 1;
+            m_faceSize = 1;
         }
 
         // we have to make several scaled versions of this image
@@ -195,25 +194,24 @@ public class Pog
         setUpPixels();
     }
 
-    public void setLoc(int x, int y)
+    public void setPosition(int x, int y)
     {
-        m_x = x;
-        m_y = y;
+        setPosition(new Point(x, y));
     }
 
     public int getX()
     {
-        return m_x;
+        return getPosition().x;
     }
 
     public int getY()
     {
-        return m_y;
+        return getPosition().y;
     }
 
-    public int getFace()
+    public int getFaceSize()
     {
-        return m_face;
+        return m_faceSize;
     }
 
     public void setUpPixels()
@@ -242,18 +240,29 @@ public class Pog
     public boolean modelPtInBounds(int x, int y)
     {
         // convert to our local coordinates
-        int localX = x - m_x;
-        int localY = y - m_y;
+        int localX = x - getX();
+        int localY = y - getY();
 
         // if it's not even in our rect, then forget it.
         if (localX < 0)
+        {
             return false;
+        }
+        
         if (localX >= getWidth())
+        {
             return false;
+        }
+        
         if (localY < 0)
+        {
             return false;
+        }
+        
         if (localY >= getHeight())
+        {
             return false;
+        }
 
         int idx = localX + localY * getWidth();
         int c = m_pixels[idx];
@@ -277,7 +286,7 @@ public class Pog
     public void drawToCanvas(Graphics g)
     {
         // convert our model coordinates to draw coordinates
-        Point drawCoords = m_canvas.modelToDraw(m_x, m_y);
+        Point drawCoords = m_canvas.modelToDraw(getPosition());
 
         // which image should we use?
         Image toDraw = m_images[m_canvas.m_zoom];
@@ -307,7 +316,7 @@ public class Pog
         int totalHeight = height + 6;
 
         Rectangle backgroundRect = new Rectangle();
-        Point pogDrawCoords = m_canvas.modelToDraw(m_x, m_y);
+        Point pogDrawCoords = m_canvas.modelToDraw(getPosition());
         int viewWidth = m_images[m_canvas.m_zoom].getHeight(m_canvas);
         backgroundRect.x = pogDrawCoords.x + (viewWidth - totalWidth) / 2;
         backgroundRect.y = pogDrawCoords.y - totalHeight - 4;
@@ -354,5 +363,15 @@ public class Pog
     {
         return GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration()
             .createCompatibleImage(width, height, Transparency.TRANSLUCENT);
+    }
+
+    public Point getPosition()
+    {
+        return m_position;
+    }
+
+    public void setPosition(Point pos)
+    {
+        m_position = pos;
     }
 }
