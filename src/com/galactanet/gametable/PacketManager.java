@@ -54,7 +54,7 @@ public class PacketManager
     public static final int PACKET_REJECT     = 11;
 
     // png data transfer
-    public static final int PACKET_PNG        = 12;
+    public static final int PACKET_FILE        = 12;
 
     // request for a png
     public static final int PACKET_PNGREQUEST = 13;
@@ -149,9 +149,9 @@ public class PacketManager
                 }
                     break;
 
-                case PACKET_PNG:
+                case PACKET_FILE:
                 {
-                    readPngPacket(dis);
+                    readFilePacket(dis);
                 }
                     break;
 
@@ -202,8 +202,8 @@ public class PacketManager
                 return "PACKET_POGDATA";
             case PACKET_RECENTER:
                 return "PACKET_RECENTER";
-            case PACKET_PNG:
-                return "PACKET_PNG";
+            case PACKET_FILE:
+                return "PACKET_FILE";
             case PACKET_PNGREQUEST:
                 return "PACKET_PNGREQUEST";
             default:
@@ -788,7 +788,33 @@ public class PacketManager
             Log.log(Log.SYS, ex);
         }
     }
+    
+    /************************* FILE PACKET ************************************/
+    public static void readFilePacket(DataInputStream dis)
+    {
+    	// get the mime type of the file
+    	try
+		{
+    		// get the mime type
+    		String mimeType = dis.readUTF();
 
+    		if ( mimeType.equals("image/png") )
+    		{
+    			// this is a png file
+    			readPngPacket(dis);
+    		}
+    		else if ( mimeType.equals("application/x-gametable-grm") )
+    		{
+    			// this is a png file
+    			readGrmPacket(dis);
+    		}
+		}
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+    
     /** *********************** PNG PACKET *********************************** */
     public static byte[] makePngPacket(String filename)
     {
@@ -798,29 +824,16 @@ public class PacketManager
             DataOutputStream dos = new DataOutputStream(baos);
 
             // write the packet type
-            dos.writeInt(PACKET_PNG);
+            dos.writeInt(PACKET_FILE);
+            
+            // write the mime type
+            dos.writeUTF("image/png");
 
             // write the filename
             dos.writeUTF(filename);
 
             // load the entire png file
-            // java makes this a pain in the ass
-            DataInputStream infile = new DataInputStream(new FileInputStream(filename));
-            byte[] buffer = new byte[1024];
-            ByteArrayOutputStream pngFile = new ByteArrayOutputStream();
-            while (true)
-            {
-                int bytesRead = infile.read(buffer);
-                if (bytesRead > 0)
-                {
-                    pngFile.write(buffer, 0, bytesRead);
-                }
-                else
-                {
-                    break;
-                }
-            }
-            byte[] pngFileData = pngFile.toByteArray();
+            byte[] pngFileData = UtilityFunctions.loadFileToArray(filename);
 
             // now write the data length
             dos.writeInt(pngFileData.length);
@@ -905,6 +918,58 @@ public class PacketManager
             // tell the pog panels to check for the new image
             GametableFrame.g_gameTableFrame.m_pogsArea.reaquirePogs();
             GametableFrame.g_gameTableFrame.m_underlaysArea.reaquirePogs();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+
+    /** *********************** GRM PACKET *********************************** */
+    public static byte[] makeGrmPacket(byte[] grmData)
+    {
+    	// grmData will be the contents of the file
+    	try
+		{
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            // write the packet type
+            dos.writeInt(PACKET_FILE);
+            
+            // write the mime type
+            dos.writeUTF("application/x-gametable-grm");
+            
+            // now write the data length
+            dos.writeInt(grmData.length);
+
+            // and finally, the data itself
+            Log.log(Log.SYS, "Sent:"+grmData.length);
+            dos.write(grmData);
+
+            return baos.toByteArray();
+		}
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+    
+    public static void readGrmPacket(DataInputStream dis)
+    {
+        try
+        {
+            // read the length of the png file data
+            int len = dis.readInt();
+
+            // the file itself
+            byte[] grmFile = new byte[len];
+            dis.read(grmFile);
+            
+            // tell the model
+            GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.grmPacketReceived(grmFile);
         }
         catch (IOException ex)
         {
