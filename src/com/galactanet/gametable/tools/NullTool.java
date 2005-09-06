@@ -3,9 +3,12 @@
  */
 
 
-package com.galactanet.gametable;
+package com.galactanet.gametable.tools;
 
 import java.awt.Graphics;
+
+import com.galactanet.gametable.GametableCanvas;
+import com.galactanet.gametable.Tool;
 
 
 /**
@@ -13,12 +16,12 @@ import java.awt.Graphics;
  * 
  * @author iffy
  */
-public class AbstractTool implements Tool
+public class NullTool implements Tool
 {
     /**
      * Constructor.
      */
-    public AbstractTool()
+    public NullTool()
     {
     }
 
@@ -41,21 +44,21 @@ public class AbstractTool implements Tool
     /*
      * @see com.galactanet.gametable.Tool#mouseButtonPressed(int, int)
      */
-    public void mouseButtonPressed(int x, int y)
-    {
-    }
-
-    /*
-     * @see com.galactanet.gametable.Tool#mouseButtonReleased(int, int)
-     */
-    public void mouseButtonReleased(int x, int y)
+    public void mouseButtonPressed(int x, int y, int modifierMask)
     {
     }
 
     /*
      * @see com.galactanet.gametable.Tool#mouseMoved(int, int)
      */
-    public void mouseMoved(int x, int y)
+    public void mouseMoved(int x, int y, int modifierMask)
+    {
+    }
+
+    /*
+     * @see com.galactanet.gametable.Tool#mouseButtonReleased(int, int)
+     */
+    public void mouseButtonReleased(int x, int y, int modifierMask)
     {
     }
 

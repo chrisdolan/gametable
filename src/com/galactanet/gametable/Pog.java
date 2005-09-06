@@ -31,7 +31,7 @@ public class Pog
     private GametableCanvas  m_canvas;
 
     // model coordinates
-    private Point            m_position;
+    private Point            m_position        = new Point(0, 0);
 
     // size
     private int              m_faceSize;
@@ -47,6 +47,11 @@ public class Pog
 
     public Pog()
     {
+    }
+
+    public Pog(Pog toCopy)
+    {
+        init(toCopy);
     }
 
     public void getUniqueID()
@@ -194,11 +199,6 @@ public class Pog
         setUpPixels();
     }
 
-    public void setPosition(int x, int y)
-    {
-        setPosition(new Point(x, y));
-    }
-
     public int getX()
     {
         return getPosition().x;
@@ -212,6 +212,21 @@ public class Pog
     public int getFaceSize()
     {
         return m_faceSize;
+    }
+
+    public Point getPosition()
+    {
+        return m_position;
+    }
+
+    public void setPosition(Point pos)
+    {
+        m_position = pos;
+    }
+
+    public void setPosition(int x, int y)
+    {
+        setPosition(new Point(x, y));
     }
 
     public void setUpPixels()
@@ -248,17 +263,17 @@ public class Pog
         {
             return false;
         }
-        
+
         if (localX >= getWidth())
         {
             return false;
         }
-        
+
         if (localY < 0)
         {
             return false;
         }
-        
+
         if (localY >= getHeight())
         {
             return false;
@@ -363,15 +378,5 @@ public class Pog
     {
         return GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration()
             .createCompatibleImage(width, height, Transparency.TRANSLUCENT);
-    }
-
-    public Point getPosition()
-    {
-        return m_position;
-    }
-
-    public void setPosition(Point pos)
-    {
-        m_position = pos;
     }
 }
