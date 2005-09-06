@@ -326,24 +326,24 @@ public class Pog
         if (bForceTextInBounds)
         {
             // force it to be on the view
-            if (backgroundRect.x < m_canvas.m_scrollX)
+            if (backgroundRect.x < m_canvas.getActiveMap().getScrollX())
             {
-                backgroundRect.x = m_canvas.m_scrollX;
+                backgroundRect.x = m_canvas.getActiveMap().getScrollX();
             }
 
-            if (backgroundRect.y < m_canvas.m_scrollY)
+            if (backgroundRect.y < m_canvas.getActiveMap().getScrollY())
             {
-                backgroundRect.y = m_canvas.m_scrollY;
+                backgroundRect.y = m_canvas.getActiveMap().getScrollY();
             }
 
-            if (backgroundRect.x + totalWidth > m_canvas.m_scrollX + m_canvas.getWidth())
+            if (backgroundRect.x + totalWidth > m_canvas.getActiveMap().getScrollX() + m_canvas.getWidth())
             {
-                backgroundRect.x = m_canvas.m_scrollX + m_canvas.getWidth() - totalWidth;
+                backgroundRect.x = m_canvas.getActiveMap().getScrollX() + m_canvas.getWidth() - totalWidth;
             }
 
-            if (backgroundRect.y + totalHeight > m_canvas.m_scrollY + m_canvas.getHeight())
+            if (backgroundRect.y + totalHeight > m_canvas.getActiveMap().getScrollY() + m_canvas.getHeight())
             {
-                backgroundRect.y = m_canvas.m_scrollY + m_canvas.getHeight() - totalHeight;
+                backgroundRect.y = m_canvas.getActiveMap().getScrollY() + m_canvas.getHeight() - totalHeight;
             }
         }
 

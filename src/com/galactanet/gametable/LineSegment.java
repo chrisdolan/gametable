@@ -260,8 +260,8 @@ public class LineSegment
     	
     	// get the draw coords of the top-left of the viewable area
     	// and of the lower right
-    	Point portalDrawTL = new Point(canvas.m_scrollX, canvas.m_scrollY);
-    	Point portalDrawBR = new Point(canvas.m_scrollX + canvas.getWidth(), canvas.m_scrollY + canvas.getHeight());
+    	Point portalDrawTL = new Point(canvas.getActiveMap().getScrollX(), canvas.getActiveMap().getScrollY());
+    	Point portalDrawBR = new Point(canvas.getActiveMap().getScrollX() + canvas.getWidth(), canvas.getActiveMap().getScrollY() + canvas.getHeight());
     	Rectangle portalRect = new Rectangle((int)portalDrawTL.getX(), (int)portalDrawTL.getY(), (int)portalDrawBR.getX() - (int)portalDrawTL.getX(), (int)portalDrawBR.getY() - (int)portalDrawTL.getY());
     	
     	// now we can start comparing to see if the line is in the rect at all

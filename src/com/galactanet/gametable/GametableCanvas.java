@@ -69,14 +69,6 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     // used per model pixel. It's never less than 1
     public int              m_zoom;
 
-    // add to origin to get actual coordinates.
-    // (Negative if inside image)
-    public int              m_scrollX;
-
-    // add to origin to get actual coordinates.
-    // (Negative if inside image)
-    public int              m_scrollY;
-
     // hand tool
     int                     m_handToolStartX;
     int                     m_handToolStartY;
@@ -155,9 +147,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         m_pointCursorImages[6] = UtilityFunctions.getImage("assets/greyHand.png");
         m_pointCursorImages[7] = UtilityFunctions.getImage("assets/yellowHand.png");
 
-        m_scrollX = 0;
-        m_scrollY = 0;
-
+        setPrimaryScroll(m_sharedMap, 0, 0);
+        
         addMouseWheelListener(this);
         setZoom(0);
     }
@@ -307,8 +298,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         int viewX = (int)Math.round(squaresX * m_squareSize);
         int viewY = (int)Math.round(squaresY * m_squareSize);
 
-        viewX -= m_scrollX;
-        viewY -= m_scrollY;
+        viewX -= m_activeMap.getScrollX();
+        viewY -= m_activeMap.getScrollY();
 
         return new Point(viewX, viewY);
     }
@@ -320,8 +311,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public Point viewToModel(Point viewPoint)
     {
-        double squaresX = (double)(viewPoint.x + m_scrollX) / (double)m_squareSize;
-        double squaresY = (double)(viewPoint.y + m_scrollY) / (double)m_squareSize;
+        double squaresX = (double)(viewPoint.x + m_activeMap.getScrollX()) / (double)m_squareSize;
+        double squaresY = (double)(viewPoint.y + m_activeMap.getScrollY()) / (double)m_squareSize;
 
         int modelX = (int)(squaresX * BASE_SQUARE_SIZE);
         int modelY = (int)(squaresY * BASE_SQUARE_SIZE);
@@ -388,8 +379,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         m_clickX = e.getX();
         m_clickY = e.getY();
 
-        m_preClickScrollX = m_scrollX;
-        m_preClickScrollY = m_scrollY;
+        m_preClickScrollX = m_activeMap.getScrollX();
+        m_preClickScrollY = m_activeMap.getScrollY();
 
         switch (m_toolMode)
         {
@@ -600,6 +591,19 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             doRecenterView(modelCenterX, modelCenterY, zoomLevel);
         }
     }
+    
+    /*
+     * This function will set the scroll for all maps, keeping their
+     * relative offsets preserved. The x,y values sent in will become the
+     * scroll values for the desired map. All others maps will preserve offsets 
+     * from that.
+     */
+    public void setPrimaryScroll(GametableMap mapToSet, int x, int y)
+    {
+    	int dx = x - mapToSet.getScrollX();
+    	int dy = y - mapToSet.getScrollY();
+    	m_sharedMap.setScroll(dx + mapToSet.getScrollX(), dy + mapToSet.getScrollY());
+    }
 
     public void doRecenterView(int modelCenterX, int modelCenterY, int zoomLevel)
     {
@@ -608,17 +612,22 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         setZoom(zoomLevel);
 
         // find the view coordinate for the model center
-        m_scrollX = 0;
-        m_scrollY = 0;
-        Point viewCenter = modelToView(modelCenterX, modelCenterY);
+        setPrimaryScroll(m_sharedMap, 0, 0);
 
+        // we need to get the coords for the shared map, even if we're not on that at the moment
+        // so we cheezily set to the shared map, then return it to normal after the 
+        // call to modelToView
+        GametableMap storedMap = m_activeMap;
+        m_activeMap = m_sharedMap;
+        Point viewCenter = modelToView(modelCenterX, modelCenterY);
+        m_activeMap = storedMap;
+        
         // find where the top left would have to be, based on our size
         int tlX = viewCenter.x - getWidth() / 2;
         int tlY = viewCenter.y - getHeight() / 2;
 
         // that is our new scroll position
-        m_scrollX = tlX;
-        m_scrollY = tlY;
+        setPrimaryScroll(m_sharedMap, tlX, tlY);
 
         repaint();
     }
@@ -940,8 +949,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         // if they're doing a hand drag, we respons immediately
         if (m_toolMode == TOOL_MODE_HAND)
         {
-            m_scrollX = m_preClickScrollX + m_clickX - m_dragX;
-            m_scrollY = m_preClickScrollY + m_clickY - m_dragY;
+            int scrX = m_preClickScrollX + m_clickX - m_dragX;
+            int scrY = m_preClickScrollY + m_clickY - m_dragY;
+            setPrimaryScroll(m_activeMap, scrX, scrY);
         }
 
         if (m_toolMode == TOOL_MODE_PEN)
@@ -1039,7 +1049,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     // takes VIEW coords
     public int getSnapX(int x)
     {
-        int viewX = x + m_scrollX;
+        int viewX = x + m_activeMap.getScrollX();
 
         int nearX = ((viewX + m_squareSize / 2) / m_squareSize) * m_squareSize;
         if (viewX < 0)
@@ -1047,7 +1057,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             nearX = ((viewX - m_squareSize / 2) / m_squareSize) * m_squareSize;
         }
 
-        int mouseNearX = nearX - m_scrollX;
+        int mouseNearX = nearX - m_activeMap.getScrollX();
 
         return mouseNearX;
     }
@@ -1055,7 +1065,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     // takes VIEW coords
     public int getSnapY(int y)
     {
-        int viewY = y + m_scrollY;
+        int viewY = y + m_activeMap.getScrollY();
 
         int nearY = ((viewY + m_squareSize / 2) / m_squareSize) * m_squareSize;
         if (viewY < 0)
@@ -1063,7 +1073,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             nearY = ((viewY - m_squareSize / 2) / m_squareSize) * m_squareSize;
         }
 
-        int mouseNearY = nearY - m_scrollY;
+        int mouseNearY = nearY - m_activeMap.getScrollY();
 
         return mouseNearY;
     }
@@ -1216,8 +1226,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         int presentCenterY = getHeight() / 2;
 
         // set up the scroll to enforce the center being where it's supposed to be
-        m_scrollX -= (presentCenterX - viewCenter.x);
-        m_scrollY -= (presentCenterY - viewCenter.y);
+        int scrX = m_activeMap.getScrollX() - (presentCenterX - viewCenter.x);
+        int scrY = m_activeMap.getScrollY() - (presentCenterY - viewCenter.y);
+        setPrimaryScroll(m_activeMap, scrX, scrY);
     }
 
     /** *********************************************************** */
@@ -1367,9 +1378,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     {
         g.setColor(Color.WHITE);
         g.fillRect(0, 0, getWidth(), getHeight());
-        g.translate(-m_scrollX, -m_scrollY);
+        g.translate(-m_activeMap.getScrollX(), -m_activeMap.getScrollY());
 
-        drawMatte(g, m_scrollX, m_scrollY, getWidth(), getHeight());
+        drawMatte(g, m_activeMap.getScrollX(), m_activeMap.getScrollY(), getWidth(), getHeight());
 
         // draw all the underlays here
         for (int i = 0; i < m_activeMap.getPogs().size(); i++)
@@ -1401,7 +1412,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             }
         }
 
-        drawLines(g, m_scrollX, m_scrollY, getWidth(), getHeight());
+        drawLines(g, m_activeMap.getScrollX(), m_activeMap.getScrollY(), getWidth(), getHeight());
 
         // lines
         for (int i = 0; i < m_activeMap.getLines().size(); i++)
@@ -1434,7 +1445,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             {
                 // draw a rubber-band line to represent the selection
                 g.setColor(Color.BLACK);
-                drawDottedRect(g, m_clickX + m_scrollX, m_clickY + m_scrollY, m_dragX - m_clickX, m_dragY - m_clickY);
+                drawDottedRect(g, m_clickX + m_activeMap.getScrollX(), m_clickY + m_activeMap.getScrollY(), m_dragX - m_clickX, m_dragY - m_clickY);
             }
 
             // ******************** LINE ASSET ***********************/
@@ -1442,7 +1453,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             {
                 // draw the rubber band line
                 g.setColor(Color.BLACK);
-                g.drawLine(m_clickX + m_scrollX, m_clickY + m_scrollY, m_dragX + m_scrollX, m_dragY + m_scrollY);
+                g.drawLine(m_clickX + m_activeMap.getScrollX(), m_clickY + m_activeMap.getScrollY(), m_dragX + m_activeMap.getScrollX(), m_dragY + m_activeMap.getScrollY());
             }
         }
 
@@ -1517,7 +1528,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 }
             }
         }
-        g.translate(m_scrollX, m_scrollY);
+        g.translate(m_activeMap.getScrollX(), m_activeMap.getScrollY());
     }
 
     public Pog getPogMouseOver()

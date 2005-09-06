@@ -44,6 +44,22 @@ class GametableMap
 	{
 		m_pogs = pogs;
 	}
+	
+	public void setScroll(int x, int y)
+	{
+		m_scrollX = x;
+		m_scrollY = y;
+	}
+
+	public int getScrollX()
+	{
+		return m_scrollX;
+	}
+
+	public int getScrollY()
+	{
+		return m_scrollY;
+	}
 
 	/**************************** CLASS DATA *******************************/
     // lines on the map
@@ -53,4 +69,13 @@ class GametableMap
     protected List             m_pogs                = new ArrayList();
     
     protected boolean 		   m_bIsSharedMap;
+
+    // add to origin to get actual coordinates.
+    // (Negative if inside image)
+    private int              m_scrollX;
+
+    // add to origin to get actual coordinates.
+    // (Negative if inside image)
+    private int              m_scrollY;
+
 }

@@ -717,8 +717,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_myPlayerIdx = 0;
 
             // reset game data
-            m_gametableCanvas.m_scrollX = 0;
-            m_gametableCanvas.m_scrollY = 0;
+            m_gametableCanvas.getSharedMap().setScroll(0,0);
             m_gametableCanvas.getSharedMap().setPogs(new ArrayList());
             m_gametableCanvas.getSharedMap().setLines(new ArrayList());
 
@@ -1602,8 +1601,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             prefDos.writeUTF(m_defaultIP);
             prefDos.writeInt(m_defaultPort);
             prefDos.writeUTF(m_defaultPassword);
-            prefDos.writeInt(m_gametableCanvas.m_scrollX);
-            prefDos.writeInt(m_gametableCanvas.m_scrollY);
+            prefDos.writeInt(m_gametableCanvas.m_sharedMap.getScrollX());
+            prefDos.writeInt(m_gametableCanvas.m_sharedMap.getScrollY());
             prefDos.writeInt(m_gametableCanvas.m_zoom);
 
             prefDos.writeInt(m_windowSize.width);
@@ -1646,8 +1645,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_defaultIP = prefDis.readUTF();
             m_defaultPort = prefDis.readInt();
             m_defaultPassword = prefDis.readUTF();
-            m_gametableCanvas.m_scrollX = prefDis.readInt();
-            m_gametableCanvas.m_scrollY = prefDis.readInt();
+            m_gametableCanvas.getSharedMap().setScroll(prefDis.readInt(), prefDis.readInt());
             m_gametableCanvas.setZoom(prefDis.readInt());
 
             m_windowSize.width = prefDis.readInt();
