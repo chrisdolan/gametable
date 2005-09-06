@@ -18,7 +18,7 @@ import java.util.Vector;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
-import java.util.ArrayList;
+// import java.util.ArrayList;
 
 
 /**
@@ -563,17 +563,17 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         // tell the new guy the entire state of the game
         // lines
-        LineSegment[] lines = new LineSegment[m_gametableCanvas.getSharedMap().getLines().size()];
-        for (int i = 0; i < m_gametableCanvas.getSharedMap().getLines().size(); i++)
+        LineSegment[] lines = new LineSegment[m_gametableCanvas.getSharedMap().getNumLines()];
+        for (int i = 0; i < m_gametableCanvas.getSharedMap().getNumLines(); i++)
         {
-            lines[i] = (LineSegment)m_gametableCanvas.getSharedMap().getLines().get(i);
+            lines[i] = m_gametableCanvas.getSharedMap().getLineAt(i);
         }
         send(PacketManager.makeLinesPacket(lines), player);
 
         // pogs
-        for (int i = 0; i < m_gametableCanvas.getSharedMap().getPogs().size(); i++)
+        for (int i = 0; i < m_gametableCanvas.getSharedMap().getNumPogs(); i++)
         {
-            Pog pog = (Pog)m_gametableCanvas.getSharedMap().getPogs().get(i);
+            Pog pog = m_gametableCanvas.getSharedMap().getPogAt(i);
             send(PacketManager.makeAddPogPacket(pog), player);
         }
 
@@ -718,8 +718,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
             // reset game data
             m_gametableCanvas.getSharedMap().setScroll(0,0);
-            m_gametableCanvas.getSharedMap().setPogs(new ArrayList());
-            m_gametableCanvas.getSharedMap().setLines(new ArrayList());
+            m_gametableCanvas.getSharedMap().clearPogs();
+            m_gametableCanvas.getSharedMap().clearLines();
 
             // send the packet
             conn.sendPacket(PacketManager.makePlayerPacket(me, m_defaultPassword));
@@ -799,11 +799,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void eraseAllPogs()
     {
     	// make an int array of all the IDs
-    	int removeArray[] = new int[m_gametableCanvas.getSharedMap().getPogs().size()];
+    	int removeArray[] = new int[m_gametableCanvas.getSharedMap().getNumPogs()];
     	
-        for (int i = 0; i < m_gametableCanvas.getSharedMap().getPogs().size(); i++)
+        for (int i = 0; i < m_gametableCanvas.getSharedMap().getNumPogs(); i++)
         {
-            Pog pog = (Pog)m_gametableCanvas.getSharedMap().getPogs().get(i);
+            Pog pog = m_gametableCanvas.getSharedMap().getPogAt(i);
         	removeArray[i] = pog.m_ID;
         }
         
@@ -1701,19 +1701,19 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         try
         {
-            LineSegment[] lines = new LineSegment[m_gametableCanvas.getSharedMap().getLines().size()];
-            for (int i = 0; i < m_gametableCanvas.getSharedMap().getLines().size(); i++)
+            LineSegment[] lines = new LineSegment[m_gametableCanvas.getSharedMap().getNumLines()];
+            for (int i = 0; i < m_gametableCanvas.getSharedMap().getNumLines(); i++)
             {
-                lines[i] = (LineSegment)m_gametableCanvas.getSharedMap().getLines().get(i);
+                lines[i] = m_gametableCanvas.getSharedMap().getLineAt(i);
             }
             byte[] linesPacket = PacketManager.makeLinesPacket(lines);
             dos.writeInt(linesPacket.length);
             dos.write(linesPacket);
 
             // pogs
-            for (int i = 0; i < m_gametableCanvas.getSharedMap().getPogs().size(); i++)
+            for (int i = 0; i < m_gametableCanvas.getSharedMap().getNumPogs(); i++)
             {
-                Pog pog = (Pog)m_gametableCanvas.getSharedMap().getPogs().get(i);
+                Pog pog = m_gametableCanvas.getSharedMap().getPogAt(i);
                 byte[] pogsPacket = PacketManager.makeAddPogPacket(pog);
                 dos.writeInt(pogsPacket.length);
                 dos.write(pogsPacket);

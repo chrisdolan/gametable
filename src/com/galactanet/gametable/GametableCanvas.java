@@ -402,7 +402,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 // work backward through the pog vector, to get the
                 // one drawn last (topmost)
                 Point modelClick = viewToModel(m_clickX, m_clickY);
-                m_pogBeingDragged = getPogAt(modelClick);
+                m_pogBeingDragged = m_activeMap.getPogAt(modelClick);
                 System.out.println("m_pogBeingDragged: " + m_pogBeingDragged);
                 if (m_pogBeingDragged != null)
                 {
@@ -423,41 +423,6 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             m_clickX = m_dragX;
             m_clickY = m_dragY;
         }
-    }
-
-    /**
-     * @return The pog/underlay a the given model coordinates, or null.
-     */
-    public Pog getPogAt(Point modelPosition)
-    {
-        Pog pogHit = null;
-        Pog underlayHit = null;
-
-        for (int i = 0; i < m_activeMap.getPogs().size(); i++)
-        {
-            Pog pog = (Pog)m_activeMap.getPogs().get(i);
-
-            if (pog.modelPtInBounds(modelPosition.x, modelPosition.y))
-            {
-                // they clicked this pog
-                if (pog.isUnderlay())
-                {
-                    underlayHit = pog;
-                }
-                else
-                {
-                    pogHit = pog;
-                }
-            }
-        }
-
-        // pogs take priority over underlays
-        if (pogHit != null)
-        {
-            return pogHit;
-        }
-
-        return underlayHit;
     }
 
     public void mouseReleased(MouseEvent e)
@@ -571,9 +536,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public Pog getPogByID(int id)
     {
-        for (int i = 0; i < m_activeMap.getPogs().size(); i++)
+        for (int i = 0; i < m_activeMap.getNumPogs(); i++)
         {
-            Pog pog = (Pog)m_activeMap.getPogs().get(i);
+            Pog pog = m_activeMap.getPogAt(i);
             if (pog.m_ID == id)
             {
                 return pog;
@@ -675,8 +640,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         toMove.setPosition(newX, newY);
 
         // this pog moves to the end of the array
-        m_activeMap.getPogs().remove(toMove);
-        m_activeMap.getPogs().add(toMove);
+        m_activeMap.removePog(toMove);
+        m_activeMap.addPog(toMove);
 
         repaint();
     }
@@ -704,7 +669,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         Pog toRemove = getPogByID(id);
         if (toRemove != null)
         {
-            m_activeMap.getPogs().remove(toRemove);
+            m_activeMap.removePog(toRemove);
         }
 
         // if they were dragging that pog, stop it
@@ -729,7 +694,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void doAddPog(Pog toAdd)
     {
-        m_activeMap.getPogs().add(toAdd);
+        m_activeMap.addPog(toAdd);
         repaint();
     }
 
@@ -752,7 +717,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         {
             for (int i = 0; i < lines.length; i++)
             {
-                m_activeMap.getLines().add(lines[i]);
+                m_activeMap.addLine(lines[i]);
             }
         }
         repaint();
@@ -776,9 +741,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         Point modelEnd = new Point(r.x + r.width, r.y + r.height);
 
         ArrayList survivingLines = new ArrayList();
-        for (int i = 0; i < m_activeMap.getLines().size(); i++)
+        for (int i = 0; i < m_activeMap.getNumLines(); i++)
         {
-            LineSegment ls = (LineSegment)m_activeMap.getLines().get(i);
+            LineSegment ls = m_activeMap.getLineAt(i);
 
             if (!bColorSpecific || ls.m_color.getRGB() == color)
             {
@@ -804,7 +769,12 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
 
         // now we have just the survivors
-        m_activeMap.setLines(survivingLines);
+        // replace all the lines with this list
+        m_activeMap.clearLines();
+        for ( int i=0 ; i<survivingLines.size() ; i++ )
+        {
+        	m_activeMap.addLine((LineSegment)survivingLines.get(i));
+        }
         repaint();
     }
 
@@ -1383,9 +1353,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         drawMatte(g, m_activeMap.getScrollX(), m_activeMap.getScrollY(), getWidth(), getHeight());
 
         // draw all the underlays here
-        for (int i = 0; i < m_activeMap.getPogs().size(); i++)
+        for (int i = 0; i < m_activeMap.getNumPogs(); i++)
         {
-            Pog pog = (Pog)m_activeMap.getPogs().get(i);
+            Pog pog = m_activeMap.getPogAt(i);
             if (pog.isUnderlay())
             {
                 pog.drawToCanvas(g);
@@ -1415,9 +1385,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         drawLines(g, m_activeMap.getScrollX(), m_activeMap.getScrollY(), getWidth(), getHeight());
 
         // lines
-        for (int i = 0; i < m_activeMap.getLines().size(); i++)
+        for (int i = 0; i < m_activeMap.getNumLines(); i++)
         {
-            LineSegment ls = (LineSegment)m_activeMap.getLines().get(i);
+            LineSegment ls = m_activeMap.getLineAt(i);
 
             // LineSegments police themselves, performance wise. If they won't touch the current
             // viewport, they don't draw
@@ -1458,9 +1428,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
 
         // pogs
-        for (int i = 0; i < m_activeMap.getPogs().size(); i++)
+        for (int i = 0; i < m_activeMap.getNumPogs(); i++)
         {
-            Pog pog = (Pog)m_activeMap.getPogs().get(i);
+            Pog pog = m_activeMap.getPogAt(i);
             if (!pog.isUnderlay())
             {
                 pog.drawToCanvas(g);
@@ -1513,9 +1483,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 if (m_bShiftKeyDown)
                 {
                     // this shift key is down. Show all pog data
-                    for (int i = 0; i < m_activeMap.getPogs().size(); i++)
+                    for (int i = 0; i < m_activeMap.getNumPogs(); i++)
                     {
-                        Pog pog = (Pog)m_activeMap.getPogs().get(i);
+                        Pog pog = m_activeMap.getPogAt(i);
                         if (pog != mouseOverPog)
                         {
                             pog.drawDataStringToCanvas(g, false);
@@ -1534,9 +1504,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     public Pog getPogMouseOver()
     {
         Point modelMouse = viewToModel(m_currentMouseX, m_currentMouseY);
-        for (int i = m_activeMap.getPogs().size() - 1; i >= 0; i--)
+        for (int i = m_activeMap.getNumPogs() - 1; i >= 0; i--)
         {
-            Pog pog = (Pog)m_activeMap.getPogs().get(i);
+            Pog pog = m_activeMap.getPogAt(i);
             if (pog.modelPtInBounds(modelMouse.x, modelMouse.y))
             {
                 return pog;

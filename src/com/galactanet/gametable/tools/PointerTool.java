@@ -51,7 +51,7 @@ public class PointerTool extends AbstractTool implements Tool
     {
         m_mouseAnchor = new Point(x, y);
         m_mouseFloat = m_mouseAnchor;
-        m_grabbedPog = m_canvas.getPogAt(m_mouseAnchor);
+        m_grabbedPog = m_canvas.getActiveMap().getPogAt(m_mouseAnchor);
         m_grabOffset = new Point(m_mouseAnchor.x - m_grabbedPog.getX(), m_mouseAnchor.y - m_grabbedPog.getY());
     }
 

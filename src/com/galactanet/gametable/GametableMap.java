@@ -3,6 +3,7 @@
  */
 package com.galactanet.gametable;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,7 +12,7 @@ import java.util.List;
  * 
  * @author sephalon
  */
-class GametableMap
+public class GametableMap
 {
 	private GametableMap()
 	{
@@ -24,27 +25,92 @@ class GametableMap
 	{
 		m_bIsSharedMap = bIsSharedMap;
 	}
-	
-	public List getLines()
-	{
-		return m_lines;
-	}
 
-	public void setLines(List lines)
+	/******************* LINES MANAGEMENT**********************/
+	public int getNumLines()
 	{
-		m_lines = lines;
-	}
-
-	public List getPogs()
-	{
-		return m_pogs;
-	}
-
-	public void setPogs(List pogs)
-	{
-		m_pogs = pogs;
+		return m_lines.size();
 	}
 	
+	public LineSegment getLineAt(int idx)
+	{
+		return (LineSegment)m_lines.get(idx);
+	}
+	
+	public void addLine(LineSegment ls)
+	{
+		m_lines.add(ls);
+	}
+	
+	public void removeLine(LineSegment ls)
+	{
+		m_lines.remove(ls);
+	}
+	
+	public void clearLines()
+	{
+		m_lines = new ArrayList();
+	}
+
+	/******************* POGS MANAGEMENT**********************/
+	public int getNumPogs()
+	{
+		return m_pogs.size();
+	}
+	
+	public Pog getPogAt(int idx)
+	{
+		return (Pog)m_pogs.get(idx);
+	}
+
+	public void addPog(Pog pog)
+	{
+		m_pogs.add(pog);
+	}
+
+	public void removePog(Pog pog)
+	{
+		m_pogs.remove(pog);
+	}
+	
+	public void clearPogs()
+	{
+		m_pogs = new ArrayList();
+	}
+	
+    public Pog getPogAt(Point modelPosition)
+    {
+        Pog pogHit = null;
+        Pog underlayHit = null;
+
+        for (int i = 0; i < getNumPogs(); i++)
+        {
+            Pog pog = getPogAt(i);
+
+            if (pog.modelPtInBounds(modelPosition.x, modelPosition.y))
+            {
+                // they clicked this pog
+                if (pog.isUnderlay())
+                {
+                    underlayHit = pog;
+                }
+                else
+                {
+                    pogHit = pog;
+                }
+            }
+        }
+
+        // pogs take priority over underlays
+        if (pogHit != null)
+        {
+            return pogHit;
+        }
+
+        return underlayHit;
+    }	
+
+	/******************* SCROLL MANAGEMENT**********************/
 	public void setScroll(int x, int y)
 	{
 		m_scrollX = x;
