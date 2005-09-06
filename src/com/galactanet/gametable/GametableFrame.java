@@ -18,6 +18,7 @@ import java.util.Vector;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import java.util.ArrayList;
 
 
 /**
@@ -562,17 +563,17 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         // tell the new guy the entire state of the game
         // lines
-        LineSegment[] lines = new LineSegment[m_gametableCanvas.m_lines.size()];
-        for (int i = 0; i < m_gametableCanvas.m_lines.size(); i++)
+        LineSegment[] lines = new LineSegment[m_gametableCanvas.getSharedMap().getLines().size()];
+        for (int i = 0; i < m_gametableCanvas.getSharedMap().getLines().size(); i++)
         {
-            lines[i] = (LineSegment)m_gametableCanvas.m_lines.get(i);
+            lines[i] = (LineSegment)m_gametableCanvas.getSharedMap().getLines().get(i);
         }
         send(PacketManager.makeLinesPacket(lines), player);
 
         // pogs
-        for (int i = 0; i < m_gametableCanvas.m_pogs.size(); i++)
+        for (int i = 0; i < m_gametableCanvas.getSharedMap().getPogs().size(); i++)
         {
-            Pog pog = (Pog)m_gametableCanvas.m_pogs.get(i);
+            Pog pog = (Pog)m_gametableCanvas.getSharedMap().getPogs().get(i);
             send(PacketManager.makeAddPogPacket(pog), player);
         }
 
@@ -718,8 +719,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             // reset game data
             m_gametableCanvas.m_scrollX = 0;
             m_gametableCanvas.m_scrollY = 0;
-            m_gametableCanvas.m_pogs = new Vector();
-            m_gametableCanvas.m_lines = new Vector();
+            m_gametableCanvas.getSharedMap().setPogs(new ArrayList());
+            m_gametableCanvas.getSharedMap().setLines(new ArrayList());
 
             // send the packet
             conn.sendPacket(PacketManager.makePlayerPacket(me, m_defaultPassword));
@@ -799,11 +800,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void eraseAllPogs()
     {
     	// make an int array of all the IDs
-    	int removeArray[] = new int[m_gametableCanvas.m_pogs.size()];
+    	int removeArray[] = new int[m_gametableCanvas.getSharedMap().getPogs().size()];
     	
-        for (int i = 0; i < m_gametableCanvas.m_pogs.size(); i++)
+        for (int i = 0; i < m_gametableCanvas.getSharedMap().getPogs().size(); i++)
         {
-            Pog pog = (Pog)m_gametableCanvas.m_pogs.get(i);
+            Pog pog = (Pog)m_gametableCanvas.getSharedMap().getPogs().get(i);
         	removeArray[i] = pog.m_ID;
         }
         
@@ -1702,19 +1703,19 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         try
         {
-            LineSegment[] lines = new LineSegment[m_gametableCanvas.m_lines.size()];
-            for (int i = 0; i < m_gametableCanvas.m_lines.size(); i++)
+            LineSegment[] lines = new LineSegment[m_gametableCanvas.getSharedMap().getLines().size()];
+            for (int i = 0; i < m_gametableCanvas.getSharedMap().getLines().size(); i++)
             {
-                lines[i] = (LineSegment)m_gametableCanvas.m_lines.get(i);
+                lines[i] = (LineSegment)m_gametableCanvas.getSharedMap().getLines().get(i);
             }
             byte[] linesPacket = PacketManager.makeLinesPacket(lines);
             dos.writeInt(linesPacket.length);
             dos.write(linesPacket);
 
             // pogs
-            for (int i = 0; i < m_gametableCanvas.m_pogs.size(); i++)
+            for (int i = 0; i < m_gametableCanvas.getSharedMap().getPogs().size(); i++)
             {
-                Pog pog = (Pog)m_gametableCanvas.m_pogs.get(i);
+                Pog pog = (Pog)m_gametableCanvas.getSharedMap().getPogs().get(i);
                 byte[] pogsPacket = PacketManager.makeAddPogPacket(pog);
                 dos.writeInt(pogsPacket.length);
                 dos.write(pogsPacket);
