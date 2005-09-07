@@ -9,9 +9,7 @@ import java.awt.Graphics;
 import java.awt.Point;
 
 import com.galactanet.gametable.GametableCanvas;
-import com.galactanet.gametable.GametableMap;
 import com.galactanet.gametable.Pog;
-import com.galactanet.gametable.Tool;
 
 
 /**
@@ -19,15 +17,14 @@ import com.galactanet.gametable.Tool;
  * 
  * @author iffy
  */
-public class PointerTool extends NullTool implements Tool
+public class PointerTool extends NullTool
 {
     private GametableCanvas m_canvas;
     private Pog             m_grabbedPog;
     private Pog             m_ghostPog;
     private boolean         m_snapping;
     private Point           m_grabOffset;
-    private Point           m_mouseAnchor;
-    private Point           m_mouseFloat;
+    private Point           m_mousePosition;
 
 
 
@@ -47,8 +44,7 @@ public class PointerTool extends NullTool implements Tool
         m_grabbedPog = null;
         m_ghostPog = null;
         m_grabOffset = null;
-        m_mouseAnchor = null;
-        m_mouseFloat = null;
+        m_mousePosition = null;
     }
 
     /*
@@ -56,14 +52,12 @@ public class PointerTool extends NullTool implements Tool
      */
     public void mouseButtonPressed(int x, int y, int modifierMask)
     {
-        m_mouseAnchor = new Point(x, y);
-        m_mouseFloat = m_mouseAnchor;
-        GametableMap map = m_canvas.getActiveMap();
-        m_grabbedPog = map.getPogAt(m_mouseAnchor);
+        m_mousePosition = new Point(x, y);
+        m_grabbedPog = m_canvas.getActiveMap().getPogAt(m_mousePosition);
         if (m_grabbedPog != null)
         {
             m_ghostPog = new Pog(m_grabbedPog);
-            m_grabOffset = new Point(m_grabbedPog.getX() - m_mouseAnchor.x, m_grabbedPog.getY() - m_mouseAnchor.y);
+            m_grabOffset = new Point(m_grabbedPog.getX() - m_mousePosition.x, m_grabbedPog.getY() - m_mousePosition.y);
             setSnapping(modifierMask);
         }
     }
@@ -74,17 +68,17 @@ public class PointerTool extends NullTool implements Tool
     public void mouseMoved(int x, int y, int modifierMask)
     {
         setSnapping(modifierMask);
-        m_mouseFloat = new Point(x, y);
+        m_mousePosition = new Point(x, y);
         if (m_grabbedPog != null)
         {
             if (m_snapping)
             {
-                m_ghostPog.setPosition(m_mouseFloat.x + m_grabOffset.x, m_mouseFloat.y + m_grabOffset.y);
+                m_ghostPog.setPosition(m_mousePosition.x + m_grabOffset.x, m_mousePosition.y + m_grabOffset.y);
                 m_canvas.snapPogToGrid(m_ghostPog);
             }
             else
             {
-                m_ghostPog.setPosition(m_mouseFloat.x + m_grabOffset.x, m_mouseFloat.y + m_grabOffset.y);
+                m_ghostPog.setPosition(m_mousePosition.x + m_grabOffset.x, m_mousePosition.y + m_grabOffset.y);
             }
             m_canvas.repaint();
         }
@@ -95,11 +89,10 @@ public class PointerTool extends NullTool implements Tool
      */
     public void mouseButtonReleased(int x, int y, int modifierMask)
     {
-        mouseMoved(x, y, modifierMask);
         if (m_grabbedPog != null)
         {
             m_grabbedPog.setPosition(m_ghostPog.getPosition());
-            if (!m_canvas.isPointVisible(m_mouseFloat))
+            if (!m_canvas.isPointVisible(m_mousePosition))
             {
                 // they removed this pog
                 m_canvas.removePog(m_grabbedPog.m_ID);
@@ -112,8 +105,7 @@ public class PointerTool extends NullTool implements Tool
         m_grabbedPog = null;
         m_ghostPog = null;
         m_grabOffset = null;
-        m_mouseAnchor = null;
-        m_mouseFloat = null;
+        m_mousePosition = null;
     }
 
     /*
@@ -121,7 +113,7 @@ public class PointerTool extends NullTool implements Tool
      */
     public void paint(Graphics g)
     {
-        if (m_ghostPog != null && m_canvas.isPointVisible(m_mouseFloat))
+        if (m_ghostPog != null && m_canvas.isPointVisible(m_mousePosition))
         {
             m_ghostPog.drawGhostlyToCanvas(g);
         }

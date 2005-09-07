@@ -6,13 +6,15 @@
 package com.galactanet.gametable;
 
 import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.Point;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
  * TODO: comment
- *
+ * 
  * @author sephalon
  */
 public class PenAsset
@@ -21,7 +23,7 @@ public class PenAsset
     public final static int    MINIMUM_MOVE_DISTANCE = 1;
     public final static double WIGGLE_TOLERANCE      = 2.0;
 
-    Vector                     m_points              = new Vector();
+    List                       m_points              = new ArrayList();
     GametableCanvas            m_canvas;
     Color                      m_color;
 
@@ -29,6 +31,11 @@ public class PenAsset
 
     public PenAsset()
     {
+    }
+
+    public PenAsset(Color color)
+    {
+        init(color);
     }
 
     public void init(Color color)
@@ -48,7 +55,7 @@ public class PenAsset
         if (m_points.size() > 0)
         {
             // only add it if it's a reasonable distance from the last one.
-            Point lastPoint = (Point)m_points.elementAt(m_points.size() - 1);
+            Point lastPoint = (Point)m_points.get(m_points.size() - 1);
 
             int dx = lastPoint.x - modelX;
             int dy = lastPoint.y - modelY;
@@ -74,39 +81,52 @@ public class PenAsset
         LineSegment[] ret = new LineSegment[m_points.size() - 1];
         for (int i = 0; i < m_points.size() - 1; i++)
         {
-            ret[i] = new LineSegment();
-            Point start = (Point)m_points.elementAt(i);
-            Point end = (Point)m_points.elementAt(i + 1);
-            ret[i].init(start, end, m_color);
+            Point start = (Point)m_points.get(i);
+            Point end = (Point)m_points.get(i + 1);
+            ret[i] = new LineSegment(start, end, m_color);
         }
 
         return ret;
     }
+    
+    public void draw(Graphics g, GametableCanvas canvas)
+    {
+        LineSegment[] lines = getLineSegments();
+        if (lines != null)
+        {
+            for (int i = 0; i < lines.length; i++)
+            {
+                lines[i].draw(g, canvas);
+            }
+        }
+    }
 
+    /**
+     * Cull out unneeded points.
+     */
     public void smooth()
     {
-        // System.out.println("before Smooth: "+m_points.size());
-        // cull out unneeded points
+        // We can't reduce to less than 2 points.
         if (m_points.size() < 2)
         {
             return;
         }
 
-        Vector newPoints = new Vector();
-        newPoints.add(m_points.elementAt(0)); // no matter what, the first point will have to be
-        // in there
-        int currentIdx = 0;
+        List newPoints = new ArrayList(m_points.size());
 
-        while (currentIdx < m_points.size() - 1) // keep going till we hit the end point
+        // no matter what, the first point will have to be in there
+        newPoints.add(m_points.get(0));
+
+        int currentIdx = 0;
+        int maxIdx = m_points.size() - 1;
+        while (currentIdx < maxIdx)
         {
             currentIdx = getNextUsefulPoint(currentIdx);
-            newPoints.add(m_points.elementAt(currentIdx)); // no matter what, the first point will
-            // have to be in there
+            newPoints.add(m_points.get(currentIdx));
         }
 
         // we're done.
         m_points = newPoints;
-        // System.out.println("after Smooth: "+m_points.size());
     }
 
     protected int getNextUsefulPoint(int startIdx)
@@ -152,11 +172,11 @@ public class PenAsset
 
     protected boolean pointsOutsideDirectLine(int startIdx, int endIdx)
     {
-        Point checkStart = (Point)m_points.elementAt(startIdx);
-        Point checkEnd = (Point)m_points.elementAt(endIdx);
+        Point checkStart = (Point)m_points.get(startIdx);
+        Point checkEnd = (Point)m_points.get(endIdx);
         for (int i = startIdx + 1; i < endIdx; i++)
         {
-            Point checkMiddle = (Point)m_points.elementAt(i);
+            Point checkMiddle = (Point)m_points.get(i);
             double dist = distanceToLine(checkStart, checkEnd, checkMiddle);
             if (dist > WIGGLE_TOLERANCE)
             {
@@ -169,7 +189,7 @@ public class PenAsset
         return false;
     }
 
-    double distanceToLine(Point lineStart, Point lineEnd, Point point)
+    private double distanceToLine(Point lineStart, Point lineEnd, Point point)
     {
         // zero everything. put lineStart at the origin
         Point vectorB = new Point();

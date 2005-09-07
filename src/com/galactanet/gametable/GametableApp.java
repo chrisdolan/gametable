@@ -7,6 +7,7 @@ package com.galactanet.gametable;
 
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.util.Properties;
 
 import javax.swing.UIManager;
 
@@ -71,6 +72,10 @@ public class GametableApp
      */
     static public void main(String[] args)
     {
+        Properties props = new Properties(System.getProperties());
+        props.setProperty("sun.java2d.opengl", "true");
+        System.setProperties(props);
+
         Log.initializeLog(Log.SYS, SYS_LOG_FILE);
         Log.initializeLog(Log.NET, NET_LOG_FILE);
         Log.log(Log.SYS, VERSION);

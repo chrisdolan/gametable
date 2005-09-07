@@ -10,7 +10,8 @@ import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.event.*;
 import java.io.File;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JButton;
 
@@ -23,19 +24,44 @@ import javax.swing.JButton;
 public class PogsPanel extends JButton implements MouseListener, MouseMotionListener, MouseWheelListener,
     ComponentListener
 {
-    public final static int MAX_FACE  = 5;
+    public final static int MAX_FACE    = 5;
 
-    public final static int GUTTER_X  = 8;
-    public final static int GUTTER_Y  = 8;
-    public final static int SPACING_X = 4;
-    public final static int SPACING_Y = 4;
+    public final static int GUTTER_X    = 8;
+    public final static int GUTTER_Y    = 8;
+    public final static int SPACING_X   = 4;
+    public final static int SPACING_Y   = 4;
+
+    List                    m_pogs      = new ArrayList();
+    List                    m_underlays = new ArrayList();
+    GametableCanvas         m_canvas;
+
+    boolean                 m_bIsHandMode;
+    boolean                 m_bLDragging;
+    boolean                 m_bRDragging;
+
+    // scrolling and whatnot
+    int                     m_scrollY;
+    int                     m_height;
+
+    int                     m_clickX;
+    int                     m_clickY;
+    int                     m_prevScrollY;
+    int                     m_dragX;
+    int                     m_dragY;
+
+    // pog drag
+    Pog                     m_selectedPog;
+    int                     m_pogDragMouseInsetX;
+    int                     m_pogDragMouseInsetY;
+
+    boolean                 m_bIsPogsMode;
 
 
 
     public void reaquirePogs()
     {
-        m_pogs = new Vector();
-        m_underlays = new Vector();
+        m_pogs = new ArrayList();
+        m_underlays = new ArrayList();
         m_scrollY = 0;
         init(m_canvas, m_bIsPogsMode);
         repaint();
@@ -121,7 +147,7 @@ public class PogsPanel extends JButton implements MouseListener, MouseMotionList
         addKeyListener(m_canvas);
     }
 
-    public Vector getPogs()
+    public List getPogs()
     {
         if (m_bIsPogsMode)
         {
@@ -160,17 +186,17 @@ public class PogsPanel extends JButton implements MouseListener, MouseMotionList
         m_underlays.add(toAdd);
     }
 
-    public Vector sort(Vector toSort)
+    public List sort(List toSort)
     {
         // sort the pogs by height
-        Vector heightSortedPogs = new Vector();
+        List heightSortedPogs = new ArrayList();
         while (toSort.size() > 0)
         {
             // find the smallet height pog
             Pog smallestPog = null;
             for (int i = 0; i < toSort.size(); i++)
             {
-                Pog pog = (Pog)toSort.elementAt(i);
+                Pog pog = (Pog)toSort.get(i);
                 if (smallestPog == null)
                 {
                     smallestPog = pog;
@@ -207,11 +233,11 @@ public class PogsPanel extends JButton implements MouseListener, MouseMotionList
 
         for (int i = 0; i < getPogs().size(); i++)
         {
-            Pog toDraw = (Pog)getPogs().elementAt(i);
+            Pog toDraw = (Pog)getPogs().get(i);
             Pog nextToDraw = null;
             if (i < getPogs().size() - 1)
             {
-                nextToDraw = (Pog)getPogs().elementAt(i + 1);
+                nextToDraw = (Pog)getPogs().get(i + 1);
             }
 
             // draw the pog
@@ -332,7 +358,7 @@ public class PogsPanel extends JButton implements MouseListener, MouseMotionList
             m_selectedPog = null;
             for (int j = 0; j < getPogs().size(); j++)
             {
-                Pog check = (Pog)getPogs().elementAt(j);
+                Pog check = (Pog)getPogs().get(j);
                 if (check.modelPtInBounds(modelX, modelY))
                 {
                     // that's where they clicked
@@ -395,7 +421,7 @@ public class PogsPanel extends JButton implements MouseListener, MouseMotionList
         {
             for (int j = 0; j < getPogs().size(); j++)
             {
-                Pog pog = (Pog)getPogs().elementAt(j);
+                Pog pog = (Pog)getPogs().get(j);
 
                 int distAbove = m_scrollY - pog.getY();
                 if (distAbove > 0)
@@ -460,31 +486,4 @@ public class PogsPanel extends JButton implements MouseListener, MouseMotionList
     {
         return m_bIsHandMode;
     }
-
-
-
-    Vector          m_pogs      = new Vector();
-    Vector          m_underlays = new Vector();
-    GametableCanvas m_canvas;
-
-    boolean         m_bIsHandMode;
-    boolean         m_bLDragging;
-    boolean         m_bRDragging;
-
-    // scrolling and whatnot
-    int             m_scrollY;
-    int             m_height;
-
-    int             m_clickX;
-    int             m_clickY;
-    int             m_prevScrollY;
-    int             m_dragX;
-    int             m_dragY;
-
-    // pog drag
-    Pog             m_selectedPog;
-    int             m_pogDragMouseInsetX;
-    int             m_pogDragMouseInsetY;
-
-    boolean         m_bIsPogsMode;
 }

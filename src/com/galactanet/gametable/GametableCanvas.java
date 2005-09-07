@@ -8,12 +8,14 @@ package com.galactanet.gametable;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 
 import com.galactanet.gametable.tools.NullTool;
-import com.galactanet.gametable.tools.PointerTool;
+import com.galactanet.gametable.tools.PenTool;
 
 
 /**
@@ -64,7 +66,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     Cursor                       m_eraserCursor;
     Image[]                      m_pointCursorImages   = new Image[NUM_POINT_CURSORS];
 
-    // the buttongroup in use
+    // the frame
     private GametableFrame       m_gametableFrame;
 
     // zoom and top-left state
@@ -158,7 +160,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
         addMouseWheelListener(this);
         setZoom(0);
-        setActiveTool(new PointerTool());
+        setActiveTool(new PenTool());
     }
 
     public int getModifierFlags()
@@ -538,8 +540,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 case TOOL_MODE_LINE:
                 {
                     // easy. They made a line. We add it to the lines vector
-                    LineSegment ls = new LineSegment();
-                    ls.init(modelStart, modelEnd, m_gametableFrame.m_drawColor);
+                    LineSegment ls = new LineSegment(modelStart, modelEnd, m_gametableFrame.m_drawColor);
                     LineSegment[] lines = new LineSegment[1];
                     lines[0] = ls;
                     addLineSegments(lines);
@@ -843,7 +844,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         {
             LineSegment ls = m_activeMap.getLineAt(i);
 
-            if (!bColorSpecific || ls.m_color.getRGB() == color)
+            if (!bColorSpecific || ls.getColor().getRGB() == color)
             {
                 // we are the color being erased, or we're in erase all
                 // mode
@@ -1414,6 +1415,33 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void paint(Graphics g)
     {
+        if (false)
+        {
+            final Map HINTS = new HashMap();
+            HINTS.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+            HINTS.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            HINTS.put(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
+            HINTS.put(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+            HINTS.put(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+            HINTS.put(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            HINTS.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            HINTS.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
+            HINTS.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            ((Graphics2D)g).addRenderingHints(HINTS);
+        } else {
+            final Map HINTS = new HashMap();
+            HINTS.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
+            HINTS.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+            HINTS.put(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
+            HINTS.put(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+            HINTS.put(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+            HINTS.put(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+            HINTS.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+            HINTS.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            HINTS.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+            ((Graphics2D)g).addRenderingHints(HINTS);
+        }
+
         g.setColor(Color.WHITE);
         g.fillRect(0, 0, getWidth(), getHeight());
         g.translate(-m_activeMap.getScrollX(), -m_activeMap.getScrollY());
@@ -1529,7 +1557,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         // draw the cursor overlays
         for (int i = 0; i < m_gametableFrame.m_players.size(); i++)
         {
-            Player plr = (Player)m_gametableFrame.m_players.elementAt(i);
+            Player plr = (Player)m_gametableFrame.m_players.get(i);
             if (plr.isPointing())
             {
                 // draw this player's point cursor

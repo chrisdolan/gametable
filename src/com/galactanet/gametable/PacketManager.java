@@ -7,12 +7,13 @@ package com.galactanet.gametable;
 
 import java.awt.Rectangle;
 import java.io.*;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
  * TODO: comment
- *
+ * 
  * @author sephalon
  */
 public class PacketManager
@@ -44,7 +45,7 @@ public class PacketManager
     public static final int PACKET_ADDPOG     = 5;
 
     // Pog removed
-    public static final int PACKET_REMOVEPOGS  = 6;
+    public static final int PACKET_REMOVEPOGS = 6;
 
     // Pog moved
     public static final int PACKET_MOVEPOG    = 7;
@@ -62,7 +63,7 @@ public class PacketManager
     public static final int PACKET_REJECT     = 11;
 
     // png data transfer
-    public static final int PACKET_FILE        = 12;
+    public static final int PACKET_FILE       = 12;
 
     // request for a png
     public static final int PACKET_PNGREQUEST = 13;
@@ -70,7 +71,7 @@ public class PacketManager
     /**
      * Holding ground for POGs with no images yet.
      */
-    public static Vector    g_imagelessPogs   = new Vector();
+    public static List      g_imagelessPogs   = new ArrayList();
 
 
 
@@ -233,7 +234,7 @@ public class PacketManager
             dos.writeInt(gtFrame.m_players.size());
             for (int i = 0; i < gtFrame.m_players.size(); i++)
             {
-                Player plr = (Player)gtFrame.m_players.elementAt(i);
+                Player plr = (Player)gtFrame.m_players.get(i);
                 dos.writeUTF(plr.getCharacterName());
                 dos.writeUTF(plr.getPlayerName());
                 dos.writeBoolean(plr.isHostPlayer());
@@ -396,19 +397,15 @@ public class PacketManager
 
     public static void readLinesPacket(DataInputStream dis)
     {
-
         try
         {
             int numLines = dis.readInt();
             LineSegment[] lines = new LineSegment[numLines];
             for (int i = 0; i < numLines; i++)
             {
-                lines[i] = new LineSegment();
+                lines[i] = new LineSegment(dis);
             }
-            for (int i = 0; i < numLines; i++)
-            {
-                lines[i].initFromPacket(dis);
-            }
+
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
             gtFrame.linesPacketReceived(lines);
@@ -527,7 +524,7 @@ public class PacketManager
         // Hence the "g_imagelessPogs.size()-1" in the loop condition.)
         for (int i = 0; i < g_imagelessPogs.size() - 1; i++)
         {
-            Pog aPog = (Pog)g_imagelessPogs.elementAt(i);
+            Pog aPog = (Pog)g_imagelessPogs.get(i);
             if (desiredFile.equals(aPog.m_fileName))
             {
                 // we already have a request pending for this file.
@@ -558,11 +555,11 @@ public class PacketManager
 
             // the number of pogs to be removed is first
             dos.writeInt(ids.length);
-            
+
             // then the IDs of the pogs.
-            for ( int i=0 ; i<ids.length ; i++ )
+            for (int i = 0; i < ids.length; i++)
             {
-            	dos.writeInt(ids[i]);
+                dos.writeInt(ids[i]);
             }
 
             return baos.toByteArray();
@@ -579,13 +576,13 @@ public class PacketManager
 
         try
         {
-        	// the number of pogs to be removed is first
+            // the number of pogs to be removed is first
             int ids[] = new int[dis.readInt()];
-            
+
             // then the IDs of the pogs.
-            for ( int i=0 ; i<ids.length ; i++ )
+            for (int i = 0; i < ids.length; i++)
             {
-            	ids[i] = dis.readInt();
+                ids[i] = dis.readInt();
             }
 
             // tell the model
@@ -796,33 +793,33 @@ public class PacketManager
             Log.log(Log.SYS, ex);
         }
     }
-    
-    /************************* FILE PACKET ************************************/
+
+    /** *********************** FILE PACKET *********************************** */
     public static void readFilePacket(DataInputStream dis)
     {
-    	// get the mime type of the file
-    	try
-		{
-    		// get the mime type
-    		String mimeType = dis.readUTF();
+        // get the mime type of the file
+        try
+        {
+            // get the mime type
+            String mimeType = dis.readUTF();
 
-    		if ( mimeType.equals("image/png") )
-    		{
-    			// this is a png file
-    			readPngPacket(dis);
-    		}
-    		else if ( mimeType.equals("application/x-gametable-grm") )
-    		{
-    			// this is a png file
-    			readGrmPacket(dis);
-    		}
-		}
+            if (mimeType.equals("image/png"))
+            {
+                // this is a png file
+                readPngPacket(dis);
+            }
+            else if (mimeType.equals("application/x-gametable-grm"))
+            {
+                // this is a png file
+                readGrmPacket(dis);
+            }
+        }
         catch (IOException ex)
         {
             Log.log(Log.SYS, ex);
         }
     }
-    
+
     /** *********************** PNG PACKET *********************************** */
     public static byte[] makePngPacket(String filename)
     {
@@ -833,7 +830,7 @@ public class PacketManager
 
             // write the packet type
             dos.writeInt(PACKET_FILE);
-            
+
             // write the mime type
             dos.writeUTF("image/png");
 
@@ -913,7 +910,7 @@ public class PacketManager
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
             for (int i = 0; i < g_imagelessPogs.size(); i++)
             {
-                Pog pog = (Pog)g_imagelessPogs.elementAt(i);
+                Pog pog = (Pog)g_imagelessPogs.get(i);
                 if (pog.m_fileName.equals(filename))
                 {
                     pog.reaquireImages();
@@ -936,34 +933,34 @@ public class PacketManager
     /** *********************** GRM PACKET *********************************** */
     public static byte[] makeGrmPacket(byte[] grmData)
     {
-    	// grmData will be the contents of the file
-    	try
-		{
+        // grmData will be the contents of the file
+        try
+        {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(baos);
 
             // write the packet type
             dos.writeInt(PACKET_FILE);
-            
+
             // write the mime type
             dos.writeUTF("application/x-gametable-grm");
-            
+
             // now write the data length
             dos.writeInt(grmData.length);
 
             // and finally, the data itself
-            Log.log(Log.SYS, "Sent:"+grmData.length);
+            Log.log(Log.SYS, "Sent:" + grmData.length);
             dos.write(grmData);
 
             return baos.toByteArray();
-		}
+        }
         catch (IOException ex)
         {
             Log.log(Log.SYS, ex);
             return null;
         }
     }
-    
+
     public static void readGrmPacket(DataInputStream dis)
     {
         try
@@ -974,7 +971,7 @@ public class PacketManager
             // the file itself
             byte[] grmFile = new byte[len];
             dis.read(grmFile);
-            
+
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
             gtFrame.grmPacketReceived(grmFile);

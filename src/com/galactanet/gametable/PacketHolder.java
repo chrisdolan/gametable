@@ -5,27 +5,53 @@
 
 package com.galactanet.gametable;
 
-import java.util.Vector;
+import java.util.LinkedList;
+import java.util.List;
 
 import javax.swing.SwingUtilities;
 
 
 /**
  * TODO: comment
- *
+ * 
  * @author sephalon
  */
 public class PacketHolder
 {
+    /**
+     * An object to hold packet information in a queue.
+     * 
+     * @author iffy
+     */
+    private static class PacketEntry
+    {
+        public byte[]     m_packet;
+        public Connection m_connection;
+        public int        m_operation;
+
+
+
+        /**
+         * Constructor.
+         */
+        public PacketEntry(byte[] packet, Connection conn, int operation)
+        {
+            m_packet = packet;
+            m_connection = conn;
+            m_operation = operation;
+        }
+
+    }
+
+
+
     public final static int    OPERATION_PACKET = 0;
     public final static int    OPERATION_JOIN   = 1;
     public final static int    OPERATION_DROP   = 2;
 
     public static final Object SYNCH            = new Object();
 
-    private static Vector      m_packets        = new Vector();
-    private static Vector      m_connections    = new Vector();
-    private static Vector      m_operations     = new Vector();
+    private static List        m_entries        = new LinkedList();
 
 
 
@@ -33,9 +59,7 @@ public class PacketHolder
     {
         synchronized (SYNCH)
         {
-            m_packets.add(packet);
-            m_connections.add(conn);
-            m_operations.add(new Integer(operation));
+            m_entries.add(new PacketEntry(packet, conn, operation));
             SYNCH.notifyAll();
         }
     }
@@ -49,32 +73,26 @@ public class PacketHolder
                 return;
             }
 
-            Integer op = (Integer)m_operations.elementAt(0);
-            byte[] packet = (byte[])m_packets.elementAt(0);
-            Connection conn = (Connection)m_connections.elementAt(0);
+            PacketEntry entry = (PacketEntry)m_entries.get(0);
+            m_entries.remove(0);
 
-            // No more infinite loopings on exceptions
-            m_packets.remove(0);
-            m_connections.remove(0);
-            m_operations.remove(0);
-
-            switch (op.intValue())
+            switch (entry.m_operation)
             {
                 case OPERATION_JOIN:
                 {
-                    GametableFrame.getGametableFrame().newConnection(conn);
+                    GametableFrame.getGametableFrame().newConnection(entry.m_connection);
                 }
                     break;
 
                 case OPERATION_PACKET:
                 {
-                    GametableFrame.getGametableFrame().packetReceived(conn, packet);
+                    GametableFrame.getGametableFrame().packetReceived(entry.m_connection, entry.m_packet);
                 }
                     break;
 
                 case OPERATION_DROP:
                 {
-                    GametableFrame.getGametableFrame().connectionDropped(conn);
+                    GametableFrame.getGametableFrame().connectionDropped(entry.m_connection);
                 }
                     break;
             }
@@ -85,19 +103,13 @@ public class PacketHolder
     {
         synchronized (SYNCH)
         {
-            m_packets = new Vector();
-            m_connections = new Vector();
-            m_operations = new Vector();
+            m_entries.clear();
         }
     }
 
     public static boolean hasPackets()
     {
-        if (m_packets.size() > 0)
-        {
-            return true;
-        }
-        return false;
+        return (m_entries.size() > 0);
     }
 
     public static void poll()
