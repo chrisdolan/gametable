@@ -5,9 +5,7 @@
 
 package com.galactanet.gametable.tools;
 
-import java.awt.AlphaComposite;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Point;
 
 import com.galactanet.gametable.GametableCanvas;
