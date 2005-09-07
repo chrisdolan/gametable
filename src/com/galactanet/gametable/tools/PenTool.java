@@ -27,7 +27,7 @@ public class PenTool extends NullTool
 
 
     /**
-     * 
+     * Default Constructor.
      */
     public PenTool()
     {

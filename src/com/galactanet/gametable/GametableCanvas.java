@@ -14,8 +14,8 @@ import java.util.Map;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 
+import com.galactanet.gametable.tools.EraseTool;
 import com.galactanet.gametable.tools.NullTool;
-import com.galactanet.gametable.tools.PenTool;
 
 
 /**
@@ -160,7 +160,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
         addMouseWheelListener(this);
         setZoom(0);
-        setActiveTool(new PenTool());
+        setActiveTool(new EraseTool());
     }
 
     public int getModifierFlags()
