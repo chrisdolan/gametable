@@ -121,7 +121,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     Pog                          m_pogMouseOver;
 
     private Tool                 m_activeTool          = new NullTool();
-    private static final boolean NEW_TOOL              = false;
+    private static final boolean NEW_TOOL              = true;
 
 
 

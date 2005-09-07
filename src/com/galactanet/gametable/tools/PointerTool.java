@@ -125,10 +125,7 @@ public class PointerTool extends NullTool implements Tool
     {
         if (m_ghostPog != null && m_canvas.isPointVisible(m_mouseFloat))
         {
-            Graphics2D g2 = (Graphics2D)g.create();
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-            m_ghostPog.drawToCanvas(g2);
-            g2.dispose();
+            m_ghostPog.drawGhostlyToCanvas(g);
         }
     }
     

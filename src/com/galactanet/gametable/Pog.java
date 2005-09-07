@@ -298,6 +298,14 @@ public class Pog
         g.drawImage(toDraw, x, y, observer);
     }
 
+    public void drawGhostlyToCanvas(Graphics g)
+    {
+        Graphics2D g2 = (Graphics2D)g.create();
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+        drawToCanvas(g2);
+        g2.dispose();
+    }
+    
     public void drawToCanvas(Graphics g)
     {
         // convert our model coordinates to draw coordinates
