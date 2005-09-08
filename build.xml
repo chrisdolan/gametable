@@ -46,6 +46,7 @@
         <copy todir="${assets.dest}">
             <fileset dir="${assets.src}">
                 <include name="**/*.png" />
+                <include name="**/*.properties" />
             </fileset>
         </copy>
     </target>
