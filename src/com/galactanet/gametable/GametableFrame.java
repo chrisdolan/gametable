@@ -30,6 +30,29 @@ import javax.swing.*;
 public class GametableFrame extends JFrame implements ComponentListener, DropTargetListener, DragGestureListener,
     PropertyChangeListener, ActionListener, KeyListener
 {
+    class ToolButtonActionListener implements ActionListener
+    {
+        int m_id;
+
+
+
+        ToolButtonActionListener(int id)
+        {
+            m_id = id;
+        }
+
+        /*
+         * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+         */
+        public void actionPerformed(ActionEvent e)
+        {
+            m_gametableCanvas.setActiveTool(m_id);
+            m_gametableCanvas.requestFocus();
+        }
+    }
+
+
+
     JPanel                        contentPane;
     JMenuBar                      jMenuBar1                  = new JMenuBar();
     JMenu                         jMenuFile                  = new JMenu();
@@ -142,21 +165,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         new Integer(Color.GREEN.getRGB()), new Integer(Color.ORANGE.getRGB()), new Integer(Color.WHITE.getRGB()),
                                                              };
 
-    public File                   m_actingFile;                                             // the
+    // The current file path used by save and open.
+    // NULL if unset.
+    public File                   m_actingFile;
+
+    private ToolManager           m_toolManager              = new ToolManager();
 
 
-
-    // current
-    // file
-    // path
-    // used
-    // by
-    // save
-    // and
-    // open.
-    // NULL
-    // if
-    // unset
 
     /**
      * Construct the frame
@@ -1109,11 +1124,38 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_mapMenu.add(m_clearPogs);
         m_mapMenu.add(m_recenter);
         jToolBar1.add(m_colorCombo, null);
-        jToolBar1.add(m_arrowButton, null);
-        jToolBar1.add(m_penButton, null);
-        jToolBar1.add(m_lineButton, null);
-        jToolBar1.add(m_colorEraserButton, null);
-        jToolBar1.add(m_eraserButton, null);
+        if (!GametableCanvas.NEW_TOOL)
+        {
+            jToolBar1.add(m_arrowButton, null);
+            jToolBar1.add(m_penButton, null);
+            jToolBar1.add(m_lineButton, null);
+            jToolBar1.add(m_colorEraserButton, null);
+            jToolBar1.add(m_eraserButton, null);
+        }
+        else
+        {
+            m_toolManager.initialize();
+            int buttonSize = m_toolManager.getMaxIconSize();
+            int numTools = m_toolManager.getNumTools();
+            for (int toolId = 0; toolId < numTools; toolId++)
+            {
+                ToolManager.Info info = m_toolManager.getToolInfo(toolId);
+                Image im = UtilityFunctions.createDrawableImage(buttonSize, buttonSize);
+                {
+                    Graphics g = im.getGraphics();
+                    Image icon = info.getIcon();
+                    int offsetX = (buttonSize - icon.getWidth(null)) / 2;
+                    int offsetY = (buttonSize - icon.getHeight(null)) / 2;
+                    g.drawImage(info.getIcon(), offsetX, offsetY, null);
+                    g.dispose();
+                }
+
+                JButton button = new JButton(new ImageIcon(im));
+                jToolBar1.add(button);
+                button.addActionListener(new ToolButtonActionListener(toolId));
+                m_toolButtonGroup.add(button);
+            }
+        }
         jMenuFile.add(jMenuOpen);
         jMenuFile.add(jMenuSave);
         jMenuFile.add(jMenuSaveAs);
@@ -1157,11 +1199,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         m_textLog.setEditable(false);
         m_gametableCanvas.requestFocus();
-        m_toolButtonGroup.add(m_arrowButton);
-        m_toolButtonGroup.add(m_penButton);
-        m_toolButtonGroup.add(m_eraserButton);
-        m_toolButtonGroup.add(m_colorEraserButton);
-        m_toolButtonGroup.add(m_lineButton);
         m_netMenu.add(m_host);
         m_netMenu.add(m_join);
         m_netMenu.add(m_disconnect);
@@ -1169,25 +1206,34 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         jMenu1.add(m_removeDiceMacro);
 
         // icons for the tool buttons
-        Image img = UtilityFunctions.getImage("assets/arrowIcon.png");
-        Icon anIcon = new ImageIcon(img);
-        m_arrowButton.setIcon(anIcon);
+        if (!GametableCanvas.NEW_TOOL)
+        {
+            m_toolButtonGroup.add(m_arrowButton);
+            m_toolButtonGroup.add(m_penButton);
+            m_toolButtonGroup.add(m_eraserButton);
+            m_toolButtonGroup.add(m_colorEraserButton);
+            m_toolButtonGroup.add(m_lineButton);
 
-        img = UtilityFunctions.getImage("assets/lineIcon.png");
-        anIcon = new ImageIcon(img);
-        m_lineButton.setIcon(anIcon);
+            Image img = UtilityFunctions.getImage("assets/arrow.png");
+            Icon anIcon = new ImageIcon(img);
+            m_arrowButton.setIcon(anIcon);
 
-        img = UtilityFunctions.getImage("assets/penIcon.png");
-        anIcon = new ImageIcon(img);
-        m_penButton.setIcon(anIcon);
+            img = UtilityFunctions.getImage("assets/line.png");
+            anIcon = new ImageIcon(img);
+            m_lineButton.setIcon(anIcon);
 
-        img = UtilityFunctions.getImage("assets/eraserIcon.png");
-        anIcon = new ImageIcon(img);
-        m_eraserButton.setIcon(anIcon);
+            img = UtilityFunctions.getImage("assets/pen.png");
+            anIcon = new ImageIcon(img);
+            m_penButton.setIcon(anIcon);
 
-        img = UtilityFunctions.getImage("assets/colorEraserIcon.png");
-        anIcon = new ImageIcon(img);
-        m_colorEraserButton.setIcon(anIcon);
+            img = UtilityFunctions.getImage("assets/eraser.png");
+            anIcon = new ImageIcon(img);
+            m_eraserButton.setIcon(anIcon);
+
+            img = UtilityFunctions.getImage("assets/redEraser.png");
+            anIcon = new ImageIcon(img);
+            m_colorEraserButton.setIcon(anIcon);
+        }
 
         addMacroButton("d20", "d20");
 
@@ -1219,13 +1265,18 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_bDisregardDividerChanges = false;
             m_gametableCanvas.requestFocus();
             m_arrowButton.setSelected(true);
-            
+
             repaint();
         }
         else
         {
         }
         super.paint(g);
+    }
+
+    public ToolManager getToolManager()
+    {
+        return m_toolManager;
     }
 
     public void addPlayer(Object player)

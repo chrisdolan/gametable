@@ -5,7 +5,6 @@
 
 package com.galactanet.gametable.tools;
 
-import java.awt.Component;
 import java.awt.Graphics;
 
 import com.galactanet.gametable.GametableCanvas;
@@ -67,13 +66,6 @@ public class NullTool implements Tool
      * @see com.galactanet.gametable.Tool#paint(java.awt.Graphics)
      */
     public void paint(Graphics g)
-    {
-    }
-
-    /*
-     * @see com.galactanet.gametable.Tool#setCursor
-     */
-    public void setCursor(Component setCursorFor)
     {
     }
 }

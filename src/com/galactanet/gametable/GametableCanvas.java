@@ -14,7 +14,7 @@ import java.util.Map;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 
-import com.galactanet.gametable.tools.*;
+import com.galactanet.gametable.tools.NullTool;
 
 
 /**
@@ -25,104 +25,105 @@ import com.galactanet.gametable.tools.*;
 public class GametableCanvas extends JButton implements MouseListener, MouseMotionListener, KeyListener,
     ComponentListener, ItemSelectable, MouseWheelListener
 {
-    public final static int      VALUE_X               = 0;
-    public final static int      VALUE_Y               = 1;
+    public final static int     VALUE_X               = 0;
+    public final static int     VALUE_Y               = 1;
 
-    public final static int      SNAP_DISTANCE         = 8;
+    public final static int     SNAP_DISTANCE         = 8;
 
     // drag modes
-    public final static int      TOOL_MODE_ARROW       = 0;
-    public final static int      TOOL_MODE_POINT       = 1;
-    public final static int      TOOL_MODE_PEN         = 2;
-    public final static int      TOOL_MODE_HAND        = 3;
-    public final static int      TOOL_MODE_ERASER      = 4;
-    public final static int      TOOL_MODE_LINE        = 5;
+    public final static int     TOOL_MODE_ARROW       = 0;
+    public final static int     TOOL_MODE_POINT       = 1;
+    public final static int     TOOL_MODE_PEN         = 2;
+    public final static int     TOOL_MODE_HAND        = 3;
+    public final static int     TOOL_MODE_ERASER      = 4;
+    public final static int     TOOL_MODE_LINE        = 5;
 
-    public final static int      NUM_POINT_CURSORS     = 8;
-    public final static int      POINT_CURSOR_OFFSET_X = 5;
-    public final static int      POINT_CURSOR_OFFSET_Y = 6;
+    public final static int     NUM_POINT_CURSORS     = 8;
+    public final static int     POINT_CURSOR_OFFSET_X = 5;
+    public final static int     POINT_CURSOR_OFFSET_Y = 6;
 
     // the size of a square at max zoom level (0)
-    public final static int      BASE_SQUARE_SIZE      = 64;
+    public final static int     BASE_SQUARE_SIZE      = 64;
 
-    public final static int      NUM_ZOOM_LEVELS       = 5;
+    public final static int     NUM_ZOOM_LEVELS       = 5;
 
-    public Image                 m_mapBk;
+    public Image                m_mapBk;
 
     // the size of a square at the current zoom level
-    public int                   m_squareSize;
+    public int                  m_squareSize;
 
     // this is the map (or layer) that all players share
-    public GametableMap          m_sharedMap           = new GametableMap(true);
+    public GametableMap         m_sharedMap           = new GametableMap(true);
 
     // this points to whichever map is presently active
-    public GametableMap          m_activeMap;
+    public GametableMap         m_activeMap;
 
     // some cursors
-    Cursor                       m_handCursor;
-    Cursor                       m_penCursor;
-    Cursor                       m_emptyCursor;
-    Cursor                       m_eraserCursor;
-    Image[]                      m_pointCursorImages   = new Image[NUM_POINT_CURSORS];
+    Cursor                      m_handCursor;
+    Cursor                      m_penCursor;
+    Cursor                      m_emptyCursor;
+    Cursor                      m_eraserCursor;
+    Image[]                     m_pointCursorImages   = new Image[NUM_POINT_CURSORS];
 
     // the frame
-    private GametableFrame       m_gametableFrame;
+    private GametableFrame      m_gametableFrame;
 
     // zoom and top-left state
 
     // This is the number of screen pixels that are
     // used per model pixel. It's never less than 1
-    public int                   m_zoom;
+    public int                  m_zoom;
 
     // hand tool
-    int                          m_handToolStartX;
-    int                          m_handToolStartY;
-    int                          m_scrollStartX;
-    int                          m_scrollStartY;
+    int                         m_handToolStartX;
+    int                         m_handToolStartY;
+    int                         m_scrollStartX;
+    int                         m_scrollStartY;
 
     // misc flags
-    boolean                      m_bSpaceKeyDown;
-    boolean                      m_bShiftKeyDown;
-    boolean                      m_bControlKeyDown;
+    boolean                     m_bSpaceKeyDown;
+    boolean                     m_bShiftKeyDown;
+    boolean                     m_bControlKeyDown;
 
     // drag stuff
     // where they first clicked
-    int                          m_clickX;
-    int                          m_clickY;
+    int                         m_clickX;
+    int                         m_clickY;
 
     // where the mouse is now
-    int                          m_dragX;
-    int                          m_dragY;
+    int                         m_dragX;
+    int                         m_dragY;
 
     // hand tool
-    int                          m_preClickScrollX;
-    int                          m_preClickScrollY;
+    int                         m_preClickScrollX;
+    int                         m_preClickScrollY;
 
     // Pen tool
-    PenAsset                     m_penAsset;
+    PenAsset                    m_penAsset;
 
-    boolean                      m_bLDragging;
-    boolean                      m_bRDragging;
-    boolean                      m_bNeedToDrawPointCursor;
-    int                          m_toolMode;
+    boolean                     m_bLDragging;
+    boolean                     m_bRDragging;
+    boolean                     m_bNeedToDrawPointCursor;
+    int                         m_toolMode;
 
-    Image                        m_offscreen;
-    int                          m_offscreenX;
-    int                          m_offscreenY;
+    Image                       m_offscreen;
+    int                         m_offscreenX;
+    int                         m_offscreenY;
 
-    boolean                      m_bPogBeingDragged;
-    Pog                          m_pogBeingDragged;
-    int                          m_pogDragInsetX;
-    int                          m_pogDragInsetY;
+    boolean                     m_bPogBeingDragged;
+    Pog                         m_pogBeingDragged;
+    int                         m_pogDragInsetX;
+    int                         m_pogDragInsetY;
 
-    int                          m_currentMouseX;
-    int                          m_currentMouseY;
-    boolean                      m_bMouseOnView;
+    int                         m_currentMouseX;
+    int                         m_currentMouseY;
+    boolean                     m_bMouseOnView;
 
-    Pog                          m_pogMouseOver;
+    Pog                         m_pogMouseOver;
 
-    private Tool                 m_activeTool          = new NullTool();
-    private static final boolean NEW_TOOL              = false;
+    private int                 m_activeToolId        = -1;
+    private static final Tool   NULL_TOOL             = new NullTool();
+    public static final boolean NEW_TOOL              = false;
 
 
 
@@ -141,12 +142,12 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         m_gametableFrame = frame;
         m_mapBk = UtilityFunctions.getImage("assets/mapbk.png");
 
-        if ( !NEW_TOOL )
+        if (!NEW_TOOL)
         {
-	        m_handCursor = createCursor("assets/handCurs.png", 8, 8);
-	        m_penCursor = createCursor("assets/penCurs.png", 0, 14);
-	        m_emptyCursor = createCursor("assets/emptyCurs.png", 0, 0);
-	        m_eraserCursor = createCursor("assets/eraseCurs.png", 7, 4);
+            m_handCursor = createCursor("assets/hand.png", 8, 8);
+            m_penCursor = createCursor("assets/pen.png", 0, 14);
+            m_emptyCursor = createCursor("assets/emptyCurs.png", 0, 0);
+            m_eraserCursor = createCursor("assets/eraser.png", 7, 4);
         }
 
         m_pointCursorImages[0] = UtilityFunctions.getImage("assets/whiteHand.png");
@@ -162,7 +163,10 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
         addMouseWheelListener(this);
         setZoom(0);
-        setActiveTool(new EraseTool());
+        if (NEW_TOOL)
+        {
+            setActiveTool(0);
+        }
     }
 
     public int getModifierFlags()
@@ -171,26 +175,30 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             : 0));
     }
 
-    public void setActiveTool(Tool tool)
+    public void setToolCursor(int index)
     {
-        if (m_activeTool != null)
-        {
-            m_activeTool.deactivate();
-        }
+        setCursor(m_gametableFrame.getToolManager().getToolInfo(m_activeToolId).getCursor(index));
+    }
 
-        if (tool == null)
-        {
-            m_activeTool = new NullTool();
-            return;
-        }
+    public void setActiveTool(int index)
+    {
+        Tool oldTool = getActiveTool();
+        oldTool.deactivate();
 
-        m_activeTool = tool;
-        m_activeTool.activate(this);
+        m_activeToolId = index;
+
+        Tool tool = getActiveTool();
+        tool.activate(this);
+        setToolCursor(0);
     }
 
     public Tool getActiveTool()
     {
-        return m_activeTool;
+        if (m_activeToolId < 0)
+        {
+            return NULL_TOOL;
+        }
+        return m_gametableFrame.getToolManager().getToolInfo(m_activeToolId).getTool();
     }
 
     public GametableMap getSharedMap()
@@ -382,7 +390,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         if (NEW_TOOL)
         {
             Point modelClick = viewToModel(e.getX(), e.getY());
-            m_activeTool.mouseMoved(modelClick.x, modelClick.y, getModifierFlags());
+            getActiveTool().mouseMoved(modelClick.x, modelClick.y, getModifierFlags());
         }
         else
         {
@@ -416,7 +424,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         {
             if (e.getButton() == MouseEvent.BUTTON1)
             {
-                m_activeTool.mouseButtonPressed(modelClick.x, modelClick.y, getModifierFlags());
+                getActiveTool().mouseButtonPressed(modelClick.x, modelClick.y, getModifierFlags());
             }
         }
         else
@@ -491,7 +499,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         Point modelClick = viewToModel(e.getX(), e.getY());
         if (NEW_TOOL)
         {
-            m_activeTool.mouseButtonReleased(modelClick.x, modelClick.y, getModifierFlags());
+            getActiveTool().mouseButtonReleased(modelClick.x, modelClick.y, getModifierFlags());
         }
         else
         {
@@ -1144,51 +1152,51 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void setCursor()
     {
-    	if ( NEW_TOOL )
-    	{
-    		m_activeTool.setCursor(this);
-    	}
-    	else
-    	{
-	        switch (m_toolMode)
-	        {
-	            case TOOL_MODE_ARROW:
-	            {
-	                setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-	            }
-	                break;
-	
-	            case TOOL_MODE_PEN:
-	            {
-	                setCursor(m_penCursor);
-	            }
-	                break;
-	
-	            case TOOL_MODE_HAND:
-	            {
-	                setCursor(m_handCursor);
-	            }
-	                break;
-	
-	            case TOOL_MODE_ERASER:
-	            {
-	                setCursor(m_eraserCursor);
-	            }
-	                break;
-	
-	            case TOOL_MODE_POINT:
-	            {
-	                setCursor(m_emptyCursor);
-	            }
-	                break;
-	
-	            case TOOL_MODE_LINE:
-	            {
-	                setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
-	            }
-	                break;
-	        }
-    	}
+        if (NEW_TOOL)
+        {
+            // do nothing
+        }
+        else
+        {
+            switch (m_toolMode)
+            {
+                case TOOL_MODE_ARROW:
+                {
+                    setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                }
+                    break;
+
+                case TOOL_MODE_PEN:
+                {
+                    setCursor(m_penCursor);
+                }
+                    break;
+
+                case TOOL_MODE_HAND:
+                {
+                    setCursor(m_handCursor);
+                }
+                    break;
+
+                case TOOL_MODE_ERASER:
+                {
+                    setCursor(m_eraserCursor);
+                }
+                    break;
+
+                case TOOL_MODE_POINT:
+                {
+                    setCursor(m_emptyCursor);
+                }
+                    break;
+
+                case TOOL_MODE_LINE:
+                {
+                    setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+                }
+                    break;
+            }
+        }
     }
 
     public void updateToolState()
@@ -1437,7 +1445,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             HINTS.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
             HINTS.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             ((Graphics2D)g).addRenderingHints(HINTS);
-        } else {
+        }
+        else
+        {
             final Map HINTS = new HashMap();
             HINTS.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
             HINTS.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
@@ -1605,7 +1615,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 }
             }
         }
-        m_activeTool.paint(g);
+        getActiveTool().paint(g);
         g.translate(m_activeMap.getScrollX(), m_activeMap.getScrollY());
     }
 

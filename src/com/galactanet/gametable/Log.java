@@ -193,8 +193,9 @@ public class Log
             out.print(" [");
             out.print(getLogName(context));
             out.print("] ");
-            out.println("");
+            t.printStackTrace(out);
         }
+        t.printStackTrace();
     }
 
     public void close()

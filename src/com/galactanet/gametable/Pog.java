@@ -7,7 +7,6 @@ package com.galactanet.gametable;
 
 import java.awt.*;
 import java.awt.font.LineMetrics;
-import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 import java.awt.image.PixelGrabber;
 import java.io.DataInputStream;
@@ -184,7 +183,7 @@ public class Pog
             int imgSizeX = (int)(ratio * fullSizeImage.getWidth(null));
             int imgSizeY = (int)(ratio * fullSizeImage.getHeight(null));
 
-            Image offscreenImg = createBI(imgSizeX, imgSizeY);
+            Image offscreenImg = UtilityFunctions.createDrawableImage(imgSizeX, imgSizeY);
             Graphics g = offscreenImg.getGraphics();
 
             // blit with scaling to the offscreen
@@ -380,11 +379,5 @@ public class Pog
 
         g.setColor(Color.BLACK);
         g.drawString(m_dataStr, stringX, stringY);
-    }
-
-    protected BufferedImage createBI(int width, int height)
-    {
-        return GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration()
-            .createCompatibleImage(width, height, Transparency.TRANSLUCENT);
     }
 }

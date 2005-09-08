@@ -5,6 +5,7 @@
 
 package com.galactanet.gametable;
 
+import java.awt.*;
 import java.awt.Component;
 import java.awt.Image;
 import java.awt.MediaTracker;
@@ -269,6 +270,12 @@ public class UtilityFunctions
             img = loadAndWait(GametableFrame.getGametableFrame().m_gametableCanvas, name);
         }
         return img;
+    }
+
+    public static Image createDrawableImage(int width, int height)
+    {
+        return GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration()
+            .createCompatibleImage(width, height, Transparency.TRANSLUCENT);
     }
 
     private static Image getImageFromJar(String name)
