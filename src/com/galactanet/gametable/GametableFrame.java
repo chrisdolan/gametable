@@ -1150,10 +1150,14 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                     g.dispose();
                 }
 
-                JButton button = new JButton(new ImageIcon(im));
+                JToggleButton button = new JToggleButton(new ImageIcon(im));
                 jToolBar1.add(button);
                 button.addActionListener(new ToolButtonActionListener(toolId));
                 m_toolButtonGroup.add(button);
+                if (toolId == 0)
+                {
+                    button.setSelected(true);
+                }
             }
         }
         jMenuFile.add(jMenuOpen);
