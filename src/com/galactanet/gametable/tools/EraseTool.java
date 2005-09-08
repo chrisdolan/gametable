@@ -8,6 +8,7 @@ package com.galactanet.gametable.tools;
 import java.awt.*;
 
 import com.galactanet.gametable.GametableCanvas;
+import com.galactanet.gametable.UtilityFunctions;
 
 
 /**
@@ -20,14 +21,15 @@ public class EraseTool extends NullTool
     private GametableCanvas m_canvas;
     private Point           m_mouseAnchor;
     private Point           m_mouseFloat;
-
-
+    private Cursor          m_eraserCursor;
 
     /**
      * Default Constructor.
      */
     public EraseTool()
     {
+        Image img = UtilityFunctions.getImage("assets/eraseCurs.png");
+        m_eraserCursor = Toolkit.getDefaultToolkit().createCustomCursor(img, new Point(7, 4), "assets/eraseCurs.png");
     }
 
     /*
@@ -100,5 +102,14 @@ public class EraseTool extends NullTool
         int height = Math.abs(b.y - a.y) + 1;
 
         return new Rectangle(x, y, width, height);
+    }
+    
+    /*
+     * @see com.galactanet.gametable.Tool#setCursor
+     */
+    public void setCursor(Component setCursorFor)
+    {
+    	// set the cursor to an eraser
+    	setCursorFor.setCursor(m_eraserCursor);
     }
 }

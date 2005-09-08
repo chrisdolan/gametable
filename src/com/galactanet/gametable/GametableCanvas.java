@@ -14,8 +14,7 @@ import java.util.Map;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 
-import com.galactanet.gametable.tools.EraseTool;
-import com.galactanet.gametable.tools.NullTool;
+import com.galactanet.gametable.tools.*;
 
 
 /**
@@ -142,10 +141,13 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         m_gametableFrame = frame;
         m_mapBk = UtilityFunctions.getImage("assets/mapbk.png");
 
-        m_handCursor = createCursor("assets/handCurs.png", 8, 8);
-        m_penCursor = createCursor("assets/penCurs.png", 0, 14);
-        m_emptyCursor = createCursor("assets/emptyCurs.png", 0, 0);
-        m_eraserCursor = createCursor("assets/eraseCurs.png", 7, 4);
+        if ( !NEW_TOOL )
+        {
+	        m_handCursor = createCursor("assets/handCurs.png", 8, 8);
+	        m_penCursor = createCursor("assets/penCurs.png", 0, 14);
+	        m_emptyCursor = createCursor("assets/emptyCurs.png", 0, 0);
+	        m_eraserCursor = createCursor("assets/eraseCurs.png", 7, 4);
+        }
 
         m_pointCursorImages[0] = UtilityFunctions.getImage("assets/whiteHand.png");
         m_pointCursorImages[1] = UtilityFunctions.getImage("assets/brownHand.png");
@@ -1142,44 +1144,51 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void setCursor()
     {
-        switch (m_toolMode)
-        {
-            case TOOL_MODE_ARROW:
-            {
-                setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-            }
-                break;
-
-            case TOOL_MODE_PEN:
-            {
-                setCursor(m_penCursor);
-            }
-                break;
-
-            case TOOL_MODE_HAND:
-            {
-                setCursor(m_handCursor);
-            }
-                break;
-
-            case TOOL_MODE_ERASER:
-            {
-                setCursor(m_eraserCursor);
-            }
-                break;
-
-            case TOOL_MODE_POINT:
-            {
-                setCursor(m_emptyCursor);
-            }
-                break;
-
-            case TOOL_MODE_LINE:
-            {
-                setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
-            }
-                break;
-        }
+    	if ( NEW_TOOL )
+    	{
+    		m_activeTool.setCursor(this);
+    	}
+    	else
+    	{
+	        switch (m_toolMode)
+	        {
+	            case TOOL_MODE_ARROW:
+	            {
+	                setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+	            }
+	                break;
+	
+	            case TOOL_MODE_PEN:
+	            {
+	                setCursor(m_penCursor);
+	            }
+	                break;
+	
+	            case TOOL_MODE_HAND:
+	            {
+	                setCursor(m_handCursor);
+	            }
+	                break;
+	
+	            case TOOL_MODE_ERASER:
+	            {
+	                setCursor(m_eraserCursor);
+	            }
+	                break;
+	
+	            case TOOL_MODE_POINT:
+	            {
+	                setCursor(m_emptyCursor);
+	            }
+	                break;
+	
+	            case TOOL_MODE_LINE:
+	            {
+	                setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+	            }
+	                break;
+	        }
+    	}
     }
 
     public void updateToolState()

@@ -1219,6 +1219,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_bDisregardDividerChanges = false;
             m_gametableCanvas.requestFocus();
             m_arrowButton.setSelected(true);
+            
+            repaint();
         }
         else
         {

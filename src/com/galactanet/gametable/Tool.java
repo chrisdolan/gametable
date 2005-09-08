@@ -5,6 +5,7 @@
 
 package com.galactanet.gametable;
 
+import java.awt.Component;
 import java.awt.Graphics;
 
 
@@ -65,4 +66,11 @@ public interface Tool
      * @param g Graphics context.
      */
     void paint(Graphics g);
+
+    /**
+     * Called when the mouse cursor should change to reflect this tool
+     * 
+     * @param setCursorFor The Component you want to set the cursor for.
+     */
+    void setCursor(Component setCursorFor);
 }
