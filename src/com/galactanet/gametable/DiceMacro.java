@@ -9,6 +9,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -57,6 +58,7 @@ public class DiceMacro
             // special case: straight bonus
             if (dieType.m_die < 2)
             {
+                total += dieType.m_qty;
                 if (dieType.m_qty > 0)
                 {
                     ret += "+" + dieType.m_qty;
@@ -65,25 +67,72 @@ public class DiceMacro
                 {
                     ret += "" + dieType.m_qty;
                 }
-                bFirstAdd = false;
-                total += dieType.m_qty;
             }
             else
             {
-                // normal case: die rollin!
-                for (int j = 0; j < dieType.m_qty; j++)
+                if (dieType.m_keep == 0)
                 {
-                    int value = rollDie(dieType.m_die);
-                    if (bFirstAdd)
+                    // normal case: die rollin!
+                    // Straight addition
+                    for (int j = 0, bound = Math.abs(dieType.m_qty); j < bound; j++)
                     {
-                        ret += "" + value;
+                        int value = rollDie(dieType.m_die);
+                        if (bFirstAdd)
+                        {
+                            ret += "" + value;
+                            bFirstAdd = false;
+                        }
+                        else
+                        {
+                            ret += ((dieType.m_qty < 0) ? "-" : "+") + value;
+                        }
+                        if (dieType.m_qty < 0)
+                            total -= value;
+                        else
+                            total += value;
+                    }
+                }
+                else
+                {
+                    // Keep some rolls.
+                    int number = Math.abs(dieType.m_qty);
+                    ret += (bFirstAdd ? "" : ((dieType.m_qty < 0) ? "-" : "+")) + "(";
+                    bFirstAdd = true;
+                    int[] rolls = new int[number];
+                    for (int index = 0; index < number; index++)
+                    {
+                        rolls[index] = rollDie(dieType.m_die);
+                        if (bFirstAdd)
+                        {
+                            ret += "" + rolls[index];
+                            bFirstAdd = false;
+                        }
+                        else
+                        {
+                            ret += "," + rolls[index];
+                        }
+                    }
+                    Arrays.sort(rolls);
+                    if (dieType.m_keep > 0)
+                    {
+                        // Keep highest
+                        for (int index = dieType.m_qty - dieType.m_keep; index < dieType.m_qty; index++)
+                            if (dieType.m_qty < 0)
+                                total -= rolls[index];
+                            else
+                                total += rolls[index];
+                        ret += ")h" + dieType.m_keep;
                     }
                     else
                     {
-                        ret += "+" + value;
+                        // Keep lowest
+                        for (int index = 0; index < -dieType.m_keep; index++)
+                            if (dieType.m_qty < 0)
+                                total -= rolls[index];
+                            else
+                                total += rolls[index];
+                        ret += ")l" + (-dieType.m_keep);
                     }
-                    bFirstAdd = false;
-                    total += value;
                 }
             }
         }
@@ -115,191 +164,91 @@ public class DiceMacro
 
     public String getMacroString()
     {
-        String ret = "";
+        StringBuffer buffer = new StringBuffer();
         boolean bIsFirst = true;
 
         for (int i = 0; i < m_dieTypes.size(); i++)
         {
-            // get the die type
-            DiceMacro_RollType dieType = (DiceMacro_RollType)m_dieTypes.get(i);
+            String dice = m_dieTypes.get(i).toString();
+            if (!(bIsFirst || dice.charAt(0) == '-'))
+                buffer.append('+');
 
-            if (!bIsFirst)
-            {
-                // special case: Don't put a "+" there if we're on the
-                // 1 siders (bonuses) and they're negative
-                if (dieType.m_die > 1 || dieType.m_qty >= 0)
-                {
-                    ret += "+";
-                }
-            }
-            if (dieType.m_qty == 1 && dieType.m_die > 1)
-            {
-                ret += dieType.getDieName();
-            }
-            else
-            {
-                ret += "" + dieType.m_qty + dieType.getDieName();
-            }
+            buffer.append(dice);
             bIsFirst = false;
         }
 
-        return ret;
+        return buffer.toString();
     }
 
     public boolean init(String macro, String name)
     {
         try
         {
-            m_macro = macro;
             m_name = name;
+            m_macro = macro;
 
-            // the string will be something like "3d6 + 4" or "2d4 + 3d6 + 8"
-            boolean bDone = false;
-            int segmentStart = 0;
-            int segmentEnd = 0;
-            boolean bIsMinus = false;
-            boolean bNextIsMinus = false;
-            while (!bDone)
+            // Parse the macro string. It will be something like
+            // "3d6 + 4" or "2d4 + 3d6h2 + 8"
+
+            // Remove spaces.
+            StringBuffer buffer = new StringBuffer();
+            for (int index = 0; index < m_macro.length(); index++)
+                if (m_macro.charAt(index) != ' ')
+                    buffer.append(m_macro.charAt(index));
+
+            // Grab individual dice rolls.
+            boolean isNegative = false;
+            // #dice, type, #keep
+            int[] numbers = {
+                1, 1, 0
+            };
+            // Corresponds with index of numbers array
+            int phase = 0;
+            int startOfCurrentNumber = 0;
+            for (int index = 0; index < buffer.length(); index++)
             {
-                // look for the next "+" character
-                int nextPlus = macro.indexOf("+", segmentStart);
-                int nextMinus = macro.indexOf("-", segmentStart);
-                bIsMinus = bNextIsMinus;
-                bNextIsMinus = false;
+                if (buffer.charAt(index) < '0' || buffer.charAt(index) > '9' || index == buffer.length() - 1)
+                {
+                    // End of this number.
 
-                if (nextPlus == -1 && nextMinus == -1)
-                {
-                    segmentEnd = -1;
-                }
-                else if (nextPlus == -1 || nextMinus == -1)
-                {
-                    // we found a plus or a minus, not both.
-                    if (nextPlus == -1)
+                    if (startOfCurrentNumber != index || index == buffer.length() - 1)
                     {
-                        segmentEnd = nextMinus;
-                        bNextIsMinus = true;
+                        // end is position after number.
+                        int end = (index == buffer.length() - 1) ? buffer.length() : index;
+                        int number = Integer.parseInt(buffer.substring(startOfCurrentNumber, end));
+                        numbers[phase] = isNegative ? (-number) : number;
                     }
-                    if (nextMinus == -1)
+                    startOfCurrentNumber = index + 1;
+
+                    // Check for end of dice roll.
+                    if (buffer.charAt(index) == '+' || buffer.charAt(index) == '-' || index == buffer.length() - 1)
                     {
-                        segmentEnd = nextPlus;
+                        m_dieTypes.add(new DiceMacro_RollType(numbers));
+                        isNegative = buffer.charAt(index) == '-';
+                        numbers[0] = 1;
+                        numbers[1] = 1;
+                        numbers[2] = 0;
+                        phase = 0;
                     }
-                }
-                else
-                {
-                    // we found both
-                    if (nextPlus < nextMinus)
+                    else if (buffer.charAt(index) == 'd')
                     {
-                        segmentEnd = nextPlus;
+                        isNegative = false;
+                        phase = 1;
                     }
-                    else
+                    else if (buffer.charAt(index) == 'h')
                     {
-                        segmentEnd = nextMinus;
-                        bNextIsMinus = true;
+                        isNegative = false;
+                        phase = 2;
                     }
-                }
-
-                String segment;
-                if (segmentEnd == -1)
-                {
-                    bDone = true;
-                    segment = macro.substring(segmentStart);
-                }
-                else
-                {
-                    segment = macro.substring(segmentStart, segmentEnd);
-                    segmentStart = segmentEnd + 1;
-                }
-
-                // clear spaces
-                segment = validate(segment);
-
-                if (segment == null)
-                {
-                    // invalid character
-                    return false;
-                }
-
-                if (segment.length() == 0)
-                {
-                    continue;
-                }
-
-                // now look for a die instruction.
-                // valid values are:
-                // -all digits
-                // -d followed by all digits
-                // -digits followed by d followed by digits
-
-                // is there a "d"?
-                int dIdx = segment.indexOf("d");
-
-                if (dIdx == -1)
-                {
-                    // no d. It's all numbers
-                    // so it's just an adder
-                    // (or subtracter)
-                    DiceMacro_RollType dieType = new DiceMacro_RollType();
-                    dieType.m_die = 1;
-                    int value = Integer.parseInt(segment);
-                    if (bIsMinus)
+                    else if (buffer.charAt(index) == 'l')
                     {
-                        dieType.m_qty = -value;
+                        isNegative = true;
+                        phase = 2;
                     }
                     else
-                    {
-                        dieType.m_qty = value;
-                    }
-
-                    m_dieTypes.add(dieType);
-                }
-                else
-                {
-                    // there's a d
-                    // if there are 2 d's it's invalid
-                    if (segment.indexOf("d", dIdx + 1) != -1)
-                    {
                         return false;
-                    }
-
-                    // just the one d, then.
-                    String left = segment.substring(0, dIdx);
-                    String right = segment.substring(dIdx + 1);
-
-                    int num = 0;
-                    int type = 0;
-
-                    // it's ok to have nothing for the left string
-                    if (left.length() == 0)
-                    {
-                        // presumed 1 die
-                        num = 1;
-                    }
-                    else
-                    {
-                        num = Integer.parseInt(left);
-                    }
-
-                    // it's not ok to have nothing after the d
-                    if (right.length() == 0)
-                    {
-                        return false;
-                    }
-
-                    type = Integer.parseInt(right);
-
-                    DiceMacro_RollType dieType = new DiceMacro_RollType();
-                    dieType.m_die = type;
-                    dieType.m_qty = num;
-
-                    m_dieTypes.add(dieType);
                 }
             }
-
-            if (m_name == null || m_name.length() == 0)
-            {
-                m_name = getMacroString();
-            }
-
             return true;
         }
         catch (Exception ex)
@@ -307,33 +256,6 @@ public class DiceMacro
             Log.log(Log.SYS, ex);
             return false;
         }
-    }
-
-    protected String validate(String in)
-    {
-        String ret = "";
-        for (int i = 0; i < in.length(); i++)
-        {
-            char ch = in.charAt(i);
-            if (ch >= '0' && ch <= '9')
-            {
-                ret += ch;
-            }
-            else if (ch == 'd')
-            {
-                ret += ch;
-            }
-            else if (ch == ' ')
-            {
-                // this is ok, too
-            }
-            else
-            {
-                // invalid character
-                return null;
-            }
-        }
-        return ret;
     }
 
     public void writeToStream(DataOutputStream dos) throws IOException
@@ -355,8 +277,11 @@ class DiceMacro_RollType
 {
     // note, a "1" sided die is a bonus
     // and qty can be negative
+    // m_keep is number of highest rolls to keep. If negative, keep
+    // lowest rolls. A value of 0 means to keep all.
     int m_die;
     int m_qty;
+    int m_keep;
 
 
 
@@ -364,13 +289,16 @@ class DiceMacro_RollType
     {
     }
 
+    public DiceMacro_RollType(int[] numbers)
+    {
+        m_qty = numbers[0];
+        m_die = numbers[1];
+        m_keep = numbers[2];
+    }
+
     public boolean equals(DiceMacro_RollType comp)
     {
-        if (m_die != comp.m_die)
-            return false;
-        if (m_qty != comp.m_qty)
-            return false;
-        return true;
+        return m_die == comp.m_die && m_qty == comp.m_qty && m_keep == comp.m_keep;
     }
 
     public String getDieName()
@@ -385,11 +313,26 @@ class DiceMacro_RollType
 
     public String toString()
     {
-        if (m_die == 1)
+        StringBuffer result = new StringBuffer();
+
+        result.append(m_qty);
+
+        if (m_die > 1)
         {
-            return String.valueOf(m_qty);
+            result.append('d');
+            result.append(m_die);
+            if (m_keep < 0)
+            {
+                result.append('l');
+                result.append(0 - m_keep);
+            }
+            else if (m_keep > 0)
+            {
+                result.append('h');
+                result.append(m_keep);
+            }
         }
 
-        return m_qty + "d" + m_die;
+        return result.toString();
     }
 }
