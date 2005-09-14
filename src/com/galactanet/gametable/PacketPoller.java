@@ -26,6 +26,9 @@ public class PacketPoller extends Thread
                     }
                     catch (InterruptedException ex)
                     {
+                        Log.log(Log.SYS, ex);
+                        Thread.currentThread().interrupt();
+                        return;
                     }
                 }
             }

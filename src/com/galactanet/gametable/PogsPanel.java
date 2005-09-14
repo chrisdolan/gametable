@@ -97,6 +97,7 @@ public class PogsPanel extends JButton implements MouseListener, MouseMotionList
                         }
                         catch (Exception ex)
                         {
+                            Log.log(Log.SYS, ex);
                             // any exceptions thrown in this process cancel
                             // the addition of that one pog.
                         }

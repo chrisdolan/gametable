@@ -248,6 +248,8 @@ public class Pog
         catch (InterruptedException e)
         {
             Log.log(Log.SYS, e);
+            Thread.currentThread().interrupt();
+            return;
         }
     }
 

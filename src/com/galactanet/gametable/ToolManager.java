@@ -279,8 +279,14 @@ public class ToolManager
             initialize(new FileInputStream(file));
             return;
         }
-        
-        InputStream is = getClass().getResourceAsStream("/assets/" + fileName);
+        String fileName2 = "assets/" + fileName; 
+        file = new File(fileName2);
+        if (file.exists())
+        {
+            initialize(new FileInputStream(file));
+            return;
+        }
+        InputStream is = getClass().getResourceAsStream("/" + fileName2);
         initialize(is);
     }
 

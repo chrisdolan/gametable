@@ -31,6 +31,7 @@ public class HostListenThread extends Thread
         }
         catch (IOException e)
         {
+            Log.log(Log.SYS, e);
             SwingUtilities.invokeLater(new Runnable()
             {
                 public void run()
@@ -50,6 +51,7 @@ public class HostListenThread extends Thread
             }
             catch (Exception e)
             {
+                Log.log(Log.SYS, e);
                 return;
             }
 
@@ -74,6 +76,7 @@ public class HostListenThread extends Thread
         }
         catch (IOException ex)
         {
+            Log.log(Log.SYS, ex);
         }
     }
 

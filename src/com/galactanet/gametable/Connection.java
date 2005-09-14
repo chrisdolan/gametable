@@ -74,6 +74,7 @@ public class Connection extends Thread
             catch (IOException ex)
             {
                 PacketHolder.push(null, this, PacketHolder.OPERATION_DROP);
+                Log.log(Log.SYS, ex);
                 return;
             }
         }
@@ -119,6 +120,7 @@ public class Connection extends Thread
         }
         catch (IOException e)
         {
+            Log.log(Log.SYS, e);
             setInputStream(null);
             setOutputStream(null);
             return false;
@@ -145,6 +147,7 @@ public class Connection extends Thread
         }
         catch (Exception e)
         {
+            Log.log(Log.SYS, e);
         }
     }
 

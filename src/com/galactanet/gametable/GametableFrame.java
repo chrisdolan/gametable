@@ -719,6 +719,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         catch (UnknownHostException ex)
         {
+            Log.log(Log.SYS, ex);
             logSystemMessage("Unable to resolve address. Failed to connect.");
             return;
         }
@@ -1670,8 +1671,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             prefDos.writeUTF(m_defaultIP);
             prefDos.writeInt(m_defaultPort);
             prefDos.writeUTF(m_defaultPassword);
-            prefDos.writeInt(m_gametableCanvas.m_sharedMap.getScrollX());
-            prefDos.writeInt(m_gametableCanvas.m_sharedMap.getScrollY());
+            prefDos.writeInt(m_gametableCanvas.getSharedMap().getScrollX());
+            prefDos.writeInt(m_gametableCanvas.getSharedMap().getScrollY());
             prefDos.writeInt(m_gametableCanvas.m_zoom);
 
             prefDos.writeInt(m_windowSize.width);
@@ -1696,9 +1697,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         catch (FileNotFoundException ex1)
         {
+            Log.log(Log.SYS, ex1);
         }
         catch (IOException ex1)
         {
+            Log.log(Log.SYS, ex1);
         }
     }
 
@@ -1755,9 +1758,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         catch (FileNotFoundException ex1)
         {
+            Log.log(Log.SYS, ex1);
         }
         catch (IOException ex1)
         {
+            Log.log(Log.SYS, ex1);
         }
     }
 
@@ -1800,6 +1805,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         catch (IOException ex)
         {
+            Log.log(Log.SYS, ex);
             // failed to save. give up
         }
     }
@@ -1823,9 +1829,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         catch (FileNotFoundException ex)
         {
+            Log.log(Log.SYS, ex);
         }
         catch (IOException ex)
         {
+            Log.log(Log.SYS, ex);
         }
     }
 
@@ -1859,9 +1867,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         catch (FileNotFoundException ex)
         {
+            Log.log(Log.SYS, ex);
         }
         catch (IOException ex)
         {
+            Log.log(Log.SYS, ex);
         }
 
         repaint();

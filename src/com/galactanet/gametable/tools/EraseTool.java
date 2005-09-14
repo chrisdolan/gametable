@@ -8,6 +8,7 @@ package com.galactanet.gametable.tools;
 import java.awt.*;
 
 import com.galactanet.gametable.GametableCanvas;
+import com.galactanet.gametable.GametableFrame;
 
 
 /**
@@ -20,6 +21,7 @@ public class EraseTool extends NullTool
     private GametableCanvas m_canvas;
     private Point           m_mouseAnchor;
     private Point           m_mouseFloat;
+    private boolean         m_bEraseColor;
 
 
 
@@ -28,6 +30,15 @@ public class EraseTool extends NullTool
      */
     public EraseTool()
     {
+        this(false);
+    }
+
+    /**
+     * Constructor specifying color mode.
+     */
+    public EraseTool(boolean color)
+    {
+        m_bEraseColor = color;
     }
 
     /*
@@ -67,7 +78,15 @@ public class EraseTool extends NullTool
     {
         if (m_mouseAnchor != null && !m_mouseAnchor.equals(m_mouseFloat))
         {
-            m_canvas.erase(createRectangle(m_mouseAnchor, m_mouseFloat), false, 0);
+            if (m_bEraseColor)
+            {
+                m_canvas.erase(createRectangle(m_mouseAnchor, m_mouseFloat), true,
+                    GametableFrame.g_gameTableFrame.m_drawColor.getRGB());
+            }
+            else
+            {
+                m_canvas.erase(createRectangle(m_mouseAnchor, m_mouseFloat), false, 0);
+            }
             m_canvas.repaint();
         }
         m_mouseAnchor = null;

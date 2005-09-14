@@ -179,7 +179,6 @@ public class PacketManager
         catch (IOException ex)
         {
             Log.log(Log.SYS, ex);
-            Log.log(Log.SYS, ex.toString());
         }
     }
 

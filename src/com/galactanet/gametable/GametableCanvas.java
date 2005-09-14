@@ -53,10 +53,10 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     public int                  m_squareSize;
 
     // this is the map (or layer) that all players share
-    public GametableMap         m_sharedMap           = new GametableMap(true);
+    private GametableMap        m_sharedMap           = new GametableMap(true);
 
     // this points to whichever map is presently active
-    public GametableMap         m_activeMap;
+    private GametableMap        m_activeMap;
 
     // some cursors
     Cursor                      m_handCursor;
@@ -346,8 +346,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         int viewX = (int)Math.round(squaresX * m_squareSize);
         int viewY = (int)Math.round(squaresY * m_squareSize);
 
-        viewX -= m_activeMap.getScrollX();
-        viewY -= m_activeMap.getScrollY();
+        viewX -= getActiveMap().getScrollX();
+        viewY -= getActiveMap().getScrollY();
 
         return new Point(viewX, viewY);
     }
@@ -357,10 +357,26 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         return modelToView(new Point(modelX, modelY));
     }
 
+    public Point drawToModel(Point drawPoint)
+    {
+        double squaresX = (double)(drawPoint.x) / (double)m_squareSize;
+        double squaresY = (double)(drawPoint.y) / (double)m_squareSize;
+
+        int modelX = (int)(squaresX * BASE_SQUARE_SIZE);
+        int modelY = (int)(squaresY * BASE_SQUARE_SIZE);
+
+        return new Point(modelX, modelY);
+    }
+
+    public Point drawToModel(int modelX, int modelY)
+    {
+        return drawToModel(new Point(modelX, modelY));
+    }
+
     public Point viewToModel(Point viewPoint)
     {
-        double squaresX = (double)(viewPoint.x + m_activeMap.getScrollX()) / (double)m_squareSize;
-        double squaresY = (double)(viewPoint.y + m_activeMap.getScrollY()) / (double)m_squareSize;
+        double squaresX = (double)(viewPoint.x + getActiveMap().getScrollX()) / (double)m_squareSize;
+        double squaresY = (double)(viewPoint.y + getActiveMap().getScrollY()) / (double)m_squareSize;
 
         int modelX = (int)(squaresX * BASE_SQUARE_SIZE);
         int modelY = (int)(squaresY * BASE_SQUARE_SIZE);
@@ -449,8 +465,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             m_clickX = e.getX();
             m_clickY = e.getY();
 
-            m_preClickScrollX = m_activeMap.getScrollX();
-            m_preClickScrollY = m_activeMap.getScrollY();
+            m_preClickScrollX = getActiveMap().getScrollX();
+            m_preClickScrollY = getActiveMap().getScrollY();
 
             switch (m_toolMode)
             {
@@ -471,7 +487,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                     // see what pog they hit, if any
                     // work backward through the pog vector, to get the
                     // one drawn last (topmost)
-                    m_pogBeingDragged = m_activeMap.getPogAt(modelClick);
+                    m_pogBeingDragged = getActiveMap().getPogAt(modelClick);
                     if (m_pogBeingDragged != null)
                     {
                         m_pogDragInsetX = modelClick.x - m_pogBeingDragged.getX();
@@ -639,9 +655,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public Pog getPogByID(int id)
     {
-        for (int i = 0; i < m_activeMap.getNumPogs(); i++)
+        for (int i = 0; i < getActiveMap().getNumPogs(); i++)
         {
-            Pog pog = m_activeMap.getPogAt(i);
+            Pog pog = getActiveMap().getPogAt(i);
             if (pog.m_ID == id)
             {
                 return pog;
@@ -742,8 +758,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         toMove.setPosition(newX, newY);
 
         // this pog moves to the end of the array
-        m_activeMap.removePog(toMove);
-        m_activeMap.addPog(toMove);
+        getActiveMap().removePog(toMove);
+        getActiveMap().addPog(toMove);
 
         repaint();
     }
@@ -778,7 +794,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         Pog toRemove = getPogByID(id);
         if (toRemove != null)
         {
-            m_activeMap.removePog(toRemove);
+            getActiveMap().removePog(toRemove);
         }
 
         // if they were dragging that pog, stop it
@@ -803,7 +819,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void doAddPog(Pog toAdd)
     {
-        m_activeMap.addPog(toAdd);
+        getActiveMap().addPog(toAdd);
         repaint();
     }
 
@@ -826,7 +842,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         {
             for (int i = 0; i < lines.length; i++)
             {
-                m_activeMap.addLine(lines[i]);
+                getActiveMap().addLine(lines[i]);
             }
         }
         repaint();
@@ -850,9 +866,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         Point modelEnd = new Point(r.x + r.width, r.y + r.height);
 
         ArrayList survivingLines = new ArrayList();
-        for (int i = 0; i < m_activeMap.getNumLines(); i++)
+        for (int i = 0; i < getActiveMap().getNumLines(); i++)
         {
-            LineSegment ls = m_activeMap.getLineAt(i);
+            LineSegment ls = getActiveMap().getLineAt(i);
 
             if (!bColorSpecific || ls.getColor().getRGB() == color)
             {
@@ -879,10 +895,10 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
         // now we have just the survivors
         // replace all the lines with this list
-        m_activeMap.clearLines();
+        getActiveMap().clearLines();
         for (int i = 0; i < survivingLines.size(); i++)
         {
-            m_activeMap.addLine((LineSegment)survivingLines.get(i));
+            getActiveMap().addLine((LineSegment)survivingLines.get(i));
         }
         repaint();
     }
@@ -1001,6 +1017,14 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         pog.setPosition(getSnap(pog.getX()), getSnap(pog.getY()));
     }
 
+    public void scrollMapTo(int modelX, int modelY)
+    {
+        Point target = modelToDraw(modelX, modelY);
+        System.out.println("scrollMapTo(" + target.x + ", " + target.y + ")");
+        m_sharedMap.setScroll(target.x, target.y);
+        repaint();
+    }
+
     public void updateDrag(MouseEvent e)
     {
         updateLocation(e);
@@ -1010,7 +1034,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         {
             int scrX = m_preClickScrollX + m_clickX - m_dragX;
             int scrY = m_preClickScrollY + m_clickY - m_dragY;
-            setPrimaryScroll(m_activeMap, scrX, scrY);
+            setPrimaryScroll(getActiveMap(), scrX, scrY);
         }
 
         if (m_toolMode == TOOL_MODE_PEN)
@@ -1282,9 +1306,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         int presentCenterY = getHeight() / 2;
 
         // set up the scroll to enforce the center being where it's supposed to be
-        int scrX = m_activeMap.getScrollX() - (presentCenterX - viewCenter.x);
-        int scrY = m_activeMap.getScrollY() - (presentCenterY - viewCenter.y);
-        setPrimaryScroll(m_activeMap, scrX, scrY);
+        int scrX = getActiveMap().getScrollX() - (presentCenterX - viewCenter.x);
+        int scrY = getActiveMap().getScrollY() - (presentCenterY - viewCenter.y);
+        setPrimaryScroll(getActiveMap(), scrX, scrY);
     }
 
     /** *********************************************************** */
@@ -1463,14 +1487,14 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
         g.setColor(Color.WHITE);
         g.fillRect(0, 0, getWidth(), getHeight());
-        g.translate(-m_activeMap.getScrollX(), -m_activeMap.getScrollY());
+        g.translate(-getActiveMap().getScrollX(), -getActiveMap().getScrollY());
 
-        drawMatte(g, m_activeMap.getScrollX(), m_activeMap.getScrollY(), getWidth(), getHeight());
+        drawMatte(g, getActiveMap().getScrollX(), getActiveMap().getScrollY(), getWidth(), getHeight());
 
         // draw all the underlays here
-        for (int i = 0; i < m_activeMap.getNumPogs(); i++)
+        for (int i = 0; i < getActiveMap().getNumPogs(); i++)
         {
-            Pog pog = m_activeMap.getPogAt(i);
+            Pog pog = getActiveMap().getPogAt(i);
             if (pog.isUnderlay())
             {
                 pog.drawToCanvas(g);
@@ -1497,12 +1521,12 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             }
         }
 
-        drawLines(g, m_activeMap.getScrollX(), m_activeMap.getScrollY(), getWidth(), getHeight());
+        drawLines(g, getActiveMap().getScrollX(), getActiveMap().getScrollY(), getWidth(), getHeight());
 
         // lines
-        for (int i = 0; i < m_activeMap.getNumLines(); i++)
+        for (int i = 0; i < getActiveMap().getNumLines(); i++)
         {
-            LineSegment ls = m_activeMap.getLineAt(i);
+            LineSegment ls = getActiveMap().getLineAt(i);
 
             // LineSegments police themselves, performance wise. If they won't touch the current
             // viewport, they don't draw
@@ -1530,8 +1554,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             {
                 // draw a rubber-band line to represent the selection
                 g.setColor(Color.BLACK);
-                drawDottedRect(g, m_clickX + m_activeMap.getScrollX(), m_clickY + m_activeMap.getScrollY(), m_dragX
-                    - m_clickX, m_dragY - m_clickY);
+                drawDottedRect(g, m_clickX + getActiveMap().getScrollX(), m_clickY + getActiveMap().getScrollY(),
+                    m_dragX - m_clickX, m_dragY - m_clickY);
             }
 
             // ******************** LINE ASSET ***********************/
@@ -1539,15 +1563,15 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             {
                 // draw the rubber band line
                 g.setColor(Color.BLACK);
-                g.drawLine(m_clickX + m_activeMap.getScrollX(), m_clickY + m_activeMap.getScrollY(), m_dragX
-                    + m_activeMap.getScrollX(), m_dragY + m_activeMap.getScrollY());
+                g.drawLine(m_clickX + getActiveMap().getScrollX(), m_clickY + getActiveMap().getScrollY(), m_dragX
+                    + getActiveMap().getScrollX(), m_dragY + getActiveMap().getScrollY());
             }
         }
 
         // pogs
-        for (int i = 0; i < m_activeMap.getNumPogs(); i++)
+        for (int i = 0; i < getActiveMap().getNumPogs(); i++)
         {
-            Pog pog = m_activeMap.getPogAt(i);
+            Pog pog = getActiveMap().getPogAt(i);
             if (!pog.isUnderlay())
             {
                 pog.drawToCanvas(g);
@@ -1600,9 +1624,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 if (m_bShiftKeyDown)
                 {
                     // this shift key is down. Show all pog data
-                    for (int i = 0; i < m_activeMap.getNumPogs(); i++)
+                    for (int i = 0; i < getActiveMap().getNumPogs(); i++)
                     {
-                        Pog pog = m_activeMap.getPogAt(i);
+                        Pog pog = getActiveMap().getPogAt(i);
                         if (pog != mouseOverPog)
                         {
                             pog.drawDataStringToCanvas(g, false);
@@ -1616,15 +1640,15 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             }
         }
         getActiveTool().paint(g);
-        g.translate(m_activeMap.getScrollX(), m_activeMap.getScrollY());
+        g.translate(getActiveMap().getScrollX(), getActiveMap().getScrollY());
     }
 
     public Pog getPogMouseOver()
     {
         Point modelMouse = viewToModel(m_currentMouseX, m_currentMouseY);
-        for (int i = m_activeMap.getNumPogs() - 1; i >= 0; i--)
+        for (int i = getActiveMap().getNumPogs() - 1; i >= 0; i--)
         {
-            Pog pog = m_activeMap.getPogAt(i);
+            Pog pog = getActiveMap().getPogAt(i);
             if (pog.modelPtInBounds(modelMouse.x, modelMouse.y))
             {
                 return pog;

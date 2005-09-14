@@ -372,6 +372,7 @@ public class UtilityFunctions
         }
         catch (Exception e)
         {
+            Log.log(Log.SYS, e);
             return null;
         }
     }
