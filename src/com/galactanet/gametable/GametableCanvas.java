@@ -120,11 +120,17 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     boolean                     m_bMouseOnView;
 
     Pog                         m_pogMouseOver;
-    
-    boolean 					m_bHexMode;
-    private Image[]				m_hexImages = new Image[NUM_ZOOM_LEVELS]; // one hex image per zoom level
-    private int[]				m_hexImageOffsets = new int[NUM_ZOOM_LEVELS]; // how far in along the x-axis 
-    																		  // the corner of the top-left hex is
+
+    boolean                     m_bHexMode;
+    private Image[]             m_hexImages           = new Image[NUM_ZOOM_LEVELS];  // one hex
+                                                                                        // image per
+                                                                                        // zoom
+                                                                                        // level
+    private int[]               m_hexImageOffsets     = new int[NUM_ZOOM_LEVELS];    // how far
+                                                                                        // in along
+                                                                                        // the
+                                                                                        // x-axis
+    // the corner of the top-left hex is
 
     private int                 m_activeToolId        = -1;
     private static final Tool   NULL_TOOL             = new NullTool();
@@ -166,25 +172,26 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         m_pointCursorImages[7] = UtilityFunctions.getImage("assets/yellowHand.png");
 
         setPrimaryScroll(m_sharedMap, 0, 0);
-        
+
         // set up the hex images
         m_hexImages[0] = UtilityFunctions.getImage("assets/hexes_64.png");
         m_hexImages[1] = UtilityFunctions.getImage("assets/hexes_64.png");
         m_hexImages[2] = UtilityFunctions.getImage("assets/hexes_64.png");
         m_hexImages[3] = UtilityFunctions.getImage("assets/hexes_64.png");
         m_hexImages[4] = UtilityFunctions.getImage("assets/hexes_64.png");
-        
+
         // magic numbers - these represent the distance in along the x-axis that the corner
-        // of the hex is. 
-        //    *  *     <-- Note that the top left corner of the first hex is not aligned with the left of the image                   
-        //    |  ----------
-        //    | /          \
-        //    |/            \
-        //    |\            /
-        //    | \          /
-        //    |  ----------
+        // of the hex is.
+        // * * <-- Note that the top left corner of the first hex is not aligned with the left of
+        // the image
+        // | ----------
+        // | / \
+        // |/ \
+        // |\ /
+        // | \ /
+        // | ----------
         // That distance is what is represented here.
-        
+
         m_hexImageOffsets[0] = 18;
         m_hexImageOffsets[1] = 18;
         m_hexImageOffsets[2] = 18;
@@ -418,12 +425,11 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     {
         return viewToModel(new Point(viewX, viewY));
     }
-    
+
     public double modelToSquares(double m)
     {
         return (m / BASE_SQUARE_SIZE);
     }
-
 
     /** *********************************************************** */
     // MouseListener/MouseMotionListener overrides:
@@ -1175,6 +1181,11 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         return ((i + BASE_SQUARE_SIZE / 2) / BASE_SQUARE_SIZE) * BASE_SQUARE_SIZE;
     }
 
+    public Point snapPoint(Point modelPoint)
+    {
+        return new Point(getSnap(modelPoint.x), getSnap(modelPoint.y));
+    }
+
     // takes VIEW coords
     private int getSnapX(int x)
     {
@@ -1729,70 +1740,69 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void drawLines(Graphics g, int topLeftX, int topLeftY, int width, int height)
     {
-    	if ( m_bHexMode )
-    	{
-    		// draw a hex grid
-    		Image toTile = m_hexImages[m_zoom];
-    		g.drawImage(toTile, 0, 0, this);
-    	}
-    	else
-    	{
-	        // draw a square grid
-	        int qx = Math.abs(topLeftX) / m_mapBk.getWidth(null);
-	        if (topLeftX < 0)
-	        {
-	            qx++;
-	            qx = -qx;
-	        }
-	
-	        int qy = Math.abs(topLeftY) / m_mapBk.getHeight(null);
-	        if (topLeftY < 0)
-	        {
-	            qy++;
-	            qy = -qy;
-	        }
-	
-	        int linesXOffset = qx * m_mapBk.getWidth(null);
-	        int linesYOffset = qy * m_mapBk.getHeight(null);
-	        int vLines = width / m_mapBk.getWidth(null) + 2;
-	        int hLines = height / m_mapBk.getHeight(null) + 2;
-	
-	        qx = Math.abs(topLeftX) / m_squareSize;
-	        if (topLeftX < 0)
-	        {
-	            qx++;
-	            qx = -qx;
-	        }
-	
-	        qy = Math.abs(topLeftY) / m_squareSize;
-	        if (topLeftY < 0)
-	        {
-	            qy++;
-	            qy = -qy;
-	        }
-	
-	        linesXOffset = qx * m_squareSize;
-	        linesYOffset = qy * m_squareSize;
-	        vLines = width / m_squareSize + 2;
-	        hLines = height / m_squareSize + 2;
-	
-	        g.setColor(Color.GRAY);
-	
-	        if (m_zoom < 4)
-	        {
-	            for (int i = 0; i < vLines; i++)
-	            {
-	                g.drawLine(i * m_squareSize + linesXOffset, topLeftY, i * m_squareSize + linesXOffset, height
-	                    + topLeftY);
-	            }
-	            for (int i = 0; i < hLines; i++)
-	            {
-	                g
-	                    .drawLine(topLeftX, i * m_squareSize + linesYOffset, width + topLeftX, i * m_squareSize
-	                        + linesYOffset);
-	            }
-	        }
-    	}
+        if (m_bHexMode)
+        {
+            // draw a hex grid
+            Image toTile = m_hexImages[m_zoom];
+            g.drawImage(toTile, 0, 0, this);
+        }
+        else
+        {
+            // draw a square grid
+            int qx = Math.abs(topLeftX) / m_mapBk.getWidth(null);
+            if (topLeftX < 0)
+            {
+                qx++;
+                qx = -qx;
+            }
+
+            int qy = Math.abs(topLeftY) / m_mapBk.getHeight(null);
+            if (topLeftY < 0)
+            {
+                qy++;
+                qy = -qy;
+            }
+
+            int linesXOffset = qx * m_mapBk.getWidth(null);
+            int linesYOffset = qy * m_mapBk.getHeight(null);
+            int vLines = width / m_mapBk.getWidth(null) + 2;
+            int hLines = height / m_mapBk.getHeight(null) + 2;
+
+            qx = Math.abs(topLeftX) / m_squareSize;
+            if (topLeftX < 0)
+            {
+                qx++;
+                qx = -qx;
+            }
+
+            qy = Math.abs(topLeftY) / m_squareSize;
+            if (topLeftY < 0)
+            {
+                qy++;
+                qy = -qy;
+            }
+
+            linesXOffset = qx * m_squareSize;
+            linesYOffset = qy * m_squareSize;
+            vLines = width / m_squareSize + 2;
+            hLines = height / m_squareSize + 2;
+
+            g.setColor(Color.GRAY);
+
+            if (m_zoom < 4)
+            {
+                for (int i = 0; i < vLines; i++)
+                {
+                    g.drawLine(i * m_squareSize + linesXOffset, topLeftY, i * m_squareSize + linesXOffset, height
+                        + topLeftY);
+                }
+                for (int i = 0; i < hLines; i++)
+                {
+                    g.drawLine(topLeftX, i * m_squareSize + linesYOffset, width + topLeftX, i * m_squareSize
+                        + linesYOffset);
+                }
+            }
+        }
     }
 
     public static void drawDottedRect(Graphics g, int x, int y, int width, int height)

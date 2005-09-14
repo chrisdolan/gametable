@@ -178,6 +178,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
      */
     public GametableFrame()
     {
+        setTitle(GametableApp.VERSION);
         g_gameTableFrame = this;
 
         this.addComponentListener(this);
@@ -683,6 +684,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_host.setEnabled(false);
         m_join.setEnabled(false);
         m_disconnect.setEnabled(true);
+        setTitle(GametableApp.VERSION + " - " + me.getCharacterName());
     }
 
     public void hostThreadFailed()
@@ -764,11 +766,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_host.setEnabled(false);
             m_join.setEnabled(false);
             m_disconnect.setEnabled(true);
+            setTitle(GametableApp.VERSION + " - " + me.getCharacterName());
         }
         catch (Exception ex)
         {
             Log.log(Log.SYS, ex);
             logSystemMessage("Failed to connect.");
+            setTitle(GametableApp.VERSION);
         }
     }
 
@@ -808,6 +812,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         m_players = new ArrayList();
         refreshPlayerListBox();
+        setTitle(GametableApp.VERSION);
     }
 
     public void eraseAllLines()
@@ -1042,8 +1047,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     private void jbInit() throws Exception
     {
         contentPane = (JPanel)this.getContentPane();
-        this.setTitle("GameTable");
-        this.setSize(new Dimension(570, 489));
+        setSize(new Dimension(600, 500));
         jMenuFile.setText("File");
         jMenuOpen.setText("Open");
         jMenuOpen.addActionListener(this);

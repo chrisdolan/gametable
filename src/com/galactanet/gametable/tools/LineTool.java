@@ -48,6 +48,10 @@ public class LineTool extends NullTool
     public void mouseButtonPressed(int x, int y, int modifierMask)
     {
         m_mouseAnchor = new Point(x, y);
+        if ((modifierMask & MODIFIER_CTRL) == 0)
+        {
+            m_mouseAnchor = m_canvas.snapPoint(m_mouseAnchor);
+        }
         m_mouseFloat = m_mouseAnchor;
     }
 
@@ -59,6 +63,10 @@ public class LineTool extends NullTool
         if (m_mouseAnchor != null)
         {
             m_mouseFloat = new Point(x, y);
+            if ((modifierMask & MODIFIER_CTRL) == 0)
+            {
+                m_mouseFloat = m_canvas.snapPoint(m_mouseFloat);
+            }
             m_canvas.repaint();
         }
     }
