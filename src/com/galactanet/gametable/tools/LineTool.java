@@ -1,5 +1,5 @@
 /*
- * EraseTool.java: GameTable is in the Public Domain.
+ * LineTool.java: GameTable is in the Public Domain.
  */
 
 
@@ -9,36 +9,27 @@ import java.awt.*;
 
 import com.galactanet.gametable.GametableCanvas;
 import com.galactanet.gametable.GametableFrame;
+import com.galactanet.gametable.LineSegment;
 
 
 /**
- * Map tool for erasing lines.
+ * Tool for drawing lines onto the map.
  * 
  * @author iffy
  */
-public class EraseTool extends NullTool
+public class LineTool extends NullTool
 {
     private GametableCanvas m_canvas;
     private Point           m_mouseAnchor;
     private Point           m_mouseFloat;
-    private boolean         m_bEraseColor;
 
 
 
     /**
      * Default Constructor.
      */
-    public EraseTool()
+    public LineTool()
     {
-        this(false);
-    }
-
-    /**
-     * Constructor specifying color mode.
-     */
-    public EraseTool(boolean color)
-    {
-        m_bEraseColor = color;
     }
 
     /*
@@ -77,21 +68,15 @@ public class EraseTool extends NullTool
      */
     public void mouseButtonReleased(int x, int y, int modifierMask)
     {
-        if (m_mouseAnchor != null && !m_mouseAnchor.equals(m_mouseFloat))
+        if (m_mouseAnchor != null)
         {
-            if (m_bEraseColor)
-            {
-                m_canvas.erase(createRectangle(m_mouseAnchor, m_mouseFloat), true,
-                    GametableFrame.g_gameTableFrame.m_drawColor.getRGB());
-            }
-            else
-            {
-                m_canvas.erase(createRectangle(m_mouseAnchor, m_mouseFloat), false, 0);
-            }
+            LineSegment ls = new LineSegment(m_mouseAnchor, m_mouseFloat, GametableFrame.g_gameTableFrame.m_drawColor);
+            m_canvas.addLineSegments(new LineSegment[] { ls });
+            
+            m_mouseAnchor = null;
+            m_mouseFloat = null;
             m_canvas.repaint();
         }
-        m_mouseAnchor = null;
-        m_mouseFloat = null;
     }
 
     /*
@@ -102,23 +87,14 @@ public class EraseTool extends NullTool
         if (m_mouseAnchor != null)
         {
             Graphics2D g2 = (Graphics2D)g.create();
-            g2.setColor(Color.WHITE);
-            g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1f, new float[] {
-                2f
-            }, 0f));
-            Rectangle rect = createRectangle(m_canvas.modelToDraw(m_mouseAnchor), m_canvas.modelToDraw(m_mouseFloat));
-            g2.draw(rect);
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            Color drawColor = GametableFrame.g_gameTableFrame.m_drawColor;
+            g2.setColor(new Color(drawColor.getRed(), drawColor.getGreen(), drawColor.getBlue(), 102));
+            g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            Point drawAnchor = m_canvas.modelToDraw(m_mouseAnchor);
+            Point drawFloat = m_canvas.modelToDraw(m_mouseFloat);
+            g2.drawLine(drawAnchor.x, drawAnchor.y, drawFloat.x, drawFloat.y);
             g2.dispose();
         }
-    }
-
-    private static Rectangle createRectangle(Point a, Point b)
-    {
-        int x = Math.min(a.x, b.x);
-        int y = Math.min(a.y, b.y);
-        int width = Math.abs(b.x - a.x) + 1;
-        int height = Math.abs(b.y - a.y) + 1;
-
-        return new Rectangle(x, y, width, height);
     }
 }
