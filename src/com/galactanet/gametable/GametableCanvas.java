@@ -128,7 +128,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     private int                 m_activeToolId        = -1;
     private static final Tool   NULL_TOOL             = new NullTool();
-    public static final boolean NEW_TOOL              = false;
+    public static final boolean NEW_TOOL              = true;
 
 
 
@@ -418,6 +418,12 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     {
         return viewToModel(new Point(viewX, viewY));
     }
+    
+    public double modelToSquares(double m)
+    {
+        return (m / BASE_SQUARE_SIZE);
+    }
+
 
     /** *********************************************************** */
     // MouseListener/MouseMotionListener overrides:

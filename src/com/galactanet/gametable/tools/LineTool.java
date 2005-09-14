@@ -71,8 +71,10 @@ public class LineTool extends NullTool
         if (m_mouseAnchor != null)
         {
             LineSegment ls = new LineSegment(m_mouseAnchor, m_mouseFloat, GametableFrame.g_gameTableFrame.m_drawColor);
-            m_canvas.addLineSegments(new LineSegment[] { ls });
-            
+            m_canvas.addLineSegments(new LineSegment[] {
+                ls
+            });
+
             m_mouseAnchor = null;
             m_mouseFloat = null;
             m_canvas.repaint();
@@ -88,12 +90,41 @@ public class LineTool extends NullTool
         {
             Graphics2D g2 = (Graphics2D)g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int dx = m_mouseFloat.x - m_mouseAnchor.x;
+            int dy = m_mouseFloat.y - m_mouseAnchor.y;
+            double dist = Math.sqrt(dx * dx + dy * dy);
+            double squaresDistance = m_canvas.modelToSquares(dist);
+            squaresDistance = Math.round(squaresDistance * 100) / 100.0;
+
             Color drawColor = GametableFrame.g_gameTableFrame.m_drawColor;
             g2.setColor(new Color(drawColor.getRed(), drawColor.getGreen(), drawColor.getBlue(), 102));
             g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             Point drawAnchor = m_canvas.modelToDraw(m_mouseAnchor);
             Point drawFloat = m_canvas.modelToDraw(m_mouseFloat);
             g2.drawLine(drawAnchor.x, drawAnchor.y, drawFloat.x, drawFloat.y);
+
+            if (squaresDistance >= 0.75)
+            {
+                Graphics2D g3 = (Graphics2D)g.create();
+                g3.setFont(Font.decode("Arial-bold-12"));
+                Point drawMidPoint = m_canvas.modelToDraw(drawAnchor.x + dx / 2, drawAnchor.y + dy / 2);
+                String s = squaresDistance + "u";
+                FontMetrics fm = g3.getFontMetrics();
+                Rectangle rect = fm.getStringBounds(s, g3).getBounds();
+
+                rect.grow(3, 1);
+
+                g3.translate(drawMidPoint.x, drawMidPoint.y);
+                g3.setColor(new Color(0x00, 0x99, 0x00, 0xAA));
+                g3.fill(rect);
+                g3.setColor(new Color(0x00, 0x66, 0x00));
+                g3.draw(rect);
+                g3.setColor(new Color(0xFF, 0xFF, 0xFF, 0xCC));
+                g3.drawString(s, 0, 0);
+                g3.dispose();
+            }
+
             g2.dispose();
         }
     }
