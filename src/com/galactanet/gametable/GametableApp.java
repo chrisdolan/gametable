@@ -73,7 +73,7 @@ public class GametableApp
     static public void main(String[] args)
     {
         Properties props = new Properties(System.getProperties());
-        props.setProperty("sun.java2d.opengl", "True");
+        //props.setProperty("sun.java2d.opengl", "True");
         System.setProperties(props);
 
         Log.initializeLog(Log.SYS, SYS_LOG_FILE);

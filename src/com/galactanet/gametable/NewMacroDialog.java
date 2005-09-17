@@ -84,7 +84,7 @@ public class NewMacroDialog extends JDialog implements FocusListener
         final int PADDING = 5;
 
         Box outmostBox = Box.createHorizontalBox();
-        add(outmostBox, BorderLayout.CENTER);
+        getContentPane().add(outmostBox, BorderLayout.CENTER);
         outmostBox.add(Box.createHorizontalStrut(PADDING));
         Box outerBox = Box.createVerticalBox();
         outmostBox.add(outerBox);
