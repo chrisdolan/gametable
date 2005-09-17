@@ -135,7 +135,10 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     private int                 m_activeToolId        = -1;
     private static final Tool   NULL_TOOL             = new NullTool();
     public static final boolean NEW_TOOL              = true;
-
+    
+    public final static boolean SPECIAL_RIGHT_CLICK = true; // true if special right-click behaviour is enabled
+    public boolean m_bRightClicking; // true if the current mouse action was initiated with a right-click
+    public int m_preRightClickToolID; // the id of the tool that we switched out of to go to hand tool for a right-click
 
 
     public GametableCanvas()
@@ -237,7 +240,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
         return m_gametableFrame.getToolManager().getToolInfo(m_activeToolId).getTool();
     }
-
+    
     public GametableMap getSharedMap()
     {
         return m_sharedMap;
@@ -480,6 +483,22 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         Point modelClick = viewToModel(e.getX(), e.getY());
         if (NEW_TOOL)
         {
+        	if ( SPECIAL_RIGHT_CLICK )
+        	{
+        		// this code deals with making a right click automatically be the hand tool
+	            if (e.getButton() == MouseEvent.BUTTON3)
+	            {
+	            	m_bRightClicking = true;
+	            	m_preRightClickToolID = m_activeToolId;
+	            	setActiveTool(1); // HACK -- To hand tool
+	                getActiveTool().mouseButtonPressed(modelClick.x, modelClick.y, getModifierFlags());
+	            }
+	            else
+	            {
+	            	m_bRightClicking = false;
+	            }
+        	}
+            
             if (e.getButton() == MouseEvent.BUTTON1)
             {
                 getActiveTool().mouseButtonPressed(modelClick.x, modelClick.y, getModifierFlags());
@@ -558,6 +577,19 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         if (NEW_TOOL)
         {
             getActiveTool().mouseButtonReleased(modelClick.x, modelClick.y, getModifierFlags());
+
+            if ( SPECIAL_RIGHT_CLICK )
+            {
+            	// yes, these two ifs could have been made into one compound statement. 
+            	// but SPECIAL_RIGHT_CLICK is basically a precompiler step, so I wanted to 
+            	// visually differentiate it.
+	            if ( m_bRightClicking )
+	            {
+	            	// return to arrow too
+	            	setActiveTool(m_preRightClickToolID);
+	            	m_bRightClicking = false;
+	            }
+            }
         }
         else
         {
@@ -1451,11 +1483,20 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             // shift focus to the chat area
             m_gametableFrame.m_textEntry.requestFocus();
         }
+        /*
         if (code == KeyEvent.VK_A)
         {
             // become the arrow tool
-            m_gametableFrame.m_arrowButton.setSelected(true);
+            // m_gametableFrame.m_arrowButton.setSelected(true);
+        	setActiveTool(0);
         }
+        if (code == KeyEvent.VK_Z)
+        {
+            // become the arrow tool
+            // m_gametableFrame.m_arrowButton.setSelected(true);
+        	setActiveTool(1);
+        }
+        */
         if (code == KeyEvent.VK_SLASH)
         {
             m_gametableFrame.m_textEntry.setText("/");
