@@ -51,6 +51,24 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
     }
 
+    class ToolButtonAbstractAction extends AbstractAction
+    {
+        int m_id;
+
+
+
+        ToolButtonAbstractAction(int id)
+        {
+            m_id = id;
+        }
+
+        public void actionPerformed(ActionEvent event)
+        {
+            m_gametableCanvas.setActiveTool(m_id);
+            m_gametableCanvas.requestFocus();
+        }
+    }
+
 
 
     JPanel                        contentPane;
@@ -1177,6 +1195,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             button.addActionListener(new ToolButtonActionListener(toolId));
             m_toolButtonGroup.add(button);
             m_toolButtons[toolId] = button;
+
+            String actionId = "tool"+toolId+"Action";
+            m_gametableCanvas.getActionMap().put(actionId, new ToolButtonAbstractAction(toolId));
+            m_gametableCanvas.getInputMap().put(KeyStroke.getKeyStroke(info.getQuickKey(), 0, false), actionId);
+
         }
         jMenuFile.add(jMenuOpen);
         jMenuFile.add(jMenuSave);
@@ -1438,7 +1461,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         else
         {
-            postMessage(getMePlayer().getCharacterName() + ">" + entered);
+            postMessage(getMePlayer().getCharacterName() + "> " + entered);
         }
 
         m_textEntry.setText("");

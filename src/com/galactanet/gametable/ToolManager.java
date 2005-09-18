@@ -6,6 +6,7 @@
 package com.galactanet.gametable;
 
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,6 +30,7 @@ public class ToolManager
     private static final String PROPERTY_NAME            = ".name";
     private static final String PROPERTY_CLASS           = ".class";
     private static final String PROPERTY_ICON            = ".icon";
+    private static final String PROPERTY_QUICK_KEY       = ".quickKey";
     private static final String PROPERTY_CURSORS         = ".cursors.";
     private static final String CURSOR_FIELD_PREFIX      = "Cursor.";
 
@@ -45,7 +47,7 @@ public class ToolManager
         private String name;
         private Tool   tool;
         private Image  icon;
-
+        private int    quickKey;
         private List   cursors = new ArrayList();
 
 
@@ -59,7 +61,8 @@ public class ToolManager
          * @param iconName The name of the icon to represent this tool.
          * @throws IllegalArgumentException If unable to instantiate the implementation.
          */
-        public Info(int i, String n, String className, String iconName) throws IllegalArgumentException
+        public Info(int i, String n, String className, String iconName, String quickKeyName)
+            throws IllegalArgumentException
         {
             try
             {
@@ -70,10 +73,28 @@ public class ToolManager
                 tool = (Tool)Class.forName(className).newInstance();
 
                 icon = UtilityFunctions.getImage(iconName);
+
             }
             catch (Exception e)
             {
                 throw new IllegalArgumentException("Unable to create Tool info object.", e);
+            }
+
+            String keyName = quickKeyName.toUpperCase();
+            if (!keyName.startsWith("VK_"))
+            {
+                keyName = "VK_" + keyName;
+            }
+            
+            try
+            {
+                quickKey = KeyEvent.class.getField(keyName).getInt(null);
+            }
+            catch (Exception e)
+            {
+                quickKey = -1;
+                Log.log(Log.SYS, "Unable to set quickKey to " + quickKeyName + " (" + keyName +")");
+                Log.log(Log.SYS, e);
             }
         }
 
@@ -135,6 +156,14 @@ public class ToolManager
         public Tool getTool()
         {
             return tool;
+        }
+
+        /**
+         * @return Returns the quickKey.
+         */
+        public int getQuickKey()
+        {
+            return quickKey;
         }
     }
 
@@ -233,7 +262,8 @@ public class ToolManager
                 // Initialize the tool info from the properties for this ID.
                 String className = props.getProperty(prefix + PROPERTY_CLASS);
                 String iconName = props.getProperty(prefix + PROPERTY_ICON);
-                Info info = new Info(toolId, name, className, iconName);
+                String quickKeyName = props.getProperty(prefix + PROPERTY_QUICK_KEY);
+                Info info = new Info(toolId, name, className, iconName, quickKeyName);
 
                 // Load cursors for this ID.
                 int cursorId = 0;
@@ -279,7 +309,7 @@ public class ToolManager
             initialize(new FileInputStream(file));
             return;
         }
-        String fileName2 = "assets/" + fileName; 
+        String fileName2 = "assets/" + fileName;
         file = new File(fileName2);
         if (file.exists())
         {
