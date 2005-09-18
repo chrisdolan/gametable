@@ -6,7 +6,6 @@
 package com.galactanet.gametable;
 
 import java.awt.*;
-import java.awt.font.LineMetrics;
 import java.awt.image.ImageObserver;
 import java.awt.image.PixelGrabber;
 import java.io.DataInputStream;
@@ -67,7 +66,7 @@ public class Pog
     {
         return m_images[0].getHeight(m_canvas);
     }
-    
+
     public boolean isUnderlay()
     {
         return m_bIsUnderlay;
@@ -109,13 +108,13 @@ public class Pog
                 {
                     fileToLoad = "assets/pog_unk_2.png";
                 }
-                    break;
+                break;
 
                 case 3:
                 {
                     fileToLoad = "assets/pog_unk_3.png";
                 }
-                    break;
+                break;
             }
 
             String properFilename = m_fileName;
@@ -306,7 +305,7 @@ public class Pog
         drawToCanvas(g2);
         g2.dispose();
     }
-    
+
     public void drawToCanvas(Graphics g)
     {
         // convert our model coordinates to draw coordinates
@@ -319,8 +318,9 @@ public class Pog
         g.drawImage(toDraw, drawCoords.x, drawCoords.y, m_canvas);
     }
 
-    public void drawDataStringToCanvas(Graphics g, boolean bForceTextInBounds)
+    public void drawDataStringToCanvas(Graphics gr, boolean bForceTextInBounds)
     {
+        Graphics2D g = (Graphics2D)gr.create();
         if (m_dataStr == null)
         {
             return;
@@ -332,12 +332,10 @@ public class Pog
         }
 
         FontMetrics metrics = g.getFontMetrics();
-        LineMetrics lineMetrics = metrics.getLineMetrics(m_dataStr, g);
-        int height = (int)lineMetrics.getHeight();
-        int width = metrics.stringWidth(m_dataStr);
+        Rectangle stringBounds = metrics.getStringBounds(m_dataStr, g).getBounds();
 
-        int totalWidth = width + 6;
-        int totalHeight = height + 6;
+        int totalWidth = stringBounds.width + 6;
+        int totalHeight = stringBounds.height + 1;
 
         Rectangle backgroundRect = new Rectangle();
         Point pogDrawCoords = m_canvas.modelToDraw(getPosition());
@@ -371,15 +369,15 @@ public class Pog
             }
         }
 
-        g.setColor(new Color(255, 255, 0, 204));
-        g.fillRect(backgroundRect.x, backgroundRect.y, backgroundRect.width, backgroundRect.height);
-        g.setColor(new Color(32, 32, 0, 204));
-        g.drawRect(backgroundRect.x, backgroundRect.y, backgroundRect.width, backgroundRect.height);
+        g.setColor(new Color(255, 255, 64, 192));
+        g.fill(backgroundRect);
 
-        int stringX = backgroundRect.x + 3;
-        int stringY = backgroundRect.y + 3 + metrics.getAscent();
+        int stringX = backgroundRect.x + (backgroundRect.width - stringBounds.width) / 2;
+        int stringY = backgroundRect.y + (backgroundRect.height - stringBounds.height) / 2 + metrics.getAscent();
 
         g.setColor(Color.BLACK);
         g.drawString(m_dataStr, stringX, stringY);
+
+        g.drawRect(backgroundRect.x, backgroundRect.y, backgroundRect.width - 1, backgroundRect.height - 1);
     }
 }

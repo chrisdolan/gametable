@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.JButton;
-import javax.swing.JOptionPane;
 
 import com.galactanet.gametable.tools.NullTool;
 
@@ -115,6 +114,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     int                         m_pogDragInsetX;
     int                         m_pogDragInsetY;
 
+    private Point               m_mouseModelAnchor;
+    private Point               m_mouseModelFloat;
     int                         m_currentMouseX;
     int                         m_currentMouseY;
     boolean                     m_bMouseOnView;
@@ -123,23 +124,45 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     boolean                     m_bHexMode;
     private Image[]             m_hexImages           = new Image[NUM_ZOOM_LEVELS];  // one hex
-                                                                                        // image per
-                                                                                        // zoom
-                                                                                        // level
+    // image per
+    // zoom
+    // level
     private int[]               m_hexImageOffsets     = new int[NUM_ZOOM_LEVELS];    // how far
-                                                                                        // in along
-                                                                                        // the
-                                                                                        // x-axis
+    // in along
+    // the
+    // x-axis
     // the corner of the top-left hex is
 
     private int                 m_activeToolId        = -1;
     private static final Tool   NULL_TOOL             = new NullTool();
-    public static final boolean NEW_TOOL              = true;
-    
-    public final static boolean SPECIAL_RIGHT_CLICK = true; // true if special right-click behaviour is enabled
-    public boolean m_bRightClicking; // true if the current mouse action was initiated with a right-click
-    public int m_preRightClickToolID; // the id of the tool that we switched out of to go to hand tool for a right-click
 
+    public final static boolean SPECIAL_RIGHT_CLICK   = true;                        // true if
+    // special
+    // right-click
+    // behaviour
+    // is
+    // enabled
+    public boolean              m_bRightClicking;                                    // true if
+    // the
+    // current
+    // mouse
+    // action
+    // was
+    // initiated
+    // with a
+    // right-click
+    public int                  m_preRightClickToolID;                               // the id of
+
+
+
+    // the tool
+    // that we
+    // switched
+    // out of to
+    // go to
+    // hand tool
+    // for a
+    // right-click
 
     public GametableCanvas()
     {
@@ -157,14 +180,6 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         m_gametableFrame = frame;
         m_mapBk = UtilityFunctions.getImage("assets/mapbk.png");
 
-        if (!NEW_TOOL)
-        {
-            m_handCursor = createCursor("assets/hand.png", 8, 8);
-            m_penCursor = createCursor("assets/pen.png", 0, 14);
-            m_emptyCursor = createCursor("assets/emptyCurs.png", 0, 0);
-            m_eraserCursor = createCursor("assets/eraser.png", 7, 4);
-        }
-
         m_pointCursorImages[0] = UtilityFunctions.getImage("assets/whiteHand.png");
         m_pointCursorImages[1] = UtilityFunctions.getImage("assets/brownHand.png");
         m_pointCursorImages[2] = UtilityFunctions.getImage("assets/purpleHand.png");
@@ -181,17 +196,18 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         m_hexImages[1] = UtilityFunctions.getImage("assets/hexes_48.png");
         m_hexImages[2] = UtilityFunctions.getImage("assets/hexes_32.png");
         m_hexImages[3] = UtilityFunctions.getImage("assets/hexes_16.png");
-        m_hexImages[4] = null; // no lines are drawn at this zoom level. So there's no hex image for it.
+        m_hexImages[4] = null; // no lines are drawn at this zoom level. So there's no hex image
+        // for it.
 
         // magic numbers - these represent the distance in along the x-axis that the corner
         // of the hex is.
         // Note that the top left corner of the first hex is not aligned with the left of
         // the image
         // | ----------
-        // | / 
-        // |/ 
-        // |\ 
-        // | \ 
+        // | /
+        // |/
+        // |\
+        // | \
         // | ----------
         // That distance is what is represented here.
 
@@ -199,14 +215,12 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         m_hexImageOffsets[1] = 15;
         m_hexImageOffsets[2] = 10;
         m_hexImageOffsets[3] = 5;
-        m_hexImageOffsets[4] = 0; // irrelevant. There is no image for this level. Lines aren't drawn at this zoom level.
+        m_hexImageOffsets[4] = 0; // irrelevant. There is no image for this level. Lines aren't
+        // drawn at this zoom level.
 
         addMouseWheelListener(this);
         setZoom(0);
-        if (NEW_TOOL)
-        {
-            setActiveTool(0);
-        }
+        setActiveTool(0);
     }
 
     public int getModifierFlags()
@@ -215,9 +229,21 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             : 0));
     }
 
+    /**
+     * Sets the mouse cursor to be the cursor at the specified index for the currently active tool.
+     * 
+     * @param index The cursor of the given index for this tool. A negative number means no cursor.
+     */
     public void setToolCursor(int index)
     {
-        setCursor(m_gametableFrame.getToolManager().getToolInfo(m_activeToolId).getCursor(index));
+        if (index < 0)
+        {
+            setCursor(m_emptyCursor);
+        }
+        else
+        {
+            setCursor(m_gametableFrame.getToolManager().getToolInfo(m_activeToolId).getCursor(index));
+        }
     }
 
     public void setActiveTool(int index)
@@ -230,6 +256,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         Tool tool = getActiveTool();
         tool.activate(this);
         setToolCursor(0);
+        m_gametableFrame.setToolSelected(m_activeToolId);
     }
 
     public Tool getActiveTool()
@@ -240,7 +267,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
         return m_gametableFrame.getToolManager().getToolInfo(m_activeToolId).getTool();
     }
-    
+
     public GametableMap getSharedMap()
     {
         return m_sharedMap;
@@ -249,13 +276,6 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     public GametableMap getActiveMap()
     {
         return m_activeMap;
-    }
-
-    private Cursor createCursor(String pngFile, int cx, int cy)
-    {
-        Image img = UtilityFunctions.getImage(pngFile);
-        Cursor ret = Toolkit.getDefaultToolkit().createCustomCursor(img, new Point(cx, cy), pngFile);
-        return ret;
     }
 
     public PogsPanel getActivePogsArea()
@@ -282,31 +302,31 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             {
                 ret = BASE_SQUARE_SIZE;
             }
-                break;
+            break;
 
             case 1:
             {
                 ret = (BASE_SQUARE_SIZE / 4) * 3;
             }
-                break;
+            break;
 
             case 2:
             {
                 ret = BASE_SQUARE_SIZE / 2;
             }
-                break;
+            break;
 
             case 3:
             {
                 ret = BASE_SQUARE_SIZE / 4;
             }
-                break;
+            break;
 
             case 4:
             {
                 ret = BASE_SQUARE_SIZE / 8;
             }
-                break;
+            break;
         }
 
         return ret;
@@ -439,244 +459,90 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     /** *********************************************************** */
     public void mouseDragged(MouseEvent e)
     {
+        // We handle dragging ourselves - don't tread on me, Java!
         mouseMoved(e);
-        if (!NEW_TOOL)
-        {
-            updateDrag(e);
-        }
     }
 
     public void mouseMoved(MouseEvent e)
     {
-        if (NEW_TOOL)
+        m_mouseModelFloat = viewToModel(e.getX(), e.getY());
+        if (isPointing())
         {
-            Point modelClick = viewToModel(e.getX(), e.getY());
-            getActiveTool().mouseMoved(modelClick.x, modelClick.y, getModifierFlags());
+            return;
         }
-        else
+
+        getActiveTool().mouseMoved(m_mouseModelFloat.x, m_mouseModelFloat.y, getModifierFlags());
+        Pog prevPog = m_pogMouseOver;
+        m_pogMouseOver = getActiveMap().getPogAt(m_mouseModelFloat);
+        if (prevPog != m_pogMouseOver)
         {
-            if (m_bSpaceKeyDown)
-            {
-                // if we're pointing, we're not interested mouse updates
-                return;
-            }
-
-            m_currentMouseX = e.getX();
-            m_currentMouseY = e.getY();
-
-            Pog prevPog = m_pogMouseOver;
-            m_pogMouseOver = getPogMouseOver();
-
-            if (prevPog != m_pogMouseOver)
-            {
-                repaint();
-            }
+            repaint();
         }
     }
 
     public void mouseClicked(MouseEvent e)
     {
+        // Ignore this because java has sucky mouse clicking
     }
 
     public void mousePressed(MouseEvent e)
     {
-        Point modelClick = viewToModel(e.getX(), e.getY());
-        if (NEW_TOOL)
+        m_mouseModelAnchor = viewToModel(e.getX(), e.getY());
+        m_mouseModelFloat = m_mouseModelAnchor;
+        if (isPointing())
         {
-        	if ( SPECIAL_RIGHT_CLICK )
-        	{
-        		// this code deals with making a right click automatically be the hand tool
-	            if (e.getButton() == MouseEvent.BUTTON3)
-	            {
-	            	m_bRightClicking = true;
-	            	m_preRightClickToolID = m_activeToolId;
-	            	setActiveTool(1); // HACK -- To hand tool
-	                getActiveTool().mouseButtonPressed(modelClick.x, modelClick.y, getModifierFlags());
-	            }
-	            else
-	            {
-	            	m_bRightClicking = false;
-	            }
-        	}
-            
-            if (e.getButton() == MouseEvent.BUTTON1)
-            {
-                getActiveTool().mouseButtonPressed(modelClick.x, modelClick.y, getModifierFlags());
-            }
+            return;
         }
-        else
+        if (SPECIAL_RIGHT_CLICK)
         {
-
-            if (m_bSpaceKeyDown)
-            {
-                // if we're pointing, we're not interested in clicks
-                return;
-            }
-
+            // this code deals with making a right click automatically be the hand tool
             if (e.getButton() == MouseEvent.BUTTON3)
             {
-                m_bRDragging = true;
+                m_bRightClicking = true;
+                m_preRightClickToolID = m_activeToolId;
+                setActiveTool(1); // HACK -- To hand tool
+                getActiveTool().mouseButtonPressed(m_mouseModelAnchor.x, m_mouseModelAnchor.y, getModifierFlags());
             }
-
-            if (e.getButton() == MouseEvent.BUTTON1)
+            else
             {
-                m_bLDragging = true;
-            }
-
-            m_clickX = e.getX();
-            m_clickY = e.getY();
-
-            m_preClickScrollX = getActiveMap().getScrollX();
-            m_preClickScrollY = getActiveMap().getScrollY();
-
-            switch (m_toolMode)
-            {
-                case TOOL_MODE_PEN:
-                    m_penAsset = new PenAsset();
-                    m_penAsset.init(m_gametableFrame.m_drawColor);
-                    break;
-                case TOOL_MODE_ARROW:
-                    if (m_bLDragging && m_bShiftKeyDown)
-                    {
-                        // set the current pog's data str
-                        if (setCurrentPogData())
-                        {
-                            return;
-                        }
-                    }
-
-                    // see what pog they hit, if any
-                    // work backward through the pog vector, to get the
-                    // one drawn last (topmost)
-                    m_pogBeingDragged = getActiveMap().getPogAt(modelClick);
-                    if (m_pogBeingDragged != null)
-                    {
-                        m_pogDragInsetX = modelClick.x - m_pogBeingDragged.getX();
-                        m_pogDragInsetY = modelClick.y - m_pogBeingDragged.getY();
-                    }
-                    break;
-            }
-
-            updateToolState();
-            updateDrag(e);
-
-            if (m_toolMode == TOOL_MODE_LINE)
-            {
-                // if they aren't holding Control when they click, the line will
-                // snap to the vertex
-                checkSnap();
-                m_clickX = m_dragX;
-                m_clickY = m_dragY;
+                m_bRightClicking = false;
             }
         }
+
+        if (e.getButton() == MouseEvent.BUTTON1)
+        {
+            getActiveTool().mouseButtonPressed(m_mouseModelAnchor.x, m_mouseModelAnchor.y, getModifierFlags());
+        }
+
     }
 
     public void mouseReleased(MouseEvent e)
     {
-        Point modelClick = viewToModel(e.getX(), e.getY());
-        if (NEW_TOOL)
+        m_mouseModelFloat = viewToModel(e.getX(), e.getY());
+        m_mouseModelAnchor = null;
+        if (isPointing())
         {
-            getActiveTool().mouseButtonReleased(modelClick.x, modelClick.y, getModifierFlags());
-
-            if ( SPECIAL_RIGHT_CLICK )
-            {
-            	// yes, these two ifs could have been made into one compound statement. 
-            	// but SPECIAL_RIGHT_CLICK is basically a precompiler step, so I wanted to 
-            	// visually differentiate it.
-	            if ( m_bRightClicking )
-	            {
-	            	// return to arrow too
-	            	setActiveTool(m_preRightClickToolID);
-	            	m_bRightClicking = false;
-	            }
-            }
+            return;
         }
-        else
+        getActiveTool().mouseButtonReleased(m_mouseModelFloat.x, m_mouseModelFloat.y, getModifierFlags());
+
+        if (SPECIAL_RIGHT_CLICK)
         {
-            updateDrag(e);
-
-            m_bRDragging = false;
-            m_bLDragging = false;
-
-            Point modelStart = viewToModel(m_clickX, m_clickY);
-            Point modelEnd = viewToModel(m_dragX, m_dragY);
-
-            switch (m_toolMode)
+            // yes, these two ifs could have been made into one compound statement.
+            // but SPECIAL_RIGHT_CLICK is basically a precompiler step, so I wanted to
+            // visually differentiate it.
+            if (m_bRightClicking)
             {
-                case TOOL_MODE_PEN:
-                {
-                    // get the line segments and add them in
-                    m_penAsset.smooth();
-                    LineSegment[] lines = m_penAsset.getLineSegments();
-                    m_penAsset = null;
-
-                    if (lines != null)
-                    {
-                        addLineSegments(lines);
-                    }
-                }
-                    break;
-
-                case TOOL_MODE_ERASER:
-                {
-                    // erase stuff. Lots of segments will probably
-                    // be deleted. So we make a new container to hold the
-                    // survivors
-                    Rectangle r = new Rectangle(modelStart.x, modelStart.y, modelEnd.x - modelStart.x, modelEnd.y
-                        - modelStart.y);
-                    if (m_gametableFrame.m_colorEraserButton.isSelected())
-                    {
-                        // they're doing a color erase
-                        erase(r, true, m_gametableFrame.m_drawColor.getRGB());
-                    }
-                    else
-                    {
-                        // full erase. clear everything.
-                        erase(r, false, 0);
-                    }
-                }
-                    break;
-
-                case TOOL_MODE_LINE:
-                {
-                    // easy. They made a line. We add it to the lines vector
-                    LineSegment ls = new LineSegment(modelStart, modelEnd, m_gametableFrame.m_drawColor);
-                    LineSegment[] lines = new LineSegment[1];
-                    lines[0] = ls;
-                    addLineSegments(lines);
-                }
-                    break;
-
-                case TOOL_MODE_ARROW:
-                {
-                    if (m_pogBeingDragged != null)
-                    {
-                        if (!pogInViewport(m_pogBeingDragged))
-                        {
-                            // they removed this pog
-                            int removeArray[] = new int[1];
-                            removeArray[0] = m_pogBeingDragged.m_ID;
-                            removePogs(removeArray);
-                        }
-                        else
-                        {
-                            movePog(m_pogBeingDragged.m_ID, m_pogBeingDragged.getX(), m_pogBeingDragged.getY());
-                        }
-                    }
-                    m_pogBeingDragged = null;
-                }
-                    break;
+                // return to arrow too
+                setActiveTool(m_preRightClickToolID);
+                m_bRightClicking = false;
             }
-
-            updateToolState();
         }
     }
 
     public void mouseEntered(MouseEvent e)
     {
-        updateToolState();
         m_bMouseOnView = true;
-        // requestFocus();
     }
 
     public void mouseExited(MouseEvent e)
@@ -697,34 +563,6 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             centerZoom(1);
         }
         repaint();
-    }
-
-    // returns true if a pog was hit
-    public boolean setCurrentPogData()
-    {
-        m_currentMouseX = m_clickX;
-        m_currentMouseY = m_clickY;
-        Pog pog = getPogMouseOver();
-        if (pog == null)
-        {
-            return false;
-        }
-
-        // we have poggage. Get the new name for it
-        String s = (String)JOptionPane.showInputDialog(m_gametableFrame, "Enter new Pog text:", "Pog Text",
-            JOptionPane.PLAIN_MESSAGE, null, null, pog.m_dataStr);
-
-        if (s != null)
-        {
-            setPogData(pog.m_ID, s);
-        }
-
-        m_bLDragging = false;
-        m_bRDragging = false;
-        m_bShiftKeyDown = false;
-        m_bControlKeyDown = false;
-
-        return true;
     }
 
     public Pog getPogByID(int id)
@@ -999,8 +837,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
 
         // make the arrow the current tool
-        m_gametableFrame.m_arrowButton.setSelected(true);
-        updateToolState();
+        setActiveTool(0);
     }
 
     public boolean isPointVisible(Point modelPoint)
@@ -1088,7 +925,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void snapPogToGrid(Pog pog)
     {
-    	Point snappedPoint = snapPointEx(new Point(pog.getX(), pog.getY()), true, BASE_SQUARE_SIZE*pog.getFaceSize());
+        Point snappedPoint = snapPointEx(new Point(pog.getX(), pog.getY()), true, BASE_SQUARE_SIZE * pog.getFaceSize());
         pog.setPosition(snappedPoint.x, snappedPoint.y);
     }
 
@@ -1185,7 +1022,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         // snap to grid if control is not pressed
         if (!m_bControlKeyDown)
         {
-        	Point snappedViewPoint = snapViewPoint(new Point(m_dragX, m_dragY));
+            Point snappedViewPoint = snapViewPoint(new Point(m_dragX, m_dragY));
             int snapToX = snappedViewPoint.x;
             int snapToY = snappedViewPoint.y;
 
@@ -1214,28 +1051,28 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
         return ((i + BASE_SQUARE_SIZE / 2) / BASE_SQUARE_SIZE) * BASE_SQUARE_SIZE;
     }
-    
+
     public Point snapViewPoint(Point viewPoint)
     {
-    	Point modelPoint = viewToModel(viewPoint);
-    	Point modelSnap = snapPoint(modelPoint);
-    	Point viewSnap = modelToView(modelSnap);
-    	return viewSnap;
+        Point modelPoint = viewToModel(viewPoint);
+        Point modelSnap = snapPoint(modelPoint);
+        Point viewSnap = modelToView(modelSnap);
+        return viewSnap;
     }
-    
+
     private boolean isOffsetColumn(int columnNumber)
     {
-    	if ( columnNumber < 0 )
-    	{
-    		columnNumber = -columnNumber;
-    	}
-		if ( columnNumber%2 == 1 )
-		{
-			return true;
-		}
-		return false;
+        if (columnNumber < 0)
+        {
+            columnNumber = -columnNumber;
+        }
+        if (columnNumber % 2 == 1)
+        {
+            return true;
+        }
+        return false;
     }
-    
+
     private double pointDistance(Point p1, Point p2)
     {
         int dx = p1.x - p2.x;
@@ -1243,179 +1080,212 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         double dist = Math.sqrt(dx * dx + dy * dy);
         return dist;
     }
-    
+
     private Point getClosestPoint(Point target, Point candidates[])
     {
-    	double minDist = -1.0;
-    	Point winner = null; 
-    	for ( int i=0 ; i<candidates.length ; i++ )
-    	{
-    		double distance = pointDistance(target, candidates[i]);
-    		if ( minDist == -1.0 || distance < minDist )
-    		{
-    			minDist = distance;
-    			winner = candidates[i];
-    		}
-    	}
-    	
-    	return winner;
+        double minDist = -1.0;
+        Point winner = null;
+        for (int i = 0; i < candidates.length; i++)
+        {
+            double distance = pointDistance(target, candidates[i]);
+            if (minDist == -1.0 || distance < minDist)
+            {
+                minDist = distance;
+                winner = candidates[i];
+            }
+        }
+
+        return winner;
     }
-    
+
     public Point snapPoint(Point modelPoint)
     {
-    	return snapPointEx(modelPoint, false, 0);
+        return snapPointEx(modelPoint, false, 0);
     }
-    
+
     // if bSnapForPog is true, it will return snap locations where a pog of
     // the sent in size could snap to. Note this is not the same as ANY
     // snap points, cause you don't want your pogs snapping to the
     // vertex of a hex.
     // pogSize is ignored if bSnapForPog is false. And it's expected to be the
-    // pog's size in model coordinate pixels. 
+    // pog's size in model coordinate pixels.
     public Point snapPointEx(Point modelPointIn, boolean bSnapForPog, int pogSize)
     {
-    	Point modelPoint = new Point(modelPointIn);
-    	if ( m_bHexMode )
-    	{
-        	if ( bSnapForPog )
-        	{
-        		// we're snapping for a pog. We've been sent the upper left corner of that
-        		// pog. We need to know it's center.
-        		modelPoint.x += pogSize/2;
-        		modelPoint.y += pogSize/2;
-        	}
-        	
-    		// in hex mode, we have to snap to any of the vertices of a hex,
-    		// plus the center. How annoying is that, eh?
-    		
-    		// start with the grid snap location for the x coordinate
-        	int x = getGridSnap(modelPoint.x);
-        	
-        	// from that, get the grid location. 
-        	int gridX = x/BASE_SQUARE_SIZE;
-        	
-        	// note that items in the odd columns are half a grid square down
-        	int offsetY = 0;
-        	if ( isOffsetColumn(gridX) )
-        	{
-        		offsetY = BASE_SQUARE_SIZE/2;
-        	}
-        	
-        	// now work out which "grid" (hex, really) the y value is in
-        	int y = getGridSnap(modelPoint.y - offsetY);
-        	
-        	// add back the offset
-        	y += offsetY;
-        	
-        	// add in the x offset needed to put it on the corner of the hex
-        	x += m_hexImageOffsets[0]/2; // [0] is the model coordinate size
-        	
-        	// let's number the hexagon points 0 through 5. Let's number them 
-        	// clockwise starting from the upper left one. What we have done so
-        	// far is snap to the nearest point 0. That's not good enough. 
-        	// There are 3 hexagon points adjacent to a point 0 that are not
-        	// other hexagon point 0's. And we might be closer to one of them
-        	// than to the point we just snapped to.
-        	// so we now have 4 "candidates" for nearest point. The point 0 we just
-        	// found, and the other three points nearby. Those other three points 
-        	// will be:
-        	//
-        	// --Our hex's point 1
-        	// --Our hex's point 5
-        	// --Our upstairs neighbor's point 5
-        	//
-        	// In addition to that, there are 3 hex centers we need to check:
-        	// --Our hex center
-        	// --Our upstairs neighbor's hex center
-        	// -- Our neighbor to the left's hex center
-        	
-        	Point closest = null;
-        	
-        	if ( bSnapForPog )
-        	{
-        		// we're snapping to valid pog locations. We have been sent the
-        		// upp left corner of the graphic. We converted that to the center already.
-        		// now, we need to stick that to either vertices or hex centers, depending
-        		// on the size of the pog. If it's a size 1 (64 px_ pog, we snap to centers only. 
-        		// if it's size 2, we snap to vertices only. If size 3, back to centers. etc.
-        		int face = pogSize/BASE_SQUARE_SIZE;
-        		if ( face%2 == 1 )
-        		{
-        			// odd faces snap to centers
-    	        	Point candidates[] = new Point[3];
+        Point modelPoint = new Point(modelPointIn);
+        if (m_bHexMode)
+        {
+            if (bSnapForPog)
+            {
+                // we're snapping for a pog. We've been sent the upper left corner of that
+                // pog. We need to know it's center.
+                modelPoint.x += pogSize / 2;
+                modelPoint.y += pogSize / 2;
+            }
 
-    	        	Point point1 = new Point(x+BASE_SQUARE_SIZE - m_hexImageOffsets[0] ,y); // Our hex's point 1, for use in calculating the center
-   	        	
-    	        	candidates[0] = new Point(x+(point1.x-x)/2, y+BASE_SQUARE_SIZE/2); // Our hex center
-    	        	candidates[1] = new Point(candidates[0].x, candidates[0].y - BASE_SQUARE_SIZE); // Our upstairs neighbor's center
-    	        	candidates[2] = new Point(candidates[0].x - BASE_SQUARE_SIZE, candidates[0].y - BASE_SQUARE_SIZE/2); // Our upstairs neighbor's center
-    	        	
-    	        	closest = getClosestPoint(modelPoint, candidates);
-        		}
-        		else
-        		{
-        			// even faces snap to vertices
-    	        	Point candidates[] = new Point[4];
-    	        	candidates[0] = new Point(x,y); // Our hex's point 0
-    	        	candidates[1] = new Point(x+BASE_SQUARE_SIZE - m_hexImageOffsets[0] ,y); // Our hex's point 1
-    	        	candidates[2] = new Point(x-m_hexImageOffsets[0], y+BASE_SQUARE_SIZE/2); // Our hex's point 5
-    	        	candidates[3] = new Point(candidates[2].x, candidates[2].y-BASE_SQUARE_SIZE); // Our upstairs neighbor's point 5
-    	        	
-    	        	closest = getClosestPoint(modelPoint, candidates);
-        		}
-        		
-        		if ( closest != null )
-        		{
-        			// offset the values for the pog size
-        			closest.x -= pogSize/2;
-        			closest.y -= pogSize/2;
-        		}
-        	}
-        	else
-        	{
-        		// we're snapping to any vertex
-	        	Point candidates[] = new Point[7];
-	        	candidates[0] = new Point(x,y); // Our hex's point 0
-	        	candidates[1] = new Point(x+BASE_SQUARE_SIZE - m_hexImageOffsets[0] ,y); // Our hex's point 1
-	        	candidates[2] = new Point(x-m_hexImageOffsets[0], y+BASE_SQUARE_SIZE/2); // Our hex's point 5
-	        	candidates[3] = new Point(candidates[2].x, candidates[2].y-BASE_SQUARE_SIZE); // Our upstairs neighbor's point 5
-	        	candidates[4] = new Point(candidates[0].x + (candidates[1].x-candidates[0].x)/2, y+BASE_SQUARE_SIZE/2); // Our hex center
-	        	candidates[5] = new Point(candidates[4].x, candidates[4].y - BASE_SQUARE_SIZE); // Our upstairs neighbor's center
-	        	candidates[6] = new Point(candidates[4].x - BASE_SQUARE_SIZE, candidates[4].y - BASE_SQUARE_SIZE/2); // Our upstairs neighbor's center
-	        	
-	        	closest = getClosestPoint(modelPoint, candidates);
-        	}
-        	
-        	if ( closest == null )
-        	{
-	        	// uh... if we're here something went wrong
-	        	// defensive coding, just return that nearest Point 0
-	        	System.out.println("Error snapping to point");
-	        	return new Point(x,y);
-        	}
-        	return closest;
-    	}
-    	else
-    	{
-    		// snapping for a pog or not is irrelevant in square mode.
-        	int x = getGridSnap(modelPoint.x);
-        	int y = getGridSnap(modelPoint.y);
-        	return new Point(x, y);
-    	}
+            // in hex mode, we have to snap to any of the vertices of a hex,
+            // plus the center. How annoying is that, eh?
+
+            // start with the grid snap location for the x coordinate
+            int x = getGridSnap(modelPoint.x);
+
+            // from that, get the grid location.
+            int gridX = x / BASE_SQUARE_SIZE;
+
+            // note that items in the odd columns are half a grid square down
+            int offsetY = 0;
+            if (isOffsetColumn(gridX))
+            {
+                offsetY = BASE_SQUARE_SIZE / 2;
+            }
+
+            // now work out which "grid" (hex, really) the y value is in
+            int y = getGridSnap(modelPoint.y - offsetY);
+
+            // add back the offset
+            y += offsetY;
+
+            // add in the x offset needed to put it on the corner of the hex
+            x += m_hexImageOffsets[0] / 2; // [0] is the model coordinate size
+
+            // let's number the hexagon points 0 through 5. Let's number them
+            // clockwise starting from the upper left one. What we have done so
+            // far is snap to the nearest point 0. That's not good enough.
+            // There are 3 hexagon points adjacent to a point 0 that are not
+            // other hexagon point 0's. And we might be closer to one of them
+            // than to the point we just snapped to.
+            // so we now have 4 "candidates" for nearest point. The point 0 we just
+            // found, and the other three points nearby. Those other three points
+            // will be:
+            //
+            // --Our hex's point 1
+            // --Our hex's point 5
+            // --Our upstairs neighbor's point 5
+            //
+            // In addition to that, there are 3 hex centers we need to check:
+            // --Our hex center
+            // --Our upstairs neighbor's hex center
+            // -- Our neighbor to the left's hex center
+
+            Point closest = null;
+
+            if (bSnapForPog)
+            {
+                // we're snapping to valid pog locations. We have been sent the
+                // upp left corner of the graphic. We converted that to the center already.
+                // now, we need to stick that to either vertices or hex centers, depending
+                // on the size of the pog. If it's a size 1 (64 px_ pog, we snap to centers only.
+                // if it's size 2, we snap to vertices only. If size 3, back to centers. etc.
+                int face = pogSize / BASE_SQUARE_SIZE;
+                if (face % 2 == 1)
+                {
+                    // odd faces snap to centers
+                    Point candidates[] = new Point[3];
+
+                    Point point1 = new Point(x + BASE_SQUARE_SIZE - m_hexImageOffsets[0], y); // Our
+                    // hex's
+                    // point
+                    // 1,
+                    // for
+                    // use
+                    // in
+                    // calculating
+                    // the
+                    // center
+
+                    candidates[0] = new Point(x + (point1.x - x) / 2, y + BASE_SQUARE_SIZE / 2); // Our
+                    // hex
+                    // center
+                    candidates[1] = new Point(candidates[0].x, candidates[0].y - BASE_SQUARE_SIZE); // Our
+                    // upstairs
+                    // neighbor's
+                    // center
+                    candidates[2] = new Point(candidates[0].x - BASE_SQUARE_SIZE, candidates[0].y - BASE_SQUARE_SIZE
+                        / 2); // Our upstairs neighbor's center
+
+                    closest = getClosestPoint(modelPoint, candidates);
+                }
+                else
+                {
+                    // even faces snap to vertices
+                    Point candidates[] = new Point[4];
+                    candidates[0] = new Point(x, y); // Our hex's point 0
+                    candidates[1] = new Point(x + BASE_SQUARE_SIZE - m_hexImageOffsets[0], y); // Our
+                    // hex's
+                    // point
+                    // 1
+                    candidates[2] = new Point(x - m_hexImageOffsets[0], y + BASE_SQUARE_SIZE / 2); // Our
+                    // hex's
+                    // point
+                    // 5
+                    candidates[3] = new Point(candidates[2].x, candidates[2].y - BASE_SQUARE_SIZE); // Our
+                    // upstairs
+                    // neighbor's
+                    // point
+                    // 5
+
+                    closest = getClosestPoint(modelPoint, candidates);
+                }
+
+                if (closest != null)
+                {
+                    // offset the values for the pog size
+                    closest.x -= pogSize / 2;
+                    closest.y -= pogSize / 2;
+                }
+            }
+            else
+            {
+                // we're snapping to any vertex
+                Point candidates[] = new Point[7];
+                candidates[0] = new Point(x, y); // Our hex's point 0
+                candidates[1] = new Point(x + BASE_SQUARE_SIZE - m_hexImageOffsets[0], y); // Our
+                // hex's
+                // point
+                // 1
+                candidates[2] = new Point(x - m_hexImageOffsets[0], y + BASE_SQUARE_SIZE / 2); // Our
+                // hex's
+                // point
+                // 5
+                candidates[3] = new Point(candidates[2].x, candidates[2].y - BASE_SQUARE_SIZE); // Our
+                // upstairs
+                // neighbor's
+                // point
+                // 5
+                candidates[4] = new Point(candidates[0].x + (candidates[1].x - candidates[0].x) / 2, y
+                    + BASE_SQUARE_SIZE / 2); // Our hex center
+                candidates[5] = new Point(candidates[4].x, candidates[4].y - BASE_SQUARE_SIZE); // Our
+                // upstairs
+                // neighbor's
+                // center
+                candidates[6] = new Point(candidates[4].x - BASE_SQUARE_SIZE, candidates[4].y - BASE_SQUARE_SIZE / 2); // Our
+                // upstairs
+                // neighbor's
+                // center
+
+                closest = getClosestPoint(modelPoint, candidates);
+            }
+
+            if (closest == null)
+            {
+                // uh... if we're here something went wrong
+                // defensive coding, just return that nearest Point 0
+                System.out.println("Error snapping to point");
+                return new Point(x, y);
+            }
+            return closest;
+        }
+
+        // snapping for a pog or not is irrelevant in square mode.
+        int x = getGridSnap(modelPoint.x);
+        int y = getGridSnap(modelPoint.y);
+        return new Point(x, y);
     }
 
     /*
-    // takes VIEW coords
-    private int getSnapX(int x)
-    {
-        return modelToView(getSnap(viewToModel(x, 0).x), 0).x;
-    }
-
-    // takes VIEW coords
-    private int getSnapY(int y)
-    {
-        return modelToView(getSnap(viewToModel(0, y).y), 0).y;
-    }*/
+     * // takes VIEW coords private int getSnapX(int x) { return modelToView(getSnap(viewToModel(x,
+     * 0).x), 0).x; } // takes VIEW coords private int getSnapY(int y) { return
+     * modelToView(getSnap(viewToModel(0, y).y), 0).y; }
+     */
 
     public void updateLocation(MouseEvent e)
     {
@@ -1438,117 +1308,6 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     public void setToolMode(int mode)
     {
         m_toolMode = mode;
-    }
-
-    public void setCursor()
-    {
-        if (NEW_TOOL)
-        {
-            // do nothing
-        }
-        else
-        {
-            switch (m_toolMode)
-            {
-                case TOOL_MODE_ARROW:
-                {
-                    setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-                }
-                    break;
-
-                case TOOL_MODE_PEN:
-                {
-                    setCursor(m_penCursor);
-                }
-                    break;
-
-                case TOOL_MODE_HAND:
-                {
-                    setCursor(m_handCursor);
-                }
-                    break;
-
-                case TOOL_MODE_ERASER:
-                {
-                    setCursor(m_eraserCursor);
-                }
-                    break;
-
-                case TOOL_MODE_POINT:
-                {
-                    setCursor(m_emptyCursor);
-                }
-                    break;
-
-                case TOOL_MODE_LINE:
-                {
-                    setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
-                }
-                    break;
-            }
-        }
-    }
-
-    public void updateToolState()
-    {
-        // if they're right-dragging, it's a point
-        if (m_bSpaceKeyDown)
-        {
-            setToolMode(TOOL_MODE_POINT);
-            setCursor();
-            getActivePogsArea().updateToolState();
-            return;
-        }
-
-        // if they're left-dragging, we don't want to change the tool
-        if (m_bLDragging)
-        {
-            setCursor();
-            getActivePogsArea().updateToolState();
-            return;
-        }
-
-        // if the pogs view is dragging, we don't want to change anything either
-        if (getActivePogsArea().m_bLDragging || getActivePogsArea().m_bRDragging)
-        {
-            return;
-        }
-
-        // if they have space or shift down, it's a hand
-        if (m_bRDragging)
-        {
-            setToolMode(TOOL_MODE_HAND);
-            setCursor();
-            getActivePogsArea().updateToolState();
-            return;
-        }
-
-        // otherwise, ask the buttons
-        if (m_gametableFrame.m_arrowButton.isSelected())
-        {
-            setToolMode(TOOL_MODE_ARROW);
-        }
-        if (m_gametableFrame.m_penButton.isSelected())
-        {
-            setToolMode(TOOL_MODE_PEN);
-        }
-        if (m_gametableFrame.m_eraserButton.isSelected())
-        {
-            setToolMode(TOOL_MODE_ERASER);
-        }
-        if (m_gametableFrame.m_colorEraserButton.isSelected())
-        {
-            setToolMode(TOOL_MODE_ERASER);
-        }
-        if (m_gametableFrame.m_lineButton.isSelected())
-        {
-            setToolMode(TOOL_MODE_LINE);
-        }
-
-        setCursor();
-
-        // now tell the pogs area about it
-        getActivePogsArea().updateToolState();
     }
 
     public void centerZoom(int delta)
@@ -1608,117 +1367,114 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     public void keyPressed(KeyEvent e)
     {
         int code = e.getKeyCode();
-        if (code == KeyEvent.VK_SPACE)
+        switch (code)
         {
-            if (m_bLDragging || m_bRDragging)
-            {
-                // no pointing in the middle of a drag
-                return;
-            }
+            case KeyEvent.VK_SPACE:
+                if (!m_bMouseOnView || getActiveTool().isBeingUsed())
+                {
+                    // no pointing if the mouse is outside the view area, or the active tool is
+                    // being used.
+                    return;
+                }
 
-            if (!m_bMouseOnView)
-            {
-                // no pointing if the mouse is outside the view area
-                return;
-            }
+                // we're only interested in doing this if they aren't already
+                // holding the space key.
+                if (m_bSpaceKeyDown == false)
+                {
+                    m_bSpaceKeyDown = true;
 
-            // we're only interested in doing this if they aren't already
-            // holding the space key.
-            if (m_bSpaceKeyDown == false)
-            {
-
-                m_bSpaceKeyDown = true;
-
-                // pointing
-                Player me = m_gametableFrame.getMePlayer();
-                Point modelMouse = viewToModel(m_currentMouseX, m_currentMouseY);
-                me.setPointing(true);
-                me.setPoint(modelMouse);
-
-                m_gametableFrame.push(PacketManager.makePointPacket(m_gametableFrame.m_myPlayerIdx, me.getPoint().x, me
-                    .getPoint().y, true));
-
-                updateToolState();
-
+                    pointAt(m_mouseModelFloat);
+                    e.consume();
+                }
+            break;
+            case KeyEvent.VK_SHIFT:
+                m_bShiftKeyDown = true;
                 e.consume();
-            }
+            break;
+
+            case KeyEvent.VK_CONTROL:
+                m_bControlKeyDown = true;
+                checkSnap();
+                e.consume();
+            break;
+
+            case KeyEvent.VK_MINUS:
+            case KeyEvent.VK_SUBTRACT:
+                centerZoom(1);
+                e.consume();
+            break;
+
+            case KeyEvent.VK_EQUALS:
+            case KeyEvent.VK_ADD:
+                centerZoom(-1);
+                e.consume();
+            break;
+
+            case KeyEvent.VK_ENTER:
+                // shift focus to the chat area
+                m_gametableFrame.m_textEntry.requestFocus();
+            break;
+            case KeyEvent.VK_SLASH:
+                m_gametableFrame.m_textEntry.setText("/");
+                m_gametableFrame.m_textEntry.requestFocus();
+            break;
+        }
+        // repaint();
+    }
+
+    private boolean isPointing()
+    {
+        Player me = m_gametableFrame.getMePlayer();
+        return me.isPointing();
+    }
+
+    /**
+     * 
+     */
+    private void pointAt(Point pointLocation)
+    {
+        Player me = m_gametableFrame.getMePlayer();
+
+        if (pointLocation == null)
+        {
+            me.setPointing(false);
+            m_gametableFrame.push(PacketManager.makePointPacket(m_gametableFrame.m_myPlayerIdx, 0, 0, false));
+            repaint();
+            return;
         }
 
-        if (code == KeyEvent.VK_SHIFT)
-        {
-            m_bShiftKeyDown = true;
-            e.consume();
-        }
-        if (code == KeyEvent.VK_CONTROL)
-        {
-            m_bControlKeyDown = true;
-            checkSnap();
-            e.consume();
-        }
-        if (code == KeyEvent.VK_MINUS || code == KeyEvent.VK_SUBTRACT)
-        {
-            centerZoom(1);
-            e.consume();
-        }
-        if (code == KeyEvent.VK_EQUALS || code == KeyEvent.VK_ADD)
-        {
-            centerZoom(-1);
-            e.consume();
-        }
-        if (code == KeyEvent.VK_ENTER)
-        {
-            // shift focus to the chat area
-            m_gametableFrame.m_textEntry.requestFocus();
-        }
-        /*
-        if (code == KeyEvent.VK_A)
-        {
-            // become the arrow tool
-            // m_gametableFrame.m_arrowButton.setSelected(true);
-        	setActiveTool(0);
-        }
-        if (code == KeyEvent.VK_Z)
-        {
-            // become the arrow tool
-            // m_gametableFrame.m_arrowButton.setSelected(true);
-        	setActiveTool(1);
-        }
-        */
-        if (code == KeyEvent.VK_SLASH)
-        {
-            m_gametableFrame.m_textEntry.setText("/");
-            m_gametableFrame.m_textEntry.requestFocus();
-        }
-        updateToolState();
+        me.setPointing(true);
+        me.setPoint(pointLocation);
+
+        m_gametableFrame.push(PacketManager.makePointPacket(m_gametableFrame.m_myPlayerIdx, me.getPoint().x, me
+            .getPoint().y, true));
+
+        setToolMode(TOOL_MODE_POINT);
+        setToolCursor(-1);
+        getActivePogsArea().updateToolState();
+
         repaint();
     }
 
     public void keyReleased(KeyEvent e)
     {
-        int code = e.getKeyCode();
-        if (code == KeyEvent.VK_SPACE)
+        switch (e.getKeyCode())
         {
-            m_bSpaceKeyDown = false;
-
-            // they're done pointing
-            m_gametableFrame.getMePlayer().setPointing(false);
-            m_gametableFrame.push(PacketManager.makePointPacket(m_gametableFrame.m_myPlayerIdx, 0, 0, false));
-
-            e.consume();
+            case KeyEvent.VK_SPACE:
+                m_bSpaceKeyDown = false;
+                pointAt(null);
+                e.consume();
+            break;
+            case KeyEvent.VK_SHIFT:
+                m_bShiftKeyDown = false;
+                e.consume();
+            break;
+            case KeyEvent.VK_CONTROL:
+                m_bControlKeyDown = false;
+                checkSnap();
+                e.consume();
+            break;
         }
-        if (code == KeyEvent.VK_SHIFT)
-        {
-            m_bShiftKeyDown = false;
-            e.consume();
-        }
-        if (code == KeyEvent.VK_CONTROL)
-        {
-            m_bControlKeyDown = false;
-            checkSnap();
-            e.consume();
-        }
-        updateToolState();
-        repaint();
     }
 
     /** *********************************************************** */
@@ -1731,6 +1487,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void paint(Graphics g)
     {
+        g.setFont(Font.decode("sans-12"));
         if (false)
         {
             final Map HINTS = new HashMap();
@@ -1808,41 +1565,6 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             ls.draw(g, this);
         }
 
-        // ******************** LEFT DRAG ***********************/
-        if (m_bLDragging)
-        {
-            // ******************** PEN ASSET ***********************/
-            if (m_penAsset != null)
-            {
-                LineSegment[] lines = m_penAsset.getLineSegments();
-                if (lines != null)
-                {
-                    for (int i = 0; i < lines.length; i++)
-                    {
-                        lines[i].draw(g, this);
-                    }
-                }
-            }
-
-            // ******************** ERASER ASSET ***********************/
-            if (m_toolMode == TOOL_MODE_ERASER)
-            {
-                // draw a rubber-band line to represent the selection
-                g.setColor(Color.BLACK);
-                drawDottedRect(g, m_clickX + getActiveMap().getScrollX(), m_clickY + getActiveMap().getScrollY(),
-                    m_dragX - m_clickX, m_dragY - m_clickY);
-            }
-
-            // ******************** LINE ASSET ***********************/
-            if (m_toolMode == TOOL_MODE_LINE)
-            {
-                // draw the rubber band line
-                g.setColor(Color.BLACK);
-                g.drawLine(m_clickX + getActiveMap().getScrollX(), m_clickY + getActiveMap().getScrollY(), m_dragX
-                    + getActiveMap().getScrollX(), m_dragY + getActiveMap().getScrollY());
-            }
-        }
-
         // pogs
         for (int i = 0; i < getActiveMap().getNumPogs(); i++)
         {
@@ -1859,16 +1581,6 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             if (!getActivePogsArea().m_selectedPog.isUnderlay())
             {
                 getActivePogsArea().m_selectedPog.drawToCanvas(g);
-            }
-        }
-
-        // there could be an internal pog move being done. we draw it again here to ensure
-        // it's on top of the heap
-        if (m_pogBeingDragged != null)
-        {
-            if (!m_pogBeingDragged.isUnderlay())
-            {
-                m_pogBeingDragged.drawToCanvas(g);
             }
         }
 
@@ -1891,45 +1603,26 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         // mousing around
         if (m_bMouseOnView)
         {
-            // we don't do this at all if they're presently
-            // drawing a line
-            if (!(m_bLDragging && m_toolMode == TOOL_MODE_LINE))
+            Pog mouseOverPog = getActiveMap().getPogAt(m_mouseModelFloat);
+            if (m_bShiftKeyDown)
             {
-                Pog mouseOverPog = getPogMouseOver();
-                if (m_bShiftKeyDown)
+                // this shift key is down. Show all pog data
+                for (int i = 0; i < getActiveMap().getNumPogs(); i++)
                 {
-                    // this shift key is down. Show all pog data
-                    for (int i = 0; i < getActiveMap().getNumPogs(); i++)
+                    Pog pog = getActiveMap().getPogAt(i);
+                    if (pog != mouseOverPog)
                     {
-                        Pog pog = getActiveMap().getPogAt(i);
-                        if (pog != mouseOverPog)
-                        {
-                            pog.drawDataStringToCanvas(g, false);
-                        }
+                        pog.drawDataStringToCanvas(g, false);
                     }
                 }
-                if (mouseOverPog != null)
-                {
-                    mouseOverPog.drawDataStringToCanvas(g, true);
-                }
+            }
+            else if (mouseOverPog != null)
+            {
+                mouseOverPog.drawDataStringToCanvas(g, true);
             }
         }
         getActiveTool().paint(g);
         g.translate(getActiveMap().getScrollX(), getActiveMap().getScrollY());
-    }
-
-    public Pog getPogMouseOver()
-    {
-        Point modelMouse = viewToModel(m_currentMouseX, m_currentMouseY);
-        for (int i = getActiveMap().getNumPogs() - 1; i >= 0; i--)
-        {
-            Pog pog = getActiveMap().getPogAt(i);
-            if (pog.modelPtInBounds(modelMouse.x, modelMouse.y))
-            {
-                return pog;
-            }
-        }
-        return null;
     }
 
     // topLeftX and topLeftY are the coordinates of where the
@@ -1968,30 +1661,31 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void drawLines(Graphics g, int topLeftX, int topLeftY, int width, int height)
     {
-    	if ( m_zoom == 4 )
-    	{
-    		// we don't draw lines at the furthest zoom level
-    		return;
-    	}
-    	// This code works out which is the first square to draw on the visible
-    	// portion of the map, and how many to draw  
-    	
-    	// we are "tiling" an image across the visible area. In the case of square mode,
-    	// we do this just by drawing lines. For hexes we have an actual image to tile. 
-    	// A trick here we have to deal with is that hexes are not horizontally interchangeable
-    	// across one unit size. That is to say: If you shift a hex map over 1 hex width to the
-    	// left or right, it will not look the same as it used to. Because the hexes in row N
-    	// are 1/2 a hex higher than the nexes in row N-1 and row N+1. Because of this, when in hex mode,
-    	// we have to make our "tiling square size" twice as wide.
-    	
-    	int tilingSquareX = m_squareSize;
-    	int tilingSquareY = m_squareSize;
-    	
-    	if ( m_bHexMode )
-    	{
-    		tilingSquareX*=2;
-    	}
-    	
+        if (m_zoom == 4)
+        {
+            // we don't draw lines at the furthest zoom level
+            return;
+        }
+        // This code works out which is the first square to draw on the visible
+        // portion of the map, and how many to draw
+
+        // we are "tiling" an image across the visible area. In the case of square mode,
+        // we do this just by drawing lines. For hexes we have an actual image to tile.
+        // A trick here we have to deal with is that hexes are not horizontally interchangeable
+        // across one unit size. That is to say: If you shift a hex map over 1 hex width to the
+        // left or right, it will not look the same as it used to. Because the hexes in row N
+        // are 1/2 a hex higher than the nexes in row N-1 and row N+1. Because of this, when in hex
+        // mode,
+        // we have to make our "tiling square size" twice as wide.
+
+        int tilingSquareX = m_squareSize;
+        int tilingSquareY = m_squareSize;
+
+        if (m_bHexMode)
+        {
+            tilingSquareX *= 2;
+        }
+
         int qx = Math.abs(topLeftX) / tilingSquareX;
         if (topLeftX < 0)
         {
@@ -2009,8 +1703,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         int linesXOffset = qx * tilingSquareX;
         int linesYOffset = qy * tilingSquareY;
         int vLines = width / tilingSquareX + 2;
-        int hLines = height / tilingSquareY + 2;        
-        
+        int hLines = height / tilingSquareY + 2;
+
         if (m_bHexMode)
         {
             // draw a hex grid
@@ -2019,34 +1713,33 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             // this offsets the hexes to be "centered" in the square grid that would
             // be there if we were in square mode (Doing things this way means that the
             // x-position treatment of pogs doesn't have to change while in hex mode.
-            int offsetX = -m_hexImageOffsets[m_zoom]/2;
+            int offsetX = -m_hexImageOffsets[m_zoom] / 2;
 
             // each tiling of hex images is 4 hexes high. so we incrememt by 4
-            for ( int j=0 ; j<hLines ; j+=4 )
+            for (int j = 0; j < hLines; j += 4)
             {
-	            // every "tiling" of the hex map draws 4 vertical rows of hexes 
-	            // that works out to be 2 tileSquare sizes (cause each tileSquare width is
-	            // 2 columns of hexes.
-	            for (int i = 0; i < vLines; i+=2)
-	            {
-	            	// the x value:
-	            	// starts at the "linesXOffset" calculated at the top of this routine.
-	            	// that represents the first vertical column of hexes visible on screen.
-	            	// add to that i*m_squareSize, to offset horizontally as we traverse the loop.
-	            	// then add our little offsetX, whose purpose is described in it's declaration.
-	            	int x = linesXOffset + i * tilingSquareX + offsetX;
-	            	
-	            	// the y location is much the same, except we need no x offset nudge.
-	            	int y = linesYOffset + j*tilingSquareY;
-	                g.drawImage(toTile, x, y, this);
-	            }
+                // every "tiling" of the hex map draws 4 vertical rows of hexes
+                // that works out to be 2 tileSquare sizes (cause each tileSquare width is
+                // 2 columns of hexes.
+                for (int i = 0; i < vLines; i += 2)
+                {
+                    // the x value:
+                    // starts at the "linesXOffset" calculated at the top of this routine.
+                    // that represents the first vertical column of hexes visible on screen.
+                    // add to that i*m_squareSize, to offset horizontally as we traverse the loop.
+                    // then add our little offsetX, whose purpose is described in it's declaration.
+                    int x = linesXOffset + i * tilingSquareX + offsetX;
+
+                    // the y location is much the same, except we need no x offset nudge.
+                    int y = linesYOffset + j * tilingSquareY;
+                    g.drawImage(toTile, x, y, this);
+                }
             }
-            
+
         }
         else
         {
             // draw a square grid
-
 
             g.setColor(Color.GRAY);
 

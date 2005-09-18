@@ -33,6 +33,11 @@ public interface Tool
     void deactivate();
 
     /**
+     * The tool should return true if the tool is in a mode where it is actively being used.
+     */
+    boolean isBeingUsed();
+
+    /**
      * Called when the mouse button is pressed on the map.
      * 
      * @param x The x location of the mouse on the map when the button was pressed.

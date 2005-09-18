@@ -43,6 +43,14 @@ public class LineTool extends NullTool
     }
 
     /*
+     * @see com.galactanet.gametable.Tool#isBeingUsed()
+     */
+    public boolean isBeingUsed()
+    {
+        return (m_mouseAnchor != null);
+    }
+
+    /*
      * @see com.galactanet.gametable.AbstractTool#mouseButtonPressed(int, int)
      */
     public void mouseButtonPressed(int x, int y, int modifierMask)

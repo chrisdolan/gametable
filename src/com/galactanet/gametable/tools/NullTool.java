@@ -42,6 +42,15 @@ public class NullTool implements Tool
     }
 
     /*
+     * @see com.galactanet.gametable.Tool#isBeingUsed()
+     */
+    public boolean isBeingUsed()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    /*
      * @see com.galactanet.gametable.Tool#mouseButtonPressed(int, int)
      */
     public void mouseButtonPressed(int x, int y, int modifierMask)

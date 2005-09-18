@@ -101,10 +101,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public PogsPanel              m_underlaysArea            = new PogsPanel();
     JToolBar                      jToolBar1                  = new JToolBar();
     ButtonGroup                   m_toolButtonGroup          = new ButtonGroup();
-    public JToggleButton          m_arrowButton              = new JToggleButton();
-    public JToggleButton          m_penButton                = new JToggleButton();
-    public JToggleButton          m_eraserButton             = new JToggleButton();
-    public JToggleButton          m_lineButton               = new JToggleButton();
     JMenuItem                     m_eraseLines               = new JMenuItem();
 
     List                          m_macros                   = new ArrayList();
@@ -171,6 +167,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public File                   m_actingFile;
 
     private ToolManager           m_toolManager              = new ToolManager();
+    private JToggleButton         m_toolButtons[]            = null;
 
 
 
@@ -284,13 +281,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             {
                 logSystemMessage("Invalid Password. Connection refused.");
             }
-                break;
+            break;
 
             case REJECT_VERSION_MISMATCH:
             {
                 logSystemMessage("The host is running a different comm-version of Gametable. Connection refused.");
             }
-                break;
+            break;
         }
         disconnect();
     }
@@ -420,7 +417,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             logMessage(text);
         }
     }
-    
+
     public void hexModePacketReceived(boolean bHexMode)
     {
         // note the new hex mode
@@ -432,7 +429,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             // if we're the host, send it to the clients
             push(PacketManager.makeHexModePacket(bHexMode));
         }
-        
+
         repaint();
     }
 
@@ -865,17 +862,17 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         eraseAllLines();
         eraseAllPogs();
     }
-    
+
     public void updateHexModeMenuItem()
     {
-    	if ( this.m_gametableCanvas.m_bHexMode )
-    	{
-    		m_hexMode.setState(true);
-    	}
-    	else
-    	{
-    		m_hexMode.setState(false);
-    	}
+        if (this.m_gametableCanvas.m_bHexMode)
+        {
+            m_hexMode.setState(true);
+        }
+        else
+        {
+            m_hexMode.setState(false);
+        }
     }
 
     public void actionPerformed(ActionEvent e)
@@ -916,39 +913,40 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (e.getSource() == jMenuOpen)
         {
             m_actingFile = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
-            
-            int result = UtilityFunctions.yesNoDialog(
-                this,
-                "This will load a map file, replacing all existing map data for you and all players in the session. Are you sure you want to do this?",
-                "Confirm Load");
-	        if (result == UtilityFunctions.YES)
-	        {
-            
-	            if (m_actingFile != null)
-	            {
-	                // clear the state
-	                eraseAll();
-	
-	                // load
-	                if (m_netStatus == NETSTATE_JOINED)
-	                {
-	                    // joiners dispatch the save file to the host
-	                    // for processing
-	                    byte grmFile[] = UtilityFunctions.loadFileToArray(m_actingFile);
-	                    if (grmFile != null)
-	                    {
-	                        push(PacketManager.makeGrmPacket(grmFile));
-	                    }
-	                }
-	                else
-	                {
-	                    // actually do the load if we're the host or offline
-	                    loadState(m_actingFile);
-	                }
-	                
-	                postSystemMessage(getMePlayer().getPlayerName() + " loads a new map.");
-	            }
-	        }
+
+            int result = UtilityFunctions
+                .yesNoDialog(
+                    this,
+                    "This will load a map file, replacing all existing map data for you and all players in the session. Are you sure you want to do this?",
+                    "Confirm Load");
+            if (result == UtilityFunctions.YES)
+            {
+
+                if (m_actingFile != null)
+                {
+                    // clear the state
+                    eraseAll();
+
+                    // load
+                    if (m_netStatus == NETSTATE_JOINED)
+                    {
+                        // joiners dispatch the save file to the host
+                        // for processing
+                        byte grmFile[] = UtilityFunctions.loadFileToArray(m_actingFile);
+                        if (grmFile != null)
+                        {
+                            push(PacketManager.makeGrmPacket(grmFile));
+                        }
+                    }
+                    else
+                    {
+                        // actually do the load if we're the host or offline
+                        loadState(m_actingFile);
+                    }
+
+                    postSystemMessage(getMePlayer().getPlayerName() + " loads a new map.");
+                }
+            }
         }
         if (e.getSource() == jMenuSave)
         {
@@ -987,24 +985,21 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         if (e.getSource() == m_version)
         {
-            UtilityFunctions.msgBox(this, "Gametable Version 1.0.2 (4/18/05) by Andy Weir", "Version");
+            UtilityFunctions.msgBox(this, GametableApp.VERSION + " by Andy Weir", "Version");
         }
-        if (e.getSource() == m_hexMode )
+        if (e.getSource() == m_hexMode)
         {
-        	m_gametableCanvas.m_bHexMode = !m_gametableCanvas.m_bHexMode;
-        	push(PacketManager.makeHexModePacket(m_gametableCanvas.m_bHexMode));
-        	repaint();
-        	updateHexModeMenuItem();
+            m_gametableCanvas.m_bHexMode = !m_gametableCanvas.m_bHexMode;
+            push(PacketManager.makeHexModePacket(m_gametableCanvas.m_bHexMode));
+            repaint();
+            updateHexModeMenuItem();
             postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
         }
 
         if (e.getSource() == m_recenter)
         {
-            int result = UtilityFunctions
-                .yesNoDialog(
-                    this,
-                    "This will recenter everyone's map view to match yours, and will set their zoom levels to match yours. Are you sure you want to do this?",
-                    "Recenter?");
+            int result = UtilityFunctions.yesNoDialog(this, "This will recenter everyone's map view to match yours, "
+                + "and will set their zoom levels to match yours. Are you sure you want to do this?", "Recenter?");
             if (result == UtilityFunctions.YES)
             {
                 // get our view center
@@ -1044,12 +1039,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 m_macros.remove(sel);
                 rebuildMacroButtons();
             }
-        }
-
-        if (e.getSource() == m_colorEraserButton)
-        {
-            m_gametableCanvas.updateToolState();
-            m_gametableCanvas.requestFocus();
         }
 
         // check the macro buttons
@@ -1128,18 +1117,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_textAndEntryPanel.setPreferredSize(new Dimension(500, 52));
         m_textAreaPanel.setLayout(borderLayout3);
         jSplitPane2.setContinuousLayout(true);
-        m_arrowButton.setActionCommand("arrowButton");
-        m_arrowButton.setText("");
-        m_arrowButton.addActionListener(new GametableFrame_m_arrowButton_actionAdapter(this));
-        m_penButton.setActionCommand("penButton");
-        m_penButton.setText("");
-        m_penButton.addActionListener(new GametableFrame_m_penButton_actionAdapter(this));
-        m_eraserButton.setActionCommand("erase");
-        m_eraserButton.addActionListener(new GametableFrame_m_eraserButton_actionAdapter(this));
-        m_colorEraserButton.addActionListener(this);
-        m_lineButton.setActionCommand("line");
-        m_lineButton.setText("");
-        m_lineButton.addActionListener(new GametableFrame_m_lineButton_actionAdapter(this));
         m_eraseLines.setText("Erase Lines");
         m_eraseLines.addActionListener(this);
         m_pogsArea.setMaximumSize(new Dimension(32767, 32767));
@@ -1178,41 +1155,28 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_mapMenu.add(m_recenter);
         m_mapMenu.add(m_hexMode);
         jToolBar1.add(m_colorCombo, null);
-        if (!GametableCanvas.NEW_TOOL)
+        m_toolManager.initialize();
+        int buttonSize = m_toolManager.getMaxIconSize();
+        int numTools = m_toolManager.getNumTools();
+        m_toolButtons = new JToggleButton[numTools];
+        for (int toolId = 0; toolId < numTools; toolId++)
         {
-            jToolBar1.add(m_arrowButton, null);
-            jToolBar1.add(m_penButton, null);
-            jToolBar1.add(m_lineButton, null);
-            jToolBar1.add(m_colorEraserButton, null);
-            jToolBar1.add(m_eraserButton, null);
-        }
-        else
-        {
-            m_toolManager.initialize();
-            int buttonSize = m_toolManager.getMaxIconSize();
-            int numTools = m_toolManager.getNumTools();
-            for (int toolId = 0; toolId < numTools; toolId++)
+            ToolManager.Info info = m_toolManager.getToolInfo(toolId);
+            Image im = UtilityFunctions.createDrawableImage(buttonSize, buttonSize);
             {
-                ToolManager.Info info = m_toolManager.getToolInfo(toolId);
-                Image im = UtilityFunctions.createDrawableImage(buttonSize, buttonSize);
-                {
-                    Graphics g = im.getGraphics();
-                    Image icon = info.getIcon();
-                    int offsetX = (buttonSize - icon.getWidth(null)) / 2;
-                    int offsetY = (buttonSize - icon.getHeight(null)) / 2;
-                    g.drawImage(info.getIcon(), offsetX, offsetY, null);
-                    g.dispose();
-                }
-
-                JToggleButton button = new JToggleButton(new ImageIcon(im));
-                jToolBar1.add(button);
-                button.addActionListener(new ToolButtonActionListener(toolId));
-                m_toolButtonGroup.add(button);
-                if (toolId == 0)
-                {
-                    button.setSelected(true);
-                }
+                Graphics g = im.getGraphics();
+                Image icon = info.getIcon();
+                int offsetX = (buttonSize - icon.getWidth(null)) / 2;
+                int offsetY = (buttonSize - icon.getHeight(null)) / 2;
+                g.drawImage(info.getIcon(), offsetX, offsetY, null);
+                g.dispose();
             }
+
+            JToggleButton button = new JToggleButton(new ImageIcon(im));
+            jToolBar1.add(button);
+            button.addActionListener(new ToolButtonActionListener(toolId));
+            m_toolButtonGroup.add(button);
+            m_toolButtons[toolId] = button;
         }
         jMenuFile.add(jMenuOpen);
         jMenuFile.add(jMenuSave);
@@ -1263,36 +1227,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         jMenu1.add(m_addDiceMacro);
         jMenu1.add(m_removeDiceMacro);
 
-        // icons for the tool buttons
-        if (!GametableCanvas.NEW_TOOL)
-        {
-            m_toolButtonGroup.add(m_arrowButton);
-            m_toolButtonGroup.add(m_penButton);
-            m_toolButtonGroup.add(m_eraserButton);
-            m_toolButtonGroup.add(m_colorEraserButton);
-            m_toolButtonGroup.add(m_lineButton);
-
-            Image img = UtilityFunctions.getImage("assets/arrow.png");
-            Icon anIcon = new ImageIcon(img);
-            m_arrowButton.setIcon(anIcon);
-
-            img = UtilityFunctions.getImage("assets/line.png");
-            anIcon = new ImageIcon(img);
-            m_lineButton.setIcon(anIcon);
-
-            img = UtilityFunctions.getImage("assets/pen.png");
-            anIcon = new ImageIcon(img);
-            m_penButton.setIcon(anIcon);
-
-            img = UtilityFunctions.getImage("assets/eraser.png");
-            anIcon = new ImageIcon(img);
-            m_eraserButton.setIcon(anIcon);
-
-            img = UtilityFunctions.getImage("assets/redEraser.png");
-            anIcon = new ImageIcon(img);
-            m_colorEraserButton.setIcon(anIcon);
-        }
-
         addMacroButton("d20", "d20");
 
         // start the poll thread
@@ -1322,12 +1256,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_bFirstPaint = false;
             m_bDisregardDividerChanges = false;
             m_gametableCanvas.requestFocus();
-            m_arrowButton.setSelected(true);
 
             repaint();
-        }
-        else
-        {
         }
         super.paint(g);
     }
@@ -1335,6 +1265,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public ToolManager getToolManager()
     {
         return m_toolManager;
+    }
+
+    public void setToolSelected(int toolId)
+    {
+        m_toolButtons[toolId].setSelected(true);
     }
 
     public void addPlayer(Object player)
@@ -1682,36 +1617,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
     }
 
-    void m_arrowButton_actionPerformed(ActionEvent e)
-    {
-        m_gametableCanvas.updateToolState();
-        m_gametableCanvas.requestFocus();
-    }
-
-    void m_penButton_actionPerformed(ActionEvent e)
-    {
-        m_gametableCanvas.updateToolState();
-        m_gametableCanvas.requestFocus();
-    }
-
-    void m_eraserButton_actionPerformed(ActionEvent e)
-    {
-        m_gametableCanvas.updateToolState();
-        m_gametableCanvas.requestFocus();
-    }
-
-    void m_pointButton_actionPerformed(ActionEvent e)
-    {
-        m_gametableCanvas.updateToolState();
-        m_gametableCanvas.requestFocus();
-    }
-
-    void m_lineButton_actionPerformed(ActionEvent e)
-    {
-        m_gametableCanvas.updateToolState();
-        m_gametableCanvas.requestFocus();
-    }
-
     public void savePrefs()
     {
         try
@@ -1845,7 +1750,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 dos.writeInt(pogsPacket.length);
                 dos.write(pogsPacket);
             }
-            
+
             // hex state
             byte hexModePacket[] = PacketManager.makeHexModePacket(m_gametableCanvas.m_bHexMode);
             dos.writeInt(hexModePacket.length);
@@ -1951,77 +1856,5 @@ class GametableFrame_m_textEntry_actionAdapter implements java.awt.event.ActionL
     public void actionPerformed(ActionEvent e)
     {
         adaptee.m_textEntry_actionPerformed(e);
-    }
-}
-
-
-class GametableFrame_m_arrowButton_actionAdapter implements java.awt.event.ActionListener
-{
-    GametableFrame adaptee;
-
-
-
-    GametableFrame_m_arrowButton_actionAdapter(GametableFrame a)
-    {
-        adaptee = a;
-    }
-
-    public void actionPerformed(ActionEvent e)
-    {
-        adaptee.m_arrowButton_actionPerformed(e);
-    }
-}
-
-
-class GametableFrame_m_penButton_actionAdapter implements java.awt.event.ActionListener
-{
-    GametableFrame adaptee;
-
-
-
-    GametableFrame_m_penButton_actionAdapter(GametableFrame a)
-    {
-        adaptee = a;
-    }
-
-    public void actionPerformed(ActionEvent e)
-    {
-        adaptee.m_penButton_actionPerformed(e);
-    }
-}
-
-
-class GametableFrame_m_eraserButton_actionAdapter implements java.awt.event.ActionListener
-{
-    GametableFrame adaptee;
-
-
-
-    GametableFrame_m_eraserButton_actionAdapter(GametableFrame a)
-    {
-        adaptee = a;
-    }
-
-    public void actionPerformed(ActionEvent e)
-    {
-        adaptee.m_eraserButton_actionPerformed(e);
-    }
-}
-
-
-class GametableFrame_m_lineButton_actionAdapter implements java.awt.event.ActionListener
-{
-    GametableFrame adaptee;
-
-
-
-    GametableFrame_m_lineButton_actionAdapter(GametableFrame a)
-    {
-        adaptee = a;
-    }
-
-    public void actionPerformed(ActionEvent e)
-    {
-        adaptee.m_lineButton_actionPerformed(e);
     }
 }
