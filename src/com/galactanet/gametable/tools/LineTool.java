@@ -123,8 +123,10 @@ public class LineTool extends NullTool
             if (squaresDistance >= 0.75)
             {
                 Graphics2D g3 = (Graphics2D)g.create();
-                g3.setFont(Font.decode("Arial-bold-12"));
-                Point drawMidPoint = m_canvas.modelToDraw(drawAnchor.x + dx / 2, drawAnchor.y + dy / 2);
+                g3.setFont(Font.decode("sans-12"));
+                Point midPoint = new Point(m_mouseAnchor.x + dx / 2, m_mouseAnchor.y + dy / 2);
+                Point drawMidPoint = m_canvas.modelToDraw(midPoint);
+                
                 String s = squaresDistance + "u";
                 FontMetrics fm = g3.getFontMetrics();
                 Rectangle rect = fm.getStringBounds(s, g3).getBounds();
