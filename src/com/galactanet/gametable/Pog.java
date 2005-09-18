@@ -67,7 +67,7 @@ public class Pog
     {
         return m_images[0].getHeight(m_canvas);
     }
-
+    
     public boolean isUnderlay()
     {
         return m_bIsUnderlay;

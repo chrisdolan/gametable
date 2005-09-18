@@ -68,6 +68,9 @@ public class PacketManager
     // request for a png
     public static final int PACKET_PNGREQUEST = 13;
 
+    // notification of a hex mode / grid mode change
+    public static final int PACKET_HEX_MODE = 14;
+
     /**
      * Holding ground for POGs with no images yet.
      */
@@ -168,7 +171,13 @@ public class PacketManager
                 {
                     readPngRequestPacket(conn, dis);
                 }
-                    break;
+                break;
+
+                case PACKET_HEX_MODE:
+                {
+                    readHexModePacket(dis);
+                }
+                break;
 
                 default:
                 {
@@ -214,6 +223,8 @@ public class PacketManager
                 return "PACKET_FILE";
             case PACKET_PNGREQUEST:
                 return "PACKET_PNGREQUEST";
+            case PACKET_HEX_MODE:
+                return "PACKET_HEX_MODE";
             default:
                 return "PACKET_UNKNOWN";
         }
@@ -786,6 +797,43 @@ public class PacketManager
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
             gtFrame.rejectPacketReceived(reason);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+    
+    /** *********************** HEX MODE PACKET *********************************** */
+    public static byte[] makeHexModePacket(boolean bIsHexMode)
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_HEX_MODE); // type
+            dos.writeBoolean(bIsHexMode); // type
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
+    public static void readHexModePacket(DataInputStream dis)
+    {
+
+        try
+        {
+            boolean bIsHexMode = dis.readBoolean();
+
+            // tell the model
+            GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.hexModePacketReceived(bIsHexMode);
         }
         catch (IOException ex)
         {

@@ -113,6 +113,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     JMenu                         m_netMenu                  = new JMenu();
     JMenuItem                     m_host                     = new JMenuItem();
     JMenuItem                     m_join                     = new JMenuItem();
+    JCheckBoxMenuItem             m_hexMode                  = new JCheckBoxMenuItem();
 
     public final static int       NETSTATE_NONE              = 0;
     public final static int       NETSTATE_HOST              = 1;
@@ -418,7 +419,21 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             // otherwise, just add it
             logMessage(text);
         }
+    }
+    
+    public void hexModePacketReceived(boolean bHexMode)
+    {
+        // note the new hex mode
+        m_gametableCanvas.m_bHexMode = bHexMode;
+        updateHexModeMenuItem();
 
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if we're the host, send it to the clients
+            push(PacketManager.makeHexModePacket(bHexMode));
+        }
+        
+        repaint();
     }
 
     public int getPlayerIdx(Player plr)
@@ -850,6 +865,18 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         eraseAllLines();
         eraseAllPogs();
     }
+    
+    public void updateHexModeMenuItem()
+    {
+    	if ( this.m_gametableCanvas.m_bHexMode )
+    	{
+    		m_hexMode.setState(true);
+    	}
+    	else
+    	{
+    		m_hexMode.setState(false);
+    	}
+    }
 
     public void actionPerformed(ActionEvent e)
     {
@@ -889,28 +916,39 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (e.getSource() == jMenuOpen)
         {
             m_actingFile = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
-            if (m_actingFile != null)
-            {
-                // clear the state
-                eraseAll();
-
-                // load
-                if (m_netStatus == NETSTATE_JOINED)
-                {
-                    // joiners dispatch the save file to the host
-                    // for processing
-                    byte grmFile[] = UtilityFunctions.loadFileToArray(m_actingFile);
-                    if (grmFile != null)
-                    {
-                        push(PacketManager.makeGrmPacket(grmFile));
-                    }
-                }
-                else
-                {
-                    // actually do the load if we're the host or offline
-                    loadState(m_actingFile);
-                }
-            }
+            
+            int result = UtilityFunctions.yesNoDialog(
+                this,
+                "This will load a map file, replacing all existing map data for you and all players in the session. Are you sure you want to do this?",
+                "Confirm Load");
+	        if (result == UtilityFunctions.YES)
+	        {
+            
+	            if (m_actingFile != null)
+	            {
+	                // clear the state
+	                eraseAll();
+	
+	                // load
+	                if (m_netStatus == NETSTATE_JOINED)
+	                {
+	                    // joiners dispatch the save file to the host
+	                    // for processing
+	                    byte grmFile[] = UtilityFunctions.loadFileToArray(m_actingFile);
+	                    if (grmFile != null)
+	                    {
+	                        push(PacketManager.makeGrmPacket(grmFile));
+	                    }
+	                }
+	                else
+	                {
+	                    // actually do the load if we're the host or offline
+	                    loadState(m_actingFile);
+	                }
+	                
+	                postSystemMessage(getMePlayer().getPlayerName() + " loads a new map.");
+	            }
+	        }
         }
         if (e.getSource() == jMenuSave)
         {
@@ -950,6 +988,14 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (e.getSource() == m_version)
         {
             UtilityFunctions.msgBox(this, "Gametable Version 1.0.2 (4/18/05) by Andy Weir", "Version");
+        }
+        if (e.getSource() == m_hexMode )
+        {
+        	m_gametableCanvas.m_bHexMode = !m_gametableCanvas.m_bHexMode;
+        	push(PacketManager.makeHexModePacket(m_gametableCanvas.m_bHexMode));
+        	repaint();
+        	updateHexModeMenuItem();
+            postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
         }
 
         if (e.getSource() == m_recenter)
@@ -1110,6 +1156,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_netMenu.setText("Network");
         m_host.setText("Host");
         m_join.setText("Join");
+        m_hexMode.setText("Hex Mode");
+        m_hexMode.addActionListener(this);
         m_host.addActionListener(this);
         m_join.addActionListener(this);
         m_disconnect.setText("Disconnect");
@@ -1128,6 +1176,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_mapMenu.add(m_eraseLines);
         m_mapMenu.add(m_clearPogs);
         m_mapMenu.add(m_recenter);
+        m_mapMenu.add(m_hexMode);
         jToolBar1.add(m_colorCombo, null);
         if (!GametableCanvas.NEW_TOOL)
         {
@@ -1256,7 +1305,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         m_textEntry.addKeyListener(this);
         m_colorCombo.addActionListener(this);
-
+        updateHexModeMenuItem();
         m_bInitted = true;
     }
 
@@ -1796,6 +1845,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 dos.writeInt(pogsPacket.length);
                 dos.write(pogsPacket);
             }
+            
+            // hex state
+            byte hexModePacket[] = PacketManager.makeHexModePacket(m_gametableCanvas.m_bHexMode);
+            dos.writeInt(hexModePacket.length);
+            dos.write(hexModePacket);
 
             byte[] saveFileData = baos.toByteArray();
             FileOutputStream output = new FileOutputStream(file);
