@@ -243,7 +243,17 @@ public class ToolManager
         // load up the properties
         Properties props = new Properties();
         props.load(stream);
+        initialize(props);
+    }
 
+    /**
+     * Initializes the tool manager from the given properties object.
+     * 
+     * @param props Properties object.
+     * @throws IOException If there is a problem accessing the stream.
+     */
+    public void initialize(Properties props) throws IOException
+    {
         // find all specified tools
         int toolId = 0;
         while (true)
@@ -303,21 +313,26 @@ public class ToolManager
      */
     public void initialize(String fileName) throws IOException
     {
-        File file = new File(fileName);
-        if (file.exists())
-        {
-            initialize(new FileInputStream(file));
-            return;
-        }
+        Properties props = new Properties();
         String fileName2 = "assets/" + fileName;
-        file = new File(fileName2);
-        if (file.exists())
-        {
-            initialize(new FileInputStream(file));
-            return;
-        }
         InputStream is = getClass().getResourceAsStream("/" + fileName2);
-        initialize(is);
+        if (is != null)
+        {
+            props.load(is);
+        }
+
+        File file = new File(fileName);
+        if (!file.exists())
+        {
+            file = new File(fileName2);
+            if (file.exists())
+            {
+                props.load(new FileInputStream(file));
+            }
+        } else {
+            props.load(new FileInputStream(file));
+        }
+        initialize(props);
     }
 
     /**
