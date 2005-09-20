@@ -79,31 +79,31 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     JMenuBar                      m_menuBar                  = new JMenuBar();
 
-    JMenu                         m_fileMenu                 = new JMenu();
-    JMenuItem                     m_openMenuItem             = new JMenuItem();
-    JMenuItem                     m_saveMenuItem             = new JMenuItem();
-    JMenuItem                     m_saveAsMenuItem           = new JMenuItem();
-    JMenuItem                     m_exitMenuItem             = new JMenuItem();
+    JMenu                         m_fileMenu                 = new JMenu("File");
+    JMenuItem                     m_openMenuItem             = new JMenuItem("Open...");
+    JMenuItem                     m_saveMenuItem             = new JMenuItem("Save");
+    JMenuItem                     m_saveAsMenuItem           = new JMenuItem("Save As...");
+    JMenuItem                     m_exitMenuItem             = new JMenuItem("Exit");
 
-    JMenu                         m_networkMenu              = new JMenu();
-    JMenuItem                     m_hostMenuItem             = new JMenuItem();
-    JMenuItem                     m_joinMenuItem             = new JMenuItem();
-    JMenuItem                     m_disconnect               = new JMenuItem();
+    JMenu                         m_networkMenu              = new JMenu("Network");
+    JMenuItem                     m_hostMenuItem             = new JMenuItem("Host...");
+    JMenuItem                     m_joinMenuItem             = new JMenuItem("Join...");
+    JMenuItem                     m_disconnect               = new JMenuItem("Disconnect");
 
-    JMenu                         m_mapMenu                  = new JMenu();
-    JMenuItem                     m_clearPogsMenuItem        = new JMenuItem();
-    JMenuItem                     m_recenter                 = new JMenuItem();
-    JCheckBoxMenuItem             m_hexModeMenuItem          = new JCheckBoxMenuItem();
+    JMenu                         m_mapMenu                  = new JMenu("Map");
+    JMenuItem                     m_clearPogsMenuItem        = new JMenuItem("Clear Pogs");
+    JMenuItem                     m_eraseLinesMenuItem       = new JMenuItem("Erase Lines");
+    JMenuItem                     m_recenter                 = new JMenuItem("Recenter All Players");
+    JCheckBoxMenuItem             m_hexModeMenuItem          = new JCheckBoxMenuItem("Hex Mode");
 
-    JMenu                         m_diceMacrosMenu           = new JMenu();
-    JMenuItem                     m_addDiceMacroMenuItem     = new JMenuItem();
-    JMenuItem                     m_removeDiceMacroMenuItem  = new JMenuItem();
+    JMenu                         m_diceMacrosMenu           = new JMenu("Dice Macros");
+    JMenuItem                     m_addDiceMacroMenuItem     = new JMenuItem("Add...");
+    JMenuItem                     m_removeDiceMacroMenuItem  = new JMenuItem("Remove...");
 
-    JMenu                         m_toolsMenu                = new JMenu();
-    JMenuItem                     m_eraseLinesMenuItem       = new JMenuItem();
+    JMenu                         m_toolsMenu                = new JMenu("Tools");
 
-    JMenu                         m_helpMenu                 = new JMenu();
-    JMenuItem                     m_versionMenuItem          = new JMenuItem();
+    JMenu                         m_helpMenu                 = new JMenu("Help");
+    JMenuItem                     m_aboutMenuItem            = new JMenuItem("About");
 
     JPanel                        m_propertiesArea           = new JPanel();
     public GametableCanvas        m_gametableCanvas          = new GametableCanvas();
@@ -205,44 +205,47 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             m_contentPane = (JPanel)this.getContentPane();
             setSize(new Dimension(600, 500));
-            m_fileMenu.setText("File");
-            m_helpMenu.setText("Help");
-            m_toolsMenu.setText("Tools");
-            m_openMenuItem.setText("Open");
+
             m_openMenuItem.addActionListener(this);
-            m_saveMenuItem.setText("Save");
             m_saveMenuItem.addActionListener(this);
-            m_saveAsMenuItem.setText("Save As");
             m_saveAsMenuItem.addActionListener(this);
-            m_exitMenuItem.setText("Exit");
             m_exitMenuItem.addActionListener(this);
+            m_eraseLinesMenuItem.addActionListener(this);
+            m_clearPogsMenuItem.setActionCommand("clearPogs");
+            m_clearPogsMenuItem.addActionListener(this);
+            m_hexModeMenuItem.addActionListener(this);
+            m_hostMenuItem.addActionListener(this);
+            m_joinMenuItem.addActionListener(this);
+            m_disconnect.addActionListener(this);
+            m_recenter.addActionListener(this);
+            m_addDiceMacroMenuItem.addActionListener(this);
+            m_removeDiceMacroMenuItem.addActionListener(this);
+            m_aboutMenuItem.addActionListener(this);
+
             m_contentPane.setLayout(new BorderLayout());
             m_contentPane.setMaximumSize(new Dimension(32767, 32767));
             m_contentPane.setPreferredSize(new Dimension(2000, 300));
             m_contentPane.setRequestFocusEnabled(true);
-            m_propertiesArea.setBorder(BorderFactory.createEtchedBorder());
+            m_propertiesArea.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
             m_propertiesArea.setMinimumSize(new Dimension(10, 10));
             m_propertiesArea.setPreferredSize(new Dimension(70, 100));
             m_propertiesArea.setRequestFocusEnabled(true);
-            m_propertiesArea.setToolTipText("");
             m_propertiesArea.setLayout(new BorderLayout());
             m_playerListScrollPane.setPreferredSize(new Dimension(180, 120));
             m_textAndEntryPanel.setLayout(new BorderLayout());
             m_textLog.setDoubleBuffered(true);
             m_textLog.setPreferredSize(new Dimension(500, 21));
-            m_textEntry.setText("");
             m_textEntry.addActionListener(new GametableFrame_m_textEntry_actionAdapter(this));
             m_textLogScroller.setDoubleBuffered(true);
             m_textLogScroller.setPreferredSize(new Dimension(450, 31));
             m_mapChatSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
             m_mapChatSplitPane.setContinuousLayout(true);
+            m_mapChatSplitPane.setResizeWeight(1.0);
             m_gametableCanvas.setMaximumSize(new Dimension(32767, 32767));
             m_gametableCanvas.setPreferredSize(new Dimension(500, 400));
             m_textAndEntryPanel.setPreferredSize(new Dimension(500, 52));
             m_textAreaPanel.setLayout(new BorderLayout());
             m_mapPogSplitPane.setContinuousLayout(true);
-            m_eraseLinesMenuItem.setText("Erase Lines");
-            m_eraseLinesMenuItem.addActionListener(this);
             m_pogsPanel.setMaximumSize(new Dimension(32767, 32767));
             m_pogsPanel.setMinimumSize(new Dimension(1, 1));
             m_pogsPanel.setPreferredSize(new Dimension(20, 10));
@@ -250,34 +253,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_underlaysPanel.setMinimumSize(new Dimension(1, 1));
             m_underlaysPanel.setPreferredSize(new Dimension(20, 10));
             m_macroButtonsPanel.setLayout(new BoxLayout(m_macroButtonsPanel, BoxLayout.Y_AXIS));
-            m_clearPogsMenuItem.setActionCommand("clearPogs");
-            m_clearPogsMenuItem.setText("Clear Pogs");
-            m_clearPogsMenuItem.addActionListener(this);
             m_macroButtonsPanel.setToolTipText("Macros");
-            m_networkMenu.setText("Network");
-            m_hostMenuItem.setText("Host");
-            m_joinMenuItem.setText("Join");
-            m_hexModeMenuItem.setText("Hex Mode");
-            m_hexModeMenuItem.addActionListener(this);
-            m_hostMenuItem.addActionListener(this);
-            m_joinMenuItem.addActionListener(this);
-            m_disconnect.setText("Disconnect");
-            m_disconnect.addActionListener(this);
-            m_mapMenu.setText("Map");
-            m_recenter.setText("Recenter All Players");
-            m_recenter.addActionListener(this);
-            m_diceMacrosMenu.setText("Dice Macros");
-            m_addDiceMacroMenuItem.setText("Add Dice Macro");
-            m_removeDiceMacroMenuItem.setText("Remove Dice Macro");
-            m_addDiceMacroMenuItem.addActionListener(this);
-            m_removeDiceMacroMenuItem.addActionListener(this);
-            m_versionMenuItem.setText("About");
-            m_versionMenuItem.addActionListener(this);
             m_colorCombo.setMaximumSize(new Dimension(100, 21));
-            m_mapMenu.add(m_eraseLinesMenuItem);
-            m_mapMenu.add(m_clearPogsMenuItem);
-            m_mapMenu.add(m_recenter);
-            m_mapMenu.add(m_hexModeMenuItem);
             m_toolBar.add(m_colorCombo, null);
             try
             {
@@ -319,16 +296,20 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 Log.log(Log.SYS, "Failure initializing tools.");
                 Log.log(Log.SYS, ioe);
             }
+            m_menuBar.add(m_fileMenu);
             m_fileMenu.add(m_openMenuItem);
             m_fileMenu.add(m_saveMenuItem);
             m_fileMenu.add(m_saveAsMenuItem);
             m_fileMenu.add(m_exitMenuItem);
-            m_helpMenu.add(m_versionMenuItem);
-            m_menuBar.add(m_fileMenu);
             m_menuBar.add(m_networkMenu);
             m_menuBar.add(m_mapMenu);
+            m_mapMenu.add(m_eraseLinesMenuItem);
+            m_mapMenu.add(m_clearPogsMenuItem);
+            m_mapMenu.add(m_recenter);
+            m_mapMenu.add(m_hexModeMenuItem);
             m_menuBar.add(m_diceMacrosMenu);
             m_menuBar.add(m_helpMenu);
+            m_helpMenu.add(m_aboutMenuItem);
             m_textAndEntryPanel.add(m_textEntry, BorderLayout.SOUTH);
             m_textAndEntryPanel.add(m_textLogScroller, BorderLayout.CENTER);
             m_contentPane.add(m_toolBar, BorderLayout.NORTH);
@@ -399,7 +380,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     {
         return m_preferences;
     }
-    
+
     public void updateWindowInfo()
     {
         // we only update our internal size and
@@ -419,14 +400,14 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     // interface overrides
     public void componentResized(ComponentEvent event)
     {
-        if (m_bInitted && m_prevDividerLocFromBottom != -1)
-        {
-            // user resize.
-            int newDividerLoc = m_mapChatSplitPane.getHeight() - m_prevDividerLocFromBottom;
-            m_bDisregardDividerChanges = true;
-            m_mapChatSplitPane.setDividerLocation(newDividerLoc);
-            m_bDisregardDividerChanges = false;
-        }
+        // if (m_bInitted && m_prevDividerLocFromBottom != -1)
+        // {
+        // // user resize.
+        // int newDividerLoc = m_mapChatSplitPane.getHeight() - m_prevDividerLocFromBottom;
+        // m_bDisregardDividerChanges = true;
+        // m_mapChatSplitPane.setDividerLocation(newDividerLoc);
+        // m_bDisregardDividerChanges = false;
+        // }
 
         updateWindowInfo();
     }
@@ -1186,7 +1167,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             disconnect();
         }
-        if (e.getSource() == m_versionMenuItem)
+        if (e.getSource() == m_aboutMenuItem)
         {
             UtilityFunctions.msgBox(this, GametableApp.VERSION + " by Andy Weir", "Version");
         }
