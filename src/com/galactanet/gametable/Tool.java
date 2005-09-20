@@ -6,6 +6,7 @@
 package com.galactanet.gametable;
 
 import java.awt.Graphics;
+import java.util.List;
 
 
 /**
@@ -70,4 +71,11 @@ public interface Tool
      * @param g Graphics context.
      */
     void paint(Graphics g);
+
+    /**
+     * Called to retrieve any custom preferences specified by this tool.
+     * 
+     * @return a List of PreferenceDescriptors.
+     */
+    List getPreferences();
 }

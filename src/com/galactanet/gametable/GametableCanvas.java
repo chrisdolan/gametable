@@ -280,7 +280,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public PogsPanel getActivePogsArea()
     {
-        PogsPanel ret = (PogsPanel)m_gametableFrame.jTabbedPane1.getSelectedComponent();
+        PogsPanel ret = (PogsPanel)m_gametableFrame.m_pogsTabbedPane.getSelectedComponent();
         return ret;
     }
 
@@ -288,7 +288,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     public Point pogsViewToCanvasView(int x, int y)
     {
         x -= getActivePogsArea().getWidth();
-        x -= m_gametableFrame.jSplitPane2.getDividerSize();
+        x -= m_gametableFrame.m_mapPogSplitPane.getDividerSize();
         y += getActivePogsArea().getY();
         return new Point(x, y);
     }

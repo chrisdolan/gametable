@@ -968,8 +968,8 @@ public class PacketManager
             }
 
             // tell the pog panels to check for the new image
-            GametableFrame.g_gameTableFrame.m_pogsArea.reaquirePogs();
-            GametableFrame.g_gameTableFrame.m_underlaysArea.reaquirePogs();
+            GametableFrame.g_gameTableFrame.m_pogsPanel.reaquirePogs();
+            GametableFrame.g_gameTableFrame.m_underlaysPanel.reaquirePogs();
         }
         catch (IOException ex)
         {

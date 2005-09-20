@@ -7,30 +7,50 @@ package com.galactanet.gametable.tools;
 
 import java.awt.Graphics;
 import java.awt.Point;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import javax.swing.JOptionPane;
 
 import com.galactanet.gametable.GametableCanvas;
 import com.galactanet.gametable.GametableFrame;
 import com.galactanet.gametable.Pog;
+import com.galactanet.gametable.prefs.PreferenceDescriptor;
+
 
 
 /**
- * TODO: comment
+ * The basic pog interaction tool.
  * 
  * @author iffy
  */
 public class PointerTool extends NullTool
 {
-    private GametableCanvas m_canvas;
-    private Pog             m_grabbedPog;
-    private Pog             m_ghostPog;
-    private boolean         m_snapping;
-    private Point           m_grabOffset;
-    private Point           m_mousePosition;
-    private boolean         m_clicked = true;
+    private static final String PREF_DRAG = "com.galactanet.gametable.tools.PointerTool.drag";
 
+    /**
+     * @return The static, unmodifiable list of preferences for this tool.
+     */
+    private static final List createPreferenceList()
+    {
+        List retVal = new ArrayList();
+        retVal.add(new PreferenceDescriptor(PREF_DRAG, "Drag map when not over Pog", PreferenceDescriptor.TYPE_FLAG,
+            Boolean.TRUE));
+        return Collections.unmodifiableList(retVal);
+    }
 
+    private static final List PREFERENCES = createPreferenceList();
+
+    private GametableCanvas   m_canvas;
+    private Pog               m_grabbedPog;
+    private Pog               m_ghostPog;
+    private boolean           m_snapping;
+    private Point             m_grabOffset;
+    private Point             m_mousePosition;
+    private boolean           m_clicked   = true;
+    private Point             m_startScroll;
+    private Point             m_startMouse;
 
     /**
      * Constructor
@@ -49,6 +69,8 @@ public class PointerTool extends NullTool
         m_ghostPog = null;
         m_grabOffset = null;
         m_mousePosition = null;
+        m_startScroll = null;
+        m_startMouse = null;
     }
 
     /*
@@ -56,7 +78,7 @@ public class PointerTool extends NullTool
      */
     public boolean isBeingUsed()
     {
-        return (m_grabbedPog != null);
+        return (m_grabbedPog != null) || (m_startScroll != null);
     }
 
     /*
@@ -72,6 +94,13 @@ public class PointerTool extends NullTool
             m_ghostPog = new Pog(m_grabbedPog);
             m_grabOffset = new Point(m_grabbedPog.getX() - m_mousePosition.x, m_grabbedPog.getY() - m_mousePosition.y);
             setSnapping(modifierMask);
+        }
+        else if (GametableFrame.g_gameTableFrame.getPreferences().getBooleanValue(PREF_DRAG))
+        {
+            m_startScroll = m_canvas.drawToModel(m_canvas.getSharedMap().getScrollX(), m_canvas.getSharedMap()
+                .getScrollY());
+            m_startMouse = m_canvas.modelToView(x, y);
+            m_canvas.setToolCursor(2);
         }
     }
 
@@ -95,6 +124,17 @@ public class PointerTool extends NullTool
                 m_ghostPog.setPosition(m_mousePosition.x + m_grabOffset.x, m_mousePosition.y + m_grabOffset.y);
             }
             m_canvas.repaint();
+        }
+        else if (m_startScroll != null)
+        {
+            Point mousePosition = m_canvas.modelToView(x, y);
+            Point viewDelta = new Point(m_startMouse.x - mousePosition.x, m_startMouse.y - mousePosition.y);
+            Point modelDelta = m_canvas.drawToModel(viewDelta);
+            m_canvas.scrollMapTo(m_startScroll.x + modelDelta.x, m_startScroll.y + modelDelta.y);
+        }
+        else
+        {
+            hoverCursorCheck();
         }
     }
 
@@ -132,7 +172,9 @@ public class PointerTool extends NullTool
         m_grabbedPog = null;
         m_ghostPog = null;
         m_grabOffset = null;
-        m_mousePosition = null;
+        m_startScroll = null;
+        m_startMouse = null;
+        hoverCursorCheck();
     }
 
     /*
@@ -146,6 +188,19 @@ public class PointerTool extends NullTool
         }
     }
 
+    /*
+     * @see com.galactanet.gametable.Tool#getPreferences()
+     */
+    public List getPreferences()
+    {
+        return PREFERENCES;
+    }
+
+    /**
+     * Sets the snapping status based on the specified modifiers.
+     * 
+     * @param modifierMask the set of modifiers passed into the event.
+     */
     private void setSnapping(int modifierMask)
     {
         if ((modifierMask & MODIFIER_CTRL) > 0)
@@ -155,6 +210,22 @@ public class PointerTool extends NullTool
         else
         {
             m_snapping = true;
+        }
+    }
+
+    private void hoverCursorCheck()
+    {
+        if (GametableFrame.g_gameTableFrame.getPreferences().getBooleanValue(PREF_DRAG))
+        {
+            Pog pog = m_canvas.getActiveMap().getPogAt(m_mousePosition);
+            if (pog != null)
+            {
+                m_canvas.setToolCursor(0);
+            }
+            else
+            {
+                m_canvas.setToolCursor(1);
+            }
         }
     }
 }

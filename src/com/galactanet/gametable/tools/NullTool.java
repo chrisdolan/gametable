@@ -6,6 +6,8 @@
 package com.galactanet.gametable.tools;
 
 import java.awt.Graphics;
+import java.util.Collections;
+import java.util.List;
 
 import com.galactanet.gametable.GametableCanvas;
 import com.galactanet.gametable.Tool;
@@ -77,4 +79,13 @@ public class NullTool implements Tool
     public void paint(Graphics g)
     {
     }
+
+    /*
+     * @see com.galactanet.gametable.Tool#getPreferences()
+     */
+    public List getPreferences()
+    {
+        return Collections.EMPTY_LIST;
+    }
+
 }
