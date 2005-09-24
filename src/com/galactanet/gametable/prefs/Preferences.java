@@ -78,7 +78,7 @@ public class Preferences
             return getDefaultBooleanValue(name);
         }
 
-        return Boolean.parseBoolean(o.toString());
+        return ("true".equalsIgnoreCase(o.toString()));
     }
 
     public int getIntegerValue(String name)
@@ -131,7 +131,7 @@ public class Preferences
             return false;
         }
 
-        return Boolean.parseBoolean(pref.getDefaultValue().toString());
+        return ("true".equalsIgnoreCase(pref.getDefaultValue().toString()));
     }
 
     private int getDefaultIntegerValue(String name)
