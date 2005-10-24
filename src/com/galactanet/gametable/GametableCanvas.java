@@ -16,6 +16,7 @@ import javax.swing.JButton;
 import com.galactanet.gametable.tools.NullTool;
 
 
+
 /**
  * TODO: comment
  * 
@@ -48,9 +49,6 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public Image                m_mapBk;
 
-    // the size of a square at the current zoom level
-    public int                  m_squareSize;
-
     // this is the map (or layer) that all players share
     private GametableMap        m_sharedMap           = new GametableMap(true);
 
@@ -71,7 +69,10 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     // This is the number of screen pixels that are
     // used per model pixel. It's never less than 1
-    public int                  m_zoom;
+    public int                  m_zoom = 1;
+
+    // the size of a square at the current zoom level
+    public int                  m_squareSize = getSquareSizeForZoom(m_zoom);
 
     // hand tool
     int                         m_handToolStartX;
@@ -152,8 +153,6 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     // with a
     // right-click
     public int                  m_preRightClickToolID;                               // the id of
-
-
 
     // the tool
     // that we
@@ -293,7 +292,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         return new Point(x, y);
     }
 
-    public int getSquareSizeForZoom(int level)
+    public static int getSquareSizeForZoom(int level)
     {
         int ret = BASE_SQUARE_SIZE;
         switch (level)
@@ -334,19 +333,22 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void setZoom(int zoomLevel)
     {
-        m_zoom = zoomLevel;
-
-        if (m_zoom < 0)
+        if (zoomLevel < 0)
         {
-            m_zoom = 0;
+            zoomLevel = 0;
         }
 
-        if (m_zoom >= NUM_ZOOM_LEVELS)
+        if (zoomLevel >= NUM_ZOOM_LEVELS)
         {
-            m_zoom = NUM_ZOOM_LEVELS - 1;
+            zoomLevel = NUM_ZOOM_LEVELS - 1;
         }
 
-        m_squareSize = getSquareSizeForZoom(m_zoom);
+        if (m_zoom != zoomLevel)
+        {
+            m_zoom = zoomLevel;
+            m_squareSize = getSquareSizeForZoom(m_zoom);
+            repaint();
+        }
     }
 
     // returns a good line width to draw things
@@ -589,9 +591,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     }
 
     /*
-     * This function will set the scroll for all maps, keeping their relative offsets preserved. The
-     * x,y values sent in will become the scroll values for the desired map. All others maps will
-     * preserve offsets from that.
+     * This function will set the scroll for all maps, keeping their relative offsets preserved. The x,y values sent in
+     * will become the scroll values for the desired map. All others maps will preserve offsets from that.
      */
     public void setPrimaryScroll(GametableMap mapToSet, int x, int y)
     {
@@ -1282,9 +1283,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     }
 
     /*
-     * // takes VIEW coords private int getSnapX(int x) { return modelToView(getSnap(viewToModel(x,
-     * 0).x), 0).x; } // takes VIEW coords private int getSnapY(int y) { return
-     * modelToView(getSnap(viewToModel(0, y).y), 0).y; }
+     * // takes VIEW coords private int getSnapX(int x) { return modelToView(getSnap(viewToModel(x, 0).x), 0).x; } //
+     * takes VIEW coords private int getSnapY(int y) { return modelToView(getSnap(viewToModel(0, y).y), 0).y; }
      */
 
     public void updateLocation(MouseEvent e)
