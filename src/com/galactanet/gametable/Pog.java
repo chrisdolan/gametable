@@ -177,7 +177,7 @@ public class Pog
         for (int i = 1; i < GametableCanvas.NUM_ZOOM_LEVELS; i++)
         {
             // we have to work with ratios, cause the pog could be large or huge, gargantuan, etc.
-            int size = m_canvas.getSquareSizeForZoom(i);
+            int size = GametableCanvas.getSquareSizeForZoom(i);
             double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
             int imgSizeX = (int)(ratio * fullSizeImage.getWidth(null));
             int imgSizeY = (int)(ratio * fullSizeImage.getHeight(null));

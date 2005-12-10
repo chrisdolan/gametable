@@ -83,6 +83,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     JMenuItem                     m_openMenuItem             = new JMenuItem("Open...");
     JMenuItem                     m_saveMenuItem             = new JMenuItem("Save");
     JMenuItem                     m_saveAsMenuItem           = new JMenuItem("Save As...");
+    JMenuItem                     m_reacquirePogsMenuItem     = new JMenuItem("Reacquire Pogs");
     JMenuItem                     m_exitMenuItem             = new JMenuItem("Exit");
 
     JMenu                         m_networkMenu              = new JMenu("Network");
@@ -209,6 +210,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_openMenuItem.addActionListener(this);
             m_saveMenuItem.addActionListener(this);
             m_saveAsMenuItem.addActionListener(this);
+            m_reacquirePogsMenuItem.addActionListener(this);
             m_exitMenuItem.addActionListener(this);
             m_eraseLinesMenuItem.addActionListener(this);
             m_clearPogsMenuItem.setActionCommand("clearPogs");
@@ -300,6 +302,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_fileMenu.add(m_openMenuItem);
             m_fileMenu.add(m_saveMenuItem);
             m_fileMenu.add(m_saveAsMenuItem);
+            m_fileMenu.add(m_reacquirePogsMenuItem);
             m_fileMenu.add(m_exitMenuItem);
             m_menuBar.add(m_networkMenu);
             m_menuBar.add(m_mapMenu);
@@ -1153,6 +1156,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 // save the file
                 saveState(m_actingFile);
             }
+        }
+        if (e.getSource() == m_reacquirePogsMenuItem)
+        {
+        	// get the pogs stuff again. And refresh
+        	m_pogsPanel.reaquirePogs();
         }
 
         if (e.getSource() == m_hostMenuItem)
