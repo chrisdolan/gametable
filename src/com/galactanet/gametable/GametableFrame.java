@@ -92,8 +92,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     JMenuItem                     m_disconnect               = new JMenuItem("Disconnect");
 
     JMenu                         m_mapMenu                  = new JMenu("Map");
-    JMenuItem                     m_clearPogsMenuItem        = new JMenuItem("Clear Pogs");
-    JMenuItem                     m_eraseLinesMenuItem       = new JMenuItem("Erase Lines");
+    JMenuItem                     m_clearMapMenuItem        = new JMenuItem("Clear Map");
     JMenuItem                     m_recenter                 = new JMenuItem("Recenter All Players");
     JCheckBoxMenuItem             m_hexModeMenuItem          = new JCheckBoxMenuItem("Hex Mode");
 
@@ -212,9 +211,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_saveAsMenuItem.addActionListener(this);
             m_reacquirePogsMenuItem.addActionListener(this);
             m_exitMenuItem.addActionListener(this);
-            m_eraseLinesMenuItem.addActionListener(this);
-            m_clearPogsMenuItem.setActionCommand("clearPogs");
-            m_clearPogsMenuItem.addActionListener(this);
+            m_clearMapMenuItem.setActionCommand("clearPogs");
+            m_clearMapMenuItem.addActionListener(this);
             m_hexModeMenuItem.addActionListener(this);
             m_hostMenuItem.addActionListener(this);
             m_joinMenuItem.addActionListener(this);
@@ -306,8 +304,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_fileMenu.add(m_exitMenuItem);
             m_menuBar.add(m_networkMenu);
             m_menuBar.add(m_mapMenu);
-            m_mapMenu.add(m_eraseLinesMenuItem);
-            m_mapMenu.add(m_clearPogsMenuItem);
+            m_mapMenu.add(m_clearMapMenuItem);
             m_mapMenu.add(m_recenter);
             m_mapMenu.add(m_hexModeMenuItem);
             m_menuBar.add(m_diceMacrosMenu);
@@ -1064,27 +1061,18 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     public void actionPerformed(ActionEvent e)
     {
-        if (e.getSource() == m_eraseLinesMenuItem)
-        {
+    	if (e.getSource() == m_clearMapMenuItem)
+    	{
             int res = UtilityFunctions.yesNoDialog(this,
-                "This will erase all pen markings on the entire map. Are you sure?", "Erase all lines");
-            if (res == UtilityFunctions.YES)
-            {
-                eraseAllLines();
-                repaint();
-            }
-        }
-        if (e.getSource() == m_clearPogsMenuItem)
-        {
-            int res = UtilityFunctions.yesNoDialog(this,
-                "This will remove all pogs from the entire map. Are you sure?", "Remove all Pogs");
+                    "This will clear all lines, pogs, and underlays on the entire map. Are you sure?", "Clear Map");
             if (res == UtilityFunctions.YES)
             {
                 eraseAllPogs();
+                eraseAllLines();
                 repaint();
             }
-        }
-
+    	}
+    	
         if (e.getSource() == m_colorCombo)
         {
             Integer col = (Integer)m_colorCombo.getSelectedItem();
