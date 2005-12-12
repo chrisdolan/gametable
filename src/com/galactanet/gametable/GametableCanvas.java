@@ -1389,6 +1389,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             break;
             case KeyEvent.VK_SHIFT:
                 m_bShiftKeyDown = true;
+                repaint();
                 e.consume();
             break;
 
@@ -1467,6 +1468,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             break;
             case KeyEvent.VK_SHIFT:
                 m_bShiftKeyDown = false;
+                repaint();
                 e.consume();
             break;
             case KeyEvent.VK_CONTROL:
@@ -1616,7 +1618,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                     }
                 }
             }
-            else if (mouseOverPog != null)
+
+            if (mouseOverPog != null)
             {
                 mouseOverPog.drawDataStringToCanvas(g, true);
             }
