@@ -1165,7 +1165,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         if (e.getSource() == m_aboutMenuItem)
         {
-            UtilityFunctions.msgBox(this, GametableApp.VERSION + " by Andy Weir", "Version");
+            UtilityFunctions.msgBox(this, GametableApp.VERSION + " by Andy Weir and David Ghandehari", "Version");
         }
         if (e.getSource() == m_hexModeMenuItem)
         {
