@@ -27,6 +27,8 @@ Draw an arbitrary line: Select the pencil tool and click drag to scribble a line
 
 Draw a straight line: Select the line tool and click drag to make a straight line. Hold shift while doing this to force it to be vertical or horizontal.
 
+Draw a box: Select the Box tool and click drag to define the box.
+
 Erase lines: Select the eraser tool and drag a rect. Lines will be erased inside that rect. 
 
 Erase only lines of a specific color: Select the Color-Eraser tool, (The red eraser) and It will erase only lines of the current color.
