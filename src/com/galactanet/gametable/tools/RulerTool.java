@@ -1,5 +1,5 @@
 /*
- * LineTool.java: GameTable is in the Public Domain.
+ * RulerTool.java: GameTable is in the Public Domain.
  */
 
 
