@@ -1,4 +1,4 @@
-Gametable - By Andy Weir
+Gametable - By Andy Weir and David Ghandehari
 Gametable is freeware. knock yourself out, man.
 
 ---THE POINT---
@@ -31,10 +31,16 @@ Erase lines: Select the eraser tool and drag a rect. Lines will be erased inside
 
 Erase only lines of a specific color: Select the Color-Eraser tool, (The red eraser) and It will erase only lines of the current color.
 
+Measure a distance: Select the Ruler tool. Click and drag, and you will get a continually updating distance measurement.
+
+Toggle Hex/Grid Mode: Select Map->Hex Mode to change from hex mode to grid mode and vice-versa.
 
 
----POGS---
-There is a slider on the left side of the map that expands/contracts the pogs area. Those pogs can be dragged and dropped onto the map. They snap to position. Pogs carry text with them (initally blank) so you can specifiy character names, NPC damage taken, whatever you like. Note: The art for the pogs was shamelessly stolen from various online pics. If you are the owner of any of that art, and want me to remove it from the game, email me and I'll do so immediately.
+---POGS AND UNDERLAYS ---
+There is a slider on the left side of the map that expands/contracts the pogs/underlays area. Those pogs can be dragged and dropped onto the map. They snap to position. Pogs carry text with them (initally blank) so you can specifiy character names, NPC damage taken, whatever you like. Note: The art for the pogs was shamelessly stolen from various online pics. If you are the owner of any of that art, and want me to remove it from the game, email me and I'll do so immediately.
+
+The only difference between pogs and underlays is that all underlays are drawn beneath all the pogs.
+
 
 How to:
 Get a pog on to the map: Left click and drag it from the pogs area to the map and drop it where desired.
@@ -53,8 +59,7 @@ See ALL pog data text bubbles: Hold the shift key down.
 
 Make custom pogs: A pog must be in png format. Any pogs you put in your "pogs" directory will be available for use. 
 
-If you make a custom pog, please send it to me at shanex@speakeasy.net. If it's good and if you give me permission, I'll add it to the pogs that ship with the product.
-
+Update your Pogs directory: Select File->Reacquire Pogs. This will rebuild the Pogs and Underlays area. This allows you to add a pog while the app is running. Just add the png file to the pogs or underlays directory, and select Reacquire Pogs, and it'll appear in the app.
 
 ---CHAT---
 There is a chat window and chat log in the lower right. This chat log works the same as an MMORPG chat area.
@@ -83,5 +88,7 @@ Remove a dice macro: Select "Remove Dice Macro" from the "Dice Macros" menu. Sel
 ---SAVE AND LOAD---
 
 Gametable emulates a table. It saves when you quit and loads when you launch. In other words, when you return to it, it'll be as you left it. 
+
+Also, you can use Save, Save As, and Open as you would in any other app. Important Note: If you load a file while you're in a session, you'll be replacing the map with that file. Not just for you. For everyone.
 
 -ATW
