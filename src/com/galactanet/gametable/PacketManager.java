@@ -526,7 +526,7 @@ public class PacketManager
     {
         // add it to the list of pogs that need art
         g_imagelessPogs.add(pog);
-
+        
         String desiredFile = pog.m_fileName;
 
         // run through the list and see if there's alreay a pending request for that image
@@ -906,6 +906,10 @@ public class PacketManager
     {
         try
         {
+        	// fire up the spinner
+            GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.m_progressSpinner.activate(gtFrame);
+            
             // the file name
             String filename = dis.readUTF();
 
@@ -954,7 +958,6 @@ public class PacketManager
             fos.write(pngFile);
 
             // finally, run through our pending pogs and see who needed that.
-            GametableFrame gtFrame = GametableFrame.getGametableFrame();
             for (int i = 0; i < g_imagelessPogs.size(); i++)
             {
                 Pog pog = (Pog)g_imagelessPogs.get(i);
@@ -970,6 +973,9 @@ public class PacketManager
             // tell the pog panels to check for the new image
             GametableFrame.g_gameTableFrame.m_pogsPanel.reaquirePogs();
             GametableFrame.g_gameTableFrame.m_underlaysPanel.reaquirePogs();
+            
+            // if we're done with imageless pogs, shut off the progress spinner
+           	gtFrame.m_progressSpinner.deactivate();
         }
         catch (IOException ex)
         {

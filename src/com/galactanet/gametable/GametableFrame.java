@@ -190,6 +190,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     private ToolManager           m_toolManager              = new ToolManager();
     private JToggleButton         m_toolButtons[]            = null;
     private Preferences           m_preferences              = new Preferences();
+    
+    public ProgressSpinner		  m_progressSpinner			  = new ProgressSpinner();
 
     /**
      * Construct the frame
@@ -948,6 +950,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_gametableCanvas.getSharedMap().setScroll(0, 0);
             m_gametableCanvas.getSharedMap().clearPogs();
             m_gametableCanvas.getSharedMap().clearLines();
+            PacketManager.g_imagelessPogs.clear();
 
             // send the packet
             conn.sendPacket(PacketManager.makePlayerPacket(me, m_defaultPassword));
