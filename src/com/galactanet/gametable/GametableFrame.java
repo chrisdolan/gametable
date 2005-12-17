@@ -1152,6 +1152,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
         	// get the pogs stuff again. And refresh
         	m_pogsPanel.reaquirePogs();
+        	m_underlaysPanel.reaquirePogs();
         }
 
         if (e.getSource() == m_hostMenuItem)

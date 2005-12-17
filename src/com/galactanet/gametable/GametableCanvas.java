@@ -598,7 +598,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     {
         int dx = x - mapToSet.getScrollX();
         int dy = y - mapToSet.getScrollY();
-        m_sharedMap.setScroll(dx + mapToSet.getScrollX(), dy + mapToSet.getScrollY());
+        mapToSet.setScroll(dx + mapToSet.getScrollX(), dy + mapToSet.getScrollY());
     }
 
     public void doRecenterView(int modelCenterX, int modelCenterY, int zoomLevel)
