@@ -34,9 +34,6 @@
     <target name="init0">
         <!-- Create the time stamp -->
         <tstamp />
-
-        <!-- Create the build directory structure used by compile -->
-        <mkdir dir="${jar.src}" />
     </target>
 
     <target name="init" depends="init0" />
@@ -53,6 +50,8 @@
 
 
     <target name="compile" depends="init">
+        <!-- Create the build directory structure used by compile -->
+        <mkdir dir="${jar.src}" />
         <mkdir dir="${classes.dest}" />
 
         <!-- Compile the java code -->
@@ -90,7 +89,20 @@
         <copy file="${jar.preopt.dest}" tofile="${jar.dest}" />
     </target>
 
-    <target name="dist0" depends="distclean,build">
+    <target name="distsrc" depends="distclean,init">
+        <mkdir dir="${dist}" />
+
+        <!-- Create the distribution directory -->
+        <zip zipfile="${dist}/${projectname}-src-${DSTAMP}.zip">
+            <zipfileset prefix="${projectname}-src-${DSTAMP}" dir=".">
+                <include name="**/*" />
+                <exclude name="dist" />
+                <exclude name="gen" />
+            </zipfileset>
+        </zip>
+    </target>
+    
+    <target name="dist0" depends="distclean,distsrc,build">
         <!-- Create the distribution directory -->
         <mkdir dir="${dist}" />
 
