@@ -5,6 +5,7 @@
 
     <!-- project specific properties -->
     <property name="projectdisplayname" value="GameTable" />
+    <property name="version" value="1.1" />
     <property name="projectname" value="gametable" />
     <property name="entrypoint" value="com.galactanet.gametable.GametableApp" />
     <property name="icon" value="icon.png" />
@@ -89,24 +90,12 @@
         <copy file="${jar.preopt.dest}" tofile="${jar.dest}" />
     </target>
 
-    <target name="distsrc" depends="distclean,init">
-        <mkdir dir="${dist}" />
+    <target name="dist0" depends="distclean,build">
 
-        <!-- Create the distribution directory -->
-        <zip zipfile="${dist}/${projectname}-src-${DSTAMP}.zip">
-            <zipfileset prefix="${projectname}-src-${DSTAMP}" dir=".">
-                <include name="**/*" />
-                <exclude name="dist" />
-                <exclude name="gen" />
-            </zipfileset>
-        </zip>
-    </target>
-    
-    <target name="dist0" depends="distclean,distsrc,build">
         <!-- Create the distribution directory -->
         <mkdir dir="${dist}" />
 
-        <copy todir="${zip.src}" >
+        <copy todir="${zip.src}">
             <fileset dir=".">
                 <include name="pogs/**/*.png" />
                 <include name="underlays/**/*.png" />
@@ -122,6 +111,48 @@
                 <include name="*.bat" />
                 <include name="readme.txt" />
                 <include name="${jar.dest}" />
+            </zipfileset>
+        </zip>
+
+        <!-- Package src into timestamped zip -->
+        <zip zipfile="${dist}/${projectname}-src-${DSTAMP}.zip">
+            <zipfileset prefix="${projectname}-src-${DSTAMP}" dir=".">
+                <include name="**/*" />
+                <exclude name="dist" />
+                <exclude name="gen" />
+            </zipfileset>
+        </zip>
+    </target>
+
+    <target name="release" depends="distclean,build">
+        <!-- Create the distribution directory -->
+        <mkdir dir="${dist}" />
+
+        <copy todir="${zip.src}">
+            <fileset dir=".">
+                <include name="pogs/**/*.png" />
+                <include name="underlays/**/*.png" />
+            </fileset>
+        </copy>
+
+        <!-- Package jars into timestamped zip -->
+        <zip zipfile="${dist}/${projectname}-${version}.zip">
+            <zipfileset prefix="${projectname}-${version}" dir="${zip.src}" />
+            <zipfileset prefix="${projectname}-${version}" dir=".">
+                <include name="lib/**/*.jar" />
+                <include name="lib/**/*.dll" />
+                <include name="*.bat" />
+                <include name="readme.txt" />
+                <include name="${jar.dest}" />
+            </zipfileset>
+        </zip>
+
+        <!-- Package src into timestamped zip -->
+        <zip zipfile="${dist}/${projectname}-src-${version}.zip">
+            <zipfileset prefix="${projectname}-src-${version}" dir=".">
+                <include name="**/*" />
+                <exclude name="dist" />
+                <exclude name="gen" />
             </zipfileset>
         </zip>
     </target>
@@ -188,4 +219,4 @@
         </fixcrlf>
     </target>
 </project>
- 
+
