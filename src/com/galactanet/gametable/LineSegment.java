@@ -35,6 +35,13 @@ public class LineSegment
         m_end = new Point(end);
         m_color = color;
     }
+    
+    public LineSegment(LineSegment in)
+    {
+        m_start = new Point(in.m_start);
+        m_end = new Point(in.m_end);
+        m_color = in.m_color;
+    }
 
     public LineSegment(DataInputStream dis) throws IOException
     {
@@ -64,8 +71,99 @@ public class LineSegment
         int col = dis.readInt();
         m_color = new Color(col);
     }
+    
+    public LineSegment getPortionInsideRect(Point start, Point end)
+    {
+        Rectangle r = new Rectangle();
+        int x = start.x;
+        int y = start.y;
+        int width = end.x - start.x;
+        int height = end.y - start.y;
+        if (width < 0)
+        {
+            x += width;
+            width = -width;
+        }
+        if (height < 0)
+        {
+            y += height;
+            height = -height;
+        }
+        r.setBounds(x, y, width, height);
 
-    // returns true if it still has content
+        if (r.contains(m_start) && r.contains(m_end))
+        {
+            // totally inside. we are unaffected
+        	// return a copy of ourselves
+            return new LineSegment(this);
+        }
+
+        // find the intersections (There are 4 possibles. one for each side of the rect)
+        Point intersections[] = new Point[4];
+        intersections[0] = getIntersection(r.x, true);
+        intersections[1] = getIntersection(r.x + r.width, true);
+        intersections[2] = getIntersection(r.y, false);
+        intersections[3] = getIntersection(r.y + r.height, false);
+
+        boolean bFoundNonNull = false;
+        for ( int i=0 ; i<4 ; i++ )
+        {
+        	intersections[i] = confirmOnRectEdge(intersections[i], r);
+        	if ( intersections[i] != null )
+        	{
+        		bFoundNonNull = true;
+        	}
+        }
+
+        // first off, if we didn't intersect the rect at all, we have no part at all
+        // (We checked for "completely inside rect" above
+        if (!bFoundNonNull)
+        {
+        	return null;
+        }
+
+        // we can have no more than 2 intersections.
+        Point validIntersection1 = null;
+        Point validIntersection2 = null;
+        for ( int i=0 ; i<4 ; i++ )
+        {
+        	if ( intersections[i] != null )
+        	{
+        		if ( validIntersection1 == null )
+        		{
+        			validIntersection1 = intersections[i];
+        		}
+        		else
+        		{
+        			validIntersection2 = intersections[i];
+        		}
+        	}
+        }
+        
+        // did we find 2 intersections? Cause if we did, we're done
+        if ( validIntersection2 != null )
+        {
+        	// we found 2 intersections. Make a LineSegment out of them and we're golden
+        	return new LineSegment(validIntersection1, validIntersection2, m_color);
+        }
+        
+        // if we're here, it means we found exactly 1 intersection. That means our start or end point
+        // is inside the rect. 
+        if ( r.contains(m_start) )
+        {
+        	return new LineSegment(validIntersection1, m_start, m_color);
+        }
+
+        if ( r.contains(m_end) )
+        {
+        	return new LineSegment(validIntersection1, m_end, m_color);
+        }
+
+        // it should be impossible to get here. 
+        System.out.println("invalid end to LineSegment.getPortionInsideRect");
+        return null; // defensive coding return
+    }    
+
     public LineSegment[] crop(Point start, Point end)
     {
         Rectangle r = new Rectangle();

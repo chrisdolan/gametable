@@ -41,6 +41,8 @@ public class Pog
     public boolean           m_bIsUnderlay     = false;
     public boolean           m_bIsUnknownImage = false;
 
+    public boolean           m_bTinted = false;
+
 
 
     public Pog()
@@ -145,6 +147,7 @@ public class Pog
         m_fileName = orig.m_fileName;
         m_pixels = orig.m_pixels;
         m_bIsUnderlay = orig.m_bIsUnderlay;
+        m_dataStr = new String(orig.m_dataStr);
     }
 
     public void init(GametableCanvas canvas, String fullSizeImagePath)
@@ -308,6 +311,13 @@ public class Pog
 
     public void drawToCanvas(Graphics g)
     {
+    	// if we're tinted, draw tinted instead
+    	if ( m_bTinted )
+    	{
+    		drawTintedToCanvas(g);
+    		return;
+    	}
+    	
         // convert our model coordinates to draw coordinates
         Point drawCoords = m_canvas.modelToDraw(getPosition());
 
@@ -316,6 +326,26 @@ public class Pog
 
         // draw it
         g.drawImage(toDraw, drawCoords.x, drawCoords.y, m_canvas);
+    }
+
+    public void drawTintedToCanvas(Graphics g)
+    {
+        // convert our model coordinates to draw coordinates
+        Point drawCoords = m_canvas.modelToDraw(getPosition());
+
+        // which image should we use?
+        Image toDraw = m_images[m_canvas.m_zoom];
+
+        // draw it
+        g.drawImage(toDraw, drawCoords.x, drawCoords.y, m_canvas);
+        
+        // now draw a green 50% alpha square over it
+        Graphics2D g2 = (Graphics2D)g.create();
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+        g2.setColor(Color.GREEN);
+        int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
+        g2.fillRect(drawCoords.x, drawCoords.y, size, size);
+        g2.dispose();
     }
 
     public void drawDataStringToCanvas(Graphics gr, boolean bForceTextInBounds)
