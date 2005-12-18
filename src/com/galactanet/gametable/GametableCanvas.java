@@ -1485,7 +1485,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 m_gametableFrame.m_textEntry.setText("/");
                 m_gametableFrame.m_textEntry.requestFocus();
             break;
-            case KeyEvent.VK_A:
+            case KeyEvent.VK_T:
             {
             	m_gametableFrame.toggleLayer();
             }
