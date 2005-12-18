@@ -66,6 +66,13 @@ public interface Tool
     void mouseButtonReleased(int x, int y, int modifierMask);
 
     /**
+     * Called when the tool action is cancelled. This should completely undo any
+     * state changes the tool may have made. Internally or externally.
+     * 
+     */
+    void endAction();
+
+    /**
      * Called after the canvas has been painted.
      * 
      * @param g Graphics context.

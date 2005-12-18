@@ -90,13 +90,16 @@ public class LineTool extends NullTool
             m_canvas.addLineSegments(new LineSegment[] {
                 ls
             });
-
-            m_mouseAnchor = null;
-            m_mouseFloat = null;
-            m_canvas.repaint();
         }
     }
 
+    public void endAction()
+    {
+        m_mouseAnchor = null;
+        m_mouseFloat = null;
+    	m_canvas.repaint();
+    }
+    
     /*
      * @see com.galactanet.gametable.AbstractTool#paint(java.awt.Graphics)
      */

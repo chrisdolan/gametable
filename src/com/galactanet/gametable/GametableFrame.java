@@ -375,6 +375,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             updateHexModeMenuItem();
             m_bInitted = true;
             setJMenuBar(m_menuBar);
+            
+            updatePrivateLayerModeMenuItem();            
         }
         // catch (Exception e)
         // {
@@ -1073,13 +1075,18 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     public void updatePrivateLayerModeMenuItem()
     {
+    	// note the tool ID of the publish tool
+    	int toolId = m_toolManager.getToolInfo("Publish").getId();
+    	
         if (m_gametableCanvas.isPublicMap())
         {
             m_privateLayerModeMenuItem.setState(false);
+            m_toolButtons[toolId].setEnabled(false);
         }
         else
         {
         	m_privateLayerModeMenuItem.setState(true);
+            m_toolButtons[toolId].setEnabled(true);
         }
     }
 
@@ -1328,6 +1335,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     	}
     	
         updatePrivateLayerModeMenuItem();
+        
+        // if they toggled the layer, whatever tool they're using is cancelled
+        getToolManager().cancelToolAction();
+        
         repaint();
     }
 

@@ -172,7 +172,9 @@ public class ToolManager
     private List infoList    = new ArrayList();
     private Map  nameInfoMap = new HashMap();
 
-
+    // when this is true, no mouse events will be dispatched.
+    // it is set to false when a mousePressed event is received.
+    private boolean m_bActionCancelled = false;
 
     /**
      * Constructor.
@@ -343,6 +345,45 @@ public class ToolManager
     public void initialize() throws IOException
     {
         initialize(DEFAULT_TOOLS_PROPERTIES);
+    }
+    
+    // shortcut function to get the active tool
+    public Tool getActiveTool()
+    {
+    	return GametableFrame.g_gameTableFrame.m_gametableCanvas.getActiveTool();    	
+    }
+    
+    // mouse event functions.
+    public void mouseButtonPressed(int x, int y, int flags)
+    {
+    	m_bActionCancelled = false;
+    	getActiveTool().mouseButtonPressed(x, y, flags);
+    }
+
+    public void mouseMoved(int x, int y, int flags)
+    {
+    	// we call this even if the action has been cancelled. 
+    	// Some tools set their cursor and do other things while no mouse button is down. 
+    	getActiveTool().mouseMoved(x, y, flags);
+    }
+    
+    public void mouseButtonReleased(int x, int y, int flags)
+    {
+    	if ( m_bActionCancelled )
+    	{
+    		// this action has been cancelled. 
+    		return;
+    	}
+    	getActiveTool().mouseButtonReleased(x, y, flags);
+    }
+    
+    public void cancelToolAction()
+    {
+    	// whatever they were up to is halted immediately.
+    	// no further mouse stuff will be dispatched until the
+    	// next mouseButtonPressed is called
+    	getActiveTool().endAction(); 
+    	m_bActionCancelled = true;
     }
 
     /**

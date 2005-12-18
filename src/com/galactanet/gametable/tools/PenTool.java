@@ -85,10 +85,14 @@ public class PenTool extends NullTool
             {
                 m_canvas.addLineSegments(lines);
             }
-
-            m_penAsset = null;
-            m_canvas.repaint();
         }
+        endAction();
+    }
+    
+    public void endAction()
+    {
+        m_penAsset = null;
+    	m_canvas.repaint();
     }
 
     /*

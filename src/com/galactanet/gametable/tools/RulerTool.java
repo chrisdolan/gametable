@@ -83,12 +83,14 @@ public class RulerTool extends NullTool
      */
     public void mouseButtonReleased(int x, int y, int modifierMask)
     {
-        if (m_mouseAnchor != null)
-        {
-            m_mouseAnchor = null;
-            m_mouseFloat = null;
-            m_canvas.repaint();
-        }
+    	endAction();
+    }
+
+    public void endAction()
+    {
+        m_mouseAnchor = null;
+        m_mouseFloat = null;
+        m_canvas.repaint();
     }
 
     /*

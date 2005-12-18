@@ -78,9 +78,14 @@ public class HandTool extends NullTool
      */
     public void mouseButtonReleased(int x, int y, int modifierMask)
     {
+    	endAction();
+    }
+
+    public void endAction()
+    {
         m_startScroll = null;
         m_startMouse = null;
         m_canvas.setToolCursor(0);
     }
-
+    
 }

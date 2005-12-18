@@ -104,11 +104,15 @@ public class BoxTool extends NullTool
         	};
 				
         	m_canvas.addLineSegments(toAdd);
-        	
-            m_canvas.repaint();
         }
+        endAction();
+    }
+    
+    public void endAction()
+    {
         m_mouseAnchor = null;
         m_mouseFloat = null;
+    	m_canvas.repaint();
     }
 
     /*

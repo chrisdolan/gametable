@@ -164,10 +164,6 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     // for a
     // right-click
 
-    // an offscreen image that is lazy-initted when needed
-    private Image 				m_offscreenCanvasSizedImage;
-    
-
     public GametableCanvas()
     {
         addMouseListener(this);
@@ -492,10 +488,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         {
             return;
         }
-
-        getActiveTool().mouseMoved(m_mouseModelFloat.x, m_mouseModelFloat.y, getModifierFlags());
+        m_gametableFrame.getToolManager().mouseMoved(m_mouseModelFloat.x, m_mouseModelFloat.y, getModifierFlags());
         Pog prevPog = m_pogMouseOver;
-        m_pogMouseOver = getActiveMap().getPogAt(m_mouseModelFloat);
         if (prevPog != m_pogMouseOver)
         {
             repaint();
@@ -523,7 +517,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 m_bRightClicking = true;
                 m_preRightClickToolID = m_activeToolId;
                 setActiveTool(1); // HACK -- To hand tool
-                getActiveTool().mouseButtonPressed(m_mouseModelAnchor.x, m_mouseModelAnchor.y, getModifierFlags());
+                m_gametableFrame.getToolManager().mouseButtonPressed(m_mouseModelAnchor.x, m_mouseModelAnchor.y, getModifierFlags());
             }
             else
             {
@@ -533,7 +527,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
         if (e.getButton() == MouseEvent.BUTTON1)
         {
-            getActiveTool().mouseButtonPressed(m_mouseModelAnchor.x, m_mouseModelAnchor.y, getModifierFlags());
+        	m_gametableFrame.getToolManager().mouseButtonPressed(m_mouseModelAnchor.x, m_mouseModelAnchor.y, getModifierFlags());
         }
 
     }
@@ -546,7 +540,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         {
             return;
         }
-        getActiveTool().mouseButtonReleased(m_mouseModelFloat.x, m_mouseModelFloat.y, getModifierFlags());
+        m_gametableFrame.getToolManager().mouseButtonReleased(m_mouseModelFloat.x, m_mouseModelFloat.y, getModifierFlags());
 
         if (SPECIAL_RIGHT_CLICK)
         {
@@ -628,6 +622,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void doRecenterView(int modelCenterX, int modelCenterY, int zoomLevel)
     {
+    	// if you recenter for any reason, your tool action is cancelled
+        m_gametableFrame.getToolManager().cancelToolAction();
+    	
         // make the sent in x and y our center, ad the sent in zoom.
         // So start with the zoom
         setZoom(zoomLevel);
@@ -1600,45 +1597,20 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         	// they are on the public map. Draw the public map as normal,
 			g.setColor(Color.WHITE);
 			g.fillRect(0, 0, getWidth(), getHeight());
-			
         	paintMap(g, m_publicMap);
-        	
-        	/*
-		    Graphics2D g2 = (Graphics2D)g.create();
-		    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-        	paintMap(g2, m_privateMap);
-		    g2.dispose();
-		    */
         }
         else
         {
-        	// they are on the private map. We draw the public map first to an offscreen
-        	// buffer, then we fill the canvas with white and draw the offscreen buffer
-        	// to the canvas at 50% alpha. Then we draw the private map at full alpha
-        	
-		    // we have to offscreen the public layer. it's to be half-alpha
-		    if ( m_offscreenCanvasSizedImage == null || 
-		    	 m_offscreenCanvasSizedImage.getHeight(this) != getHeight() || 
-		    	 m_offscreenCanvasSizedImage.getWidth(this) != getWidth())
-		    {
-		    	m_offscreenCanvasSizedImage = UtilityFunctions.createDrawableImage(getWidth(), getHeight());
-		    }
-			Graphics offscreenG = m_offscreenCanvasSizedImage.getGraphics();
-		
-			// draw it to the offscreen
-		    paintMap(offscreenG, getPublicMap());
-		    
-		    // then draw it with 1/2 alpha to the actual canvas
-		    // clear the canvas first
-			g.setColor(Color.WHITE);
-			g.fillRect(0, 0, getWidth(), getHeight());
-			
+        	// they're on the private map. First, draw the public map as normal. 
+        	// Then draw a 50% alpha sheet over it. then draw the private map
+		    paintMap(g, getPublicMap());
 		    Graphics2D g2 = (Graphics2D)g.create();
 		    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-		    g2.drawImage(m_offscreenCanvasSizedImage, 0, 0, this);
+		    g2.setColor(Color.WHITE);
+		    g2.fillRect(0, 0, getWidth(), getHeight());
 		    g2.dispose();
 		    
-		    // now draw the private layer as normal (full alpha)
+		    // now draw the private layer
 		    paintMap(g, m_privateMap);
         }
     }

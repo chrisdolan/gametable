@@ -96,11 +96,17 @@ public class EraseTool extends NullTool
             {
                 m_canvas.erase(createRectangle(m_mouseAnchor, m_mouseFloat), false, 0);
             }
-            m_canvas.repaint();
         }
+        endAction();
+    }
+
+    public void endAction()
+    {
         m_mouseAnchor = null;
         m_mouseFloat = null;
+    	m_canvas.repaint();
     }
+
 
     /*
      * @see com.galactanet.gametable.AbstractTool#paint(java.awt.Graphics)
@@ -110,7 +116,12 @@ public class EraseTool extends NullTool
         if (m_mouseAnchor != null)
         {
             Graphics2D g2 = (Graphics2D)g.create();
-            g2.setColor(Color.WHITE);
+            
+            if ( m_canvas.isPublicMap() )
+            {
+            	g2.setColor(Color.WHITE);
+            }
+            
             g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1f, new float[] {
                 2f
             }, 0f));

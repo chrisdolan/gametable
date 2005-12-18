@@ -27,8 +27,6 @@ public class PublishTool extends NullTool
     private Point           m_mouseFloat;
     private boolean         m_bEraseColor;
 
-
-
     /**
      * Default Constructor.
      */
@@ -59,6 +57,13 @@ public class PublishTool extends NullTool
      */
     public void mouseButtonPressed(int x, int y, int modifierMask)
     {
+    	if ( m_canvas.isPublicMap() )
+    	{
+    		// this tool is not useable on the public map. So we cancel this action
+    		GametableFrame.g_gameTableFrame.getToolManager().cancelToolAction();
+    		return;
+    	}
+    	
         m_mouseAnchor = new Point(x, y);
         m_mouseFloat = m_mouseAnchor;
     }
@@ -192,14 +197,17 @@ public class PublishTool extends NullTool
             	Rectangle eraseRect = createRectangle(m_mouseAnchor, m_mouseFloat);
             	m_canvas.erase(eraseRect, false, -1);
         	}
-
-        	clearTints();
-            m_canvas.repaint();
         }
-        m_mouseAnchor = null;
-        m_mouseFloat = null;
+        endAction();
     }
 
+    public void endAction()
+    {
+    	clearTints();
+        m_mouseAnchor = null;
+        m_mouseFloat = null;
+        m_canvas.repaint();
+    }
     /*
      * @see com.galactanet.gametable.AbstractTool#paint(java.awt.Graphics)
      */

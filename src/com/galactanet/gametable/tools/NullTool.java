@@ -80,6 +80,10 @@ public class NullTool implements Tool
     {
     }
 
+    public void endAction()
+    {
+    }
+
     /*
      * @see com.galactanet.gametable.Tool#getPreferences()
      */

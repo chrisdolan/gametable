@@ -169,12 +169,18 @@ public class PointerTool extends NullTool
                 }
             }
         }
+        endAction();
+    }
+    
+    public void endAction()
+    {
         m_grabbedPog = null;
         m_ghostPog = null;
         m_grabOffset = null;
         m_startScroll = null;
         m_startMouse = null;
         hoverCursorCheck();
+    	m_canvas.repaint();
     }
 
     /*
