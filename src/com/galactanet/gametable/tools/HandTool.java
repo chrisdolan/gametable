@@ -54,7 +54,7 @@ public class HandTool extends NullTool
     public void mouseButtonPressed(int x, int y, int modifierMask)
     {
         m_startScroll = m_canvas
-            .drawToModel(m_canvas.getSharedMap().getScrollX(), m_canvas.getSharedMap().getScrollY());
+            .drawToModel(m_canvas.getPublicMap().getScrollX(), m_canvas.getPublicMap().getScrollY());
         m_startMouse = m_canvas.modelToView(x, y);
         m_canvas.setToolCursor(1);
     }

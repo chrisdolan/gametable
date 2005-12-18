@@ -50,7 +50,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     public Image                m_mapBk;
 
     // this is the map (or layer) that all players share
-    private GametableMap        m_sharedMap           = new GametableMap(true);
+    private GametableMap        m_publicMap           = new GametableMap(true);
+    private GametableMap        m_privateMap           = new GametableMap(false);
 
     // this points to whichever map is presently active
     private GametableMap        m_activeMap;
@@ -163,6 +164,10 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     // for a
     // right-click
 
+    // an offscreen image that is lazy-initted when needed
+    private Image 				m_offscreenCanvasSizedImage;
+    
+
     public GametableCanvas()
     {
         addMouseListener(this);
@@ -170,7 +175,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         addKeyListener(this);
         addComponentListener(this);
 
-        m_activeMap = m_sharedMap;
+        m_activeMap = m_publicMap;
         m_bHexMode = false;
     }
 
@@ -188,7 +193,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         m_pointCursorImages[6] = UtilityFunctions.getImage("assets/greyHand.png");
         m_pointCursorImages[7] = UtilityFunctions.getImage("assets/yellowHand.png");
 
-        setPrimaryScroll(m_sharedMap, 0, 0);
+        setPrimaryScroll(m_publicMap, 0, 0);
 
         // set up the hex images
         m_hexImages[0] = UtilityFunctions.getImage("assets/hexes_64.png");
@@ -267,14 +272,29 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         return m_gametableFrame.getToolManager().getToolInfo(m_activeToolId).getTool();
     }
 
-    public GametableMap getSharedMap()
+    public GametableMap getPublicMap()
     {
-        return m_sharedMap;
+        return m_publicMap;
+    }
+
+    public GametableMap getPrivateMap()
+    {
+        return m_privateMap;
     }
 
     public GametableMap getActiveMap()
     {
         return m_activeMap;
+    }
+    
+    public boolean isPublicMap()
+    {
+    	return ( m_activeMap == m_publicMap );
+    }
+
+    public void setActiveMap(GametableMap map)
+    {
+        m_activeMap = map;
     }
 
     public PogsPanel getActivePogsArea()
@@ -596,9 +616,14 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
      */
     public void setPrimaryScroll(GametableMap mapToSet, int x, int y)
     {
+        m_publicMap.setScroll(x, y);
+        m_privateMap.setScroll(x, y);
+    	/*
         int dx = x - mapToSet.getScrollX();
         int dy = y - mapToSet.getScrollY();
-        mapToSet.setScroll(dx + mapToSet.getScrollX(), dy + mapToSet.getScrollY());
+        m_publicMap.setScroll(dx + mapToSet.getScrollX(), dy + mapToSet.getScrollY());
+        m_privateMap.setScroll(dx + mapToSet.getScrollX(), dy + mapToSet.getScrollY());
+        */
     }
 
     public void doRecenterView(int modelCenterX, int modelCenterY, int zoomLevel)
@@ -608,13 +633,13 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         setZoom(zoomLevel);
 
         // find the view coordinate for the model center
-        setPrimaryScroll(m_sharedMap, 0, 0);
+        setPrimaryScroll(m_publicMap, 0, 0);
 
         // we need to get the coords for the shared map, even if we're not on that at the moment
         // so we cheezily set to the shared map, then return it to normal after the
         // call to modelToView
         GametableMap storedMap = m_activeMap;
-        m_activeMap = m_sharedMap;
+        m_activeMap = m_publicMap;
         Point viewCenter = modelToView(modelCenterX, modelCenterY);
         m_activeMap = storedMap;
 
@@ -623,19 +648,26 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         int tlY = viewCenter.y - getHeight() / 2;
 
         // that is our new scroll position
-        setPrimaryScroll(m_sharedMap, tlX, tlY);
+        setPrimaryScroll(m_publicMap, tlX, tlY);
 
         repaint();
     }
 
     public void setPogData(int id, String s)
     {
-        m_gametableFrame.push(PacketManager.makePogDataPacket(id, s));
-
-        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
-        {
+    	if ( isPublicMap() )
+    	{
+	        m_gametableFrame.push(PacketManager.makePogDataPacket(id, s));
+	
+	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+	        {
+	            doSetPogData(id, s);
+	        }
+    	}
+    	else
+    	{
             doSetPogData(id, s);
-        }
+    	}
     }
 
     public void doSetPogData(int id, String s)
@@ -652,12 +684,19 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void movePog(int id, int newX, int newY)
     {
-        m_gametableFrame.push(PacketManager.makeMovePogPacket(id, newX, newY));
-
-        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
-        {
+    	if ( isPublicMap() )
+    	{
+	        m_gametableFrame.push(PacketManager.makeMovePogPacket(id, newX, newY));
+	
+	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+	        {
+	            doMovePog(id, newX, newY);
+	        }
+    	}
+    	else
+    	{
             doMovePog(id, newX, newY);
-        }
+    	}
     }
 
     public void doMovePog(int id, int newX, int newY)
@@ -686,12 +725,19 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void removePogs(int ids[])
     {
-        m_gametableFrame.push(PacketManager.makeRemovePogsPacket(ids));
-
-        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
-        {
+    	if ( isPublicMap() )
+    	{
+	        m_gametableFrame.push(PacketManager.makeRemovePogsPacket(ids));
+	
+	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+	        {
+	            doRemovePogs(ids);
+	        }
+    	}
+    	else
+    	{
             doRemovePogs(ids);
-        }
+    	}
     }
 
     public void doRemovePogs(int ids[])
@@ -722,12 +768,19 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     public void addPog(Pog toAdd)
     {
         toAdd.getUniqueID();
-        m_gametableFrame.push(PacketManager.makeAddPogPacket(toAdd));
-
-        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
-        {
+    	if ( isPublicMap() )
+    	{
+	        m_gametableFrame.push(PacketManager.makeAddPogPacket(toAdd));
+	
+	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+	        {
+	            doAddPog(toAdd);
+	        }
+    	}
+    	else
+    	{
             doAddPog(toAdd);
-        }
+    	}
     }
 
     public void doAddPog(Pog toAdd)
@@ -738,15 +791,22 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void addLineSegments(LineSegment[] lines)
     {
-        // if we're the host, push it to everyone and add the lines.
-        // if we're a joiner, just push it to the host
-        m_gametableFrame.push(PacketManager.makeLinesPacket(lines));
-
-        // if we're the host or if we're offline, go ahead and add them now
-        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
-        {
+    	if ( isPublicMap() )
+    	{
+	        // if we're the host, push it to everyone and add the lines.
+	        // if we're a joiner, just push it to the host
+	        m_gametableFrame.push(PacketManager.makeLinesPacket(lines));
+	
+	        // if we're the host or if we're offline, go ahead and add them now
+	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+	        {
+	            doAddLineSegments(lines);
+	        }
+    	}
+    	else
+    	{
             doAddLineSegments(lines);
-        }
+    	}
     }
 
     public void doAddLineSegments(LineSegment[] lines)
@@ -763,14 +823,20 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void erase(Rectangle r, boolean bColorSpecific, int color)
     {
-        // if we're the host, push it to everyone and add the lines.
-        // if we're a joiner, just push it to the host
-        m_gametableFrame.push(PacketManager.makeErasePacket(r, bColorSpecific, color));
-        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
-        {
+    	if ( isPublicMap() )
+    	{
+	        // if we're the host, push it to everyone and add the lines.
+	        // if we're a joiner, just push it to the host
+	        m_gametableFrame.push(PacketManager.makeErasePacket(r, bColorSpecific, color));
+	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+	        {
+	            doErase(r, bColorSpecific, color);
+	        }
+    	}
+    	else
+    	{
             doErase(r, bColorSpecific, color);
-        }
-
+    	}
     }
 
     public void doErase(Rectangle r, boolean bColorSpecific, int color)
@@ -934,7 +1000,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     {
         Point target = modelToDraw(modelX, modelY);
         // System.out.println("scrollMapTo(" + target.x + ", " + target.y + ")");
-        m_sharedMap.setScroll(target.x, target.y);
+        setPrimaryScroll(getActiveMap(), target.x, target.y);
         repaint();
     }
 
@@ -1419,6 +1485,11 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 m_gametableFrame.m_textEntry.setText("/");
                 m_gametableFrame.m_textEntry.requestFocus();
             break;
+            case KeyEvent.VK_A:
+            {
+            	m_gametableFrame.toggleLayer();
+            }
+            break;
         }
         // repaint();
     }
@@ -1518,49 +1589,115 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             HINTS.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
             ((Graphics2D)g).addRenderingHints(HINTS);
         }
+        
+        // if they're on the public layer, we draw it first, then the private layer
+        // on top of it at half alpha.
+        // if they're on the priavet layer, we draw the public layer on white at half alpha,
+        // then the private layer at full alpha
+        
+        if ( isPublicMap() )
+        {
+        	// they are on the public map. Draw the public map as normal,
+			g.setColor(Color.WHITE);
+			g.fillRect(0, 0, getWidth(), getHeight());
+			
+        	paintMap(g, m_publicMap);
+        	
+        	/*
+		    Graphics2D g2 = (Graphics2D)g.create();
+		    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+        	paintMap(g2, m_privateMap);
+		    g2.dispose();
+		    */
+        }
+        else
+        {
+        	// they are on the private map. We draw the public map first to an offscreen
+        	// buffer, then we fill the canvas with white and draw the offscreen buffer
+        	// to the canvas at 50% alpha. Then we draw the private map at full alpha
+        	
+		    // we have to offscreen the public layer. it's to be half-alpha
+		    if ( m_offscreenCanvasSizedImage == null || 
+		    	 m_offscreenCanvasSizedImage.getHeight(this) != getHeight() || 
+		    	 m_offscreenCanvasSizedImage.getWidth(this) != getWidth())
+		    {
+		    	m_offscreenCanvasSizedImage = UtilityFunctions.createDrawableImage(getWidth(), getHeight());
+		    }
+			Graphics offscreenG = m_offscreenCanvasSizedImage.getGraphics();
+		
+			// draw it to the offscreen
+		    paintMap(offscreenG, getPublicMap());
+		    
+		    // then draw it with 1/2 alpha to the actual canvas
+		    // clear the canvas first
+			g.setColor(Color.WHITE);
+			g.fillRect(0, 0, getWidth(), getHeight());
+			
+		    Graphics2D g2 = (Graphics2D)g.create();
+		    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+		    g2.drawImage(m_offscreenCanvasSizedImage, 0, 0, this);
+		    g2.dispose();
+		    
+		    // now draw the private layer as normal (full alpha)
+		    paintMap(g, m_privateMap);
+        }
+    }
+    
+    public void paintMap(Graphics g, GametableMap mapToDraw)
+    {
+        g.translate(-mapToDraw.getScrollX(), -mapToDraw.getScrollY());
 
-        g.setColor(Color.WHITE);
-        g.fillRect(0, 0, getWidth(), getHeight());
-        g.translate(-getActiveMap().getScrollX(), -getActiveMap().getScrollY());
-
-        drawMatte(g, getActiveMap().getScrollX(), getActiveMap().getScrollY(), getWidth(), getHeight());
+        // we don't draw the matte if we're on the private map)
+        if ( mapToDraw != m_privateMap )
+        {
+        	drawMatte(g, mapToDraw.getScrollX(), mapToDraw.getScrollY(), getWidth(), getHeight());
+        }
 
         // draw all the underlays here
-        for (int i = 0; i < getActiveMap().getNumPogs(); i++)
+        for (int i = 0; i < mapToDraw.getNumPogs(); i++)
         {
-            Pog pog = getActiveMap().getPogAt(i);
+            Pog pog = mapToDraw.getPogAt(i);
             if (pog.isUnderlay())
             {
                 pog.drawToCanvas(g);
             }
         }
 
-        // if they're dragging an underlay, draw it here
-        // there could be a pog drag in progress
-        if (m_bPogBeingDragged)
+        // we don't draw the underlay being dragged if we're not 
+        // drawing the current map
+        if ( mapToDraw == getActiveMap() )
         {
-            if (getActivePogsArea().m_selectedPog.isUnderlay())
-            {
-                getActivePogsArea().m_selectedPog.drawToCanvas(g);
-            }
+	        // if they're dragging an underlay, draw it here
+	        // there could be a pog drag in progress
+	        if (m_bPogBeingDragged)
+	        {
+	            if (getActivePogsArea().m_selectedPog.isUnderlay())
+	            {
+	                getActivePogsArea().m_selectedPog.drawToCanvas(g);
+	            }
+	        }
+	
+	        // there could be an internal pog move being done. we draw it again here to ensure
+	        // it's on top of the heap
+	        if (m_pogBeingDragged != null)
+	        {
+	            if (m_pogBeingDragged.isUnderlay())
+	            {
+	                m_pogBeingDragged.drawToCanvas(g);
+	            }
+	        }
         }
 
-        // there could be an internal pog move being done. we draw it again here to ensure
-        // it's on top of the heap
-        if (m_pogBeingDragged != null)
+        // we don't draw the grid if we're on the private map)
+        if ( mapToDraw != m_privateMap )
         {
-            if (m_pogBeingDragged.isUnderlay())
-            {
-                m_pogBeingDragged.drawToCanvas(g);
-            }
+        	drawLines(g, mapToDraw.getScrollX(), mapToDraw.getScrollY(), getWidth(), getHeight());
         }
-
-        drawLines(g, getActiveMap().getScrollX(), getActiveMap().getScrollY(), getWidth(), getHeight());
 
         // lines
-        for (int i = 0; i < getActiveMap().getNumLines(); i++)
+        for (int i = 0; i < mapToDraw.getNumLines(); i++)
         {
-            LineSegment ls = getActiveMap().getLineAt(i);
+            LineSegment ls = mapToDraw.getLineAt(i);
 
             // LineSegments police themselves, performance wise. If they won't touch the current
             // viewport, they don't draw
@@ -1568,22 +1705,27 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
 
         // pogs
-        for (int i = 0; i < getActiveMap().getNumPogs(); i++)
+        for (int i = 0; i < mapToDraw.getNumPogs(); i++)
         {
-            Pog pog = getActiveMap().getPogAt(i);
+            Pog pog = mapToDraw.getPogAt(i);
             if (!pog.isUnderlay())
             {
                 pog.drawToCanvas(g);
             }
         }
 
-        // there could be a pog drag in progress
-        if (m_bPogBeingDragged)
+        // we don't draw the pog being dragged if we're not 
+        // drawing the current map
+        if ( mapToDraw == getActiveMap() )
         {
-            if (!getActivePogsArea().m_selectedPog.isUnderlay())
-            {
-                getActivePogsArea().m_selectedPog.drawToCanvas(g);
-            }
+	        // there could be a pog drag in progress
+	        if (m_bPogBeingDragged)
+	        {
+	            if (!getActivePogsArea().m_selectedPog.isUnderlay())
+	            {
+	                getActivePogsArea().m_selectedPog.drawToCanvas(g);
+	            }
+	        }
         }
 
         // draw the cursor overlays
@@ -1605,13 +1747,13 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         // mousing around
         if (m_bMouseOnView)
         {
-            Pog mouseOverPog = getActiveMap().getPogAt(m_mouseModelFloat);
+            Pog mouseOverPog = mapToDraw.getPogAt(m_mouseModelFloat);
             if (m_bShiftKeyDown)
             {
                 // this shift key is down. Show all pog data
-                for (int i = 0; i < getActiveMap().getNumPogs(); i++)
+                for (int i = 0; i < mapToDraw.getNumPogs(); i++)
                 {
-                    Pog pog = getActiveMap().getPogAt(i);
+                    Pog pog = mapToDraw.getPogAt(i);
                     if (pog != mouseOverPog)
                     {
                         pog.drawDataStringToCanvas(g, false);
@@ -1624,8 +1766,13 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 mouseOverPog.drawDataStringToCanvas(g, true);
             }
         }
-        getActiveTool().paint(g);
-        g.translate(getActiveMap().getScrollX(), getActiveMap().getScrollY());
+        
+        if ( mapToDraw == getActiveMap() )
+        {
+        	getActiveTool().paint(g);
+        }
+        
+        g.translate(mapToDraw.getScrollX(), mapToDraw.getScrollY());
     }
 
     // topLeftX and topLeftY are the coordinates of where the

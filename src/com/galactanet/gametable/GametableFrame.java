@@ -92,9 +92,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     JMenuItem                     m_disconnect               = new JMenuItem("Disconnect");
 
     JMenu                         m_mapMenu                  = new JMenu("Map");
-    JMenuItem                     m_clearMapMenuItem        = new JMenuItem("Clear Map");
+    JMenuItem                     m_clearMapMenuItem        = new JMenuItem("Clear Layer");
     JMenuItem                     m_recenter                 = new JMenuItem("Recenter All Players");
     JCheckBoxMenuItem             m_hexModeMenuItem          = new JCheckBoxMenuItem("Hex Mode");
+    JCheckBoxMenuItem             m_privateLayerModeMenuItem = new JCheckBoxMenuItem("Manipulate Private Layer");
 
     JMenu                         m_diceMacrosMenu           = new JMenu("Dice Macros");
     JMenuItem                     m_addDiceMacroMenuItem     = new JMenuItem("Add...");
@@ -185,7 +186,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     // The current file path used by save and open.
     // NULL if unset.
-    public File                   m_actingFile;
+    // one for the public map, one for the private map
+    public File                   m_actingFilePublic;
+    public File                   m_actingFilePrivate;
 
     private ToolManager           m_toolManager              = new ToolManager();
     private JToggleButton         m_toolButtons[]            = null;
@@ -216,6 +219,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_clearMapMenuItem.setActionCommand("clearPogs");
             m_clearMapMenuItem.addActionListener(this);
             m_hexModeMenuItem.addActionListener(this);
+            m_privateLayerModeMenuItem.addActionListener(this);
             m_hostMenuItem.addActionListener(this);
             m_joinMenuItem.addActionListener(this);
             m_disconnect.addActionListener(this);
@@ -309,6 +313,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_mapMenu.add(m_clearMapMenuItem);
             m_mapMenu.add(m_recenter);
             m_mapMenu.add(m_hexModeMenuItem);
+            m_mapMenu.add(m_privateLayerModeMenuItem);
             m_menuBar.add(m_diceMacrosMenu);
             m_menuBar.add(m_helpMenu);
             m_helpMenu.add(m_aboutMenuItem);
@@ -356,6 +361,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             // start the poll thread
             m_poller.start();
 
+            // load the primary map
+            m_gametableCanvas.setActiveMap(m_gametableCanvas.getPrivateMap());
+            loadState(new File("autosavepvt.grm"));
+            m_gametableCanvas.setActiveMap(m_gametableCanvas.getPublicMap());
             loadState(new File("autosave.grm"));
             loadPrefs();
 
@@ -791,17 +800,17 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         // tell the new guy the entire state of the game
         // lines
-        LineSegment[] lines = new LineSegment[m_gametableCanvas.getSharedMap().getNumLines()];
-        for (int i = 0; i < m_gametableCanvas.getSharedMap().getNumLines(); i++)
+        LineSegment[] lines = new LineSegment[m_gametableCanvas.getPublicMap().getNumLines()];
+        for (int i = 0; i < m_gametableCanvas.getPublicMap().getNumLines(); i++)
         {
-            lines[i] = m_gametableCanvas.getSharedMap().getLineAt(i);
+            lines[i] = m_gametableCanvas.getPublicMap().getLineAt(i);
         }
         send(PacketManager.makeLinesPacket(lines), player);
 
         // pogs
-        for (int i = 0; i < m_gametableCanvas.getSharedMap().getNumPogs(); i++)
+        for (int i = 0; i < m_gametableCanvas.getPublicMap().getNumPogs(); i++)
         {
-            Pog pog = m_gametableCanvas.getSharedMap().getPogAt(i);
+            Pog pog = m_gametableCanvas.getPublicMap().getPogAt(i);
             send(PacketManager.makeAddPogPacket(pog), player);
         }
 
@@ -947,9 +956,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_myPlayerIdx = 0;
 
             // reset game data
-            m_gametableCanvas.getSharedMap().setScroll(0, 0);
-            m_gametableCanvas.getSharedMap().clearPogs();
-            m_gametableCanvas.getSharedMap().clearLines();
+            m_gametableCanvas.getPublicMap().setScroll(0, 0);
+            m_gametableCanvas.getPublicMap().clearPogs();
+            m_gametableCanvas.getPublicMap().clearLines();
             PacketManager.g_imagelessPogs.clear();
 
             // send the packet
@@ -1033,11 +1042,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void eraseAllPogs()
     {
         // make an int array of all the IDs
-        int removeArray[] = new int[m_gametableCanvas.getSharedMap().getNumPogs()];
+        int removeArray[] = new int[m_gametableCanvas.getActiveMap().getNumPogs()];
 
-        for (int i = 0; i < m_gametableCanvas.getSharedMap().getNumPogs(); i++)
+        for (int i = 0; i < m_gametableCanvas.getActiveMap().getNumPogs(); i++)
         {
-            Pog pog = m_gametableCanvas.getSharedMap().getPogAt(i);
+            Pog pog = m_gametableCanvas.getActiveMap().getPogAt(i);
             removeArray[i] = pog.m_ID;
         }
 
@@ -1059,6 +1068,18 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         else
         {
             m_hexModeMenuItem.setState(false);
+        }
+    }
+
+    public void updatePrivateLayerModeMenuItem()
+    {
+        if (m_gametableCanvas.isPublicMap())
+        {
+            m_privateLayerModeMenuItem.setState(false);
+        }
+        else
+        {
+        	m_privateLayerModeMenuItem.setState(true);
         }
     }
 
@@ -1084,69 +1105,117 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         if (e.getSource() == m_exitMenuItem)
         {
-            saveState(new File("autosave.grm"));
+            saveState(m_gametableCanvas.getPublicMap(), new File("autosave.grm"));
+            saveState(m_gametableCanvas.getPrivateMap(), new File("autosavepvt.grm"));
             savePrefs();
             System.exit(0);
         }
         if (e.getSource() == m_openMenuItem)
         {
-            m_actingFile = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
-
-            int result = UtilityFunctions
-                .yesNoDialog(
-                    this,
-                    "This will load a map file, replacing all existing map data for you and all players in the session. Are you sure you want to do this?",
-                    "Confirm Load");
-            if (result == UtilityFunctions.YES)
-            {
-
-                if (m_actingFile != null)
-                {
-                    // clear the state
-                    eraseAll();
-
-                    // load
-                    if (m_netStatus == NETSTATE_JOINED)
-                    {
-                        // joiners dispatch the save file to the host
-                        // for processing
-                        byte grmFile[] = UtilityFunctions.loadFileToArray(m_actingFile);
-                        if (grmFile != null)
-                        {
-                            push(PacketManager.makeGrmPacket(grmFile));
-                        }
-                    }
-                    else
-                    {
-                        // actually do the load if we're the host or offline
-                        loadState(m_actingFile);
-                    }
-
-                    postSystemMessage(getMePlayer().getPlayerName() + " loads a new map.");
-                }
-            }
+        	// opening while on the public layer...
+        	if ( m_gametableCanvas.getActiveMap() == m_gametableCanvas.getPublicMap() )
+        	{
+	            m_actingFilePublic = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
+	
+	            int result = UtilityFunctions
+	                .yesNoDialog(
+	                    this,
+	                    "This will load a map file, replacing all existing map data for you and all players in the session. Are you sure you want to do this?",
+	                    "Confirm Load");
+	            if (result == UtilityFunctions.YES)
+	            {
+	
+	                if (m_actingFilePublic != null)
+	                {
+	                    // clear the state
+	                    eraseAll();
+	
+	                    // load
+	                    if (m_netStatus == NETSTATE_JOINED)
+	                    {
+	                        // joiners dispatch the save file to the host
+	                        // for processing
+	                        byte grmFile[] = UtilityFunctions.loadFileToArray(m_actingFilePublic);
+	                        if (grmFile != null)
+	                        {
+	                            push(PacketManager.makeGrmPacket(grmFile));
+	                        }
+	                    }
+	                    else
+	                    {
+	                        // actually do the load if we're the host or offline
+	                        loadState(m_actingFilePublic);
+	                    }
+	
+	                    postSystemMessage(getMePlayer().getPlayerName() + " loads a new map.");
+	                }
+	            }
+        	}
+        	else
+        	{
+        		// opening while on the private layer
+	            m_actingFilePrivate = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
+	            if ( m_actingFilePrivate != null )
+	            {
+	            	// we have to pretend we're not connected while loading. We
+	            	// don't want these packets to be propagatet to other players
+	            	int oldStatus = m_netStatus;
+	            	m_netStatus = NETSTATE_NONE;
+	            	loadState(m_actingFilePrivate);
+	            	m_netStatus = oldStatus;
+	            }
+        	}
         }
         if (e.getSource() == m_saveMenuItem)
         {
-            if (m_actingFile == null)
-            {
-                m_actingFile = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
-            }
+        	if ( m_gametableCanvas.isPublicMap() )
+        	{
+	            if (m_actingFilePublic == null)
+	            {
+	            	m_actingFilePublic = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+	            }
 
-            if (m_actingFile != null)
-            {
-                // save the file
-                saveState(m_actingFile);
-            }
+	            if (m_actingFilePublic != null)
+	            {
+	                // save the file
+	                saveState(m_gametableCanvas.getActiveMap(), m_actingFilePublic);
+	            }
+        	}
+        	else
+        	{
+	            if (m_actingFilePrivate == null)
+	            {
+	            	m_actingFilePrivate = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+	            }
+
+	            if (m_actingFilePrivate != null)
+	            {
+	                // save the file
+	                saveState(m_gametableCanvas.getActiveMap(), m_actingFilePrivate);
+	            }
+        	}
+
         }
         if (e.getSource() == m_saveAsMenuItem)
         {
-            m_actingFile = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
-            if (m_actingFile != null)
-            {
-                // save the file
-                saveState(m_actingFile);
-            }
+        	if ( m_gametableCanvas.isPublicMap() )
+        	{
+	            m_actingFilePublic = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+	            if (m_actingFilePublic != null)
+	            {
+	                // save the file
+	                saveState(m_gametableCanvas.getActiveMap(), m_actingFilePublic);
+	            }
+        	}
+        	else
+        	{
+	            m_actingFilePrivate = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+	            if (m_actingFilePrivate != null)
+	            {
+	                // save the file
+	                saveState(m_gametableCanvas.getActiveMap(), m_actingFilePrivate);
+	            }
+        	}
         }
         if (e.getSource() == m_reacquirePogsMenuItem)
         {
@@ -1178,6 +1247,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             repaint();
             updateHexModeMenuItem();
             postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
+        }
+
+        if (e.getSource() == m_privateLayerModeMenuItem)
+        {
+        	toggleLayer();
         }
 
         if (e.getSource() == m_recenter)
@@ -1239,6 +1313,22 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 m_gametableCanvas.requestFocus();
             }
         }
+    }
+    
+    public void toggleLayer()
+    {
+    	// toggle the map we're on
+    	if ( m_gametableCanvas.isPublicMap() )
+    	{
+    		m_gametableCanvas.setActiveMap(m_gametableCanvas.getPrivateMap());
+    	}
+    	else
+    	{
+    		m_gametableCanvas.setActiveMap(m_gametableCanvas.getPublicMap());
+    	}
+    	
+        updatePrivateLayerModeMenuItem();
+        repaint();
     }
 
     public void propertyChange(PropertyChangeEvent evt)
@@ -1380,7 +1470,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         super.processWindowEvent(e);
         if (e.getID() == WindowEvent.WINDOW_CLOSING)
         {
-            saveState(new File("autosave.grm"));
+            saveState(m_gametableCanvas.getPublicMap(), new File("autosave.grm"));
+            saveState(m_gametableCanvas.getPrivateMap(), new File("autosavepvt.grm"));
             savePrefs();
             System.exit(0);
         }
@@ -1649,8 +1740,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             prefDos.writeUTF(m_defaultIP);
             prefDos.writeInt(m_defaultPort);
             prefDos.writeUTF(m_defaultPassword);
-            prefDos.writeInt(m_gametableCanvas.getSharedMap().getScrollX());
-            prefDos.writeInt(m_gametableCanvas.getSharedMap().getScrollY());
+            prefDos.writeInt(m_gametableCanvas.getPublicMap().getScrollX());
+            prefDos.writeInt(m_gametableCanvas.getPublicMap().getScrollY());
             prefDos.writeInt(m_gametableCanvas.m_zoom);
 
             prefDos.writeInt(m_windowSize.width);
@@ -1695,7 +1786,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_defaultIP = prefDis.readUTF();
             m_defaultPort = prefDis.readInt();
             m_defaultPassword = prefDis.readUTF();
-            m_gametableCanvas.getSharedMap().setScroll(prefDis.readInt(), prefDis.readInt());
+            m_gametableCanvas.setPrimaryScroll(m_gametableCanvas.getPublicMap(), prefDis.readInt(), prefDis.readInt());
             m_gametableCanvas.setZoom(prefDis.readInt());
 
             m_windowSize.width = prefDis.readInt();
@@ -1744,7 +1835,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
     }
 
-    public void saveState(File file)
+    public void saveState(GametableMap mapToSave, File file)
     {
         // save out all our data. The best way to do this is with packets, cause they're
         // already designed to pass data around.
@@ -1753,19 +1844,19 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         try
         {
-            LineSegment[] lines = new LineSegment[m_gametableCanvas.getSharedMap().getNumLines()];
-            for (int i = 0; i < m_gametableCanvas.getSharedMap().getNumLines(); i++)
+            LineSegment[] lines = new LineSegment[mapToSave.getNumLines()];
+            for (int i = 0; i < mapToSave.getNumLines(); i++)
             {
-                lines[i] = m_gametableCanvas.getSharedMap().getLineAt(i);
+                lines[i] = mapToSave.getLineAt(i);
             }
             byte[] linesPacket = PacketManager.makeLinesPacket(lines);
             dos.writeInt(linesPacket.length);
             dos.write(linesPacket);
 
             // pogs
-            for (int i = 0; i < m_gametableCanvas.getSharedMap().getNumPogs(); i++)
+            for (int i = 0; i < mapToSave.getNumPogs(); i++)
             {
-                Pog pog = m_gametableCanvas.getSharedMap().getPogAt(i);
+                Pog pog = mapToSave.getPogAt(i);
                 byte[] pogsPacket = PacketManager.makeAddPogPacket(pog);
                 dos.writeInt(pogsPacket.length);
                 dos.write(pogsPacket);

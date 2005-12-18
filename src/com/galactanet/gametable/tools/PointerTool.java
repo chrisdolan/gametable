@@ -97,7 +97,7 @@ public class PointerTool extends NullTool
         }
         else if (GametableFrame.g_gameTableFrame.getPreferences().getBooleanValue(PREF_DRAG))
         {
-            m_startScroll = m_canvas.drawToModel(m_canvas.getSharedMap().getScrollX(), m_canvas.getSharedMap()
+            m_startScroll = m_canvas.drawToModel(m_canvas.getPublicMap().getScrollX(), m_canvas.getPublicMap()
                 .getScrollY());
             m_startMouse = m_canvas.modelToView(x, y);
             m_canvas.setToolCursor(2);
