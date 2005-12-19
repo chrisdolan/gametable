@@ -117,16 +117,20 @@ public class EraseTool extends NullTool
         {
             Graphics2D g2 = (Graphics2D)g.create();
             
-            if ( m_canvas.isPublicMap() )
-            {
-            	g2.setColor(Color.WHITE);
-            }
-            
+           	g2.setColor(Color.WHITE);
             g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1f, new float[] {
                 2f
             }, 0f));
             Rectangle rect = createRectangle(m_canvas.modelToDraw(m_mouseAnchor), m_canvas.modelToDraw(m_mouseFloat));
             g2.draw(rect);
+
+           	g2.setColor(Color.BLACK);
+            g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1f, new float[] {
+                    2f
+                }, 2f));
+            rect = createRectangle(m_canvas.modelToDraw(m_mouseAnchor), m_canvas.modelToDraw(m_mouseFloat));
+            g2.draw(rect);
+            
             g2.dispose();
         }
     }
