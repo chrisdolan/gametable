@@ -25,7 +25,7 @@ public class PublishTool extends NullTool
     private GametableCanvas m_canvas;
     private Point           m_mouseAnchor;
     private Point           m_mouseFloat;
-    private boolean         m_bEraseColor;
+    //private boolean         m_bEraseColor;
 
     /**
      * Default Constructor.
@@ -125,7 +125,7 @@ public class PublishTool extends NullTool
     {
         if (m_mouseAnchor != null && !m_mouseAnchor.equals(m_mouseFloat))
         {
-        	GametableFrame frame = GametableFrame.g_gameTableFrame;
+        	//GametableFrame frame = GametableFrame.g_gameTableFrame;
         	
         	// first off, copy all the pogs/underlays over to the public layer
         	for ( int i=0 ; i<m_canvas.getPrivateMap().getNumPogs() ; i++ )

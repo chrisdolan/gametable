@@ -135,10 +135,6 @@ public class BoxTool extends NullTool
             Color drawColor = GametableFrame.g_gameTableFrame.m_drawColor;
             g2.setColor(new Color(drawColor.getRed(), drawColor.getGreen(), drawColor.getBlue(), 102));
             g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            Point drawAnchor = m_canvas.modelToDraw(m_mouseAnchor);
-            Point drawFloat = m_canvas.modelToDraw(m_mouseFloat);
-         
-            g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             Rectangle rect = createRectangle(m_canvas.modelToDraw(m_mouseAnchor), m_canvas.modelToDraw(m_mouseFloat));
             g2.draw(rect);
             g2.dispose();
