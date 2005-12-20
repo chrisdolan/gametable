@@ -48,7 +48,7 @@ public class Player
         {
             return charName;
         }
-        return playerName + " (" + charName + ")";
+        return charName + " (" + playerName + ")";
     }
 
     public String getPlayerName()

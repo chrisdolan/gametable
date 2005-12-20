@@ -91,6 +91,8 @@ public class LineTool extends NullTool
                 ls
             });
         }
+        
+        endAction();
     }
 
     public void endAction()

@@ -618,7 +618,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void hexModePacketReceived(boolean bHexMode)
     {
         // note the new hex mode
-        m_gametableCanvas.m_bHexMode = bHexMode;
+        // m_gametableCanvas.m_bHexMode = bHexMode;
         updateHexModeMenuItem();
 
         if (m_netStatus == NETSTATE_HOST)
@@ -1063,6 +1063,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     public void updateHexModeMenuItem()
     {
+    	/*
         if (this.m_gametableCanvas.m_bHexMode)
         {
             m_hexModeMenuItem.setState(true);
@@ -1071,6 +1072,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             m_hexModeMenuItem.setState(false);
         }
+        */
     }
 
     public void updatePrivateLayerModeMenuItem()
@@ -1247,14 +1249,15 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             UtilityFunctions.msgBox(this, GametableApp.VERSION + " by Andy Weir and David Ghandehari", "Version");
         }
-        if (e.getSource() == m_hexModeMenuItem)
+        
+        /*if (e.getSource() == m_hexModeMenuItem)
         {
             m_gametableCanvas.m_bHexMode = !m_gametableCanvas.m_bHexMode;
             push(PacketManager.makeHexModePacket(m_gametableCanvas.m_bHexMode));
             repaint();
             updateHexModeMenuItem();
             postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
-        }
+        }*/
 
         if (e.getSource() == m_privateLayerModeMenuItem)
         {
@@ -1874,7 +1877,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             }
 
             // hex state
-            byte hexModePacket[] = PacketManager.makeHexModePacket(m_gametableCanvas.m_bHexMode);
+            byte hexModePacket[] = PacketManager.makeHexModePacket(true); // m_gametableCanvas.m_bHexMode);
             dos.writeInt(hexModePacket.length);
             dos.write(hexModePacket);
 
