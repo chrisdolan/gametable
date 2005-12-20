@@ -92,11 +92,15 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     JMenuItem                     m_disconnect               = new JMenuItem("Disconnect");
 
     JMenu                         m_mapMenu                  = new JMenu("Map");
-    JMenuItem                     m_clearMapMenuItem        = new JMenuItem("Clear Layer");
+    JMenuItem                     m_clearMapMenuItem         = new JMenuItem("Clear Layer");
     JMenuItem                     m_recenter                 = new JMenuItem("Recenter All Players");
-    JCheckBoxMenuItem             m_hexModeMenuItem          = new JCheckBoxMenuItem("Hex Mode");
     JCheckBoxMenuItem             m_privateLayerModeMenuItem = new JCheckBoxMenuItem("Manipulate Private Layer");
 
+    JMenu                         m_gridModeMenu             = new JMenu("Grid Mode");
+    JCheckBoxMenuItem             m_noGridModeItem           = new JCheckBoxMenuItem("No Grid");
+    JCheckBoxMenuItem             m_squareGridModeItem       = new JCheckBoxMenuItem("Square Grid");
+    JCheckBoxMenuItem             m_hexGridModeItem          = new JCheckBoxMenuItem("Hex Grid");
+    
     JMenu                         m_diceMacrosMenu           = new JMenu("Dice Macros");
     JMenuItem                     m_addDiceMacroMenuItem     = new JMenuItem("Add...");
     JMenuItem                     m_removeDiceMacroMenuItem  = new JMenuItem("Remove...");
@@ -218,7 +222,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_exitMenuItem.addActionListener(this);
             m_clearMapMenuItem.setActionCommand("clearPogs");
             m_clearMapMenuItem.addActionListener(this);
-            m_hexModeMenuItem.addActionListener(this);
+            m_noGridModeItem.addActionListener(this);
+            m_squareGridModeItem.addActionListener(this);
+            m_hexGridModeItem.addActionListener(this);
             m_privateLayerModeMenuItem.addActionListener(this);
             m_hostMenuItem.addActionListener(this);
             m_joinMenuItem.addActionListener(this);
@@ -308,11 +314,16 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_fileMenu.add(m_saveAsMenuItem);
             m_fileMenu.add(m_reacquirePogsMenuItem);
             m_fileMenu.add(m_exitMenuItem);
+
+            m_gridModeMenu.add(m_noGridModeItem);
+            m_gridModeMenu.add(m_squareGridModeItem);
+            m_gridModeMenu.add(m_hexGridModeItem);
+            
             m_menuBar.add(m_networkMenu);
             m_menuBar.add(m_mapMenu);
             m_mapMenu.add(m_clearMapMenuItem);
             m_mapMenu.add(m_recenter);
-            m_mapMenu.add(m_hexModeMenuItem);
+            m_mapMenu.add(m_gridModeMenu);
             m_mapMenu.add(m_privateLayerModeMenuItem);
             m_menuBar.add(m_diceMacrosMenu);
             m_menuBar.add(m_helpMenu);
@@ -372,7 +383,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
             m_textEntry.addKeyListener(this);
             m_colorCombo.addActionListener(this);
-            updateHexModeMenuItem();
+            updateGridModeMenu();
             m_bInitted = true;
             setJMenuBar(m_menuBar);
             
@@ -619,7 +630,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     {
         // note the new hex mode
         // m_gametableCanvas.m_bHexMode = bHexMode;
-        updateHexModeMenuItem();
+    	updateGridModeMenu();
 
         if (m_netStatus == NETSTATE_HOST)
         {
@@ -1061,18 +1072,26 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         eraseAllPogs();
     }
 
-    public void updateHexModeMenuItem()
+    public void updateGridModeMenu()
     {
-    	/*
-        if (this.m_gametableCanvas.m_bHexMode)
-        {
-            m_hexModeMenuItem.setState(true);
-        }
-        else
-        {
-            m_hexModeMenuItem.setState(false);
-        }
-        */
+    	if ( m_gametableCanvas.m_gridMode == m_gametableCanvas.m_noGridMode )
+    	{
+            m_noGridModeItem.setState(true);
+            m_squareGridModeItem.setState(false);
+            m_hexGridModeItem.setState(false);
+    	}
+    	else if ( m_gametableCanvas.m_gridMode == m_gametableCanvas.m_squareGridMode )
+    	{
+            m_noGridModeItem.setState(false);
+            m_squareGridModeItem.setState(true);
+            m_hexGridModeItem.setState(false);
+    	}
+    	else if ( m_gametableCanvas.m_gridMode == m_gametableCanvas.m_hexGridMode )
+    	{
+            m_noGridModeItem.setState(false);
+            m_squareGridModeItem.setState(false);
+            m_hexGridModeItem.setState(true);
+    	}
     }
 
     public void updatePrivateLayerModeMenuItem()
@@ -1097,7 +1116,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     	if (e.getSource() == m_clearMapMenuItem)
     	{
             int res = UtilityFunctions.yesNoDialog(this,
-                    "This will clear all lines, pogs, and underlays on the entire map. Are you sure?", "Clear Map");
+                    "This will clear all lines, pogs, and underlays on the entire layer. Are you sure?", "Clear Map");
             if (res == UtilityFunctions.YES)
             {
                 eraseAllPogs();
@@ -1259,6 +1278,25 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
         }*/
 
+        if (e.getSource() == m_noGridModeItem)
+        {
+        	m_gametableCanvas.m_gridMode = m_gametableCanvas.m_noGridMode;  
+        	updateGridModeMenu();
+            repaint();
+        }
+        if (e.getSource() == m_squareGridModeItem)
+        {
+        	m_gametableCanvas.m_gridMode = m_gametableCanvas.m_squareGridMode;  
+        	updateGridModeMenu();
+            repaint();
+        }
+        if (e.getSource() == m_hexGridModeItem)
+        {
+        	m_gametableCanvas.m_gridMode = m_gametableCanvas.m_hexGridMode;  
+        	updateGridModeMenu();
+            repaint();
+        }
+        
         if (e.getSource() == m_privateLayerModeMenuItem)
         {
         	toggleLayer();
