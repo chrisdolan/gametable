@@ -181,12 +181,26 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public final static int       REJECT_VERSION_MISMATCH    = 1;
 
     public final static int       DEFAULT_PORT               = 6812;
-
-    public final static Integer[] g_comboColors              = {
-        new Integer(Color.BLACK.getRGB()), new Integer(Color.BLUE.getRGB()), new Integer(Color.RED.getRGB()),
-        new Integer(Color.CYAN.getRGB()), new Integer(Color.YELLOW.getRGB()), new Integer(Color.GRAY.getRGB()),
-        new Integer(Color.GREEN.getRGB()), new Integer(Color.ORANGE.getRGB()), new Integer(Color.WHITE.getRGB()),
-                                                             };
+	
+	public final static Integer[] g_comboColors= 
+    {
+	        new Integer(new Color(0, 0, 0).getRGB()),
+	        new Integer(new Color(198, 198, 198).getRGB()),
+	        new Integer(new Color(0, 0, 255).getRGB()),
+	        new Integer(new Color(0, 255, 0).getRGB()),
+	        new Integer(new Color(0, 255, 255).getRGB()),
+	        new Integer(new Color(255, 0, 0).getRGB()),
+	        new Integer(new Color(255, 0, 255).getRGB()),
+	        new Integer(new Color(255, 255, 0).getRGB()),
+	        new Integer(new Color(255, 255, 255).getRGB()),
+	        new Integer(new Color(0, 0, 132).getRGB()),
+	        new Integer(new Color(0, 132, 0).getRGB()),
+	        new Integer(new Color(0, 132, 132).getRGB()),
+	        new Integer(new Color(132, 0, 0).getRGB()),
+	        new Integer(new Color(132, 0, 132).getRGB()),
+	        new Integer(new Color(132, 132, 0).getRGB()),
+	        new Integer(new Color(132, 132, 132).getRGB()),
+	};
 
     // The current file path used by save and open.
     // NULL if unset.
