@@ -75,6 +75,7 @@ public class PacketManager
      * Holding ground for POGs with no images yet.
      */
     public static List      g_imagelessPogs   = new ArrayList();
+    public static boolean   m_bPacketProcessInProgress = false;
 
 
 
@@ -87,6 +88,8 @@ public class PacketManager
 
             Log.log(Log.NET, "Received " + getPacketName(type));
             // find the player responsible for this
+            
+            m_bPacketProcessInProgress = true;
             switch (type)
             {
                 case PACKET_PLAYER:
@@ -189,6 +192,8 @@ public class PacketManager
         {
             Log.log(Log.SYS, ex);
         }
+        
+        m_bPacketProcessInProgress = false;
     }
 
     public static String getPacketName(int type)

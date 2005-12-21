@@ -55,6 +55,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     // this points to whichever map is presently active
     private GametableMap        m_activeMap;
+    private GametableMap        m_pushedMap;
 
     // some cursors
     Cursor                      m_handCursor;
@@ -218,7 +219,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             setCursor(m_gametableFrame.getToolManager().getToolInfo(m_activeToolId).getCursor(index));
         }
     }
-
+    
     public void setActiveTool(int index)
     {
         Tool oldTool = getActiveTool();
@@ -253,12 +254,18 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public GametableMap getActiveMap()
     {
+    	// HACK - if we're processing a packet, we make everything
+    	// work on the public layer
+    	if ( PacketManager.m_bPacketProcessInProgress)
+    	{
+    		return m_publicMap;
+    	}
         return m_activeMap;
     }
     
     public boolean isPublicMap()
     {
-    	return ( m_activeMap == m_publicMap );
+    	return ( getActiveMap() == m_publicMap );
     }
 
     public void setActiveMap(GametableMap map)

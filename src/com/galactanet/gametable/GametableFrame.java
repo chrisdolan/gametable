@@ -404,7 +404,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     {
         return m_preferences;
     }
-
+    
     public void updateWindowInfo()
     {
         // we only update our internal size and
