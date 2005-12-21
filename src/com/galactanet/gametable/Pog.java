@@ -42,8 +42,11 @@ public class Pog
     public boolean           m_bIsUnknownImage = false;
 
     public boolean           m_bTinted = false;
-
-
+    
+    public boolean           m_bTextChangeNotifying = false;
+    
+    public static final Color COLOR_BACKGROUND = new Color(255, 255, 64, 192);
+    public static final Color COLOR_CHANGED_BACKGROUND = new Color(238, 156, 0, 192);
 
     public Pog()
     {
@@ -291,6 +294,31 @@ public class Pog
 
         return true;
     }
+    
+    void displayPogDataChange()
+    {
+    	// we don'ty do this if the game is receiving inital data.
+    	if ( GametableFrame.g_gameTableFrame.m_bReceivingInitalData )
+    	{
+    		return;
+    	}
+    	
+    	m_bTextChangeNotifying = true;
+    }
+    
+    void stopDisplayPogDataChange()
+    {
+    	m_bTextChangeNotifying = false;
+    }
+    
+    public void drawChangeText(Graphics g)
+    {
+    	if ( !m_bTextChangeNotifying )
+    	{
+    		return;
+    	}
+    	drawStringToCanvas(g, true, COLOR_CHANGED_BACKGROUND);
+    }
 
     public void draw(Graphics g, int x, int y, ImageObserver observer)
     {
@@ -347,8 +375,14 @@ public class Pog
         g2.fillRect(drawCoords.x, drawCoords.y, size, size);
         g2.dispose();
     }
-
+    
     public void drawDataStringToCanvas(Graphics gr, boolean bForceTextInBounds)
+    {
+    	drawStringToCanvas(gr, bForceTextInBounds, COLOR_BACKGROUND);
+    	stopDisplayPogDataChange();
+	}
+    
+    private void drawStringToCanvas(Graphics gr, boolean bForceTextInBounds, Color backgroundColor)
     {
         Graphics2D g = (Graphics2D)gr.create();
         if (m_dataStr == null)
@@ -399,7 +433,7 @@ public class Pog
             }
         }
 
-        g.setColor(new Color(255, 255, 64, 192));
+        g.setColor(backgroundColor);
         g.fill(backgroundRect);
 
         int stringX = backgroundRect.x + (backgroundRect.width - stringBounds.width) / 2;

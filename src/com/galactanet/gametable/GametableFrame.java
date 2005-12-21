@@ -73,7 +73,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public static GametableFrame  g_gameTableFrame;
 
     // this gets bumped up every time the comm protocols change
-    public final static int       COMM_VERSION               = 8;
+    public final static int       COMM_VERSION               = 9;
 
     JPanel                        m_contentPane;
 
@@ -199,6 +199,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     private Preferences           m_preferences              = new Preferences();
     
     public ProgressSpinner		  m_progressSpinner			  = new ProgressSpinner();
+    
+    public boolean m_bReceivingInitalData;
 
     /**
      * Construct the frame
@@ -477,6 +479,15 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void drop(final java.awt.dnd.DropTargetDropEvent e)
     {
     }
+    
+    public void loginCompletePacketReceived()
+    {
+    	// this packet is never redistributed.
+    	// all we do in response to this allow pog text
+    	// highlights. The pogs don't know the difference between
+    	// inital data and actual player changes.
+    	m_bReceivingInitalData = false;
+    }
 
     public void rejectPacketReceived(int reason)
     {
@@ -512,8 +523,15 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     public void pogDataPacketReceived(int id, String s)
     {
+        // when you get a pog data change, the pog will show that change
+    	// to you for a while
+        Pog pog = m_gametableCanvas.getPogByID(id);
+        if (pog != null)
+        {
+        	pog.displayPogDataChange();
+        }
+    	
         m_gametableCanvas.doSetPogData(id, s);
-
         if (m_netStatus == NETSTATE_HOST)
         {
             push(PacketManager.makePogDataPacket(id, s));
@@ -626,16 +644,16 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
     }
 
-    public void hexModePacketReceived(boolean bHexMode)
+    public void gridModePacketReceived(int gridMode)
     {
-        // note the new hex mode
-        // m_gametableCanvas.m_bHexMode = bHexMode;
+        // note the new grid mode
+    	m_gametableCanvas.setGridModeByID(gridMode);
     	updateGridModeMenu();
 
         if (m_netStatus == NETSTATE_HOST)
         {
             // if we're the host, send it to the clients
-            push(PacketManager.makeHexModePacket(bHexMode));
+            push(PacketManager.makeGridModePacket(gridMode));
         }
 
         repaint();
@@ -977,6 +995,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             // send the packet
             conn.sendPacket(PacketManager.makePlayerPacket(me, m_defaultPassword));
 
+        	m_bReceivingInitalData = true;
+            
             // and now we're ready to pay attention
             m_netStatus = NETSTATE_JOINED;
             conn.start();
@@ -1034,6 +1054,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_players = new ArrayList();
         refreshPlayerListBox();
         setTitle(GametableApp.VERSION);
+        
+        // we might have disconnected during inital data recipt
+        m_bReceivingInitalData = false;
     }
 
     public void eraseAllLines()
@@ -1269,32 +1292,29 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             UtilityFunctions.msgBox(this, GametableApp.VERSION + " by Andy Weir and David Ghandehari", "Version");
         }
         
-        /*if (e.getSource() == m_hexModeMenuItem)
-        {
-            m_gametableCanvas.m_bHexMode = !m_gametableCanvas.m_bHexMode;
-            push(PacketManager.makeHexModePacket(m_gametableCanvas.m_bHexMode));
-            repaint();
-            updateHexModeMenuItem();
-            postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
-        }*/
-
         if (e.getSource() == m_noGridModeItem)
         {
-        	m_gametableCanvas.m_gridMode = m_gametableCanvas.m_noGridMode;  
+        	m_gametableCanvas.m_gridMode = m_gametableCanvas.m_noGridMode;
+            push(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_NONE));
         	updateGridModeMenu();
             repaint();
+            postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
         }
         if (e.getSource() == m_squareGridModeItem)
         {
         	m_gametableCanvas.m_gridMode = m_gametableCanvas.m_squareGridMode;  
+            push(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_SQUARES));
         	updateGridModeMenu();
             repaint();
+            postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
         }
         if (e.getSource() == m_hexGridModeItem)
         {
         	m_gametableCanvas.m_gridMode = m_gametableCanvas.m_hexGridMode;  
+            push(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_HEX));
         	updateGridModeMenu();
             repaint();
+            postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
         }
         
         if (e.getSource() == m_privateLayerModeMenuItem)
@@ -1914,14 +1934,15 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 dos.write(pogsPacket);
             }
 
-            // hex state
-            byte hexModePacket[] = PacketManager.makeHexModePacket(true); // m_gametableCanvas.m_bHexMode);
-            dos.writeInt(hexModePacket.length);
-            dos.write(hexModePacket);
+            // grid state
+            byte gridModePacket[] = PacketManager.makeGridModePacket(m_gametableCanvas.getGridModeID()); 
+            dos.writeInt(gridModePacket.length);
+            dos.write(gridModePacket);
 
             byte[] saveFileData = baos.toByteArray();
             FileOutputStream output = new FileOutputStream(file);
             DataOutputStream fileOut = new DataOutputStream(output);
+            fileOut.writeInt(COMM_VERSION);
             fileOut.writeInt(saveFileData.length);
             fileOut.write(saveFileData);
             output.close();
@@ -1944,6 +1965,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             DataInputStream infile = new DataInputStream(input);
 
             // get the big hunk o daya
+            int ver = infile.readInt();
+            if ( ver != COMM_VERSION )
+            {
+            	// wrong version
+            	throw new IOException("Invalid save file version.");
+            }
+            
             int len = infile.readInt();
             byte[] saveFileData = new byte[len];
             infile.read(saveFileData);
@@ -1965,14 +1993,16 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     public void loadStateFromRawFileData(byte rawFileData[])
     {
-        byte saveFileData[] = new byte[rawFileData.length - 4]; // a new array that lacks the first
+        byte saveFileData[] = new byte[rawFileData.length - 8]; // a new array that lacks the first
         // int
-        System.arraycopy(rawFileData, 4, saveFileData, 0, saveFileData.length);
+        System.arraycopy(rawFileData, 8, saveFileData, 0, saveFileData.length);
         loadState(saveFileData);
     }
 
     public void loadState(byte saveFileData[])
     {
+    	// let it know we're receiving initial data (which we are. Just fro ma file instead of the host)
+    	m_bReceivingInitalData = true;
         try
         {
             // now we have to pick out the packets and send them in for processing one at a time
@@ -2000,6 +2030,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             Log.log(Log.SYS, ex);
         }
 
+        // we're done with our load state
+    	m_bReceivingInitalData = false;
+        
         repaint();
     }
 }

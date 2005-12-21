@@ -71,6 +71,10 @@ public class PacketManager
     // notification of a hex mode / grid mode change
     public static final int PACKET_HEX_MODE = 14;
 
+    // notification that the host is done sending you the inital packets
+    // you get when you log in
+    public static final int PACKET_LOGIN_COMPLETE = 15;
+
     /**
      * Holding ground for POGs with no images yet.
      */
@@ -178,7 +182,13 @@ public class PacketManager
 
                 case PACKET_HEX_MODE:
                 {
-                    readHexModePacket(dis);
+                    readGridModePacket(dis);
+                }
+                break;
+
+                case PACKET_LOGIN_COMPLETE:
+                {
+                    readLoginCompletePacket(dis);
                 }
                 break;
 
@@ -230,6 +240,8 @@ public class PacketManager
                 return "PACKET_PNGREQUEST";
             case PACKET_HEX_MODE:
                 return "PACKET_HEX_MODE";
+            case PACKET_LOGIN_COMPLETE:
+                return "PACKET_LOGIN_COMPLETE";
             default:
                 return "PACKET_UNKNOWN";
         }
@@ -810,7 +822,7 @@ public class PacketManager
     }
     
     /** *********************** HEX MODE PACKET *********************************** */
-    public static byte[] makeHexModePacket(boolean bIsHexMode)
+    public static byte[] makeGridModePacket(int hexMode)
     {
         try
         {
@@ -818,7 +830,7 @@ public class PacketManager
             DataOutputStream dos = new DataOutputStream(baos);
 
             dos.writeInt(PACKET_HEX_MODE); // type
-            dos.writeBoolean(bIsHexMode); // type
+            dos.writeInt(hexMode); // type
 
             return baos.toByteArray();
         }
@@ -829,16 +841,16 @@ public class PacketManager
         }
     }
 
-    public static void readHexModePacket(DataInputStream dis)
+    public static void readGridModePacket(DataInputStream dis)
     {
 
         try
         {
-            boolean bIsHexMode = dis.readBoolean();
+            int gridMode = dis.readInt();
 
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
-            gtFrame.hexModePacketReceived(bIsHexMode);
+            gtFrame.gridModePacketReceived(gridMode);
         }
         catch (IOException ex)
         {
@@ -1080,6 +1092,35 @@ public class PacketManager
             Log.log(Log.SYS, ex);
         }
     }
+    
+    /** *********************** TEXT PACKET *********************************** */
+    public static byte[] makeLoginCompletePacket(String text)
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_LOGIN_COMPLETE); // type
+            // there's actually no additional data. Just the info that the login is complete
+            
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
+    public static void readLoginCompletePacket(DataInputStream dis)
+    {
+		// there's no data in a login_complete packet.
+		
+	    // tell the model
+	    GametableFrame gtFrame = GametableFrame.getGametableFrame();
+	    gtFrame.loginCompletePacketReceived();
+    }    
 
     /** *********************** BLANK PACKET *********************************** */
     /*

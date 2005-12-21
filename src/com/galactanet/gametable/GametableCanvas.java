@@ -41,6 +41,11 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     public final static int     NUM_POINT_CURSORS     = 8;
     public final static int     POINT_CURSOR_OFFSET_X = 5;
     public final static int     POINT_CURSOR_OFFSET_Y = 6;
+    
+    // grid modes
+    public final static int     GRID_MODE_NONE = 0;
+    public final static int     GRID_MODE_SQUARES = 1;
+    public final static int 	GRID_MODE_HEX = 2;
 
     // the size of a square at max zoom level (0)
     public final static int     BASE_SQUARE_SIZE      = 64;
@@ -159,6 +164,10 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     // hand tool
     // for a
     // right-click
+    
+    // this is the color used to overlay on top of the public layer
+    // when the user is on the private layer. It's white with 50% alpha
+    public Color OVERLAY_COLOR = new Color(255,255,255,128);
 
     public GametableCanvas()
     {
@@ -271,6 +280,43 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     public void setActiveMap(GametableMap map)
     {
         m_activeMap = map;
+    }
+    
+    public void setGridModeByID(int id)
+    {
+    	switch ( id )
+		{
+			case GRID_MODE_NONE:
+			{
+				m_gridMode = m_noGridMode;
+			}
+			break;
+			
+			case GRID_MODE_SQUARES:
+			{
+				m_gridMode = m_squareGridMode;
+			}
+			break;
+
+			case GRID_MODE_HEX:
+			{
+				m_gridMode = m_hexGridMode;
+			}
+			break;
+		}
+    }
+    
+    public int getGridModeID()
+    {
+    	if ( m_gridMode == m_squareGridMode )
+    	{
+    		return GRID_MODE_SQUARES;
+    	}
+    	if ( m_gridMode == m_hexGridMode )
+    	{
+    		return GRID_MODE_HEX;
+    	}
+		return GRID_MODE_NONE;
     }
 
     public PogsPanel getActivePogsArea()
@@ -656,6 +702,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
 
         pog.m_dataStr = s;
+        pog.displayPogDataChange();
+        
         repaint();
     }
 
@@ -1362,11 +1410,17 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         	// they're on the private map. First, draw the public map as normal. 
         	// Then draw a 50% alpha sheet over it. then draw the private map
 		    paintMap(g, getPublicMap());
+		    
+		    g.setColor(OVERLAY_COLOR); // OVERLAY_COLOR is white with 50% alpha
+		    g.fillRect(0, 0, getWidth(), getHeight());
+		    
+		    /*
 		    Graphics2D g2 = (Graphics2D)g.create();
 		    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
 		    g2.setColor(Color.WHITE);
 		    g2.fillRect(0, 0, getWidth(), getHeight());
 		    g2.dispose();
+		    */
 		    
 		    // now draw the private layer
 		    paintMap(g, m_privateMap);
@@ -1475,9 +1529,10 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
 
         // mousing around
+        Pog mouseOverPog = null;
         if (m_bMouseOnView)
         {
-            Pog mouseOverPog = mapToDraw.getPogAt(m_mouseModelFloat);
+            mouseOverPog = mapToDraw.getPogAt(m_mouseModelFloat);
             if (m_bShiftKeyDown)
             {
                 // this shift key is down. Show all pog data
@@ -1494,6 +1549,16 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             if (mouseOverPog != null)
             {
                 mouseOverPog.drawDataStringToCanvas(g, true);
+            }
+        }
+        
+        // most prevalent of the pog text is any recently changed pog text
+        for (int i = 0; i < mapToDraw.getNumPogs(); i++)
+        {
+            Pog pog = mapToDraw.getPogAt(i);
+            if (pog != mouseOverPog)
+            {
+                pog.drawChangeText(g);
             }
         }
         
