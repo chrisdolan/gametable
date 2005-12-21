@@ -51,6 +51,8 @@ public class PointerTool extends NullTool
     private boolean           m_clicked   = true;
     private Point             m_startScroll;
     private Point             m_startMouse;
+    
+    private Pog 			  m_lastPogMousedOver;
 
     /**
      * Constructor
@@ -232,6 +234,12 @@ public class PointerTool extends NullTool
             {
                 m_canvas.setToolCursor(1);
             }
+            
+            if ( m_lastPogMousedOver != pog )
+            {
+            	m_canvas.repaint();
+            }
+            m_lastPogMousedOver = pog;
         }
     }
 }
