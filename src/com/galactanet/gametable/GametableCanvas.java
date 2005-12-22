@@ -60,7 +60,6 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     // this points to whichever map is presently active
     private GametableMap        m_activeMap;
-    private GametableMap        m_pushedMap;
 
     // some cursors
     Cursor                      m_handCursor;
@@ -622,7 +621,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void recenterView(int modelCenterX, int modelCenterY, int zoomLevel)
     {
-        m_gametableFrame.push(PacketManager.makeRecenterPacket(modelCenterX, modelCenterY, zoomLevel));
+        m_gametableFrame.send(PacketManager.makeRecenterPacket(modelCenterX, modelCenterY, zoomLevel));
 
         if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
         {
@@ -678,9 +677,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void setPogData(int id, String s)
     {
-    	if ( isPublicMap() )
+    	if (isPublicMap())
     	{
-	        m_gametableFrame.push(PacketManager.makePogDataPacket(id, s));
+	        m_gametableFrame.send(PacketManager.makePogDataPacket(id, s));
 	
 	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
 	        {
@@ -711,7 +710,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     {
     	if ( isPublicMap() )
     	{
-	        m_gametableFrame.push(PacketManager.makeMovePogPacket(id, newX, newY));
+	        m_gametableFrame.send(PacketManager.makeMovePogPacket(id, newX, newY));
 	
 	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
 	        {
@@ -752,7 +751,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     {
     	if ( isPublicMap() )
     	{
-	        m_gametableFrame.push(PacketManager.makeRemovePogsPacket(ids));
+	        m_gametableFrame.send(PacketManager.makeRemovePogsPacket(ids));
 	
 	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
 	        {
@@ -795,7 +794,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         toAdd.getUniqueID();
     	if ( isPublicMap() )
     	{
-	        m_gametableFrame.push(PacketManager.makeAddPogPacket(toAdd));
+	        m_gametableFrame.send(PacketManager.makeAddPogPacket(toAdd));
 	
 	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
 	        {
@@ -820,7 +819,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     	{
 	        // if we're the host, push it to everyone and add the lines.
 	        // if we're a joiner, just push it to the host
-	        m_gametableFrame.push(PacketManager.makeLinesPacket(lines));
+	        m_gametableFrame.send(PacketManager.makeLinesPacket(lines));
 	
 	        // if we're the host or if we're offline, go ahead and add them now
 	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
@@ -852,7 +851,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     	{
 	        // if we're the host, push it to everyone and add the lines.
 	        // if we're a joiner, just push it to the host
-	        m_gametableFrame.push(PacketManager.makeErasePacket(r, bColorSpecific, color));
+	        m_gametableFrame.send(PacketManager.makeErasePacket(r, bColorSpecific, color));
 	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
 	        {
 	            doErase(r, bColorSpecific, color);
@@ -1313,7 +1312,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         if (pointLocation == null)
         {
             me.setPointing(false);
-            m_gametableFrame.push(PacketManager.makePointPacket(m_gametableFrame.m_myPlayerIdx, 0, 0, false));
+            m_gametableFrame.send(PacketManager.makePointPacket(m_gametableFrame.m_myPlayerIdx, 0, 0, false));
             repaint();
             return;
         }
@@ -1321,7 +1320,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         me.setPointing(true);
         me.setPoint(pointLocation);
 
-        m_gametableFrame.push(PacketManager.makePointPacket(m_gametableFrame.m_myPlayerIdx, me.getPoint().x, me
+        m_gametableFrame.send(PacketManager.makePointPacket(m_gametableFrame.m_myPlayerIdx, me.getPoint().x, me
             .getPoint().y, true));
 
         setToolMode(TOOL_MODE_POINT);

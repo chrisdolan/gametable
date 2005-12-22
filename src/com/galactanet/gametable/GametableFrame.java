@@ -11,14 +11,16 @@ import java.awt.event.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.*;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import javax.swing.*;
 
+import com.galactanet.gametable.net.Connection;
+import com.galactanet.gametable.net.NetworkThread;
+import com.galactanet.gametable.net.Packet;
 import com.galactanet.gametable.prefs.PreferenceDescriptor;
 import com.galactanet.gametable.prefs.Preferences;
 
@@ -70,151 +72,139 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     }
 
     // Global instance of the frame
-    public static GametableFrame  g_gameTableFrame;
+    public static GametableFrame   g_gameTableFrame;
 
     // this gets bumped up every time the comm protocols change
-    public final static int       COMM_VERSION               = 9;
+    public final static int        COMM_VERSION               = 9;
 
-    JPanel                        m_contentPane;
+    JPanel                         m_contentPane;
 
-    JMenuBar                      m_menuBar                  = new JMenuBar();
+    JMenuBar                       m_menuBar                  = new JMenuBar();
 
-    JMenu                         m_fileMenu                 = new JMenu("File");
-    JMenuItem                     m_openMenuItem             = new JMenuItem("Open...");
-    JMenuItem                     m_saveMenuItem             = new JMenuItem("Save");
-    JMenuItem                     m_saveAsMenuItem           = new JMenuItem("Save As...");
-    JMenuItem                     m_reacquirePogsMenuItem     = new JMenuItem("Reacquire Pogs");
-    JMenuItem                     m_exitMenuItem             = new JMenuItem("Exit");
+    JMenu                          m_fileMenu                 = new JMenu("File");
+    JMenuItem                      m_openMenuItem             = new JMenuItem("Open...");
+    JMenuItem                      m_saveMenuItem             = new JMenuItem("Save");
+    JMenuItem                      m_saveAsMenuItem           = new JMenuItem("Save As...");
+    JMenuItem                      m_reacquirePogsMenuItem    = new JMenuItem("Reacquire Pogs");
+    JMenuItem                      m_exitMenuItem             = new JMenuItem("Exit");
 
-    JMenu                         m_networkMenu              = new JMenu("Network");
-    JMenuItem                     m_hostMenuItem             = new JMenuItem("Host...");
-    JMenuItem                     m_joinMenuItem             = new JMenuItem("Join...");
-    JMenuItem                     m_disconnect               = new JMenuItem("Disconnect");
+    JMenu                          m_networkMenu              = new JMenu("Network");
+    JMenuItem                      m_hostMenuItem             = new JMenuItem("Host...");
+    JMenuItem                      m_joinMenuItem             = new JMenuItem("Join...");
+    JMenuItem                      m_disconnect               = new JMenuItem("Disconnect");
 
-    JMenu                         m_mapMenu                  = new JMenu("Map");
-    JMenuItem                     m_clearMapMenuItem         = new JMenuItem("Clear Layer");
-    JMenuItem                     m_recenter                 = new JMenuItem("Recenter All Players");
-    JCheckBoxMenuItem             m_privateLayerModeMenuItem = new JCheckBoxMenuItem("Manipulate Private Layer");
+    JMenu                          m_mapMenu                  = new JMenu("Map");
+    JMenuItem                      m_clearMapMenuItem         = new JMenuItem("Clear Layer");
+    JMenuItem                      m_recenter                 = new JMenuItem("Recenter All Players");
+    JCheckBoxMenuItem              m_privateLayerModeMenuItem = new JCheckBoxMenuItem("Manipulate Private Layer");
 
-    JMenu                         m_gridModeMenu             = new JMenu("Grid Mode");
-    JCheckBoxMenuItem             m_noGridModeItem           = new JCheckBoxMenuItem("No Grid");
-    JCheckBoxMenuItem             m_squareGridModeItem       = new JCheckBoxMenuItem("Square Grid");
-    JCheckBoxMenuItem             m_hexGridModeItem          = new JCheckBoxMenuItem("Hex Grid");
-    
-    JMenu                         m_diceMacrosMenu           = new JMenu("Dice Macros");
-    JMenuItem                     m_addDiceMacroMenuItem     = new JMenuItem("Add...");
-    JMenuItem                     m_removeDiceMacroMenuItem  = new JMenuItem("Remove...");
+    JMenu                          m_gridModeMenu             = new JMenu("Grid Mode");
+    JCheckBoxMenuItem              m_noGridModeItem           = new JCheckBoxMenuItem("No Grid");
+    JCheckBoxMenuItem              m_squareGridModeItem       = new JCheckBoxMenuItem("Square Grid");
+    JCheckBoxMenuItem              m_hexGridModeItem          = new JCheckBoxMenuItem("Hex Grid");
 
-    JMenu                         m_toolsMenu                = new JMenu("Tools");
+    JMenu                          m_diceMacrosMenu           = new JMenu("Dice Macros");
+    JMenuItem                      m_addDiceMacroMenuItem     = new JMenuItem("Add...");
+    JMenuItem                      m_removeDiceMacroMenuItem  = new JMenuItem("Remove...");
 
-    JMenu                         m_helpMenu                 = new JMenu("Help");
-    JMenuItem                     m_aboutMenuItem            = new JMenuItem("About");
+    JMenu                          m_toolsMenu                = new JMenu("Tools");
 
-    JPanel                        m_propertiesArea           = new JPanel();
-    public GametableCanvas        m_gametableCanvas          = new GametableCanvas();
-    JList                         m_playerList               = new JList();
+    JMenu                          m_helpMenu                 = new JMenu("Help");
+    JMenuItem                      m_aboutMenuItem            = new JMenuItem("About");
 
-    boolean                       m_bInitted;
-    Dimension                     m_prevRightSize            = new Dimension(-1, -1);
+    JPanel                         m_propertiesArea           = new JPanel();
+    public GametableCanvas         m_gametableCanvas          = new GametableCanvas();
+    JList                          m_playerList               = new JList();
 
-    public List                   m_players                  = new ArrayList();
+    boolean                        m_bInitted;
+    Dimension                      m_prevRightSize            = new Dimension(-1, -1);
+
+    public List                    m_players                  = new ArrayList();
 
     // which player I am
-    public int                    m_myPlayerIdx;
+    public int                     m_myPlayerIdx;
 
-    String                        m_defaultName              = "Noname";
-    String                        m_defaultCharName          = "Nochar";
-    String                        m_defaultIP                = "localhost";
-    public int                    m_defaultPort              = DEFAULT_PORT;
-    String                        m_defaultPassword          = "";
+    String                         m_defaultName              = "Noname";
+    String                         m_defaultCharName          = "Nochar";
+    String                         m_defaultIP                = "localhost";
+    public int                     m_defaultPort              = DEFAULT_PORT;
+    String                         m_defaultPassword          = "";
 
-    JScrollPane                   m_playerListScrollPane     = new JScrollPane();
-    JPanel                        m_textAndEntryPanel        = new JPanel();
-    public JTextField             m_textEntry                = new JTextField();
-    JScrollPane2                  m_textLogScroller          = new JScrollPane2();
-    JTextPane                     m_textLog                  = new JTextPane();
-    JSplitPane                    m_mapChatSplitPane         = new JSplitPane();
+    JScrollPane                    m_playerListScrollPane     = new JScrollPane();
+    JPanel                         m_textAndEntryPanel        = new JPanel();
+    public JTextField              m_textEntry                = new JTextField();
+    JScrollPane2                   m_textLogScroller          = new JScrollPane2();
+    JTextPane                      m_textLog                  = new JTextPane();
+    JSplitPane                     m_mapChatSplitPane         = new JSplitPane();
 
-    boolean                       m_bFirstPaint              = true;
-    boolean                       m_bDisregardDividerChanges = true;
-    int                           m_prevDividerLocFromBottom = -1;
-    JPanel                        m_textAreaPanel            = new JPanel();
-    JPanel                        m_macroButtonsPanel        = new JPanel();
-    public JSplitPane             m_mapPogSplitPane          = new JSplitPane();
-    public PogsPanel              m_pogsPanel                = new PogsPanel();
-    public PogsPanel              m_underlaysPanel           = new PogsPanel();
-    JToolBar                      m_toolBar                  = new JToolBar();
-    ButtonGroup                   m_toolButtonGroup          = new ButtonGroup();
+    boolean                        m_bFirstPaint              = true;
+    boolean                        m_bDisregardDividerChanges = true;
+    int                            m_prevDividerLocFromBottom = -1;
+    JPanel                         m_textAreaPanel            = new JPanel();
+    JPanel                         m_macroButtonsPanel        = new JPanel();
+    public JSplitPane              m_mapPogSplitPane          = new JSplitPane();
+    public PogsPanel               m_pogsPanel                = new PogsPanel();
+    public PogsPanel               m_underlaysPanel           = new PogsPanel();
+    JToolBar                       m_toolBar                  = new JToolBar();
+    ButtonGroup                    m_toolButtonGroup          = new ButtonGroup();
 
-    List                          m_macros                   = new ArrayList();
-    List                          m_macroButtons             = new ArrayList();
+    List                           m_macros                   = new ArrayList();
+    List                           m_macroButtons             = new ArrayList();
 
-    public final static int       NETSTATE_NONE              = 0;
-    public final static int       NETSTATE_HOST              = 1;
-    public final static int       NETSTATE_JOINED            = 2;
-    public int                    m_netStatus                = NETSTATE_NONE;
+    public final static int        NETSTATE_NONE              = 0;
+    public final static int        NETSTATE_HOST              = 1;
+    public final static int        NETSTATE_JOINED            = 2;
+    public int                     m_netStatus                = NETSTATE_NONE;
 
-    HostListenThread              m_hostListenThread;
+    private volatile NetworkThread m_networkThread;
+    private PeriodicExecutorThread m_executorThread;
 
-    // full of Connection instances
-    List                          m_connections              = new ArrayList();
-    PacketPoller                  m_poller                   = new PacketPoller();
-
-    public Color                  m_drawColor                = Color.BLACK;
+    public Color                   m_drawColor                = Color.BLACK;
 
     // window size and position
-    Point                         m_windowPos;
-    Dimension                     m_windowSize;
-    boolean                       m_bMaximized;
+    Point                          m_windowPos;
+    Dimension                      m_windowSize;
+    boolean                        m_bMaximized;
 
     // a flag to tell the app
     // not to size or center us.
-    public boolean                m_bLoadedState;
-    public JTabbedPane            m_pogsTabbedPane           = new JTabbedPane();
-    JComboBox                     m_colorCombo               = new JComboBox(g_comboColors);
+    public boolean                 m_bLoadedState;
+    public JTabbedPane             m_pogsTabbedPane           = new JTabbedPane();
+    JComboBox                      m_colorCombo               = new JComboBox(g_comboColors);
 
     // full of Strings
-    public List                   m_textSent                 = new ArrayList();
-    int                           m_textSentLoc              = 0;
+    public List                    m_textSent                 = new ArrayList();
+    int                            m_textSentLoc              = 0;
 
-    public final static int       REJECT_INVALID_PASSWORD    = 0;
-    public final static int       REJECT_VERSION_MISMATCH    = 1;
+    public final static int        REJECT_INVALID_PASSWORD    = 0;
+    public final static int        REJECT_VERSION_MISMATCH    = 1;
 
-    public final static int       DEFAULT_PORT               = 6812;
-	
-	public final static Integer[] g_comboColors= 
-    {
-	        new Integer(new Color(0, 0, 0).getRGB()),
-	        new Integer(new Color(198, 198, 198).getRGB()),
-	        new Integer(new Color(0, 0, 255).getRGB()),
-	        new Integer(new Color(0, 255, 0).getRGB()),
-	        new Integer(new Color(0, 255, 255).getRGB()),
-	        new Integer(new Color(255, 0, 0).getRGB()),
-	        new Integer(new Color(255, 0, 255).getRGB()),
-	        new Integer(new Color(255, 255, 0).getRGB()),
-	        new Integer(new Color(255, 255, 255).getRGB()),
-	        new Integer(new Color(0, 0, 132).getRGB()),
-	        new Integer(new Color(0, 132, 0).getRGB()),
-	        new Integer(new Color(0, 132, 132).getRGB()),
-	        new Integer(new Color(132, 0, 0).getRGB()),
-	        new Integer(new Color(132, 0, 132).getRGB()),
-	        new Integer(new Color(132, 132, 0).getRGB()),
-	        new Integer(new Color(132, 132, 132).getRGB()),
-	};
+    public final static int        DEFAULT_PORT               = 6812;
+
+    public final static Integer[]  g_comboColors              = {
+        new Integer(new Color(0, 0, 0).getRGB()), new Integer(new Color(198, 198, 198).getRGB()),
+        new Integer(new Color(0, 0, 255).getRGB()), new Integer(new Color(0, 255, 0).getRGB()),
+        new Integer(new Color(0, 255, 255).getRGB()), new Integer(new Color(255, 0, 0).getRGB()),
+        new Integer(new Color(255, 0, 255).getRGB()), new Integer(new Color(255, 255, 0).getRGB()),
+        new Integer(new Color(255, 255, 255).getRGB()), new Integer(new Color(0, 0, 132).getRGB()),
+        new Integer(new Color(0, 132, 0).getRGB()), new Integer(new Color(0, 132, 132).getRGB()),
+        new Integer(new Color(132, 0, 0).getRGB()), new Integer(new Color(132, 0, 132).getRGB()),
+        new Integer(new Color(132, 132, 0).getRGB()), new Integer(new Color(132, 132, 132).getRGB()),
+                                                              };
 
     // The current file path used by save and open.
     // NULL if unset.
     // one for the public map, one for the private map
-    public File                   m_actingFilePublic;
-    public File                   m_actingFilePrivate;
+    public File                    m_actingFilePublic;
+    public File                    m_actingFilePrivate;
 
-    private ToolManager           m_toolManager              = new ToolManager();
-    private JToggleButton         m_toolButtons[]            = null;
-    private Preferences           m_preferences              = new Preferences();
-    
-    public ProgressSpinner		  m_progressSpinner			  = new ProgressSpinner();
-    
-    public boolean m_bReceivingInitalData;
+    private ToolManager            m_toolManager              = new ToolManager();
+    private JToggleButton          m_toolButtons[]            = null;
+    private Preferences            m_preferences              = new Preferences();
+
+    public ProgressSpinner         m_progressSpinner          = new ProgressSpinner();
+
+    public boolean                 m_bReceivingInitalData;
 
     /**
      * Construct the frame
@@ -226,7 +216,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         this.addComponentListener(this);
         enableEvents(AWTEvent.WINDOW_EVENT_MASK);
-        // try
+        try
         {
             m_contentPane = (JPanel)this.getContentPane();
             setSize(new Dimension(600, 500));
@@ -334,7 +324,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_gridModeMenu.add(m_noGridModeItem);
             m_gridModeMenu.add(m_squareGridModeItem);
             m_gridModeMenu.add(m_hexGridModeItem);
-            
+
             m_menuBar.add(m_networkMenu);
             m_menuBar.add(m_mapMenu);
             m_mapMenu.add(m_clearMapMenuItem);
@@ -385,9 +375,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
             addMacroButton("d20", "d20");
 
-            // start the poll thread
-            m_poller.start();
-
             // load the primary map
             m_gametableCanvas.setActiveMap(m_gametableCanvas.getPrivateMap());
             loadState(new File("autosavepvt.grm"));
@@ -402,13 +389,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             updateGridModeMenu();
             m_bInitted = true;
             setJMenuBar(m_menuBar);
-            
-            updatePrivateLayerModeMenuItem();            
+
+            updatePrivateLayerModeMenuItem();
         }
-        // catch (Exception e)
-        // {
-        // Log.log(Log.SYS, e);
-        // }
+        catch (Exception e)
+        {
+            Log.log(Log.SYS, e);
+        }
     }
 
     public static GametableFrame getGametableFrame()
@@ -420,7 +407,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     {
         return m_preferences;
     }
-    
+
     public void updateWindowInfo()
     {
         // we only update our internal size and
@@ -440,15 +427,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     // interface overrides
     public void componentResized(ComponentEvent event)
     {
-        // if (m_bInitted && m_prevDividerLocFromBottom != -1)
-        // {
-        // // user resize.
-        // int newDividerLoc = m_mapChatSplitPane.getHeight() - m_prevDividerLocFromBottom;
-        // m_bDisregardDividerChanges = true;
-        // m_mapChatSplitPane.setDividerLocation(newDividerLoc);
-        // m_bDisregardDividerChanges = false;
-        // }
-
         updateWindowInfo();
     }
 
@@ -493,14 +471,14 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void drop(final java.awt.dnd.DropTargetDropEvent e)
     {
     }
-    
+
     public void loginCompletePacketReceived()
     {
-    	// this packet is never redistributed.
-    	// all we do in response to this allow pog text
-    	// highlights. The pogs don't know the difference between
-    	// inital data and actual player changes.
-    	m_bReceivingInitalData = false;
+        // this packet is never redistributed.
+        // all we do in response to this allow pog text
+        // highlights. The pogs don't know the difference between
+        // inital data and actual player changes.
+        m_bReceivingInitalData = false;
     }
 
     public void rejectPacketReceived(int reason)
@@ -531,24 +509,25 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         if (m_netStatus == NETSTATE_HOST)
         {
-            push(PacketManager.makeRecenterPacket(x, y, zoom));
+            m_networkThread.send(PacketManager.makeRecenterPacket(x, y, zoom));
         }
     }
 
     public void pogDataPacketReceived(int id, String s)
     {
         // when you get a pog data change, the pog will show that change
-    	// to you for a while
+        // to you for a while
         Pog pog = m_gametableCanvas.getPogByID(id);
         if (pog != null)
         {
-        	pog.displayPogDataChange();
+            pog.displayPogDataChange();
         }
-    	
+
         m_gametableCanvas.doSetPogData(id, s);
+
         if (m_netStatus == NETSTATE_HOST)
         {
-            push(PacketManager.makePogDataPacket(id, s));
+            m_networkThread.send(PacketManager.makePogDataPacket(id, s));
         }
     }
 
@@ -575,7 +554,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         if (m_netStatus == NETSTATE_HOST)
         {
-            push(PacketManager.makePointPacket(plrIdx, x, y, bPointing));
+            send(PacketManager.makePointPacket(plrIdx, x, y, bPointing));
         }
 
         m_gametableCanvas.repaint();
@@ -588,7 +567,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (m_netStatus == NETSTATE_HOST)
         {
             // if we're the host, send it to the clients
-            push(PacketManager.makeMovePogPacket(id, newX, newY));
+            send(PacketManager.makeMovePogPacket(id, newX, newY));
         }
     }
 
@@ -599,7 +578,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (m_netStatus == NETSTATE_HOST)
         {
             // if we're the host, send it to the clients
-            push(PacketManager.makeRemovePogsPacket(ids));
+            send(PacketManager.makeRemovePogsPacket(ids));
         }
     }
 
@@ -616,7 +595,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (m_netStatus == NETSTATE_HOST)
         {
             // if we're the host, send it to the clients
-            push(PacketManager.makeAddPogPacket(pog));
+            send(PacketManager.makeAddPogPacket(pog));
         }
     }
 
@@ -628,7 +607,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (m_netStatus == NETSTATE_HOST)
         {
             // if we're the host, send it to the clients
-            push(PacketManager.makeErasePacket(r, bColorSpecific, color));
+            send(PacketManager.makeErasePacket(r, bColorSpecific, color));
         }
     }
 
@@ -640,7 +619,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (m_netStatus == NETSTATE_HOST)
         {
             // if we're the host, send it to the clients
-            push(PacketManager.makeLinesPacket(lines));
+            send(PacketManager.makeLinesPacket(lines));
         }
     }
 
@@ -661,13 +640,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void gridModePacketReceived(int gridMode)
     {
         // note the new grid mode
-    	m_gametableCanvas.setGridModeByID(gridMode);
-    	updateGridModeMenu();
+        m_gametableCanvas.setGridModeByID(gridMode);
+        updateGridModeMenu();
 
         if (m_netStatus == NETSTATE_HOST)
         {
             // if we're the host, send it to the clients
-            push(PacketManager.makeGridModePacket(gridMode));
+            send(PacketManager.makeGridModePacket(gridMode));
         }
 
         repaint();
@@ -704,9 +683,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             return;
         }
 
-        // remove the connection
-        m_connections.remove(conn);
-
         // find the player who owns that connection
         Player dead = getPlayerFromConnection(conn);
         if (dead != null)
@@ -721,38 +697,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             postSystemMessage("Someone tried to log in, but was rejected.");
         }
-    }
-
-    public void push(byte[] packet)
-    {
-        if (m_netStatus == NETSTATE_JOINED)
-        {
-            if (m_connections.size() != 1)
-            {
-                throw new IllegalStateException("joiner player does not have exactly 1 connection");
-            }
-        }
-        for (int i = 0; i < m_connections.size(); i++)
-        {
-            Connection conn = (Connection)m_connections.get(i);
-            conn.sendPacket(packet);
-        }
-    }
-
-    public void send(byte[] packet, Player recipient)
-    {
-        if (recipient.getConnection() == null)
-        {
-            // uh...
-            return;
-        }
-
-        recipient.getConnection().sendPacket(packet);
-    }
-
-    public void send(byte[] packet, Connection recipient)
-    {
-        recipient.sendPacket(packet);
     }
 
     public void confirmHost()
@@ -815,11 +759,35 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_myPlayerIdx = ourIdx;
     }
 
+    public void send(byte[] packet)
+    {
+        if (m_networkThread != null)
+        {
+            m_networkThread.send(packet);
+        }
+    }
+
+    public void send(byte[] packet, Connection connection)
+    {
+        if (m_networkThread != null)
+        {
+            m_networkThread.send(packet, connection);
+        }
+    }
+
+    public void send(byte[] packet, Player player)
+    {
+        if (player.getConnection() == null)
+        {
+            return;
+        }
+        send(packet, player.getConnection());
+    }
+
     public void kick(Connection conn, int reason)
     {
-        this.send(PacketManager.makeRejectPacket(reason), conn);
-        conn.terminate();
-        m_connections.remove(conn);
+        send(PacketManager.makeRejectPacket(reason), conn);
+        conn.close();
     }
 
     public void playerJoined(Connection connection, Player player, String password)
@@ -834,7 +802,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
 
         // now we can associate a player with the connection
-        connection.setQuarantined(false);
+        connection.markLoggedIn();
         player.setConnection(connection);
 
         // tell everyone about the new guy
@@ -879,17 +847,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
     }
 
-    public void newConnection(Connection conn)
-    {
-        // as hosts, we received a new connection
-        // just throw that in a connection pool for now. We don't
-        // create players until a connection gives us player info
-        m_connections.add(conn);
-
-        // now that it's added, we're ready for it.
-        conn.start();
-    }
-
     public void packetReceived(Connection conn, byte[] packet)
     {
         // synch here. after we get the packet, but before we process it.
@@ -899,6 +856,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     }
 
     public void host()
+    {
+        host(false);
+    }
+    
+    public void host(boolean force)
     {
         if (m_netStatus == NETSTATE_HOST)
         {
@@ -911,10 +873,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             return;
         }
 
-        // get relevant infor from the user
-        if (!hostDlg())
+        if (!force)
         {
-            return;
+            // get relevant infor from the user
+            if (!hostDlg())
+            {
+                return;
+            }
         }
 
         // clear out all players
@@ -926,12 +891,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         refreshPlayerListBox();
 
-        m_hostListenThread = new HostListenThread();
+        m_networkThread = new NetworkThread(m_defaultPort);
+        m_networkThread.start();
+        initializeExecutorThread();
         m_netStatus = NETSTATE_HOST;
-        m_hostListenThread.start();
-        m_poller.activate(true);
-
-        logSystemMessage("Hosting on port: " + m_defaultPort);
+        String message = "Hosting on port: " + m_defaultPort;
+        logSystemMessage(message);
+        Log.log(Log.NET, message);
 
         m_hostMenuItem.setEnabled(false);
         m_joinMenuItem.setEnabled(false);
@@ -942,7 +908,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void hostThreadFailed()
     {
         logAlertMessage("Failed to host.");
-        m_hostListenThread = null;
+        m_networkThread = null;
         disconnect();
     }
 
@@ -966,37 +932,19 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             return;
         }
 
-        InetAddress addr = null;
-        try
-        {
-            addr = InetAddress.getByName(m_defaultIP);
-        }
-        catch (UnknownHostException ex)
-        {
-            Log.log(Log.SYS, ex);
-            logSystemMessage("Unable to resolve address. Failed to connect.");
-            return;
-        }
-
         // now we have the ip to connect to. Try to connect to it
         try
         {
-            Socket sock = new Socket(addr, m_defaultPort);
-            Connection conn = new Connection();
-            conn.setQuarantined(false);
-            conn.init(sock);
-            m_connections.add(conn);
-
-            // there should only be 1 connection when we're joining
-            if (m_connections.size() != 1)
-            {
-                throw new IllegalStateException("Multiple connections on a joiner");
-            }
+            m_networkThread = new NetworkThread();
+            m_networkThread.start();
+            Connection conn = new Connection(m_defaultIP, m_defaultPort);
+            m_networkThread.add(conn);
 
             // now that we've successfully made a connection, let the host know
             // who we are
             m_players = new ArrayList();
             Player me = new Player(m_defaultName, m_defaultCharName);
+            me.setConnection(conn);
             m_players.add(me);
             m_myPlayerIdx = 0;
 
@@ -1007,14 +955,16 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             PacketManager.g_imagelessPogs.clear();
 
             // send the packet
+            while (!conn.isConnected())
+            {
+            }
             conn.sendPacket(PacketManager.makePlayerPacket(me, m_defaultPassword));
 
-        	m_bReceivingInitalData = true;
-            
+            m_bReceivingInitalData = true;
+
             // and now we're ready to pay attention
             m_netStatus = NETSTATE_JOINED;
-            conn.start();
-            m_poller.activate(true);
+            initializeExecutorThread();
 
             logSystemMessage("Joined game");
 
@@ -1039,38 +989,33 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             return;
         }
 
-        // drop all connections. Cease all listening. clear all packets
-        for (int i = 0; i < m_connections.size(); i++)
+        if (m_executorThread != null)
         {
-            Connection conn = (Connection)m_connections.get(i);
-            conn.terminate();
+            m_executorThread.interrupt();
+            m_executorThread = null;
         }
-
-        m_connections = new ArrayList();
-
-        m_poller.activate(false);
-        if (m_netStatus == NETSTATE_HOST)
+        if (m_networkThread != null)
         {
-            if (m_hostListenThread != null)
-            {
-                m_hostListenThread.terminate();
-                m_hostListenThread = null;
-            }
+            m_networkThread.interrupt();
+            m_networkThread = null;
         }
-
-        m_netStatus = NETSTATE_NONE;
-        logSystemMessage("Disconnected.");
 
         m_hostMenuItem.setEnabled(true);
         m_joinMenuItem.setEnabled(true);
         m_disconnect.setEnabled(false);
 
         m_players = new ArrayList();
+        Player me = new Player(m_defaultName, m_defaultCharName);
+        m_players.add(me);
+        m_myPlayerIdx = 0;
         refreshPlayerListBox();
         setTitle(GametableApp.VERSION);
-        
+
         // we might have disconnected during inital data recipt
         m_bReceivingInitalData = false;
+
+        m_netStatus = NETSTATE_NONE;
+        logSystemMessage("Disconnected.");
     }
 
     public void eraseAllLines()
@@ -1111,31 +1056,31 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     public void updateGridModeMenu()
     {
-    	if ( m_gametableCanvas.m_gridMode == m_gametableCanvas.m_noGridMode )
-    	{
+        if (m_gametableCanvas.m_gridMode == m_gametableCanvas.m_noGridMode)
+        {
             m_noGridModeItem.setState(true);
             m_squareGridModeItem.setState(false);
             m_hexGridModeItem.setState(false);
-    	}
-    	else if ( m_gametableCanvas.m_gridMode == m_gametableCanvas.m_squareGridMode )
-    	{
+        }
+        else if (m_gametableCanvas.m_gridMode == m_gametableCanvas.m_squareGridMode)
+        {
             m_noGridModeItem.setState(false);
             m_squareGridModeItem.setState(true);
             m_hexGridModeItem.setState(false);
-    	}
-    	else if ( m_gametableCanvas.m_gridMode == m_gametableCanvas.m_hexGridMode )
-    	{
+        }
+        else if (m_gametableCanvas.m_gridMode == m_gametableCanvas.m_hexGridMode)
+        {
             m_noGridModeItem.setState(false);
             m_squareGridModeItem.setState(false);
             m_hexGridModeItem.setState(true);
-    	}
+        }
     }
 
     public void updatePrivateLayerModeMenuItem()
     {
-    	// note the tool ID of the publish tool
-    	int toolId = m_toolManager.getToolInfo("Publish").getId();
-    	
+        // note the tool ID of the publish tool
+        int toolId = m_toolManager.getToolInfo("Publish").getId();
+
         if (m_gametableCanvas.isPublicMap())
         {
             m_privateLayerModeMenuItem.setState(false);
@@ -1143,25 +1088,25 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         else
         {
-        	m_privateLayerModeMenuItem.setState(true);
+            m_privateLayerModeMenuItem.setState(true);
             m_toolButtons[toolId].setEnabled(true);
         }
     }
 
     public void actionPerformed(ActionEvent e)
     {
-    	if (e.getSource() == m_clearMapMenuItem)
-    	{
+        if (e.getSource() == m_clearMapMenuItem)
+        {
             int res = UtilityFunctions.yesNoDialog(this,
-                    "This will clear all lines, pogs, and underlays on the entire layer. Are you sure?", "Clear Map");
+                "This will clear all lines, pogs, and underlays on the entire layer. Are you sure?", "Clear Map");
             if (res == UtilityFunctions.YES)
             {
                 eraseAllPogs();
                 eraseAllLines();
                 repaint();
             }
-    	}
-    	
+        }
+
         if (e.getSource() == m_colorCombo)
         {
             Integer col = (Integer)m_colorCombo.getSelectedItem();
@@ -1177,116 +1122,116 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         if (e.getSource() == m_openMenuItem)
         {
-        	// opening while on the public layer...
-        	if ( m_gametableCanvas.getActiveMap() == m_gametableCanvas.getPublicMap() )
-        	{
-	            m_actingFilePublic = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
-	
-	            int result = UtilityFunctions
-	                .yesNoDialog(
-	                    this,
-	                    "This will load a map file, replacing all existing map data for you and all players in the session. Are you sure you want to do this?",
-	                    "Confirm Load");
-	            if (result == UtilityFunctions.YES)
-	            {
-	
-	                if (m_actingFilePublic != null)
-	                {
-	                    // clear the state
-	                    eraseAll();
-	
-	                    // load
-	                    if (m_netStatus == NETSTATE_JOINED)
-	                    {
-	                        // joiners dispatch the save file to the host
-	                        // for processing
-	                        byte grmFile[] = UtilityFunctions.loadFileToArray(m_actingFilePublic);
-	                        if (grmFile != null)
-	                        {
-	                            push(PacketManager.makeGrmPacket(grmFile));
-	                        }
-	                    }
-	                    else
-	                    {
-	                        // actually do the load if we're the host or offline
-	                        loadState(m_actingFilePublic);
-	                    }
-	
-	                    postSystemMessage(getMePlayer().getPlayerName() + " loads a new map.");
-	                }
-	            }
-        	}
-        	else
-        	{
-        		// opening while on the private layer
-	            m_actingFilePrivate = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
-	            if ( m_actingFilePrivate != null )
-	            {
-	            	// we have to pretend we're not connected while loading. We
-	            	// don't want these packets to be propagatet to other players
-	            	int oldStatus = m_netStatus;
-	            	m_netStatus = NETSTATE_NONE;
-	            	loadState(m_actingFilePrivate);
-	            	m_netStatus = oldStatus;
-	            }
-        	}
+            // opening while on the public layer...
+            if (m_gametableCanvas.getActiveMap() == m_gametableCanvas.getPublicMap())
+            {
+                m_actingFilePublic = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
+
+                int result = UtilityFunctions
+                    .yesNoDialog(
+                        this,
+                        "This will load a map file, replacing all existing map data for you and all players in the session. Are you sure you want to do this?",
+                        "Confirm Load");
+                if (result == UtilityFunctions.YES)
+                {
+
+                    if (m_actingFilePublic != null)
+                    {
+                        // clear the state
+                        eraseAll();
+
+                        // load
+                        if (m_netStatus == NETSTATE_JOINED)
+                        {
+                            // joiners dispatch the save file to the host
+                            // for processing
+                            byte grmFile[] = UtilityFunctions.loadFileToArray(m_actingFilePublic);
+                            if (grmFile != null)
+                            {
+                                send(PacketManager.makeGrmPacket(grmFile));
+                            }
+                        }
+                        else
+                        {
+                            // actually do the load if we're the host or offline
+                            loadState(m_actingFilePublic);
+                        }
+
+                        postSystemMessage(getMePlayer().getPlayerName() + " loads a new map.");
+                    }
+                }
+            }
+            else
+            {
+                // opening while on the private layer
+                m_actingFilePrivate = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
+                if (m_actingFilePrivate != null)
+                {
+                    // we have to pretend we're not connected while loading. We
+                    // don't want these packets to be propagatet to other players
+                    int oldStatus = m_netStatus;
+                    m_netStatus = NETSTATE_NONE;
+                    loadState(m_actingFilePrivate);
+                    m_netStatus = oldStatus;
+                }
+            }
         }
         if (e.getSource() == m_saveMenuItem)
         {
-        	if ( m_gametableCanvas.isPublicMap() )
-        	{
-	            if (m_actingFilePublic == null)
-	            {
-	            	m_actingFilePublic = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
-	            }
+            if (m_gametableCanvas.isPublicMap())
+            {
+                if (m_actingFilePublic == null)
+                {
+                    m_actingFilePublic = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+                }
 
-	            if (m_actingFilePublic != null)
-	            {
-	                // save the file
-	                saveState(m_gametableCanvas.getActiveMap(), m_actingFilePublic);
-	            }
-        	}
-        	else
-        	{
-	            if (m_actingFilePrivate == null)
-	            {
-	            	m_actingFilePrivate = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
-	            }
+                if (m_actingFilePublic != null)
+                {
+                    // save the file
+                    saveState(m_gametableCanvas.getActiveMap(), m_actingFilePublic);
+                }
+            }
+            else
+            {
+                if (m_actingFilePrivate == null)
+                {
+                    m_actingFilePrivate = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+                }
 
-	            if (m_actingFilePrivate != null)
-	            {
-	                // save the file
-	                saveState(m_gametableCanvas.getActiveMap(), m_actingFilePrivate);
-	            }
-        	}
+                if (m_actingFilePrivate != null)
+                {
+                    // save the file
+                    saveState(m_gametableCanvas.getActiveMap(), m_actingFilePrivate);
+                }
+            }
 
         }
         if (e.getSource() == m_saveAsMenuItem)
         {
-        	if ( m_gametableCanvas.isPublicMap() )
-        	{
-	            m_actingFilePublic = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
-	            if (m_actingFilePublic != null)
-	            {
-	                // save the file
-	                saveState(m_gametableCanvas.getActiveMap(), m_actingFilePublic);
-	            }
-        	}
-        	else
-        	{
-	            m_actingFilePrivate = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
-	            if (m_actingFilePrivate != null)
-	            {
-	                // save the file
-	                saveState(m_gametableCanvas.getActiveMap(), m_actingFilePrivate);
-	            }
-        	}
+            if (m_gametableCanvas.isPublicMap())
+            {
+                m_actingFilePublic = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+                if (m_actingFilePublic != null)
+                {
+                    // save the file
+                    saveState(m_gametableCanvas.getActiveMap(), m_actingFilePublic);
+                }
+            }
+            else
+            {
+                m_actingFilePrivate = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+                if (m_actingFilePrivate != null)
+                {
+                    // save the file
+                    saveState(m_gametableCanvas.getActiveMap(), m_actingFilePrivate);
+                }
+            }
         }
         if (e.getSource() == m_reacquirePogsMenuItem)
         {
-        	// get the pogs stuff again. And refresh
-        	m_pogsPanel.reaquirePogs();
-        	m_underlaysPanel.reaquirePogs();
+            // get the pogs stuff again. And refresh
+            m_pogsPanel.reaquirePogs();
+            m_underlaysPanel.reaquirePogs();
         }
 
         if (e.getSource() == m_hostMenuItem)
@@ -1305,35 +1250,35 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             UtilityFunctions.msgBox(this, GametableApp.VERSION + " by Andy Weir and David Ghandehari", "Version");
         }
-        
+
         if (e.getSource() == m_noGridModeItem)
         {
-        	m_gametableCanvas.m_gridMode = m_gametableCanvas.m_noGridMode;
-            push(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_NONE));
-        	updateGridModeMenu();
+            m_gametableCanvas.m_gridMode = m_gametableCanvas.m_noGridMode;
+            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_NONE));
+            updateGridModeMenu();
             repaint();
             postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
         }
         if (e.getSource() == m_squareGridModeItem)
         {
-        	m_gametableCanvas.m_gridMode = m_gametableCanvas.m_squareGridMode;  
-            push(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_SQUARES));
-        	updateGridModeMenu();
+            m_gametableCanvas.m_gridMode = m_gametableCanvas.m_squareGridMode;
+            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_SQUARES));
+            updateGridModeMenu();
             repaint();
             postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
         }
         if (e.getSource() == m_hexGridModeItem)
         {
-        	m_gametableCanvas.m_gridMode = m_gametableCanvas.m_hexGridMode;  
-            push(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_HEX));
-        	updateGridModeMenu();
+            m_gametableCanvas.m_gridMode = m_gametableCanvas.m_hexGridMode;
+            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_HEX));
+            updateGridModeMenu();
             repaint();
             postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
         }
-        
+
         if (e.getSource() == m_privateLayerModeMenuItem)
         {
-        	toggleLayer();
+            toggleLayer();
         }
 
         if (e.getSource() == m_recenter)
@@ -1396,24 +1341,24 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             }
         }
     }
-    
+
     public void toggleLayer()
     {
-    	// toggle the map we're on
-    	if ( m_gametableCanvas.isPublicMap() )
-    	{
-    		m_gametableCanvas.setActiveMap(m_gametableCanvas.getPrivateMap());
-    	}
-    	else
-    	{
-    		m_gametableCanvas.setActiveMap(m_gametableCanvas.getPublicMap());
-    	}
-    	
+        // toggle the map we're on
+        if (m_gametableCanvas.isPublicMap())
+        {
+            m_gametableCanvas.setActiveMap(m_gametableCanvas.getPrivateMap());
+        }
+        else
+        {
+            m_gametableCanvas.setActiveMap(m_gametableCanvas.getPublicMap());
+        }
+
         updatePrivateLayerModeMenuItem();
-        
+
         // if they toggled the layer, whatever tool they're using is cancelled
         getToolManager().cancelToolAction();
-        
+
         repaint();
     }
 
@@ -1511,9 +1456,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             DiceMacro dm = (DiceMacro)m_macros.get(i);
 
             JButton newButton = new JButton();
-            newButton.setMaximumSize(new Dimension(83, 20));
-            newButton.setMinimumSize(new Dimension(83, 20));
-            newButton.setPreferredSize(new Dimension(83, 20));
+            newButton.setMaximumSize(new Dimension(120, 20));
+            newButton.setMinimumSize(new Dimension(120, 20));
+            newButton.setPreferredSize(new Dimension(120, 20));
             newButton.setText(dm.toString());
             newButton.addActionListener(this);
 
@@ -1797,7 +1742,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (m_netStatus == NETSTATE_HOST)
         {
             // if you're the host, push to all players
-            push(PacketManager.makeTextPacket(toSay));
+            send(PacketManager.makeTextPacket(toSay));
 
             // add it to your own text log
             logMessage(toSay);
@@ -1805,7 +1750,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         else if (m_netStatus == NETSTATE_JOINED)
         {
             // if you're a player, just post it to the GM
-            push(PacketManager.makeTextPacket(toSay));
+            send(PacketManager.makeTextPacket(toSay));
         }
         else
         {
@@ -1949,7 +1894,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             }
 
             // grid state
-            byte gridModePacket[] = PacketManager.makeGridModePacket(m_gametableCanvas.getGridModeID()); 
+            byte gridModePacket[] = PacketManager.makeGridModePacket(m_gametableCanvas.getGridModeID());
             dos.writeInt(gridModePacket.length);
             dos.write(gridModePacket);
 
@@ -1980,12 +1925,12 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
             // get the big hunk o daya
             int ver = infile.readInt();
-            if ( ver != COMM_VERSION )
+            if (ver != COMM_VERSION)
             {
-            	// wrong version
-            	throw new IOException("Invalid save file version.");
+                // wrong version
+                throw new IOException("Invalid save file version.");
             }
-            
+
             int len = infile.readInt();
             byte[] saveFileData = new byte[len];
             infile.read(saveFileData);
@@ -2015,8 +1960,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     public void loadState(byte saveFileData[])
     {
-    	// let it know we're receiving initial data (which we are. Just fro ma file instead of the host)
-    	m_bReceivingInitalData = true;
+        // let it know we're receiving initial data (which we are. Just fro ma file instead of the host)
+        m_bReceivingInitalData = true;
         try
         {
             // now we have to pick out the packets and send them in for processing one at a time
@@ -2045,9 +1990,46 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
 
         // we're done with our load state
-    	m_bReceivingInitalData = false;
-        
+        m_bReceivingInitalData = false;
+
         repaint();
+    }
+
+    private void initializeExecutorThread()
+    {
+        if (m_executorThread != null)
+        {
+            m_executorThread.interrupt();
+            m_executorThread = null;
+        }
+
+        // start the poll thread
+        m_executorThread = new PeriodicExecutorThread(new Runnable()
+        {
+            public void run()
+            {
+                NetworkThread thread = m_networkThread;
+                if (thread != null)
+                {
+                    Set lostConnections = thread.getLostConnections();
+                    Iterator iterator = lostConnections.iterator();
+                    while (iterator.hasNext())
+                    {
+                        Connection connection = (Connection)iterator.next();
+                        connectionDropped(connection);
+                    }
+
+                    List packets = thread.getPackets();
+                    iterator = packets.iterator();
+                    while (iterator.hasNext())
+                    {
+                        Packet packet = (Packet)iterator.next();
+                        packetReceived(packet.getSource(), packet.getData());
+                    }
+                }
+            }
+        });
+        m_executorThread.start();
     }
 }
 

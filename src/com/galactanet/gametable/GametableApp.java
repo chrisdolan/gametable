@@ -7,9 +7,9 @@ package com.galactanet.gametable;
 
 import java.awt.Dimension;
 import java.awt.Toolkit;
-import java.util.Properties;
 
 import javax.swing.UIManager;
+
 
 
 /**
@@ -19,50 +19,54 @@ import javax.swing.UIManager;
  */
 public class GametableApp
 {
-    public static final String   VERSION      = "Gametable v1.2 pre";
+    public static final String   VERSION      = "Gametable v1.2-pre 1";
     public static final String   SYS_LOG_FILE = "gt.sys.log";
     public static final String   NET_LOG_FILE = "gt.net.log";
 
     private static final boolean PACK_FRAME   = false;
 
-
-
     /**
      * Construct the application
      */
-    public GametableApp()
+    public GametableApp(boolean host)
     {
         GametableFrame frame = new GametableFrame();
-
-        // Pack frames that have useful preferred size info, e.g. from their layout
-        // Validate frames that have preset sizes
-        if (PACK_FRAME)
+        if (host)
         {
-            frame.pack();
+            frame.host(true);
         }
         else
         {
-            frame.validate();
-        }
-
-        if (!frame.m_bLoadedState)
-        {
-            // Center the frame
-            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-            Dimension frameSize = frame.getSize();
-            if (frameSize.height > screenSize.height)
+            // Pack frames that have useful preferred size info, e.g. from their layout
+            // Validate frames that have preset sizes
+            if (PACK_FRAME)
             {
-                frameSize.height = screenSize.height;
+                frame.pack();
+            }
+            else
+            {
+                frame.validate();
             }
 
-            if (frameSize.width > screenSize.width)
+            if (!frame.m_bLoadedState)
             {
-                frameSize.width = screenSize.width;
-            }
+                // Center the frame
+                Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+                Dimension frameSize = frame.getSize();
+                if (frameSize.height > screenSize.height)
+                {
+                    frameSize.height = screenSize.height;
+                }
 
-            frame.setLocation((screenSize.width - frameSize.width) / 2, (screenSize.height - frameSize.height) / 2);
+                if (frameSize.width > screenSize.width)
+                {
+                    frameSize.width = screenSize.width;
+                }
+
+                frame.setLocation((screenSize.width - frameSize.width) / 2, (screenSize.height - frameSize.height) / 2);
+            }
+            frame.setVisible(true);
         }
-        frame.setVisible(true);
     }
 
     /**
@@ -72,22 +76,28 @@ public class GametableApp
      */
     static public void main(String[] args)
     {
-        Properties props = new Properties(System.getProperties());
-        //props.setProperty("sun.java2d.opengl", "True");
-        System.setProperties(props);
-
-        Log.initializeLog(Log.SYS, SYS_LOG_FILE);
-        Log.initializeLog(Log.NET, NET_LOG_FILE);
-        Log.log(Log.SYS, VERSION);
         try
         {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            Toolkit.getDefaultToolkit().setDynamicLayout(true);
-            new GametableApp();
+            if (false)
+            {
+                Log.initializeLog(Log.SYS, System.out);
+                Log.initializeLog(Log.NET, System.out);
+                Log.log(Log.SYS, VERSION);
+                new GametableApp(true);
+            }
+            else
+            {
+                Log.initializeLog(Log.SYS, SYS_LOG_FILE);
+                Log.initializeLog(Log.NET, NET_LOG_FILE);
+                Log.log(Log.SYS, VERSION);
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                Toolkit.getDefaultToolkit().setDynamicLayout(true);
+                new GametableApp(false);
+            }
         }
-        catch (Exception e)
+        catch (Throwable t)
         {
-            Log.log(Log.SYS, e);
+            Log.log(Log.SYS, t);
         }
     }
 }

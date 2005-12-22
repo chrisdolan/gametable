@@ -7,6 +7,8 @@ package com.galactanet.gametable;
 
 import java.awt.Point;
 
+import com.galactanet.gametable.net.Connection;
+
 
 /**
  * TODO: comment

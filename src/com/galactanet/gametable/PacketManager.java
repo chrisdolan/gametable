@@ -10,6 +10,9 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.galactanet.gametable.net.Connection;
+
+
 
 /**
  * TODO: comment
@@ -24,64 +27,60 @@ public class PacketManager
         throw new RuntimeException("PacketManager should not be instantiated!");
     }
 
-
-
     // packet sent by a new joiner as soon as he joins
-    public static final int PACKET_PLAYER     = 0;
+    public static final int PACKET_PLAYER              = 0;
 
     // packet sent by the host telling all the players in the game
-    public static final int PACKET_CAST       = 1;
+    public static final int PACKET_CAST                = 1;
 
     // packet with text to go to the text log
-    public static final int PACKET_TEXT       = 2;
+    public static final int PACKET_TEXT                = 2;
 
     // lines being added
-    public static final int PACKET_LINES      = 3;
+    public static final int PACKET_LINES               = 3;
 
     // Eraser used
-    public static final int PACKET_ERASE      = 4;
+    public static final int PACKET_ERASE               = 4;
 
     // Pog added
-    public static final int PACKET_ADDPOG     = 5;
+    public static final int PACKET_ADDPOG              = 5;
 
     // Pog removed
-    public static final int PACKET_REMOVEPOGS = 6;
+    public static final int PACKET_REMOVEPOGS          = 6;
 
     // Pog moved
-    public static final int PACKET_MOVEPOG    = 7;
+    public static final int PACKET_MOVEPOG             = 7;
 
     // point state change
-    public static final int PACKET_POINT      = 8;
+    public static final int PACKET_POINT               = 8;
 
     // pog data change
-    public static final int PACKET_POGDATA    = 9;
+    public static final int PACKET_POGDATA             = 9;
 
     // recentering packet
-    public static final int PACKET_RECENTER   = 10;
+    public static final int PACKET_RECENTER            = 10;
 
     // join rejected
-    public static final int PACKET_REJECT     = 11;
+    public static final int PACKET_REJECT              = 11;
 
     // png data transfer
-    public static final int PACKET_FILE       = 12;
+    public static final int PACKET_FILE                = 12;
 
     // request for a png
-    public static final int PACKET_PNGREQUEST = 13;
+    public static final int PACKET_PNGREQUEST          = 13;
 
     // notification of a hex mode / grid mode change
-    public static final int PACKET_HEX_MODE = 14;
+    public static final int PACKET_HEX_MODE            = 14;
 
     // notification that the host is done sending you the inital packets
     // you get when you log in
-    public static final int PACKET_LOGIN_COMPLETE = 15;
+    public static final int PACKET_LOGIN_COMPLETE      = 15;
 
     /**
      * Holding ground for POGs with no images yet.
      */
-    public static List      g_imagelessPogs   = new ArrayList();
+    public static List      g_imagelessPogs            = new ArrayList();
     public static boolean   m_bPacketProcessInProgress = false;
-
-
 
     public final static void readPacket(Connection conn, byte[] packet)
     {
@@ -90,9 +89,9 @@ public class PacketManager
             DataInputStream dis = new DataInputStream(new ByteArrayInputStream(packet));
             int type = dis.readInt();
 
-            Log.log(Log.NET, "Received " + getPacketName(type));
+            Log.log(Log.NET, "Received: " + getPacketName(type) + ", length = " + packet.length);
             // find the player responsible for this
-            
+
             m_bPacketProcessInProgress = true;
             switch (type)
             {
@@ -100,79 +99,79 @@ public class PacketManager
                 {
                     readPlayerPacket(conn, dis);
                 }
-                    break;
+                break;
 
                 case PACKET_REJECT:
                 {
                     readRejectPacket(dis);
                 }
-                    break;
+                break;
 
                 case PACKET_CAST:
                 {
                     readCastPacket(dis);
                 }
-                    break;
+                break;
 
                 case PACKET_TEXT:
                 {
                     readTextPacket(dis);
                 }
-                    break;
+                break;
 
                 case PACKET_LINES:
                 {
                     readLinesPacket(dis);
                 }
-                    break;
+                break;
 
                 case PACKET_ERASE:
                 {
                     readErasePacket(dis);
                 }
-                    break;
+                break;
 
                 case PACKET_ADDPOG:
                 {
                     readAddPogPacket(conn, dis);
                 }
-                    break;
+                break;
 
                 case PACKET_REMOVEPOGS:
                 {
                     readRemovePogsPacket(dis);
                 }
-                    break;
+                break;
 
                 case PACKET_MOVEPOG:
                 {
                     readMovePogPacket(dis);
                 }
-                    break;
+                break;
 
                 case PACKET_POINT:
                 {
                     readPointPacket(dis);
                 }
-                    break;
+                break;
 
                 case PACKET_POGDATA:
                 {
                     readPogDataPacket(dis);
                 }
-                    break;
+                break;
 
                 case PACKET_RECENTER:
                 {
                     readRecenterPacket(dis);
                 }
-                    break;
+                break;
 
                 case PACKET_FILE:
                 {
                     readFilePacket(dis);
                 }
-                    break;
+                break;
 
                 case PACKET_PNGREQUEST:
                 {
@@ -202,8 +201,21 @@ public class PacketManager
         {
             Log.log(Log.SYS, ex);
         }
-        
+
         m_bPacketProcessInProgress = false;
+    }
+
+    public static String getPacketName(byte[] packet)
+    {
+        try
+        {
+            DataInputStream dis = new DataInputStream(new ByteArrayInputStream(packet));
+            return getPacketName(dis.readInt());
+        }
+        catch (IOException ioe)
+        {
+            return "ERROR";
+        }
     }
 
     public static String getPacketName(int type)
@@ -543,7 +555,7 @@ public class PacketManager
     {
         // add it to the list of pogs that need art
         g_imagelessPogs.add(pog);
-        
+
         String desiredFile = pog.m_fileName;
 
         // run through the list and see if there's alreay a pending request for that image
@@ -820,7 +832,7 @@ public class PacketManager
             Log.log(Log.SYS, ex);
         }
     }
-    
+
     /** *********************** HEX MODE PACKET *********************************** */
     public static byte[] makeGridModePacket(int hexMode)
     {
@@ -923,10 +935,10 @@ public class PacketManager
     {
         try
         {
-        	// fire up the spinner
+            // fire up the spinner
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
             gtFrame.m_progressSpinner.activate(gtFrame);
-            
+
             // the file name
             String filename = dis.readUTF();
 
@@ -948,8 +960,8 @@ public class PacketManager
             // validate file location
             File here = new File("").getAbsoluteFile();
             File target = new File(filename).getAbsoluteFile();
-            Log.log(Log.NET, "here: " + here + ", target: " + target + ", ancestor?: "
-                + UtilityFunctions.isAncestorFile(here, target));
+//            Log.log(Log.NET, "here: " + here + ", target: " + target + ", ancestor?: "
+//                + UtilityFunctions.isAncestorFile(here, target));
             if (!UtilityFunctions.isAncestorFile(here, target))
             {
                 GametableFrame.g_gameTableFrame.logAlertMessage("Malicious pog path? \"" + filename + "\"");
@@ -990,9 +1002,9 @@ public class PacketManager
             // tell the pog panels to check for the new image
             GametableFrame.g_gameTableFrame.m_pogsPanel.reaquirePogs();
             GametableFrame.g_gameTableFrame.m_underlaysPanel.reaquirePogs();
-            
+
             // if we're done with imageless pogs, shut off the progress spinner
-           	gtFrame.m_progressSpinner.deactivate();
+            gtFrame.m_progressSpinner.deactivate();
         }
         catch (IOException ex)
         {
@@ -1092,7 +1104,7 @@ public class PacketManager
             Log.log(Log.SYS, ex);
         }
     }
-    
+
     /** *********************** TEXT PACKET *********************************** */
     public static byte[] makeLoginCompletePacket(String text)
     {
@@ -1103,7 +1115,7 @@ public class PacketManager
 
             dos.writeInt(PACKET_LOGIN_COMPLETE); // type
             // there's actually no additional data. Just the info that the login is complete
-            
+
             return baos.toByteArray();
         }
         catch (IOException ex)
@@ -1115,19 +1127,19 @@ public class PacketManager
 
     public static void readLoginCompletePacket(DataInputStream dis)
     {
-		// there's no data in a login_complete packet.
-		
-	    // tell the model
-	    GametableFrame gtFrame = GametableFrame.getGametableFrame();
-	    gtFrame.loginCompletePacketReceived();
-    }    
+        // there's no data in a login_complete packet.
+
+        // tell the model
+        GametableFrame gtFrame = GametableFrame.getGametableFrame();
+        gtFrame.loginCompletePacketReceived();
+    }
 
     /** *********************** BLANK PACKET *********************************** */
     /*
      * public static byte[] makeBlankPacket(Player plr) { try { ByteArrayOutputStream baos = new
-     * ByteArrayOutputStream(); DataOutputStream dos = new DataOutputStream(baos); dos.writeInt(-1); //
-     * type return baos.toByteArray(); } catch (IOException ex) { return null; } } public static
-     * void readBlankPacket(DataInputStream dis) { try { // tell the model GametableFrame gtFrame =
+     * ByteArrayOutputStream(); DataOutputStream dos = new DataOutputStream(baos); dos.writeInt(-1); // type return
+     * baos.toByteArray(); } catch (IOException ex) { return null; } } public static void
+     * readBlankPacket(DataInputStream dis) { try { // tell the model GametableFrame gtFrame =
      * GametableFrame.getGametableFrame(); } catch (IOException ex) { } }
      */
 
