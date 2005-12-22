@@ -76,6 +76,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     // this gets bumped up every time the comm protocols change
     public final static int        COMM_VERSION               = 9;
+    public final static int        PING_INTERVAL              = 2500;
 
     JPanel                         m_contentPane;
 
@@ -158,6 +159,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     private volatile NetworkThread m_networkThread;
     private PeriodicExecutorThread m_executorThread;
+
+    private long                   m_lastPingTime             = 0;
 
     public Color                   m_drawColor                = Color.BLACK;
 
@@ -479,6 +482,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         // highlights. The pogs don't know the difference between
         // inital data and actual player changes.
         m_bReceivingInitalData = false;
+    }
+
+    public void pingPacketReceived()
+    {
+        // do nothing for now
     }
 
     public void rejectPacketReceived(int reason)
@@ -859,7 +867,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     {
         host(false);
     }
-    
+
     public void host(boolean force)
     {
         if (m_netStatus == NETSTATE_HOST)
@@ -2025,6 +2033,12 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                     {
                         Packet packet = (Packet)iterator.next();
                         packetReceived(packet.getSource(), packet.getData());
+                    }
+
+                    if (System.currentTimeMillis() - m_lastPingTime >= PING_INTERVAL)
+                    {
+                        send(PacketManager.makePingPacket());
+                        m_lastPingTime = System.currentTimeMillis();
                     }
                 }
             }

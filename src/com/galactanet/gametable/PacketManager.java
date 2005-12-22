@@ -76,6 +76,9 @@ public class PacketManager
     // you get when you log in
     public static final int PACKET_LOGIN_COMPLETE      = 15;
 
+    // host sends PING, client sends back PING
+    public static final int PACKET_PING                = 16;
+
     /**
      * Holding ground for POGs with no images yet.
      */
@@ -191,6 +194,12 @@ public class PacketManager
                 }
                 break;
 
+                case PACKET_PING:
+                {
+                    readPingPacket(dis);
+                }
+                break;
+
                 default:
                 {
                     throw new IllegalArgumentException("Unknown packet");
@@ -254,6 +263,8 @@ public class PacketManager
                 return "PACKET_HEX_MODE";
             case PACKET_LOGIN_COMPLETE:
                 return "PACKET_LOGIN_COMPLETE";
+            case PACKET_PING:
+                return "PACKET_PING";
             default:
                 return "PACKET_UNKNOWN";
         }
@@ -960,8 +971,8 @@ public class PacketManager
             // validate file location
             File here = new File("").getAbsoluteFile();
             File target = new File(filename).getAbsoluteFile();
-//            Log.log(Log.NET, "here: " + here + ", target: " + target + ", ancestor?: "
-//                + UtilityFunctions.isAncestorFile(here, target));
+            // Log.log(Log.NET, "here: " + here + ", target: " + target + ", ancestor?: "
+            // + UtilityFunctions.isAncestorFile(here, target));
             if (!UtilityFunctions.isAncestorFile(here, target))
             {
                 GametableFrame.g_gameTableFrame.logAlertMessage("Malicious pog path? \"" + filename + "\"");
@@ -1106,7 +1117,7 @@ public class PacketManager
     }
 
     /** *********************** TEXT PACKET *********************************** */
-    public static byte[] makeLoginCompletePacket(String text)
+    public static byte[] makeLoginCompletePacket()
     {
         try
         {
@@ -1134,13 +1145,33 @@ public class PacketManager
         gtFrame.loginCompletePacketReceived();
     }
 
-    /** *********************** BLANK PACKET *********************************** */
-    /*
-     * public static byte[] makeBlankPacket(Player plr) { try { ByteArrayOutputStream baos = new
-     * ByteArrayOutputStream(); DataOutputStream dos = new DataOutputStream(baos); dos.writeInt(-1); // type return
-     * baos.toByteArray(); } catch (IOException ex) { return null; } } public static void
-     * readBlankPacket(DataInputStream dis) { try { // tell the model GametableFrame gtFrame =
-     * GametableFrame.getGametableFrame(); } catch (IOException ex) { } }
-     */
+    /** *********************** PING PACKET *********************************** */
+    public static byte[] makePingPacket()
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_PING); // type
+            // there's actually no additional data. Just the info that the login is complete
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
+    public static void readPingPacket(DataInputStream dis)
+    {
+        // there's no data in a login_complete packet.
+
+        // tell the model
+        GametableFrame gtFrame = GametableFrame.getGametableFrame();
+        gtFrame.pingPacketReceived();
+    }
 
 }

@@ -92,7 +92,7 @@ public class NetworkThread extends Thread
     public NetworkThread()
     {
         super(NetworkThread.class.getName());
-        setPriority(NORM_PRIORITY - 1);
+        setPriority(NORM_PRIORITY + 1);
         serverPort = -1;
         startServer = false;
     }
@@ -103,7 +103,7 @@ public class NetworkThread extends Thread
     public NetworkThread(int port)
     {
         super(NetworkThread.class.getName());
-        setPriority(NORM_PRIORITY - 1);
+        setPriority(NORM_PRIORITY + 1);
         serverPort = port;
         startServer = true;
     }
@@ -191,6 +191,7 @@ public class NetworkThread extends Thread
                         if (key.isConnectable())
                         {
                             SocketChannel keyChannel = (SocketChannel)key.channel();
+                            Connection connection = (Connection)key.attachment();
                             try
                             {
                                 while (!keyChannel.finishConnect())
@@ -198,7 +199,6 @@ public class NetworkThread extends Thread
                                     // keep going
                                 }
                                 key.interestOps(SelectionKey.OP_READ);
-                                Connection connection = (Connection)key.attachment();
                                 connection.markConnected();
                                 connection.markLoggedIn();
                             }
@@ -206,6 +206,7 @@ public class NetworkThread extends Thread
                             {
                                 Log.log(Log.NET, ioe);
                                 keyChannel.close();
+                                connection.close();
                             }
                         }
 
