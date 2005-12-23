@@ -208,7 +208,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public ProgressSpinner         m_progressSpinner          = new ProgressSpinner();
 
     public boolean                 m_bReceivingInitalData;
-
+    public boolean				   m_bOpeningPrivateFile; 
+    
     /**
      * Construct the frame
      */
@@ -380,7 +381,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
             // load the primary map
             m_gametableCanvas.setActiveMap(m_gametableCanvas.getPrivateMap());
+            m_bOpeningPrivateFile = true;
             loadState(new File("autosavepvt.grm"));
+            m_bOpeningPrivateFile = false;
+            
             m_gametableCanvas.setActiveMap(m_gametableCanvas.getPublicMap());
             loadState(new File("autosave.grm"));
             loadPrefs();
@@ -1179,7 +1183,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                     // don't want these packets to be propagatet to other players
                     int oldStatus = m_netStatus;
                     m_netStatus = NETSTATE_NONE;
+                    m_bOpeningPrivateFile = true;
                     loadState(m_actingFilePrivate);
+                    m_bOpeningPrivateFile = false;
                     m_netStatus = oldStatus;
                 }
             }

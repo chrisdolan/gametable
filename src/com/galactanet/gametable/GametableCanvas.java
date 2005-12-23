@@ -262,9 +262,15 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public GametableMap getActiveMap()
     {
-    	// HACK - if we're processing a packet, we make everything
-    	// work on the public layer
-    	if ( PacketManager.m_bPacketProcessInProgress)
+    	// if we're processing a packet, we want it to go to the 
+    	// public layer, even if they're presently on the private layer.
+    	// HOWEVER, if we're in the process of opening a file on the provate
+    	// layer, we want to return that. 
+    	if ( m_gametableFrame.m_bOpeningPrivateFile )
+    	{
+    		return m_privateMap;
+    	}
+    	if ( PacketManager.m_bPacketProcessInProgress )
     	{
     		return m_publicMap;
     	}
