@@ -838,6 +838,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             Pog pog = m_gametableCanvas.getPublicMap().getPogAt(i);
             send(PacketManager.makeAddPogPacket(pog), player);
         }
+        
+        // let them know we're done sending them data from the login
+        send(PacketManager.makeLoginCompletePacket(), player);
+        
 
         // finally, have the player recenter on the host's view
         int viewCenterX = m_gametableCanvas.getWidth() / 2;
@@ -990,6 +994,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             Log.log(Log.SYS, ex);
             logSystemMessage("Failed to connect.");
             setTitle(GametableApp.VERSION);
+            m_bReceivingInitalData = false;
         }
     }
 
