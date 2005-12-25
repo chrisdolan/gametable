@@ -96,6 +96,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     JMenu                          m_editMenu                 = new JMenu("Edit");
     JMenuItem                      m_undoMenuItem             = new JMenuItem("Undo");
+    JMenuItem                      m_redoMenuItem             = new JMenuItem("Redo");
 
     JMenu                          m_mapMenu                  = new JMenu("Map");
     JMenuItem                      m_clearMapMenuItem         = new JMenuItem("Clear Layer");
@@ -233,6 +234,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_reacquirePogsMenuItem.addActionListener(this);
             m_exitMenuItem.addActionListener(this);
             m_undoMenuItem.addActionListener(this);
+            m_redoMenuItem.addActionListener(this);
             m_clearMapMenuItem.setActionCommand("clearPogs");
             m_clearMapMenuItem.addActionListener(this);
             m_noGridModeItem.addActionListener(this);
@@ -338,6 +340,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
             m_menuBar.add(m_editMenu);
             m_editMenu.add(m_undoMenuItem);
+            m_editMenu.add(m_redoMenuItem);
 
             m_menuBar.add(m_networkMenu);
             m_menuBar.add(m_mapMenu);
@@ -509,6 +512,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         // highlights. The pogs don't know the difference between
         // inital data and actual player changes.
     	PacketSourceState.endHostDump();
+    	
+    	// seed our undo stack with this as the bottom rung
+		m_gametableCanvas.getPublicMap().beginUndoableAction();
+		m_gametableCanvas.getPublicMap().endUndoableAction(-1, -1);
     }
 
     public void pingPacketReceived()
@@ -585,6 +592,19 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             // if we're the host, send it to the clients
             send(PacketManager.makeUndoPacket(stateID));
+        }
+        
+        repaint();
+    }
+
+    public void redoPacketReceived(int stateID)
+    {
+        m_gametableCanvas.doRedo(stateID);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if we're the host, send it to the clients
+            send(PacketManager.makeRedoPacket(stateID));
         }
         
         repaint();
@@ -809,6 +829,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         
         m_myPlayerIdx = ourIdx;
+        
+        // any time the cast changes, all the undo stacks clear
+        m_gametableCanvas.clearUndoStacks();
     }
 
     public void send(byte[] packet)
@@ -866,6 +889,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         addPlayer(player);
 
         sendCastInfo();
+
+        // all the undo stacks clear
+        m_gametableCanvas.clearUndoStacks();
+        
 
         // tell the new guy the entire state of the game
         // lines
@@ -965,6 +992,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_joinMenuItem.setEnabled(false);
         m_disconnect.setEnabled(true);
         setTitle(GametableApp.VERSION + " - " + me.getCharacterName());
+
+        // when you host, all the undo stacks clear
+        m_gametableCanvas.clearUndoStacks();
     }
 
     public void hostThreadFailed()
@@ -1179,6 +1209,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (e.getSource() == m_undoMenuItem )
         {
     		m_gametableCanvas.undo();
+        }
+
+        if (e.getSource() == m_redoMenuItem )
+        {
+    		m_gametableCanvas.redo();
         }
 
         if (e.getSource() == m_exitMenuItem)

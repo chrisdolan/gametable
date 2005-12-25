@@ -627,6 +627,33 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         return null;
     }
     
+    public void clearUndoStacks()
+    {
+    	// we only clear the public stack. No need to mess with the private one.
+    	m_publicMap.clearUndos();
+    }
+    
+    public void redo()
+    {
+    	// first, see if we even can redo
+    	if ( !getActiveMap().canRedo() )
+    	{
+    		// we can't redo.
+    		return;
+    	}
+    	
+    	// we can redo. 
+    	getActiveMap().redoNextRecent();
+    	
+    	repaint();
+    }
+    
+    public void doRedo(int stateID)
+    {
+    	// the active map should be the public map
+    	getActiveMap().redo(stateID);
+    }
+    
     public void undo()
     {
     	// first, see if we even can undo
@@ -1344,8 +1371,17 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             	int mods = e.getModifiers();
             	if ( (mods & KeyEvent.CTRL_MASK) != 0 ) 
             	{
-            		// control-z. we all know what that means...
-            		undo();
+            		
+                	if ( (mods & KeyEvent.SHIFT_MASK) != 0 )
+                	{
+                		// shift-ctrl-z is redo
+	            		redo();
+                	}
+                	else
+                	{
+	            		// control-z is undo
+	            		undo();
+                	}
             	}
             }
             break;

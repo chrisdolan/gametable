@@ -82,6 +82,9 @@ public class PacketManager
     // an undo packet
     public static final int PACKET_UNDO				   = 17;
 
+    // a redo packet
+    public static final int PACKET_REDO				   = 18;
+
     /**
      * Holding ground for POGs with no images yet.
      */
@@ -208,6 +211,12 @@ public class PacketManager
                 }
                 break;
 
+                case PACKET_REDO:
+                {
+                    readRedoPacket(dis);
+                }
+                break;
+
                 default:
                 {
                     throw new IllegalArgumentException("Unknown packet");
@@ -275,6 +284,8 @@ public class PacketManager
                 return "PACKET_PING";
             case PACKET_UNDO:
                 return "PACKET_UNDO";
+            case PACKET_REDO:
+                return "PACKET_REDO";
             default:
                 return "PACKET_UNKNOWN";
         }
@@ -856,6 +867,42 @@ public class PacketManager
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
             gtFrame.undoPacketReceived(stateID);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+    
+    /** *********************** REDO PACKET *********************************** */
+    public static byte[] makeRedoPacket(int stateID)
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_REDO); // type
+            dos.writeInt(stateID); // state ID
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
+    public static void readRedoPacket(DataInputStream dis)
+    {
+        try
+        {
+            int stateID = dis.readInt();
+            
+            // tell the model
+            GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.redoPacketReceived(stateID);
         }
         catch (IOException ex)
         {
