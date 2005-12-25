@@ -297,8 +297,14 @@ public class Pog
     
     void displayPogDataChange()
     {
-    	// we don'ty do this if the game is receiving inital data.
-    	if ( GametableFrame.g_gameTableFrame.m_bReceivingInitalData )
+    	// we don't do this if the game is receiving inital data.
+    	if ( PacketSourceState.isHostDumping() )
+    	{
+    		return;
+    	}
+    	
+    	// we also don't do this if the game is loading a file from disk.
+    	if ( PacketSourceState.isFileLoading() )
     	{
     		return;
     	}

@@ -79,11 +79,13 @@ public class PacketManager
     // host sends PING, client sends back PING
     public static final int PACKET_PING                = 16;
 
+    // an undo packet
+    public static final int PACKET_UNDO				   = 17;
+
     /**
      * Holding ground for POGs with no images yet.
      */
     public static List      g_imagelessPogs            = new ArrayList();
-    public static boolean   m_bPacketProcessInProgress = false;
 
     public final static void readPacket(Connection conn, byte[] packet)
     {
@@ -95,7 +97,7 @@ public class PacketManager
             Log.log(Log.NET, "Received: " + getPacketName(type) + ", length = " + packet.length);
             // find the player responsible for this
 
-            m_bPacketProcessInProgress = true;
+            PacketSourceState.beginNetPacketProcessing();
             switch (type)
             {
                 case PACKET_PLAYER:
@@ -200,6 +202,12 @@ public class PacketManager
                 }
                 break;
 
+                case PACKET_UNDO:
+                {
+                    readUndoPacket(dis);
+                }
+                break;
+
                 default:
                 {
                     throw new IllegalArgumentException("Unknown packet");
@@ -211,7 +219,7 @@ public class PacketManager
             Log.log(Log.SYS, ex);
         }
 
-        m_bPacketProcessInProgress = false;
+        PacketSourceState.endNetPacketProcessing();
     }
 
     public static String getPacketName(byte[] packet)
@@ -265,6 +273,8 @@ public class PacketManager
                 return "PACKET_LOGIN_COMPLETE";
             case PACKET_PING:
                 return "PACKET_PING";
+            case PACKET_UNDO:
+                return "PACKET_UNDO";
             default:
                 return "PACKET_UNKNOWN";
         }
@@ -287,6 +297,7 @@ public class PacketManager
                 Player plr = (Player)gtFrame.m_players.get(i);
                 dos.writeUTF(plr.getCharacterName());
                 dos.writeUTF(plr.getPlayerName());
+                dos.writeInt(plr.m_ID);
                 dos.writeBoolean(plr.isHostPlayer());
             }
 
@@ -313,7 +324,8 @@ public class PacketManager
             {
                 String charName = dis.readUTF();
                 String playerName = dis.readUTF();
-                players[i] = new Player(playerName, charName);
+                int playerID = dis.readInt();
+                players[i] = new Player(playerName, charName, playerID);
                 players[i].setHostPlayer(dis.readBoolean());
             }
 
@@ -372,7 +384,7 @@ public class PacketManager
             String password = dis.readUTF();
             String characterName = dis.readUTF();
             String playerName = dis.readUTF();
-            Player newPlayer = new Player(playerName, characterName);
+            Player newPlayer = new Player(playerName, characterName, -1);
             newPlayer.setHostPlayer(dis.readBoolean());
 
             // this is only ever received by the host
@@ -422,7 +434,7 @@ public class PacketManager
     }
 
     /** *********************** LINES PACKET *********************************** */
-    public static byte[] makeLinesPacket(LineSegment[] lines)
+    public static byte[] makeLinesPacket(LineSegment[] lines, int authorPlayerID, int stateID)
     {
         try
         {
@@ -430,6 +442,8 @@ public class PacketManager
             DataOutputStream dos = new DataOutputStream(baos);
 
             dos.writeInt(PACKET_LINES); // type
+            dos.writeInt(authorPlayerID);
+            dos.writeInt(stateID);
             dos.writeInt(lines.length);
             for (int i = 0; i < lines.length; i++)
             {
@@ -449,6 +463,8 @@ public class PacketManager
     {
         try
         {
+            int authorID = dis.readInt();
+            int stateID = dis.readInt();
             int numLines = dis.readInt();
             LineSegment[] lines = new LineSegment[numLines];
             for (int i = 0; i < numLines; i++)
@@ -458,7 +474,7 @@ public class PacketManager
 
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
-            gtFrame.linesPacketReceived(lines);
+            gtFrame.linesPacketReceived(lines, authorID, stateID);
         }
         catch (IOException ex)
         {
@@ -467,7 +483,7 @@ public class PacketManager
     }
 
     /** *********************** ERASE PACKET *********************************** */
-    public static byte[] makeErasePacket(Rectangle r, boolean bColorSpecific, int color)
+    public static byte[] makeErasePacket(Rectangle r, boolean bColorSpecific, int color, int authorPlayerID, int stateID)
     {
         try
         {
@@ -475,6 +491,8 @@ public class PacketManager
             DataOutputStream dos = new DataOutputStream(baos);
 
             dos.writeInt(PACKET_ERASE); // type
+            dos.writeInt(authorPlayerID);
+            dos.writeInt(stateID);
             dos.writeInt(r.x);
             dos.writeInt(r.y);
             dos.writeInt(r.width);
@@ -496,8 +514,10 @@ public class PacketManager
 
         try
         {
+            int authorID = dis.readInt();
+            int stateID = dis.readInt();
+            
             Rectangle r = new Rectangle();
-
             r.x = dis.readInt();
             r.y = dis.readInt();
             r.width = dis.readInt();
@@ -508,7 +528,7 @@ public class PacketManager
 
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
-            gtFrame.erasePacketReceived(r, bColorSpecific, color);
+            gtFrame.erasePacketReceived(r, bColorSpecific, color, authorID, stateID);
         }
         catch (IOException ex)
         {
@@ -800,6 +820,42 @@ public class PacketManager
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
             gtFrame.recenterPacketReceived(x, y, zoom);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+    
+    /** *********************** UNDO PACKET *********************************** */
+    public static byte[] makeUndoPacket(int stateID)
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_UNDO); // type
+            dos.writeInt(stateID); // state ID
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
+    public static void readUndoPacket(DataInputStream dis)
+    {
+        try
+        {
+            int stateID = dis.readInt();
+            
+            // tell the model
+            GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.undoPacketReceived(stateID);
         }
         catch (IOException ex)
         {

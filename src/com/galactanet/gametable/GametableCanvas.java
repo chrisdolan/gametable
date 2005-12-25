@@ -264,13 +264,15 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     {
     	// if we're processing a packet, we want it to go to the 
     	// public layer, even if they're presently on the private layer.
-    	// HOWEVER, if we're in the process of opening a file on the provate
-    	// layer, we want to return that. 
-    	if ( m_gametableFrame.m_bOpeningPrivateFile )
+    	// HOWEVER, if we're in the process of opening a file, then that
+    	// trumps net packet processing, and we want to return whatever 
+    	// map they're on.
+    	
+    	if ( PacketSourceState.isFileLoading() )
     	{
-    		return m_privateMap;
+    		return m_activeMap;
     	}
-    	if ( PacketManager.m_bPacketProcessInProgress )
+    	if ( PacketSourceState.isNetPacketProcessing() )
     	{
     		return m_publicMap;
     	}
@@ -624,6 +626,27 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
         return null;
     }
+    
+    public void undo()
+    {
+    	// first, see if we even can undo
+    	if ( !getActiveMap().canUndo() )
+    	{
+    		// we can't undo.
+    		return;
+    	}
+    	
+    	// we can undo. Undo the most recent action
+    	getActiveMap().undoMostRecent();
+    	
+    	repaint();
+    }
+    
+    public void doUndo(int stateID)
+    {
+    	// the active map should be the public map
+    	getActiveMap().undo(stateID);
+    }
 
     public void recenterView(int modelCenterX, int modelCenterY, int zoomLevel)
     {
@@ -825,22 +848,30 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     	{
 	        // if we're the host, push it to everyone and add the lines.
 	        // if we're a joiner, just push it to the host
-	        m_gametableFrame.send(PacketManager.makeLinesPacket(lines));
+    		// stateID is irrelevant if we're a joiner
+    		int stateID = -1;
+    		if ( m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED )
+    		{
+    			stateID = m_gametableFrame.getNewStateID();
+    		}
+	        m_gametableFrame.send(PacketManager.makeLinesPacket(lines, m_gametableFrame.getMeID(), stateID));
 	
 	        // if we're the host or if we're offline, go ahead and add them now
 	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
 	        {
-	            doAddLineSegments(lines);
+	            doAddLineSegments(lines, m_gametableFrame.getMeID(), stateID);
 	        }
     	}
     	else
     	{
-            doAddLineSegments(lines);
+    		// state ids are irrelevant on the private layer
+            doAddLineSegments(lines, m_gametableFrame.getMeID(), 0);
     	}
     }
 
-    public void doAddLineSegments(LineSegment[] lines)
+    public void doAddLineSegments(LineSegment[] lines, int authorID, int stateID)
     {
+    	getActiveMap().beginUndoableAction();
         if (lines != null)
         {
             for (int i = 0; i < lines.length; i++)
@@ -848,6 +879,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 getActiveMap().addLine(lines[i]);
             }
         }
+    	getActiveMap().endUndoableAction(authorID, stateID);
         repaint();
     }
 
@@ -857,19 +889,26 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     	{
 	        // if we're the host, push it to everyone and add the lines.
 	        // if we're a joiner, just push it to the host
-	        m_gametableFrame.send(PacketManager.makeErasePacket(r, bColorSpecific, color));
+    		// stateID is irrelevant if we're a joiner
+    		int stateID = -1;
+    		if ( m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED )
+    		{
+    			stateID = m_gametableFrame.getNewStateID();
+    		}
+	        m_gametableFrame.send(PacketManager.makeErasePacket(r, bColorSpecific, color, m_gametableFrame.getMeID(), stateID));
 	        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
 	        {
-	            doErase(r, bColorSpecific, color);
+	            doErase(r, bColorSpecific, color, m_gametableFrame.getMeID(), stateID );
 	        }
     	}
     	else
     	{
-            doErase(r, bColorSpecific, color);
+    		// stateID is irrelevant for the private layer
+            doErase(r, bColorSpecific, color, m_gametableFrame.getMeID(), 0);
     	}
     }
 
-    public void doErase(Rectangle r, boolean bColorSpecific, int color)
+    public void doErase(Rectangle r, boolean bColorSpecific, int color, int authorID, int stateID)
     {
         Point modelStart = new Point(r.x, r.y);
         Point modelEnd = new Point(r.x + r.width, r.y + r.height);
@@ -902,6 +941,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             }
         }
 
+        getActiveMap().beginUndoableAction();
         // now we have just the survivors
         // replace all the lines with this list
         getActiveMap().clearLines();
@@ -909,6 +949,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         {
             getActiveMap().addLine((LineSegment)survivingLines.get(i));
         }
+        getActiveMap().endUndoableAction(authorID, stateID);
         repaint();
     }
 
@@ -1296,6 +1337,16 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             case KeyEvent.VK_T:
             {
             	m_gametableFrame.toggleLayer();
+            }
+            break;
+            case KeyEvent.VK_Z:
+            {
+            	int mods = e.getModifiers();
+            	if ( (mods & KeyEvent.CTRL_MASK) != 0 ) 
+            	{
+            		// control-z. we all know what that means...
+            		undo();
+            	}
             }
             break;
         }

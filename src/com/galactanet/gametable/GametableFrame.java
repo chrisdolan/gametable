@@ -75,7 +75,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public static GametableFrame   g_gameTableFrame;
 
     // this gets bumped up every time the comm protocols change
-    public final static int        COMM_VERSION               = 9;
+    public final static int        COMM_VERSION               = 10;
     public final static int        PING_INTERVAL              = 2500;
 
     JPanel                         m_contentPane;
@@ -93,6 +93,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     JMenuItem                      m_hostMenuItem             = new JMenuItem("Host...");
     JMenuItem                      m_joinMenuItem             = new JMenuItem("Join...");
     JMenuItem                      m_disconnect               = new JMenuItem("Disconnect");
+
+    JMenu                          m_editMenu                 = new JMenu("Edit");
+    JMenuItem                      m_undoMenuItem             = new JMenuItem("Undo");
 
     JMenu                          m_mapMenu                  = new JMenu("Map");
     JMenuItem                      m_clearMapMenuItem         = new JMenuItem("Clear Layer");
@@ -206,10 +209,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     private Preferences            m_preferences              = new Preferences();
 
     public ProgressSpinner         m_progressSpinner          = new ProgressSpinner();
-
-    public boolean                 m_bReceivingInitalData;
-    public boolean				   m_bOpeningPrivateFile; 
     
+    public int m_nextPlayerID; // the id that will be assigned to the next player to join
+    public int m_nextStateID; // the id that will be assigned to the next player to join
     /**
      * Construct the frame
      */
@@ -230,6 +232,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_saveAsMenuItem.addActionListener(this);
             m_reacquirePogsMenuItem.addActionListener(this);
             m_exitMenuItem.addActionListener(this);
+            m_undoMenuItem.addActionListener(this);
             m_clearMapMenuItem.setActionCommand("clearPogs");
             m_clearMapMenuItem.addActionListener(this);
             m_noGridModeItem.addActionListener(this);
@@ -318,6 +321,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 Log.log(Log.SYS, "Failure initializing tools.");
                 Log.log(Log.SYS, ioe);
             }
+            
+            // add tile combo here.
+            
+            
             m_menuBar.add(m_fileMenu);
             m_fileMenu.add(m_openMenuItem);
             m_fileMenu.add(m_saveMenuItem);
@@ -328,6 +335,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_gridModeMenu.add(m_noGridModeItem);
             m_gridModeMenu.add(m_squareGridModeItem);
             m_gridModeMenu.add(m_hexGridModeItem);
+
+            m_menuBar.add(m_editMenu);
+            m_editMenu.add(m_undoMenuItem);
 
             m_menuBar.add(m_networkMenu);
             m_menuBar.add(m_mapMenu);
@@ -381,15 +391,15 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
             // load the primary map
             m_gametableCanvas.setActiveMap(m_gametableCanvas.getPrivateMap());
-            m_bOpeningPrivateFile = true;
+            PacketSourceState.beginFileLoad();
             loadState(new File("autosavepvt.grm"));
-            m_bOpeningPrivateFile = false;
+            PacketSourceState.endFileLoad();
             
             m_gametableCanvas.setActiveMap(m_gametableCanvas.getPublicMap());
             loadState(new File("autosave.grm"));
             loadPrefs();
 
-            addPlayer(new Player(m_defaultName, m_defaultCharName));
+            addPlayer(new Player(m_defaultName, m_defaultCharName, -1));
 
             m_textEntry.addKeyListener(this);
             m_colorCombo.addActionListener(this);
@@ -408,6 +418,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public static GametableFrame getGametableFrame()
     {
         return g_gameTableFrame;
+    }
+    
+    public int getNewStateID()
+    {
+    	int ret = m_nextStateID;
+    	m_nextStateID++;
+    	return ret;
     }
 
     public Preferences getPreferences()
@@ -440,6 +457,12 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public Player getMePlayer()
     {
         return (Player)m_players.get(m_myPlayerIdx);
+    }
+
+    // returns the player id of this client
+    public int getMeID()
+    {
+    	return getMePlayer().m_ID;
     }
 
     public void componentMoved(ComponentEvent e)
@@ -485,7 +508,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         // all we do in response to this allow pog text
         // highlights. The pogs don't know the difference between
         // inital data and actual player changes.
-        m_bReceivingInitalData = false;
+    	PacketSourceState.endHostDump();
     }
 
     public void pingPacketReceived()
@@ -553,6 +576,19 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             loadStateFromRawFileData(grmFile);
         }
     }
+    
+    public void undoPacketReceived(int stateID)
+    {
+        m_gametableCanvas.doUndo(stateID);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if we're the host, send it to the clients
+            send(PacketManager.makeUndoPacket(stateID));
+        }
+        
+        repaint();
+    }
 
     public void pointPacketReceived(int plrIdx, int x, int y, boolean bPointing)
     {
@@ -611,28 +647,32 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
     }
 
-    public void erasePacketReceived(Rectangle r, boolean bColorSpecific, int color)
+    public void erasePacketReceived(Rectangle r, boolean bColorSpecific, int color, int authorID, int stateID)
     {
-        // erase the lines
-        m_gametableCanvas.doErase(r, bColorSpecific, color);
-
         if (m_netStatus == NETSTATE_HOST)
         {
             // if we're the host, send it to the clients
-            send(PacketManager.makeErasePacket(r, bColorSpecific, color));
+        	// and give it a genuine state ID first
+        	stateID = this.getNewStateID();
+            send(PacketManager.makeErasePacket(r, bColorSpecific, color, authorID, stateID));
         }
+
+        // erase the lines
+        m_gametableCanvas.doErase(r, bColorSpecific, color, authorID, stateID);
     }
 
-    public void linesPacketReceived(LineSegment[] lines)
+    public void linesPacketReceived(LineSegment[] lines, int authorID, int stateID)
     {
-        // add the lines to the array
-        m_gametableCanvas.doAddLineSegments(lines);
-
         if (m_netStatus == NETSTATE_HOST)
         {
             // if we're the host, send it to the clients
-            send(PacketManager.makeLinesPacket(lines));
+        	// and give it a genuine state ID first
+        	stateID = this.getNewStateID();
+            send(PacketManager.makeLinesPacket(lines, authorID, stateID));
         }
+
+        // add the lines to the array
+        m_gametableCanvas.doAddLineSegments(lines, authorID, stateID);
     }
 
     public void textPacketReceived(String text)
@@ -767,7 +807,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             addPlayer(players[i]);
         }
-
+        
         m_myPlayerIdx = ourIdx;
     }
 
@@ -816,6 +856,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         // now we can associate a player with the connection
         connection.markLoggedIn();
         player.setConnection(connection);
+        
+        // set their ID
+        player.m_ID = m_nextPlayerID;
+        m_nextPlayerID++;
 
         // tell everyone about the new guy
         postSystemMessage(player.getPlayerName() + " has joined the session");
@@ -830,7 +874,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             lines[i] = m_gametableCanvas.getPublicMap().getLineAt(i);
         }
-        send(PacketManager.makeLinesPacket(lines), player);
+        send(PacketManager.makeLinesPacket(lines, -1, -1), player);
 
         // pogs
         for (int i = 0; i < m_gametableCanvas.getPublicMap().getNumPogs(); i++)
@@ -899,8 +943,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
 
         // clear out all players
+        m_nextPlayerID = 0;
         m_players = new ArrayList();
-        Player me = new Player(m_defaultName, m_defaultCharName);
+        Player me = new Player(m_defaultName, m_defaultCharName, m_nextPlayerID); // this means the host is always player 0
+        m_nextPlayerID++;
         m_players.add(me);
         me.setHostPlayer(true);
         m_myPlayerIdx = 0;
@@ -959,7 +1005,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             // now that we've successfully made a connection, let the host know
             // who we are
             m_players = new ArrayList();
-            Player me = new Player(m_defaultName, m_defaultCharName);
+            Player me = new Player(m_defaultName, m_defaultCharName, -1);
             me.setConnection(conn);
             m_players.add(me);
             m_myPlayerIdx = 0;
@@ -976,7 +1022,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             }
             conn.sendPacket(PacketManager.makePlayerPacket(me, m_defaultPassword));
 
-            m_bReceivingInitalData = true;
+        	PacketSourceState.beginHostDump();
 
             // and now we're ready to pay attention
             m_netStatus = NETSTATE_JOINED;
@@ -994,7 +1040,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             Log.log(Log.SYS, ex);
             logSystemMessage("Failed to connect.");
             setTitle(GametableApp.VERSION);
-            m_bReceivingInitalData = false;
+        	PacketSourceState.endHostDump();
         }
     }
 
@@ -1022,14 +1068,14 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_disconnect.setEnabled(false);
 
         m_players = new ArrayList();
-        Player me = new Player(m_defaultName, m_defaultCharName);
+        Player me = new Player(m_defaultName, m_defaultCharName, -1);
         m_players.add(me);
         m_myPlayerIdx = 0;
         refreshPlayerListBox();
         setTitle(GametableApp.VERSION);
 
         // we might have disconnected during inital data recipt
-        m_bReceivingInitalData = false;
+    	PacketSourceState.endHostDump();
 
         m_netStatus = NETSTATE_NONE;
         logSystemMessage("Disconnected.");
@@ -1129,6 +1175,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             Integer col = (Integer)m_colorCombo.getSelectedItem();
             m_drawColor = new Color(col.intValue());
         }
+        
+        if (e.getSource() == m_undoMenuItem )
+        {
+    		m_gametableCanvas.undo();
+        }
 
         if (e.getSource() == m_exitMenuItem)
         {
@@ -1142,7 +1193,15 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             // opening while on the public layer...
             if (m_gametableCanvas.getActiveMap() == m_gametableCanvas.getPublicMap())
             {
-                m_actingFilePublic = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
+                File openFile = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
+                
+                if ( openFile == null )
+                {
+                	// they cancelled out of the open
+                	return; 
+                }
+                
+                m_actingFilePublic = openFile;
 
                 int result = UtilityFunctions
                     .yesNoDialog(
@@ -1188,9 +1247,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                     // don't want these packets to be propagatet to other players
                     int oldStatus = m_netStatus;
                     m_netStatus = NETSTATE_NONE;
-                    m_bOpeningPrivateFile = true;
+                    PacketSourceState.beginFileLoad();
                     loadState(m_actingFilePrivate);
-                    m_bOpeningPrivateFile = false;
+                    PacketSourceState.endFileLoad();
                     m_netStatus = oldStatus;
                 }
             }
@@ -1673,10 +1732,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             if (words.length == 1)
             {
                 logSystemMessage("/roll usage: /roll <dice roll in standard format>");
+                logSystemMessage("or: /roll <dice Macro Name><additional dice roll in standard format>");
+                logSystemMessage("Examples:");
                 logSystemMessage("Example: /roll 2d6 + 3d4 + 8");
+                logSystemMessage("Example: /roll damage + 4");
                 return;
             }
-
+            
             // all subsiquent params become the roll string
             String dieStr = "";
             for (int i = 1; i < words.length; i++)
@@ -1686,7 +1748,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             }
 
             DiceMacro dm = new DiceMacro();
-            boolean res = dm.init(dieStr, "anon");
+            boolean res = dm.init(dieStr, dieStr);
             if (res)
             {
                 String result = dm.doMacro();
@@ -1899,7 +1961,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             {
                 lines[i] = mapToSave.getLineAt(i);
             }
-            byte[] linesPacket = PacketManager.makeLinesPacket(lines);
+            byte[] linesPacket = PacketManager.makeLinesPacket(lines, -1, -1);
             dos.writeInt(linesPacket.length);
             dos.write(linesPacket);
 
@@ -1954,7 +2016,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             byte[] saveFileData = new byte[len];
             infile.read(saveFileData);
 
+        	PacketSourceState.beginFileLoad();
             loadState(saveFileData);
+        	PacketSourceState.endFileLoad();
 
             input.close();
             infile.close();
@@ -1980,8 +2044,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void loadState(byte saveFileData[])
     {
         // let it know we're receiving initial data (which we are. Just fro ma file instead of the host)
-        m_bReceivingInitalData = true;
-        try
+		try
         {
             // now we have to pick out the packets and send them in for processing one at a time
             DataInputStream walker = new DataInputStream(new ByteArrayInputStream(saveFileData));
@@ -2007,10 +2070,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             Log.log(Log.SYS, ex);
         }
-
-        // we're done with our load state
-        m_bReceivingInitalData = false;
-
+    	
         repaint();
     }
 

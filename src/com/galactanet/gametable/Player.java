@@ -28,13 +28,14 @@ public class Player
     private boolean    m_bIsPointing;
     private Point      m_point;
     private Point      m_prevPoint;
+    
+    public int m_ID;
 
-
-
-    public Player(String playerName, String characterName)
+    public Player(String playerName, String characterName, int id)
     {
         m_playerName = playerName;
         m_characterName = characterName;
+        m_ID = id;
     }
 
     public String toString()
