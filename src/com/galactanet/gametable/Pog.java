@@ -24,7 +24,7 @@ public class Pog
     public static int        g_nextID          = 10;
     public static final Font FONT              = new Font("Arial", 0, 14);
 
-    private Image[]          m_images          = new Image[GametableCanvas.NUM_ZOOM_LEVELS];
+    private Image            m_image;
     private int              m_pixels[];
     private GametableCanvas  m_canvas;
 
@@ -64,12 +64,12 @@ public class Pog
 
     public int getWidth()
     {
-        return m_images[0].getWidth(m_canvas);
+        return m_image.getWidth(m_canvas);
     }
 
     public int getHeight()
     {
-        return m_images[0].getHeight(m_canvas);
+        return m_image.getHeight(m_canvas);
     }
 
     public boolean isUnderlay()
@@ -140,12 +140,7 @@ public class Pog
     {
         setPosition(orig.getPosition());
         m_faceSize = orig.getFaceSize();
-
-        for (int i = 0; i < GametableCanvas.NUM_ZOOM_LEVELS; i++)
-        {
-            m_images[i] = orig.m_images[i];
-        }
-
+        m_image = orig.m_image;
         m_canvas = orig.m_canvas;
         m_fileName = orig.m_fileName;
         m_pixels = orig.m_pixels;
@@ -155,9 +150,21 @@ public class Pog
 
     public void init(GametableCanvas canvas, String fullSizeImagePath)
     {
-        Image img = UtilityFunctions.getImage(fullSizeImagePath);
-        init(canvas, img);
+    	m_image = UtilityFunctions.getImage(fullSizeImagePath);
+
+        m_canvas = canvas;
+
+        // note the size of the pog
+        m_faceSize = m_image.getWidth(null) / GametableCanvas.BASE_SQUARE_SIZE;
+        if (m_faceSize < 0)
+        {
+            m_faceSize = 1;
+        }
+        
         m_fileName = fullSizeImagePath;
+        
+        // prepare the hit pixels
+        setUpPixels();
     }
 
     public void reaquireImages()
@@ -165,42 +172,20 @@ public class Pog
         init(m_canvas, m_fileName);
     }
 
-    private void init(GametableCanvas canvas, Image fullSizeImage)
+    public int getHeightForZoomLevel()
     {
-        m_canvas = canvas;
+    	int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
+    	double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
+        int imgSizeY = (int)(ratio * m_image.getHeight(null));
+        return imgSizeY;
+    }
 
-        // note the size of the pog
-        m_faceSize = fullSizeImage.getWidth(null) / GametableCanvas.BASE_SQUARE_SIZE;
-        if (m_faceSize < 0)
-        {
-            m_faceSize = 1;
-        }
-
-        // we have to make several scaled versions of this image
-        // for various zoom levels
-        m_images[0] = fullSizeImage; // that one's easy. :)
-
-        for (int i = 1; i < GametableCanvas.NUM_ZOOM_LEVELS; i++)
-        {
-            // we have to work with ratios, cause the pog could be large or huge, gargantuan, etc.
-            int size = GametableCanvas.getSquareSizeForZoom(i);
-            double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
-            int imgSizeX = (int)(ratio * fullSizeImage.getWidth(null));
-            int imgSizeY = (int)(ratio * fullSizeImage.getHeight(null));
-
-            Image offscreenImg = UtilityFunctions.createDrawableImage(imgSizeX, imgSizeY);
-            Graphics g = offscreenImg.getGraphics();
-
-            // blit with scaling to the offscreen
-            g.drawImage(fullSizeImage, 0, 0, imgSizeX, imgSizeY, null);
-
-            // put it in the array
-            m_images[i] = offscreenImg;
-        }
-
-        // set up our internal storage of the pixels
-        // (for point collisiont detection)
-        setUpPixels();
+    public int getWidthForZoomLevel()
+    {
+    	int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
+    	double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
+        int imgSizeX = (int)(ratio * m_image.getWidth(null));
+        return imgSizeX;
     }
 
     public int getX()
@@ -240,7 +225,7 @@ public class Pog
         Graphics g = offscreen.getGraphics();
         g.setColor(new Color(0xff00ff));
         g.fillRect(0, 0, offscreen.getWidth(m_canvas), offscreen.getHeight(m_canvas));
-        g.drawImage(m_images[0], 0, 0, m_canvas);
+        g.drawImage(m_image, 0, 0, m_canvas);
 
         // now grab the pixels
         m_pixels = new int[offscreen.getWidth(m_canvas) * offscreen.getHeight(m_canvas)];
@@ -329,10 +314,24 @@ public class Pog
     public void draw(Graphics g, int x, int y, ImageObserver observer)
     {
         // which image should we use?
-        Image toDraw = m_images[0];
+        Image toDraw = m_image;
 
         // draw it
         g.drawImage(toDraw, x, y, observer);
+    }
+    
+    public void drawScaled(Graphics g, int x, int y)
+    {
+        // we have to work with ratios, cause the pog could be large or huge, gargantuan, etc.
+        int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
+        double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
+        int imgSizeX = (int)(ratio * m_image.getWidth(null));
+        int imgSizeY = (int)(ratio * m_image.getHeight(null));
+
+        // blit with scaling 
+        g.drawImage(m_image, x, y, imgSizeX, imgSizeY, null);
+
+        // g.drawImage(m_image, x, y, m_canvas);
     }
 
     public void drawGhostlyToCanvas(Graphics g)
@@ -355,11 +354,7 @@ public class Pog
         // convert our model coordinates to draw coordinates
         Point drawCoords = m_canvas.modelToDraw(getPosition());
 
-        // which image should we use?
-        Image toDraw = m_images[m_canvas.m_zoom];
-
-        // draw it
-        g.drawImage(toDraw, drawCoords.x, drawCoords.y, m_canvas);
+        drawScaled(g, drawCoords.x, drawCoords.y);
     }
 
     public void drawTintedToCanvas(Graphics g)
@@ -367,11 +362,8 @@ public class Pog
         // convert our model coordinates to draw coordinates
         Point drawCoords = m_canvas.modelToDraw(getPosition());
 
-        // which image should we use?
-        Image toDraw = m_images[m_canvas.m_zoom];
-
         // draw it
-        g.drawImage(toDraw, drawCoords.x, drawCoords.y, m_canvas);
+        drawScaled(g, drawCoords.x, drawCoords.y);
         
         // now draw a green 50% alpha square over it
         Graphics2D g2 = (Graphics2D)g.create();
@@ -409,7 +401,7 @@ public class Pog
 
         Rectangle backgroundRect = new Rectangle();
         Point pogDrawCoords = m_canvas.modelToDraw(getPosition());
-        int viewWidth = m_images[m_canvas.m_zoom].getHeight(m_canvas);
+        int viewWidth = getHeightForZoomLevel();
         backgroundRect.x = pogDrawCoords.x + (viewWidth - totalWidth) / 2;
         backgroundRect.y = pogDrawCoords.y - totalHeight - 4;
         backgroundRect.width = totalWidth;
