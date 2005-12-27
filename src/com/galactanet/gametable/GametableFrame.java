@@ -1830,7 +1830,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             String remaining = text.substring("/roll ".length());
             int length = remaining.length();
             int termStart = 0;
-            boolean error = false;
             for (int index = 0; index < length; ++index)
             {
                 char c = remaining.charAt(index);
@@ -1849,22 +1848,15 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                         if (macro == null)
                         {
                             logSystemMessage("Invalid macro name or die term: " + term + ".");
+                            return;
                         }
-                        else
-                        {
-                            rolls.add(macro);
-                        }
+
+                        rolls.add(macro);
                     }
 
                     ops.add(String.valueOf(c));
                     termStart = index + 1;
                 }
-            }
-
-            if (error)
-            {
-                logSystemMessage("Unable to execute macro, see above for details.");
-                return;
             }
 
             StringBuffer rollBuf = new StringBuffer();
