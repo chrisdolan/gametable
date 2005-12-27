@@ -1594,16 +1594,16 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     private void removeMacroForced(DiceMacro macro)
     {
-        String name = UtilityFunctions.normalizeName(macro.m_name);
+        String name = UtilityFunctions.normalizeName(macro.getName());
         m_macroMap.remove(name);
         m_macros.remove(macro);
     }
 
     private void addMacroForced(DiceMacro macro)
     {
-        removeMacroForced(macro.m_name);
+        removeMacroForced(macro.getName());
         m_macros.add(macro);
-        m_macroMap.put(UtilityFunctions.normalizeName(macro.m_name), macro);
+        m_macroMap.put(UtilityFunctions.normalizeName(macro.getName()), macro);
     }
 
     public DiceMacro findMacro(String term)
@@ -1641,7 +1641,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             newButton.setMaximumSize(new Dimension(120, 20));
             newButton.setMinimumSize(new Dimension(120, 20));
             newButton.setPreferredSize(new Dimension(120, 20));
-            newButton.setText(dm.m_name);
+            newButton.setText(dm.getName());
             newButton.addActionListener(this);
 
             m_macroButtons.add(newButton);
@@ -1903,7 +1903,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                     resultBuf.append("- ");
                 }
                 rollBuf.append(result.roll);
-                if (macro.m_name != null && rolls.size() > 1)
+                if (macro.getName() != null && rolls.size() > 1)
                 {
                     resultBuf.append('(');
                     resultBuf.append(result.result);

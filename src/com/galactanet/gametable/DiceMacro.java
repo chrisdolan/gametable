@@ -18,6 +18,7 @@ import java.util.List;
  * Encapsulates a dice macro.
  * 
  * @author sephalon
+ * @author iffy
  */
 public class DiceMacro
 {
@@ -30,10 +31,28 @@ public class DiceMacro
      */
     public static class Result
     {
+        /**
+         * The actual resulting value.
+         */
         public int    value;
+
+        /**
+         * The macro string executed.
+         */
         public String roll;
+
+        /**
+         * The string of rolls made.
+         */
         public String result;
 
+        /**
+         * Convenience constructor.
+         * 
+         * @param val Actual result value.
+         * @param rollText Macro string executed.
+         * @param resultText Result string.
+         */
         public Result(int val, String rollText, String resultText)
         {
             value = val;
@@ -49,36 +68,54 @@ public class DiceMacro
      */
     private static class Term
     {
-        // note, a "1" sided die is a bonus
-        // and qty can be negative
-        // m_keep is number of highest rolls to keep. If negative, keep
-        // lowest rolls. A value of 0 means to keep all.
-        int m_die;
-        int m_qty;
-        int m_keep;
+        /**
+         * The number of sides on this die. A "1" sided die is a bonus.
+         */
+        public int m_die;
 
-        public Term(int[] numbers)
+        /**
+         * Number of die rolls for this term. If negative, then the roll result is negated. If a bonus, than this is
+         * just the bonus value.
+         */
+        public int m_qty;
+
+        /**
+         * The number of highest rolls to keep. If negative, keeps the lowest rolls. A value of 0 means to keep all
+         * rolls.
+         */
+        public int m_keep;
+
+        /**
+         * @param qty
+         * @param die
+         * @param keep
+         */
+        public Term(int qty, int die, int keep)
         {
-            m_qty = numbers[0];
-            m_die = numbers[1];
-            m_keep = numbers[2];
+            m_qty = qty;
+            m_die = die;
+            m_keep = keep;
         }
 
-        public boolean equals(Term comp)
+        /*
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
+        public boolean equals(Object o)
         {
-            return m_die == comp.m_die && m_qty == comp.m_qty && m_keep == comp.m_keep;
-        }
-
-        public String getDieName()
-        {
-            if (m_die < 2)
+            try
             {
-                return "";
+                Term t = (Term)o;
+                return m_die == t.m_die && m_qty == t.m_qty && m_keep == t.m_keep;
             }
-            String name = "d" + m_die;
-            return name;
+            catch (ClassCastException cce)
+            {
+                return false;
+            }
         }
 
+        /*
+         * @see java.lang.Object#toString()
+         */
         public String toString()
         {
             StringBuffer result = new StringBuffer();
@@ -116,36 +153,265 @@ public class DiceMacro
         }
     }
 
-    List   m_dieTypes = new ArrayList(); // full of DiceMacro_RollType instances
-    String m_name     = null;
-    String m_macro    = "0";
+    // --- Static Methods ---
 
+    /**
+     * Compares the normalized values of the two Strings.
+     * 
+     * @param a First String to compare.
+     * @param b Second String to compare.
+     * @return True if the two strings are the same after normalization.
+     */
+    private static boolean isSameMacroString(String a, String b)
+    {
+        if (a == b)
+        {
+            return true;
+        }
+
+        if (a == null || b == null)
+        {
+            return false;
+        }
+
+        return normalizeMacroString(a).equals(normalizeMacroString(b));
+    }
+
+    /**
+     * Regularlizes a string before parsing.
+     * 
+     * @param in Macro string to normalize.
+     * @return Normalized macro string.
+     */
+    private static String normalizeMacroString(String in)
+    {
+        // Remove spaces.
+        StringBuffer buffer = new StringBuffer();
+        for (int index = 0; index < in.length(); index++)
+        {
+            if (!Character.isWhitespace(in.charAt(index)))
+            {
+                buffer.append(Character.toLowerCase(in.charAt(index)));
+            }
+        }
+
+        return buffer.toString();
+    }
+
+    /**
+     * Rolls a die with the given number of sides.
+     * 
+     * @param sides Sides of the die to roll.
+     * @return The result of the die roll.
+     */
+    private static int rollDie(int sides)
+    {
+        return UtilityFunctions.getRandom(sides) + 1;
+    }
+
+    // --- Members ---
+
+    /**
+     * List of parsed terms in this macro.
+     */
+    private List  m_terms = new ArrayList();
+
+    /**
+     * The name of this macro. Null means an "anonymous" macro.
+     */
+    private String m_name  = null;
+
+    /**
+     * The parsed and then reserialized macro text that initialized this macro.
+     */
+    private String m_macro = "0";
+
+    // --- Constructors ---
+
+    /**
+     * Uninitialized Constructor.
+     */
     public DiceMacro()
     {
     }
 
+    /**
+     * Initialized constructor.
+     */
     public DiceMacro(String macro, String name)
     {
         if (!init(macro, name))
         {
-            m_name = null;
-            m_macro = "0";
+            reset();
         }
     }
 
-    public String toString()
+    // --- Methods ---
+
+    /**
+     * @return True if this DiceMacro is initialized.
+     */
+    public boolean isInitialized()
     {
-        if (m_name == null || isSameMacroString(m_name, m_macro))
-        {
-            return m_macro;
-        }
-
-        return m_name + " (" + m_macro + ")";
+        return !("0".equals(getMacro()));
     }
 
+    /**
+     * Resets this dice macro to be uninitialized.
+     */
+    public void reset()
+    {
+        setName(null);
+        setMacro("0");
+        m_terms.clear();
+    }
+
+    /**
+     * Initializes the Macro with the given data.
+     * 
+     * @param macro Macro string to parse.
+     * @param name Name of this macro. Null means "anonymous". Empty string means use the parsed macro as the name.
+     * @return True if the macro string was parseable.
+     */
+    public boolean init(String macro, String name)
+    {
+        reset();
+        try
+        {
+            setName(name);
+            setMacro(normalizeMacroString(macro));
+
+            // Parse the macro string. It will be something like
+            // "3d6 + 4" or "2d4 + 3d6h2 + 8"
+
+            if (!isInitialized())
+            {
+                return true;
+            }
+
+            // Grab individual dice rolls.
+            boolean isNegative = false;
+            // #dice, type, #keep
+            int[] numbers = {
+                1, 1, 0
+            };
+
+            // Corresponds with index of numbers array
+            int phase = 0;
+            int startOfCurrentNumber = 0;
+            int length = getMacro().length();
+            for (int index = 0; index < length; ++index)
+            {
+                char c = getMacro().charAt(index);
+                boolean isLast = (index == (length - 1));
+                if (!Character.isDigit(c) || isLast)
+                {
+                    // End of this number.
+                    if (startOfCurrentNumber != index || isLast)
+                    {
+                        // end is position after number.
+                        int end = (isLast ? length : index);
+                        String numberStr = getMacro().substring(startOfCurrentNumber, end);
+                        int number = Integer.parseInt(numberStr);
+                        numbers[phase] = isNegative ? (-number) : number;
+                        isNegative = false;
+                    }
+                    startOfCurrentNumber = index + 1;
+
+                    // Check for end of dice roll.
+                    if (c == '+' || c == '-' || isLast)
+                    {
+                        if (index > 0 || isLast)
+                        {
+                            m_terms.add(new Term(numbers[0], numbers[1], numbers[2]));
+                        }
+                        isNegative = (c == '-');
+                        numbers[0] = 1;
+                        numbers[1] = 1;
+                        numbers[2] = 0;
+                        phase = 0;
+                    }
+                    else if (c == 'd')
+                    {
+                        numbers[0] = isNegative ? (-numbers[0]) : numbers[0];
+                        isNegative = false;
+                        phase = 1;
+                    }
+                    else if (c == 'h')
+                    {
+                        isNegative = false;
+                        phase = 2;
+                    }
+                    else if (c == 'l')
+                    {
+                        isNegative = true;
+                        phase = 2;
+                    }
+                    else
+                    {
+                        reset();
+                        return false;
+                    }
+                }
+            }
+
+            setMacro(getMacroString());
+            if (getName() != null && getName().length() < 1)
+            {
+                setName(getMacro());
+            }
+
+            return true;
+        }
+        catch (Throwable ex)
+        {
+            Log.log(Log.SYS, "parse error: \"" + getMacro() + "\" (\"" + macro + "\")");
+            Log.log(Log.SYS, ex);
+            reset();
+            return false;
+        }
+    }
+
+    /**
+     * @param name The name to set.
+     */
+    private void setName(String name)
+    {
+        m_name = name;
+    }
+
+    /**
+     * @return Returns the name.
+     */
+    public String getName()
+    {
+        return m_name;
+    }
+
+    /**
+     * @param macro The macro to set.
+     */
+    private void setMacro(String macro)
+    {
+        m_macro = macro;
+    }
+
+    /**
+     * @return Returns the macro.
+     */
+    public String getMacro()
+    {
+        return m_macro;
+    }
+
+    /**
+     * Executes this macro and returns the formatted result.
+     * 
+     * @return The formatted result string.
+     */
     public String doMacro()
     {
-        if ("0".equals(m_macro))
+        if (!isInitialized())
         {
             return "";
         }
@@ -158,9 +424,14 @@ public class DiceMacro
         return ret;
     }
 
+    /**
+     * Executes this macro, returning a data object with various information about the result.
+     * 
+     * @return DiceMacro.Result object.
+     */
     public Result roll()
     {
-        if ("0".equals(m_macro))
+        if (!isInitialized())
         {
             return null;
         }
@@ -168,10 +439,10 @@ public class DiceMacro
         StringBuffer ret = new StringBuffer();
         int total = 0;
 
-        for (int i = 0; i < m_dieTypes.size(); i++)
+        for (int i = 0; i < m_terms.size(); i++)
         {
             // get the die type
-            Term dieType = (Term)m_dieTypes.get(i);
+            Term dieType = (Term)m_terms.get(i);
             boolean bFirstAdd = (i == 0);
 
             int subtotal = 0;
@@ -247,7 +518,10 @@ public class DiceMacro
                             ret.append(negative ? " - " : " + ");
                         }
 
-                        ret.append('(');
+                        if (m_terms.size() > 1)
+                        {
+                            ret.append('(');
+                        }
                         for (int j = 0; j < bound; j++)
                         {
                             int value = rollDie(dieType.m_die);
@@ -265,7 +539,10 @@ public class DiceMacro
                                 subtotal += value;
                             }
                         }
-                        ret.append(')');
+                        if (m_terms.size() > 1)
+                        {
+                            ret.append(')');
+                        }
                     }
                 }
             }
@@ -330,34 +607,37 @@ public class DiceMacro
 
             }
             total += subtotal;
-            //System.out.println(dieType + ": " + subtotal + " (" + total + ")");
+            // System.out.println(dieType + ": " + subtotal + " (" + total + ")");
         }
 
         return new Result(total, getRollString(), ret.toString());
     }
 
-    public int rollDie(int sides)
+    /**
+     * @return The string used to describe this macro when formatting a roll. 
+     */
+    private String getRollString()
     {
-        return UtilityFunctions.getRandom(sides) + 1;
-    }
-
-    public String getRollString()
-    {
-        if ("0".equals(m_macro))
+        if (!isInitialized())
         {
             return "";
         }
 
-        if (!isSameMacroString(m_name, m_macro) && m_name != null && m_name.length() > 0)
+        if (!isSameMacroString(getName(), getMacro()) && getName() != null && getName().length() > 0)
         {
-            return m_name + " (" + m_macro + ")";
+            return getName() + " (" + getMacro() + ")";
         }
-        return m_macro;
+        return getMacro();
     }
 
-    public String getMacroString()
+    /**
+     * Serializes the parsed Macro terms back into a source string that would generate the same macro.
+     * 
+     * @return The serialized macro string.
+     */
+    private String getMacroString()
     {
-        if ("0".equals(m_macro))
+        if (!isInitialized())
         {
             return "";
         }
@@ -365,9 +645,9 @@ public class DiceMacro
         StringBuffer buffer = new StringBuffer();
         boolean bIsFirst = true;
 
-        for (int i = 0; i < m_dieTypes.size(); i++)
+        for (int i = 0; i < m_terms.size(); i++)
         {
-            String dice = m_dieTypes.get(i).toString();
+            String dice = m_terms.get(i).toString();
             if (!bIsFirst)
             {
                 buffer.append(' ');
@@ -394,139 +674,10 @@ public class DiceMacro
         return buffer.toString();
     }
 
-    private static boolean isSameMacroString(String a, String b)
-    {
-        if (a == b)
-        {
-            return true;
-        }
-        
-        if (a == null || b == null)
-        {
-            return false;
-        }
-        
-        return normalizeMacroString(a).equals(normalizeMacroString(b));
-    }
-    
-    private static String normalizeMacroString(String in)
-    {
-        // Remove spaces.
-        StringBuffer buffer = new StringBuffer();
-        for (int index = 0; index < in.length(); index++)
-        {
-            if (!Character.isWhitespace(in.charAt(index)))
-            {
-                buffer.append(Character.toLowerCase(in.charAt(index)));
-            }
-        }
-
-        return buffer.toString();
-    }
-
-    public boolean init(String macro, String name)
-    {
-        try
-        {
-            m_name = name;
-            m_macro = normalizeMacroString(macro);
-
-            // Parse the macro string. It will be something like
-            // "3d6 + 4" or "2d4 + 3d6h2 + 8"
-
-            if ("0".equals(m_macro))
-            {
-                return true;
-            }
-
-            // Grab individual dice rolls.
-            boolean isNegative = false;
-            // #dice, type, #keep
-            int[] numbers = {
-                1, 1, 0
-            };
-
-            // Corresponds with index of numbers array
-            int phase = 0;
-            int startOfCurrentNumber = 0;
-            int length = m_macro.length();
-            for (int index = 0; index < length; ++index)
-            {
-                char c = m_macro.charAt(index);
-                boolean isLast = (index == (length - 1));
-                if (!Character.isDigit(c) || isLast)
-                {
-                    // End of this number.
-                    if (startOfCurrentNumber != index || isLast)
-                    {
-                        // end is position after number.
-                        int end = (isLast ? length : index);
-                        String numberStr = m_macro.substring(startOfCurrentNumber, end);
-                        int number = Integer.parseInt(numberStr);
-                        numbers[phase] = isNegative ? (-number) : number;
-                        isNegative = false;
-                    }
-                    startOfCurrentNumber = index + 1;
-
-                    // Check for end of dice roll.
-                    if (c == '+' || c == '-' || isLast)
-                    {
-                        if (index > 0 || isLast)
-                        {
-                            m_dieTypes.add(new Term(numbers));
-                        }
-                        isNegative = (c == '-');
-                        numbers[0] = 1;
-                        numbers[1] = 1;
-                        numbers[2] = 0;
-                        phase = 0;
-                    }
-                    else if (c == 'd')
-                    {
-                        numbers[0] = isNegative ? (-numbers[0]) : numbers[0];
-                        isNegative = false;
-                        phase = 1;
-                    }
-                    else if (c == 'h')
-                    {
-                        isNegative = false;
-                        phase = 2;
-                    }
-                    else if (c == 'l')
-                    {
-                        isNegative = true;
-                        phase = 2;
-                    }
-                    else
-                    {
-                        m_name = null;
-                        m_macro = "0";
-                        return false;
-                    }
-                }
-            }
-
-            m_macro = getMacroString();
-            if (m_name != null && m_name.length() < 1)
-            {
-                m_name = m_macro;
-            }
-            return true;
-        }
-        catch (Throwable ex)
-        {
-            Log.log(Log.SYS, "parse error: \"" + m_macro + "\" (\"" + macro + "\")");
-            Log.log(Log.SYS, ex);
-            m_name = null;
-            m_macro = "0";
-            return false;
-        }
-    }
-
     public void writeToStream(DataOutputStream dos) throws IOException
     {
-        dos.writeUTF(m_name);
-        dos.writeUTF(m_macro);
+        dos.writeUTF(getName());
+        dos.writeUTF(getMacro());
     }
 
     public void initFromStream(DataInputStream dis) throws IOException
@@ -534,5 +685,18 @@ public class DiceMacro
         String name = dis.readUTF();
         String macro = dis.readUTF();
         init(macro, name);
+    }
+
+    /*
+     * @see java.lang.Object#toString()
+     */
+    public String toString()
+    {
+        if (getName() == null || isSameMacroString(getName(), getMacro()))
+        {
+            return getMacro();
+        }
+
+        return getName() + " (" + getMacro() + ")";
     }
 }
