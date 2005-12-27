@@ -13,133 +13,327 @@ import java.util.Arrays;
 import java.util.List;
 
 
+
 /**
- * TODO: comment
+ * Encapsulates a dice macro.
  * 
  * @author sephalon
  */
 public class DiceMacro
 {
+    // --- Types ---
+
+    /**
+     * A class to hold the results of a roll.
+     * 
+     * @author iffy
+     */
+    public static class Result
+    {
+        public int    value;
+        public String roll;
+        public String result;
+
+        public Result(int val, String rollText, String resultText)
+        {
+            value = val;
+            roll = rollText;
+            result = resultText;
+        }
+    }
+
+    /**
+     * An encapsulation of one term of the DiceMacro.
+     * 
+     * @author sephalon
+     */
+    private static class Term
+    {
+        // note, a "1" sided die is a bonus
+        // and qty can be negative
+        // m_keep is number of highest rolls to keep. If negative, keep
+        // lowest rolls. A value of 0 means to keep all.
+        int m_die;
+        int m_qty;
+        int m_keep;
+
+        public Term(int[] numbers)
+        {
+            m_qty = numbers[0];
+            m_die = numbers[1];
+            m_keep = numbers[2];
+        }
+
+        public boolean equals(Term comp)
+        {
+            return m_die == comp.m_die && m_qty == comp.m_qty && m_keep == comp.m_keep;
+        }
+
+        public String getDieName()
+        {
+            if (m_die < 2)
+            {
+                return "";
+            }
+            String name = "d" + m_die;
+            return name;
+        }
+
+        public String toString()
+        {
+            StringBuffer result = new StringBuffer();
+
+            if (m_die > 1)
+            {
+                if (m_qty < -1 || m_qty > 1)
+                {
+                    result.append(m_qty);
+                }
+                else if (m_qty == -1)
+                {
+                    result.append('-');
+                }
+
+                result.append('d');
+                result.append(m_die);
+                if (m_keep < 0)
+                {
+                    result.append('l');
+                    result.append(0 - m_keep);
+                }
+                else if (m_keep > 0)
+                {
+                    result.append('h');
+                    result.append(m_keep);
+                }
+            }
+            else
+            {
+                result.append(m_qty);
+            }
+
+            return result.toString();
+        }
+    }
+
     List   m_dieTypes = new ArrayList(); // full of DiceMacro_RollType instances
-    String m_name;
-    String m_macro;
-
-
+    String m_name     = null;
+    String m_macro    = "0";
 
     public DiceMacro()
     {
     }
 
+    public DiceMacro(String macro, String name)
+    {
+        if (!init(macro, name))
+        {
+            m_name = null;
+            m_macro = "0";
+        }
+    }
+
     public String toString()
     {
-        return m_name;
+        if (m_name == null || m_name.equals(m_macro))
+        {
+            return m_macro;
+        }
+
+        return m_name + " (" + m_macro + ")";
     }
 
     public String doMacro()
     {
+        if ("0".equals(m_macro))
+        {
+            return "";
+        }
+
         Player me = GametableFrame.getGametableFrame().getMePlayer();
         String name = me.getCharacterName();
 
-        String ret = name + " rolls " + getRollString() + ": " + roll();
+        Result result = roll();
+        String ret = name + " rolls " + result.roll + ": [" + result.result + "] = " + result.value;
         return ret;
     }
 
-    public String roll()
+    public Result roll()
     {
-        String ret = "[";
-        boolean bFirstAdd = true;
+        if ("0".equals(m_macro))
+        {
+            return null;
+        }
+
+        StringBuffer ret = new StringBuffer();
         int total = 0;
 
         for (int i = 0; i < m_dieTypes.size(); i++)
         {
             // get the die type
-            DiceMacro_RollType dieType = (DiceMacro_RollType)m_dieTypes.get(i);
+            Term dieType = (Term)m_dieTypes.get(i);
+            boolean bFirstAdd = (i == 0);
 
+            int subtotal = 0;
             // special case: straight bonus
             if (dieType.m_die < 2)
             {
-                total += dieType.m_qty;
                 if (dieType.m_qty > 0)
                 {
-                    ret += "+" + dieType.m_qty;
+                    if (!bFirstAdd)
+                    {
+                        ret.append(" + ");
+                    }
+                    ret.append(dieType.m_qty);
+                    subtotal += dieType.m_qty;
                 }
                 else if (dieType.m_qty < 0)
                 {
-                    ret += "" + dieType.m_qty;
+                    if (!bFirstAdd)
+                    {
+                        ret.append(' ');
+                    }
+                    ret.append("- ");
+                    ret.append(-dieType.m_qty);
+                    subtotal += dieType.m_qty;
                 }
             }
-            else
+            else if (dieType.m_keep == 0)
             {
-                if (dieType.m_keep == 0)
+                // normal case: die rollin!
+                // Straight addition
+                int bound = Math.abs(dieType.m_qty);
+                boolean negative = (dieType.m_qty < 0);
+                if (bound > 0)
                 {
-                    // normal case: die rollin!
-                    // Straight addition
-                    for (int j = 0, bound = Math.abs(dieType.m_qty); j < bound; j++)
+                    // single quantity - no parentheticals
+                    if (bound == 1)
                     {
                         int value = rollDie(dieType.m_die);
                         if (bFirstAdd)
                         {
-                            ret += "" + value;
-                            bFirstAdd = false;
+                            if (negative)
+                            {
+                                ret.append("- ");
+                            }
                         }
                         else
                         {
-                            ret += ((dieType.m_qty < 0) ? "-" : "+") + value;
+                            ret.append(negative ? " - " : " + ");
                         }
-                        if (dieType.m_qty < 0)
-                            total -= value;
-                        else
-                            total += value;
-                    }
-                }
-                else
-                {
-                    // Keep some rolls.
-                    int number = Math.abs(dieType.m_qty);
-                    ret += (bFirstAdd ? "" : ((dieType.m_qty < 0) ? "-" : "+")) + "(";
-                    bFirstAdd = true;
-                    int[] rolls = new int[number];
-                    for (int index = 0; index < number; index++)
-                    {
-                        rolls[index] = rollDie(dieType.m_die);
-                        if (bFirstAdd)
+
+                        ret.append(value);
+                        if (negative)
                         {
-                            ret += "" + rolls[index];
-                            bFirstAdd = false;
+                            subtotal -= value;
                         }
                         else
                         {
-                            ret += "," + rolls[index];
+                            subtotal += value;
                         }
-                    }
-                    Arrays.sort(rolls);
-                    if (dieType.m_keep > 0)
-                    {
-                        // Keep highest
-                        for (int index = dieType.m_qty - dieType.m_keep; index < dieType.m_qty; index++)
-                            if (dieType.m_qty < 0)
-                                total -= rolls[index];
-                            else
-                                total += rolls[index];
-                        ret += ")h" + dieType.m_keep;
                     }
                     else
                     {
-                        // Keep lowest
-                        for (int index = 0; index < -dieType.m_keep; index++)
-                            if (dieType.m_qty < 0)
-                                total -= rolls[index];
+                        // multiple quantity - parentheticals
+                        if (bFirstAdd)
+                        {
+                            if (negative)
+                            {
+                                ret.append("- ");
+                            }
+                        }
+                        else
+                        {
+                            ret.append(negative ? " - " : " + ");
+                        }
+
+                        ret.append('(');
+                        for (int j = 0; j < bound; j++)
+                        {
+                            int value = rollDie(dieType.m_die);
+                            if (j > 0)
+                            {
+                                ret.append(" + ");
+                            }
+                            ret.append(value);
+                            if (negative)
+                            {
+                                subtotal -= value;
+                            }
                             else
-                                total += rolls[index];
-                        ret += ")l" + (-dieType.m_keep);
+                            {
+                                subtotal += value;
+                            }
+                        }
+                        ret.append(')');
                     }
                 }
             }
+            else
+            {
+                // Keep some rolls.
+                int number = Math.abs(dieType.m_qty);
+                if (!bFirstAdd)
+                {
+                    ret.append((dieType.m_qty < 0) ? " - " : " + ");
+                }
+                ret.append('(');
+                int[] rolls = new int[number];
+                for (int index = 0; index < number; index++)
+                {
+                    rolls[index] = rollDie(dieType.m_die);
+                    if (index < 1)
+                    {
+                        ret.append(rolls[index]);
+                    }
+                    else
+                    {
+                        ret.append(',');
+                        ret.append(rolls[index]);
+                    }
+                }
+                Arrays.sort(rolls);
+                if (dieType.m_keep > 0)
+                {
+                    // Keep highest
+                    for (int index = dieType.m_qty - dieType.m_keep; index < dieType.m_qty; index++)
+                    {
+                        if (dieType.m_qty < 0)
+                        {
+                            subtotal -= rolls[index];
+                        }
+                        else
+                        {
+                            subtotal += rolls[index];
+                        }
+                    }
+                    ret.append(")h");
+                    ret.append(dieType.m_keep);
+                }
+                else
+                {
+                    // Keep lowest
+                    for (int index = 0; index < -dieType.m_keep; index++)
+                    {
+                        if (dieType.m_qty < 0)
+                        {
+                            subtotal -= rolls[index];
+                        }
+                        else
+                        {
+                            subtotal += rolls[index];
+                        }
+                    }
+                    ret.append(")l");
+                    ret.append(-dieType.m_keep);
+                }
+
+            }
+            total += subtotal;
+            //System.out.println(dieType + ": " + subtotal + " (" + total + ")");
         }
 
-        ret += "] = ";
-        ret += "" + total;
-        return ret;
+        return new Result(total, getRollString(), ret.toString());
     }
 
     public int rollDie(int sides)
@@ -153,9 +347,14 @@ public class DiceMacro
 
     public String getRollString()
     {
+        if ("0".equals(m_macro))
+        {
+            return "";
+        }
+
         String ret = getMacroString();
 
-        if (!ret.equals(m_name))
+        if (!ret.equals(m_name) && m_name != null && m_name.length() > 0)
         {
             return m_name + " (" + ret + ")";
         }
@@ -164,16 +363,37 @@ public class DiceMacro
 
     public String getMacroString()
     {
+        if ("0".equals(m_macro))
+        {
+            return "";
+        }
+
         StringBuffer buffer = new StringBuffer();
         boolean bIsFirst = true;
 
         for (int i = 0; i < m_dieTypes.size(); i++)
         {
             String dice = m_dieTypes.get(i).toString();
-            if (!(bIsFirst || dice.charAt(0) == '-'))
-                buffer.append('+');
+            if (!bIsFirst)
+            {
+                buffer.append(' ');
+            }
 
-            buffer.append(dice);
+            boolean negate = (dice.charAt(0) == '-');
+            if (negate)
+            {
+                buffer.append("- ");
+                buffer.append(dice.substring(1).trim());
+            }
+            else
+            {
+                if (!bIsFirst)
+                {
+                    buffer.append("+ ");
+                }
+
+                buffer.append(dice);
+            }
             bIsFirst = false;
         }
 
@@ -182,6 +402,16 @@ public class DiceMacro
 
     public boolean init(String macro, String name)
     {
+        // Remove spaces.
+        StringBuffer buffer = new StringBuffer();
+        for (int index = 0; index < macro.length(); index++)
+        {
+            if (!Character.isWhitespace(macro.charAt(index)))
+            {
+                buffer.append(macro.charAt(index));
+            }
+        }
+
         try
         {
             m_name = name;
@@ -190,11 +420,10 @@ public class DiceMacro
             // Parse the macro string. It will be something like
             // "3d6 + 4" or "2d4 + 3d6h2 + 8"
 
-            // Remove spaces.
-            StringBuffer buffer = new StringBuffer();
-            for (int index = 0; index < m_macro.length(); index++)
-                if (m_macro.charAt(index) != ' ')
-                    buffer.append(m_macro.charAt(index));
+            if ("0".equals(m_macro))
+            {
+                return true;
+            }
 
             // Grab individual dice rolls.
             boolean isNegative = false;
@@ -202,58 +431,80 @@ public class DiceMacro
             int[] numbers = {
                 1, 1, 0
             };
+
             // Corresponds with index of numbers array
             int phase = 0;
             int startOfCurrentNumber = 0;
-            for (int index = 0; index < buffer.length(); index++)
+            int length = buffer.length();
+            for (int index = 0; index < length; ++index)
             {
-                if (buffer.charAt(index) < '0' || buffer.charAt(index) > '9' || index == buffer.length() - 1)
+                char c = buffer.charAt(index);
+                boolean isLast = (index == (length - 1));
+                if (!Character.isDigit(c) || isLast)
                 {
                     // End of this number.
-
-                    if (startOfCurrentNumber != index || index == buffer.length() - 1)
+                    if (startOfCurrentNumber != index || isLast)
                     {
                         // end is position after number.
-                        int end = (index == buffer.length() - 1) ? buffer.length() : index;
-                        int number = Integer.parseInt(buffer.substring(startOfCurrentNumber, end));
+                        int end = (isLast ? length : index);
+                        String numberStr = buffer.substring(startOfCurrentNumber, end);
+                        int number = Integer.parseInt(numberStr);
                         numbers[phase] = isNegative ? (-number) : number;
+                        isNegative = false;
                     }
                     startOfCurrentNumber = index + 1;
 
                     // Check for end of dice roll.
-                    if (buffer.charAt(index) == '+' || buffer.charAt(index) == '-' || index == buffer.length() - 1)
+                    if (c == '+' || c == '-' || isLast)
                     {
-                        m_dieTypes.add(new DiceMacro_RollType(numbers));
-                        isNegative = buffer.charAt(index) == '-';
+                        if (index > 0)
+                        {
+                            m_dieTypes.add(new Term(numbers));
+                        }
+                        isNegative = (c == '-');
                         numbers[0] = 1;
                         numbers[1] = 1;
                         numbers[2] = 0;
                         phase = 0;
                     }
-                    else if (buffer.charAt(index) == 'd')
+                    else if (c == 'd')
                     {
+                        numbers[0] = isNegative ? (-numbers[0]) : numbers[0];
                         isNegative = false;
                         phase = 1;
                     }
-                    else if (buffer.charAt(index) == 'h')
+                    else if (c == 'h')
                     {
                         isNegative = false;
                         phase = 2;
                     }
-                    else if (buffer.charAt(index) == 'l')
+                    else if (c == 'l')
                     {
                         isNegative = true;
                         phase = 2;
                     }
                     else
+                    {
+                        m_name = null;
+                        m_macro = "0";
                         return false;
+                    }
                 }
+            }
+
+            m_macro = getMacroString();
+            if (m_name != null && m_name.length() < 1)
+            {
+                m_name = m_macro;
             }
             return true;
         }
-        catch (Exception ex)
+        catch (Throwable ex)
         {
+            Log.log(Log.SYS, "parse error: \"" + buffer + "\" (\"" + macro + "\")");
             Log.log(Log.SYS, ex);
+            m_name = null;
+            m_macro = "0";
             return false;
         }
     }
@@ -269,70 +520,5 @@ public class DiceMacro
         String name = dis.readUTF();
         String macro = dis.readUTF();
         init(macro, name);
-    }
-}
-
-
-class DiceMacro_RollType
-{
-    // note, a "1" sided die is a bonus
-    // and qty can be negative
-    // m_keep is number of highest rolls to keep. If negative, keep
-    // lowest rolls. A value of 0 means to keep all.
-    int m_die;
-    int m_qty;
-    int m_keep;
-
-
-
-    public DiceMacro_RollType()
-    {
-    }
-
-    public DiceMacro_RollType(int[] numbers)
-    {
-        m_qty = numbers[0];
-        m_die = numbers[1];
-        m_keep = numbers[2];
-    }
-
-    public boolean equals(DiceMacro_RollType comp)
-    {
-        return m_die == comp.m_die && m_qty == comp.m_qty && m_keep == comp.m_keep;
-    }
-
-    public String getDieName()
-    {
-        if (m_die < 2)
-        {
-            return "";
-        }
-        String name = "d" + m_die;
-        return name;
-    }
-
-    public String toString()
-    {
-        StringBuffer result = new StringBuffer();
-
-        result.append(m_qty);
-
-        if (m_die > 1)
-        {
-            result.append('d');
-            result.append(m_die);
-            if (m_keep < 0)
-            {
-                result.append('l');
-                result.append(0 - m_keep);
-            }
-            else if (m_keep > 0)
-            {
-                result.append('h');
-                result.append(m_keep);
-            }
-        }
-
-        return result.toString();
     }
 }

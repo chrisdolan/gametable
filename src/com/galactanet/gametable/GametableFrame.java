@@ -11,10 +11,8 @@ import java.awt.event.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
-import java.util.Set;
 
 import javax.swing.*;
 
@@ -150,11 +148,12 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public JSplitPane              m_mapPogSplitPane          = new JSplitPane();
     public PogsPanel               m_pogsPanel                = new PogsPanel();
     public PogsPanel               m_underlaysPanel           = new PogsPanel();
-    JToolBar                       m_toolBar                  = new JToolBar();
-    ButtonGroup                    m_toolButtonGroup          = new ButtonGroup();
+    private JToolBar               m_toolBar                  = new JToolBar();
+    private ButtonGroup            m_toolButtonGroup          = new ButtonGroup();
 
-    List                           m_macros                   = new ArrayList();
-    List                           m_macroButtons             = new ArrayList();
+    private List                   m_macros                   = new ArrayList();
+    private Map                    m_macroMap                 = new HashMap();
+    private List                   m_macroButtons             = new ArrayList();
 
     public final static int        NETSTATE_NONE              = 0;
     public final static int        NETSTATE_HOST              = 1;
@@ -169,19 +168,19 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public Color                   m_drawColor                = Color.BLACK;
 
     // window size and position
-    Point                          m_windowPos;
-    Dimension                      m_windowSize;
-    boolean                        m_bMaximized;
+    private Point                  m_windowPos;
+    private Dimension              m_windowSize;
+    private boolean                m_bMaximized;
 
     // a flag to tell the app
     // not to size or center us.
     public boolean                 m_bLoadedState;
     public JTabbedPane             m_pogsTabbedPane           = new JTabbedPane();
-    JComboBox                      m_colorCombo               = new JComboBox(g_comboColors);
+    private JComboBox              m_colorCombo               = new JComboBox(g_comboColors);
 
     // full of Strings
-    public List                    m_textSent                 = new ArrayList();
-    int                            m_textSentLoc              = 0;
+    private List                   m_textSent                 = new ArrayList();
+    private int                    m_textSentLoc              = 0;
 
     public final static int        REJECT_INVALID_PASSWORD    = 0;
     public final static int        REJECT_VERSION_MISMATCH    = 1;
@@ -210,9 +209,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     private Preferences            m_preferences              = new Preferences();
 
     public ProgressSpinner         m_progressSpinner          = new ProgressSpinner();
-    
-    public int m_nextPlayerID; // the id that will be assigned to the next player to join
-    public int m_nextStateID; // the id that will be assigned to the next player to join
+
+    // the id that will be assigned to the next player to join
+    public int m_nextPlayerID;
+
+    // the id that will be assigned to the next player to join
+    public int m_nextStateID;
+
     /**
      * Construct the frame
      */
@@ -323,10 +326,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 Log.log(Log.SYS, "Failure initializing tools.");
                 Log.log(Log.SYS, ioe);
             }
-            
+
             // add tile combo here.
-            
-            
+
             m_menuBar.add(m_fileMenu);
             m_fileMenu.add(m_openMenuItem);
             m_fileMenu.add(m_saveMenuItem);
@@ -390,14 +392,14 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_diceMacrosMenu.add(m_addDiceMacroMenuItem);
             m_diceMacrosMenu.add(m_removeDiceMacroMenuItem);
 
-            addMacroButton("d20", "d20");
+            addMacro("d20", "d20");
 
             // load the primary map
             m_gametableCanvas.setActiveMap(m_gametableCanvas.getPrivateMap());
             PacketSourceState.beginFileLoad();
             loadState(new File("autosavepvt.grm"));
             PacketSourceState.endFileLoad();
-            
+
             m_gametableCanvas.setActiveMap(m_gametableCanvas.getPublicMap());
             loadState(new File("autosave.grm"));
             loadPrefs();
@@ -422,12 +424,12 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     {
         return g_gameTableFrame;
     }
-    
+
     public int getNewStateID()
     {
-    	int ret = m_nextStateID;
-    	m_nextStateID++;
-    	return ret;
+        int ret = m_nextStateID;
+        m_nextStateID++;
+        return ret;
     }
 
     public Preferences getPreferences()
@@ -465,7 +467,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     // returns the player id of this client
     public int getMeID()
     {
-    	return getMePlayer().m_ID;
+        return getMePlayer().m_ID;
     }
 
     public void componentMoved(ComponentEvent e)
@@ -511,11 +513,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         // all we do in response to this allow pog text
         // highlights. The pogs don't know the difference between
         // inital data and actual player changes.
-    	PacketSourceState.endHostDump();
-    	
-    	// seed our undo stack with this as the bottom rung
-		m_gametableCanvas.getPublicMap().beginUndoableAction();
-		m_gametableCanvas.getPublicMap().endUndoableAction(-1, -1);
+        PacketSourceState.endHostDump();
+
+        // seed our undo stack with this as the bottom rung
+        m_gametableCanvas.getPublicMap().beginUndoableAction();
+        m_gametableCanvas.getPublicMap().endUndoableAction(-1, -1);
     }
 
     public void pingPacketReceived()
@@ -583,7 +585,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             loadStateFromRawFileData(grmFile);
         }
     }
-    
+
     public void undoPacketReceived(int stateID)
     {
         m_gametableCanvas.doUndo(stateID);
@@ -593,7 +595,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             // if we're the host, send it to the clients
             send(PacketManager.makeUndoPacket(stateID));
         }
-        
+
         repaint();
     }
 
@@ -606,7 +608,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             // if we're the host, send it to the clients
             send(PacketManager.makeRedoPacket(stateID));
         }
-        
+
         repaint();
     }
 
@@ -672,8 +674,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (m_netStatus == NETSTATE_HOST)
         {
             // if we're the host, send it to the clients
-        	// and give it a genuine state ID first
-        	stateID = this.getNewStateID();
+            // and give it a genuine state ID first
+            stateID = this.getNewStateID();
             send(PacketManager.makeErasePacket(r, bColorSpecific, color, authorID, stateID));
         }
 
@@ -686,8 +688,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (m_netStatus == NETSTATE_HOST)
         {
             // if we're the host, send it to the clients
-        	// and give it a genuine state ID first
-        	stateID = this.getNewStateID();
+            // and give it a genuine state ID first
+            stateID = this.getNewStateID();
             send(PacketManager.makeLinesPacket(lines, authorID, stateID));
         }
 
@@ -827,9 +829,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             addPlayer(players[i]);
         }
-        
+
         m_myPlayerIdx = ourIdx;
-        
+
         // any time the cast changes, all the undo stacks clear
         m_gametableCanvas.clearUndoStacks();
     }
@@ -879,7 +881,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         // now we can associate a player with the connection
         connection.markLoggedIn();
         player.setConnection(connection);
-        
+
         // set their ID
         player.m_ID = m_nextPlayerID;
         m_nextPlayerID++;
@@ -892,7 +894,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         // all the undo stacks clear
         m_gametableCanvas.clearUndoStacks();
-        
 
         // tell the new guy the entire state of the game
         // lines
@@ -909,10 +910,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             Pog pog = m_gametableCanvas.getPublicMap().getPogAt(i);
             send(PacketManager.makeAddPogPacket(pog), player);
         }
-        
+
         // let them know we're done sending them data from the login
         send(PacketManager.makeLoginCompletePacket(), player);
-        
 
         // finally, have the player recenter on the host's view
         int viewCenterX = m_gametableCanvas.getWidth() / 2;
@@ -972,7 +972,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         // clear out all players
         m_nextPlayerID = 0;
         m_players = new ArrayList();
-        Player me = new Player(m_defaultName, m_defaultCharName, m_nextPlayerID); // this means the host is always player 0
+        Player me = new Player(m_defaultName, m_defaultCharName, m_nextPlayerID); // this means the host is always
+        // player 0
         m_nextPlayerID++;
         m_players.add(me);
         me.setHostPlayer(true);
@@ -1052,7 +1053,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             }
             conn.sendPacket(PacketManager.makePlayerPacket(me, m_defaultPassword));
 
-        	PacketSourceState.beginHostDump();
+            PacketSourceState.beginHostDump();
 
             // and now we're ready to pay attention
             m_netStatus = NETSTATE_JOINED;
@@ -1070,7 +1071,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             Log.log(Log.SYS, ex);
             logSystemMessage("Failed to connect.");
             setTitle(GametableApp.VERSION);
-        	PacketSourceState.endHostDump();
+            PacketSourceState.endHostDump();
         }
     }
 
@@ -1105,7 +1106,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         setTitle(GametableApp.VERSION);
 
         // we might have disconnected during inital data recipt
-    	PacketSourceState.endHostDump();
+        PacketSourceState.endHostDump();
 
         m_netStatus = NETSTATE_NONE;
         logSystemMessage("Disconnected.");
@@ -1205,15 +1206,15 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             Integer col = (Integer)m_colorCombo.getSelectedItem();
             m_drawColor = new Color(col.intValue());
         }
-        
-        if (e.getSource() == m_undoMenuItem )
+
+        if (e.getSource() == m_undoMenuItem)
         {
-    		m_gametableCanvas.undo();
+            m_gametableCanvas.undo();
         }
 
-        if (e.getSource() == m_redoMenuItem )
+        if (e.getSource() == m_redoMenuItem)
         {
-    		m_gametableCanvas.redo();
+            m_gametableCanvas.redo();
         }
 
         if (e.getSource() == m_exitMenuItem)
@@ -1229,13 +1230,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             if (m_gametableCanvas.getActiveMap() == m_gametableCanvas.getPublicMap())
             {
                 File openFile = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
-                
-                if ( openFile == null )
+
+                if (openFile == null)
                 {
-                	// they cancelled out of the open
-                	return; 
+                    // they cancelled out of the open
+                    return;
                 }
-                
+
                 m_actingFilePublic = openFile;
 
                 int result = UtilityFunctions
@@ -1422,7 +1423,19 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 // extrace the macro from the controls and add it
                 String name = dlg.m_nameEntry.getText();
                 String macro = dlg.m_rollEntry.getText();
-                addMacroButton(name, macro);
+                if (getMacro(name) != null)
+                {
+                    int result = UtilityFunctions.yesNoDialog(this, "You already have a macro named \"" + name + "\", "
+                        + "are you sure you want to replace it with \"" + macro + "\"?", "Replace Macro?");
+                    if (result == UtilityFunctions.YES)
+                    {
+                        addMacro(name, macro);
+                    }
+                }
+                else
+                {
+                    addMacro(name, macro);
+                }
             }
         }
 
@@ -1434,8 +1447,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 JOptionPane.PLAIN_MESSAGE, null, list, list[0]);
             if (sel != null)
             {
-                m_macros.remove(sel);
-                rebuildMacroButtons();
+                removeMacro((DiceMacro)sel);
             }
         }
 
@@ -1541,7 +1553,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_playerListScrollPane.getViewport().add(m_playerList, null);
     }
 
-    public void addMacroButton(String name, String macro)
+    public void addMacro(String name, String macro)
     {
         DiceMacro newMacro = new DiceMacro();
         boolean res = newMacro.init(macro, name);
@@ -1550,13 +1562,70 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             logSystemMessage("Error in macro");
             return;
         }
-        addMacroButton(newMacro);
+        addMacro(newMacro);
     }
 
-    public void addMacroButton(DiceMacro dm)
+    public void addMacro(DiceMacro dm)
     {
-        m_macros.add(dm);
+        addMacroForced(dm);
         rebuildMacroButtons();
+    }
+
+    public void removeMacro(String name)
+    {
+        removeMacroForced(name);
+        rebuildMacroButtons();
+    }
+
+    public void removeMacro(DiceMacro dm)
+    {
+        removeMacroForced(dm);
+        rebuildMacroButtons();
+    }
+
+    private void removeMacroForced(String name)
+    {
+        DiceMacro macro = getMacro(name);
+        if (macro != null)
+        {
+            removeMacroForced(macro);
+        }
+    }
+
+    private void removeMacroForced(DiceMacro macro)
+    {
+        String name = UtilityFunctions.normalizeName(macro.m_name);
+        m_macroMap.remove(name);
+        m_macros.remove(macro);
+    }
+
+    private void addMacroForced(DiceMacro macro)
+    {
+        removeMacroForced(macro.m_name);
+        m_macros.add(macro);
+        m_macroMap.put(UtilityFunctions.normalizeName(macro.m_name), macro);
+    }
+
+    public DiceMacro findMacro(String term)
+    {
+        String name = UtilityFunctions.normalizeName(term);
+        DiceMacro macro = getMacro(name);
+        if (macro == null)
+        {
+            macro = new DiceMacro();
+            if (!macro.init(term, null))
+            {
+                macro = null;
+            }
+        }
+
+        return macro;
+    }
+
+    public DiceMacro getMacro(String name)
+    {
+        String realName = UtilityFunctions.normalizeName(name);
+        return (DiceMacro)m_macroMap.get(realName);
     }
 
     public void rebuildMacroButtons()
@@ -1572,7 +1641,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             newButton.setMaximumSize(new Dimension(120, 20));
             newButton.setMinimumSize(new Dimension(120, 20));
             newButton.setPreferredSize(new Dimension(120, 20));
-            newButton.setText(dm.toString());
+            newButton.setText(dm.m_name);
             newButton.addActionListener(this);
 
             m_macroButtons.add(newButton);
@@ -1707,16 +1776,15 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             return;
         }
-
-        // macro command
-        if (words[0].equals("/macro"))
+        else if (words[0].equals("/macro"))
         {
             // macro command. this requires at least 2 parameters
             if (words.length < 3)
             {
                 // tell them the usage and bail
-                logSystemMessage("/macro usage: /macro macroName <dice roll in standard format>");
+                logSystemMessage("/macro usage: /macro <macroName> <dice roll in standard format>");
                 logSystemMessage("Examples: /macro Attack d20+8 ; /macro SneakDmg d4 + 2 + 4d6");
+                logSystemMessage("Note: Macros will replace any existing macros with the same name.");
                 return;
             }
 
@@ -1724,78 +1792,141 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             String name = words[1];
 
             // all subsiquent "words" are the die roll macro
-            String dieStr = "";
-            for (int i = 2; i < words.length; i++)
-            {
-                dieStr += words[i];
-                dieStr += " ";
-            }
-
-            addMacroButton(name, dieStr);
+            addMacro(name, text.substring("/macro ".length() + name.length() + 1));
         }
-
-        // macro delete command
-        if (words[0].equals("/macrodelete"))
+        else if (words[0].equals("/macrodelete"))
         {
             // req. 1 param
-            if (words.length == 1)
+            if (words.length < 2)
             {
-                logSystemMessage("/macrodelete usage: /macrodelete macroName (Case sensitive)");
+                logSystemMessage("/macrodelete usage: /macrodelete <macroName> (Case insensitive)");
                 return;
             }
 
             String name = words[1];
 
             // find and kill this macro
-            for (int i = 0; i < m_macros.size(); i++)
+            removeMacro(name);
+        }
+        else if (words[0].equals("/roll"))
+        {
+            // req. 1 param
+            if (words.length < 2)
             {
-                DiceMacro dm = (DiceMacro)m_macros.get(i);
-                if (dm.toString().equals(name))
+                logSystemMessage("/roll usage: /roll <Dice Roll in standard format>");
+                logSystemMessage("or: /roll <Macro Name> [<+/-> <Macro Name or Dice Roll>]...");
+                logSystemMessage("Examples:");
+                logSystemMessage("Example: /roll 2d6 + 3d4 + 8");
+                logSystemMessage("Example: /roll My Damage + d4");
+                logSystemMessage("Example: /roll d20 + My Damage + My Damage Bonus");
+                return;
+            }
+
+            // TODO: This should all probably be moved to DiceMacro somehow?
+
+            // First we split the roll into terms
+            ArrayList rolls = new ArrayList();
+            ArrayList ops = new ArrayList();
+            String remaining = text.substring("/roll ".length());
+            int length = remaining.length();
+            int termStart = 0;
+            boolean error = false;
+            for (int index = 0; index < length; ++index)
+            {
+                char c = remaining.charAt(index);
+                boolean isLast = (index == (length - 1));
+                if (c == '+' || c == '-' || isLast)
                 {
-                    // killify
-                    m_macros.remove(i);
-                    break;
+                    int termEnd = index + (isLast ? 1 : 0);
+                    String term = remaining.substring(termStart, termEnd).trim();
+                    if (term.length() < 1)
+                    {
+                        rolls.add(new DiceMacro());
+                    }
+                    else
+                    {
+                        DiceMacro macro = findMacro(term);
+                        if (macro == null)
+                        {
+                            logSystemMessage("Invalid macro name or die term: " + term + ".");
+                        }
+                        else
+                        {
+                            rolls.add(macro);
+                        }
+                    }
+
+                    ops.add(String.valueOf(c));
+                    termStart = index + 1;
                 }
             }
 
-            rebuildMacroButtons();
-        }
-
-        if (words[0].equals("/roll"))
-        {
-            // req. 1 param
-            if (words.length == 1)
+            if (error)
             {
-                logSystemMessage("/roll usage: /roll <dice roll in standard format>");
-                logSystemMessage("or: /roll <dice Macro Name><additional dice roll in standard format>");
-                logSystemMessage("Examples:");
-                logSystemMessage("Example: /roll 2d6 + 3d4 + 8");
-                logSystemMessage("Example: /roll damage + 4");
+                logSystemMessage("Unable to execute macro, see above for details.");
                 return;
             }
-            
-            // all subsiquent params become the roll string
-            String dieStr = "";
-            for (int i = 1; i < words.length; i++)
-            {
-                dieStr += words[i];
-                dieStr += " ";
-            }
 
-            DiceMacro dm = new DiceMacro();
-            boolean res = dm.init(dieStr, dieStr);
-            if (res)
+            StringBuffer rollBuf = new StringBuffer();
+            StringBuffer resultBuf = new StringBuffer();
+            int total = 0;
+            boolean first = true;
+            for (int i = 0; i < rolls.size(); ++i)
             {
-                String result = dm.doMacro();
-                postMessage(result);
+                DiceMacro macro = (DiceMacro)rolls.get(i);
+                boolean negate = false;
+                if (i > 0)
+                {
+                    if ("-".equals(ops.get(i - 1)))
+                    {
+                        negate = true;
+                    }
+                }
+
+                DiceMacro.Result result = macro.roll();
+                if (result == null)
+                {
+                    continue;
+                }
+
+                if (!negate)
+                {
+                    total += result.value;
+                    if (!first)
+                    {
+                        rollBuf.append(" + ");
+                        resultBuf.append(" + ");
+                    }
+                }
+                else
+                {
+                    total -= result.value;
+                    if (!first)
+                    {
+                        rollBuf.append(' ');
+                        resultBuf.append(' ');
+                    }
+
+                    rollBuf.append("- ");
+                    resultBuf.append("- ");
+                }
+                rollBuf.append(result.roll);
+                if (macro.m_name != null && rolls.size() > 1)
+                {
+                    resultBuf.append('(');
+                    resultBuf.append(result.result);
+                    resultBuf.append(')');
+                }
+                else
+                {
+                    resultBuf.append(result.result);
+                }
+
+                first = false;
             }
-            else
-            {
-                logSystemMessage("Invalid dice command.");
-            }
+            postMessage(getMePlayer().getCharacterName() + " rolls " + rollBuf + ": [" + resultBuf + "] = " + total);
         }
-
-        if (words[0].equals("//") || words[0].equals("/help"))
+        else if (words[0].equals("//") || words[0].equals("/help"))
         {
             // list macro commands
             logSystemMessage("/macro: macro a die roll");
@@ -1964,7 +2095,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             {
                 DiceMacro dm = new DiceMacro();
                 dm.initFromStream(prefDis);
-                addMacroButton(dm);
+                addMacro(dm);
             }
 
             prefDis.close();
@@ -2051,9 +2182,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             byte[] saveFileData = new byte[len];
             infile.read(saveFileData);
 
-        	PacketSourceState.beginFileLoad();
+            PacketSourceState.beginFileLoad();
             loadState(saveFileData);
-        	PacketSourceState.endFileLoad();
+            PacketSourceState.endFileLoad();
 
             input.close();
             infile.close();
@@ -2079,7 +2210,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void loadState(byte saveFileData[])
     {
         // let it know we're receiving initial data (which we are. Just fro ma file instead of the host)
-		try
+        try
         {
             // now we have to pick out the packets and send them in for processing one at a time
             DataInputStream walker = new DataInputStream(new ByteArrayInputStream(saveFileData));
@@ -2105,7 +2236,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             Log.log(Log.SYS, ex);
         }
-    	
+
         repaint();
     }
 

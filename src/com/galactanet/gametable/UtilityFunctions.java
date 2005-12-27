@@ -21,6 +21,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
 
+
 /**
  * TODO: comment
  * 
@@ -39,7 +40,23 @@ public class UtilityFunctions
     public final static int     YES           = 1;
     public final static int     CANCEL        = -1;
 
+    public static String normalizeName(String in)
+    {
+        in = in.trim();
+        in = in.toLowerCase();
+        int len = in.length();
+        StringBuffer out = new StringBuffer(len);
+        for (int i = 0; i < len; ++i)
+        {
+            char c = in.charAt(i);
+            if (Character.isJavaIdentifierPart(c))
+            {
+                out.append(c);
+            }
+        }
 
+        return out.toString();
+    }
 
     public static byte[] loadFileToArray(String filename)
     {
@@ -138,11 +155,7 @@ public class UtilityFunctions
 
     }
 
-
-
     static private String lastDir = null;
-
-
 
     public static int yesNoCancelDialog(Component parent, String msg, String title)
     {
@@ -242,8 +255,7 @@ public class UtilityFunctions
     }
 
     /**
-     * Checks the given binary date to see if it is a valid PNG file. It does this by checking the
-     * PNG signature.
+     * Checks the given binary date to see if it is a valid PNG file. It does this by checking the PNG signature.
      * 
      * @param data binary data to check
      * @return true if the binary data is a valid PNG file, false otherwise.
@@ -333,7 +345,7 @@ public class UtilityFunctions
         return pImage;
     }
 
-    static public String getLine(DataInputStream ds)
+    public static String getLine(DataInputStream ds)
     {
         try
         {
@@ -376,5 +388,4 @@ public class UtilityFunctions
             return null;
         }
     }
-
 }

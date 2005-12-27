@@ -1369,10 +1369,10 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             case KeyEvent.VK_Z:
             {
             	int mods = e.getModifiers();
-            	if ( (mods & KeyEvent.CTRL_MASK) != 0 ) 
+            	if ( (mods & InputEvent.CTRL_MASK) != 0 ) 
             	{
             		
-                	if ( (mods & KeyEvent.SHIFT_MASK) != 0 )
+                	if ( (mods & InputEvent.SHIFT_MASK) != 0 )
                 	{
                 		// shift-ctrl-z is redo
 	            		redo();
