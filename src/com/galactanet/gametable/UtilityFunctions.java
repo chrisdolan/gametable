@@ -6,16 +6,11 @@
 package com.galactanet.gametable;
 
 import java.awt.*;
-import java.awt.Component;
-import java.awt.Image;
-import java.awt.MediaTracker;
-import java.awt.Toolkit;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.Random;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -29,6 +24,8 @@ import javax.swing.JOptionPane;
  */
 public class UtilityFunctions
 {
+    private static final Random random = getRandomInstance();
+
     /**
      * The PNG signature to verify PNG data with.
      */
@@ -39,6 +36,11 @@ public class UtilityFunctions
     public final static int     NO            = 0;
     public final static int     YES           = 1;
     public final static int     CANCEL        = -1;
+
+    public static int getRandom(int max)
+    {
+        return random.nextInt(max);
+    }
 
     public static String normalizeName(String in)
     {
@@ -387,5 +389,22 @@ public class UtilityFunctions
             Log.log(Log.SYS, e);
             return null;
         }
+    }
+
+    private static Random getRandomInstance()
+    {
+        // SHA1PRNG
+        Random rand;
+        try
+        {
+            rand = SecureRandom.getInstance("SHA1PRNG");
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            Log.log(Log.SYS, e);
+            rand = new Random();
+        }
+        rand.setSeed(System.currentTimeMillis());
+        return rand;
     }
 }

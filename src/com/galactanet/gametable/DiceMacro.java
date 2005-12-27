@@ -135,7 +135,7 @@ public class DiceMacro
 
     public String toString()
     {
-        if (m_name == null || m_name.equals(m_macro))
+        if (m_name == null || isSameMacroString(m_name, m_macro))
         {
             return m_macro;
         }
@@ -338,11 +338,7 @@ public class DiceMacro
 
     public int rollDie(int sides)
     {
-        double random = Math.random();
-        double result = random * sides;
-        int ret = (int)result;
-        ret++;
-        return ret;
+        return UtilityFunctions.getRandom(sides) + 1;
     }
 
     public String getRollString()
@@ -352,13 +348,11 @@ public class DiceMacro
             return "";
         }
 
-        String ret = getMacroString();
-
-        if (!ret.equals(m_name) && m_name != null && m_name.length() > 0)
+        if (!isSameMacroString(m_name, m_macro) && m_name != null && m_name.length() > 0)
         {
-            return m_name + " (" + ret + ")";
+            return m_name + " (" + m_macro + ")";
         }
-        return ret;
+        return m_macro;
     }
 
     public String getMacroString()
@@ -400,22 +394,42 @@ public class DiceMacro
         return buffer.toString();
     }
 
-    public boolean init(String macro, String name)
+    private static boolean isSameMacroString(String a, String b)
+    {
+        if (a == b)
+        {
+            return true;
+        }
+        
+        if (a == null || b == null)
+        {
+            return false;
+        }
+        
+        return normalizeMacroString(a).equals(normalizeMacroString(b));
+    }
+    
+    private static String normalizeMacroString(String in)
     {
         // Remove spaces.
         StringBuffer buffer = new StringBuffer();
-        for (int index = 0; index < macro.length(); index++)
+        for (int index = 0; index < in.length(); index++)
         {
-            if (!Character.isWhitespace(macro.charAt(index)))
+            if (!Character.isWhitespace(in.charAt(index)))
             {
-                buffer.append(macro.charAt(index));
+                buffer.append(Character.toLowerCase(in.charAt(index)));
             }
         }
 
+        return buffer.toString();
+    }
+
+    public boolean init(String macro, String name)
+    {
         try
         {
             m_name = name;
-            m_macro = macro;
+            m_macro = normalizeMacroString(macro);
 
             // Parse the macro string. It will be something like
             // "3d6 + 4" or "2d4 + 3d6h2 + 8"
@@ -435,10 +449,10 @@ public class DiceMacro
             // Corresponds with index of numbers array
             int phase = 0;
             int startOfCurrentNumber = 0;
-            int length = buffer.length();
+            int length = m_macro.length();
             for (int index = 0; index < length; ++index)
             {
-                char c = buffer.charAt(index);
+                char c = m_macro.charAt(index);
                 boolean isLast = (index == (length - 1));
                 if (!Character.isDigit(c) || isLast)
                 {
@@ -447,7 +461,7 @@ public class DiceMacro
                     {
                         // end is position after number.
                         int end = (isLast ? length : index);
-                        String numberStr = buffer.substring(startOfCurrentNumber, end);
+                        String numberStr = m_macro.substring(startOfCurrentNumber, end);
                         int number = Integer.parseInt(numberStr);
                         numbers[phase] = isNegative ? (-number) : number;
                         isNegative = false;
@@ -457,7 +471,7 @@ public class DiceMacro
                     // Check for end of dice roll.
                     if (c == '+' || c == '-' || isLast)
                     {
-                        if (index > 0)
+                        if (index > 0 || isLast)
                         {
                             m_dieTypes.add(new Term(numbers));
                         }
@@ -501,7 +515,7 @@ public class DiceMacro
         }
         catch (Throwable ex)
         {
-            Log.log(Log.SYS, "parse error: \"" + buffer + "\" (\"" + macro + "\")");
+            Log.log(Log.SYS, "parse error: \"" + m_macro + "\" (\"" + macro + "\")");
             Log.log(Log.SYS, ex);
             m_name = null;
             m_macro = "0";
