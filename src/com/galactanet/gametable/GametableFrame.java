@@ -24,8 +24,6 @@ import com.galactanet.gametable.prefs.Preferences;
 
 
 
-// import java.util.ArrayList;
-
 /**
  * TODO: comment
  * 
@@ -1771,7 +1769,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void parseSlashCommand(String text)
     {
         // get the command
-        String[] words = breakIntoWords(text);
+        String[] words = UtilityFunctions.breakIntoWords(text);
         if (words == null)
         {
             return;
@@ -1783,30 +1781,30 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             {
                 // tell them the usage and bail
                 logSystemMessage("/macro usage: /macro <macroName> <dice roll in standard format>");
-                logSystemMessage("Examples: /macro Attack d20+8 ; /macro SneakDmg d4 + 2 + 4d6");
-                logSystemMessage("Note: Macros will replace any existing macros with the same name.");
+                logSystemMessage("Examples:");
+                logSystemMessage("    /macro Attack d20+8");
+                logSystemMessage("    /macro SneakDmg d4 + 2 + 4d6");
+                logSystemMessage("Note: Macros will replace existing macros with the same name.");
                 return;
             }
 
             // the second word is the name
             String name = words[1];
 
-            // all subsiquent "words" are the die roll macro
+            // all subsequent "words" are the die roll macro
             addMacro(name, text.substring("/macro ".length() + name.length() + 1));
         }
-        else if (words[0].equals("/macrodelete"))
+        else if (words[0].equals("/macrodelete") || words[0].equals("/del"))
         {
             // req. 1 param
             if (words.length < 2)
             {
-                logSystemMessage("/macrodelete usage: /macrodelete <macroName> (Case insensitive)");
+                logSystemMessage(words[0] + " usage: " + words[0] + " <macroName>");
                 return;
             }
 
-            String name = words[1];
-
             // find and kill this macro
-            removeMacro(name);
+            removeMacro(words[1]);
         }
         else if (words[0].equals("/roll"))
         {
@@ -1926,44 +1924,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             logSystemMessage("/roll: roll dice");
             logSystemMessage("// list all slash commands");
         }
-    }
-
-    public String[] breakIntoWords(String line)
-    {
-        boolean bDone = false;
-        List words = new ArrayList();
-        int start = 0;
-        int end;
-        while (!bDone)
-        {
-            end = line.indexOf(" ", start);
-            String newWord;
-            if (end == -1)
-            {
-                bDone = true;
-                newWord = line.substring(start);
-                words.add(newWord);
-            }
-            else
-            {
-                newWord = line.substring(start, end);
-                start = end + 1;
-                words.add(newWord);
-            }
-        }
-
-        if (words.size() == 0)
-        {
-            return null;
-        }
-
-        String[] ret = new String[words.size()];
-        for (int i = 0; i < ret.length; i++)
-        {
-            ret[i] = (String)words.get(i);
-        }
-
-        return ret;
     }
 
     public void postSystemMessage(String toSay)

@@ -10,6 +10,8 @@ import java.io.*;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import javax.swing.JFileChooser;
@@ -406,5 +408,43 @@ public class UtilityFunctions
         }
         rand.setSeed(System.currentTimeMillis());
         return rand;
+    }
+
+    public static String[] breakIntoWords(String line)
+    {
+        boolean bDone = false;
+        List words = new ArrayList();
+        int start = 0;
+        int end;
+        while (!bDone)
+        {
+            end = line.indexOf(" ", start);
+            String newWord;
+            if (end == -1)
+            {
+                bDone = true;
+                newWord = line.substring(start);
+                words.add(newWord);
+            }
+            else
+            {
+                newWord = line.substring(start, end);
+                start = end + 1;
+                words.add(newWord);
+            }
+        }
+    
+        if (words.size() == 0)
+        {
+            return null;
+        }
+    
+        String[] ret = new String[words.size()];
+        for (int i = 0; i < ret.length; i++)
+        {
+            ret[i] = (String)words.get(i);
+        }
+    
+        return ret;
     }
 }
