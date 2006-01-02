@@ -12,9 +12,7 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.font.FontRenderContext;
 import java.awt.font.LineMetrics;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.*;
 import java.util.List;
 
 import javax.swing.JComponent;
@@ -228,6 +226,12 @@ public class PogsPanel extends JPanel implements Scrollable
      */
     private List            m_pogComponents       = new ArrayList();
 
+    /**
+     * Set of acquired pog names.
+     */
+    private Set             m_acquiredPogs        = new HashSet();
+
+    
     // --- Pog Dragging Members ---
 
     /**
@@ -276,8 +280,7 @@ public class PogsPanel extends JPanel implements Scrollable
     public void acquirePogs()
     {
         // TODO: only "acquire" new pogs
-        reset();
-        m_pogs = new ArrayList();
+        List newPogs = new ArrayList();
         String modeStr = m_bIsPogsMode ? "pogs" : "underlays";
         File pogPath = new File(modeStr);
         if (pogPath.exists())
@@ -288,6 +291,11 @@ public class PogsPanel extends JPanel implements Scrollable
             for (int i = 0; i < len; ++i)
             {
                 String filename = modeStr + File.separator + files[i];
+                if (m_acquiredPogs.contains(filename))
+                {
+                    continue;
+                }
+                
                 File test = new File(filename);
 
                 if (test.isFile())
@@ -299,7 +307,8 @@ public class PogsPanel extends JPanel implements Scrollable
 
                         // add it to the appropriate array
                         toAdd.m_bIsUnderlay = !m_bIsPogsMode;
-                        m_pogs.add(toAdd);
+                        newPogs.add(toAdd);
+                        m_acquiredPogs.add(filename);
                     }
                     catch (Exception ex)
                     {
@@ -311,8 +320,10 @@ public class PogsPanel extends JPanel implements Scrollable
             }
         }
 
+        m_pogs.addAll(newPogs);
         sortPogsByHeight(m_pogs);
-        populateChildren();
+        removeAll();
+        populateChildren(m_pogs);
     }
 
     /**
@@ -345,17 +356,6 @@ public class PogsPanel extends JPanel implements Scrollable
     public Point getGrabOffset()
     {
         return m_grabbedPogOffset;
-    }
-
-    /**
-     * Resets this panel to a pristine state.
-     */
-    private void reset()
-    {
-        removeAll();
-        m_pogComponents.clear();
-        m_pogs.clear();
-        releasePog();
     }
 
     private void grabPog(Pog p, Point pos, Point offset)
@@ -401,12 +401,12 @@ public class PogsPanel extends JPanel implements Scrollable
     /**
      * Takes the current pog list and adds them as components.
      */
-    private void populateChildren()
+    private void populateChildren(List pogs)
     {
-        int size = m_pogs.size();
+        int size = pogs.size();
         for (int i = 0; i < size; ++i)
         {
-            Pog p = (Pog)m_pogs.get(i);
+            Pog p = (Pog)pogs.get(i);
             PogComponent c = new PogComponent(p);
             m_pogComponents.add(c);
             add(c);
