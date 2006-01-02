@@ -231,7 +231,6 @@ public class PogsPanel extends JPanel implements Scrollable
      */
     private Set             m_acquiredPogs        = new HashSet();
 
-    
     // --- Pog Dragging Members ---
 
     /**
@@ -279,7 +278,6 @@ public class PogsPanel extends JPanel implements Scrollable
      */
     public void acquirePogs()
     {
-        // TODO: only "acquire" new pogs
         List newPogs = new ArrayList();
         String modeStr = m_bIsPogsMode ? "pogs" : "underlays";
         File pogPath = new File(modeStr);
@@ -295,7 +293,7 @@ public class PogsPanel extends JPanel implements Scrollable
                 {
                     continue;
                 }
-                
+
                 File test = new File(filename);
 
                 if (test.isFile())
@@ -320,10 +318,13 @@ public class PogsPanel extends JPanel implements Scrollable
             }
         }
 
-        m_pogs.addAll(newPogs);
-        sortPogsByHeight(m_pogs);
-        removeAll();
-        populateChildren(m_pogs);
+        if (newPogs.size() > 0)
+        {
+            m_pogs.addAll(newPogs);
+            sortPogsByHeight(m_pogs);
+            removeAll();
+            populateChildren(m_pogs);
+        }
     }
 
     /**
