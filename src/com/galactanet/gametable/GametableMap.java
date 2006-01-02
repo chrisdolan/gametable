@@ -88,6 +88,11 @@ public class GametableMap
 	
     public Pog getPogAt(Point modelPosition)
     {
+        if (modelPosition == null)
+        {
+            return null;
+        }
+        
         Pog pogHit = null;
         Pog underlayHit = null;
 

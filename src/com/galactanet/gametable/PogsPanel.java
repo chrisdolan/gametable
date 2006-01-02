@@ -5,486 +5,541 @@
 
 package com.galactanet.gametable;
 
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Graphics;
-import java.awt.event.*;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.font.FontRenderContext;
+import java.awt.font.LineMetrics;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
-import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.Scrollable;
+
 
 
 /**
- * TODO: comment
+ * A Swing panel for a grabbable list of pogs.
  * 
  * @author sephalon
+ * @author iffy
  */
-public class PogsPanel extends JButton implements MouseListener, MouseMotionListener, MouseWheelListener,
-    ComponentListener
+public class PogsPanel extends JPanel implements Scrollable
 {
-    public final static int MAX_FACE    = 5;
+    // --- Constants -------------------------------------------------------------------------------------------------
 
-    public final static int GUTTER_X    = 8;
-    public final static int GUTTER_Y    = 8;
-    public final static int SPACING_X   = 4;
-    public final static int SPACING_Y   = 4;
+    private static final int   TEXT_PADDING     = 0;
+    private static final int   PADDING          = 2;
+    private static final int   BORDER           = 1;
+    private static final int   MARGIN           = 0;
 
-    List                    m_pogs      = new ArrayList();
-    List                    m_underlays = new ArrayList();
-    GametableCanvas         m_canvas;
+    private static final Color COLOR_BORDER     = Color.BLACK;
+    private static final Color COLOR_BACKGROUND = new Color(0x66, 0x66, 0x66, 0x66);
 
-    boolean                 m_bIsHandMode;
-    boolean                 m_bLDragging;
-    boolean                 m_bRDragging;
+    private static final int   SPACE            = PADDING + BORDER + MARGIN;
+    private static final int   TOTAL_SPACE      = SPACE * 2;
 
-    // scrolling and whatnot
-    int                     m_scrollY;
-    int                     m_height;
+    // --- Types -----------------------------------------------------------------------------------------------------
 
-    int                     m_clickX;
-    int                     m_clickY;
-    int                     m_prevScrollY;
-    int                     m_dragX;
-    int                     m_dragY;
-
-    // pog drag
-    Pog                     m_selectedPog;
-    int                     m_pogDragMouseInsetX;
-    int                     m_pogDragMouseInsetY;
-
-    boolean                 m_bIsPogsMode;
-
-
-
-    public void reaquirePogs()
+    /**
+     * A class that adapts a Pog into a Swing JComponent.
+     * 
+     * @author iffy
+     */
+    private class PogComponent extends JComponent
     {
-        m_pogs = new ArrayList();
-        m_underlays = new ArrayList();
-        m_scrollY = 0;
-        init(m_canvas, m_bIsPogsMode);
-        repaint();
+        /**
+         * The pog this PogComponent is adapting.
+         */
+        private Pog    pog;
+
+        /**
+         * The label to display underneath this pog.
+         */
+        private String label;
+
+        /**
+         * Whether this component is selected or not.
+         */
+        boolean        selected = false;
+
+        /**
+         * Constructor.
+         * 
+         * @param p Pog to adapt.
+         */
+        public PogComponent(Pog p)
+        {
+            pog = p;
+            label = pog.m_fileName;
+            int start = label.lastIndexOf(File.separatorChar) + 1;
+            int end = label.lastIndexOf('.');
+            if (end < 0)
+            {
+                end = label.length();
+            }
+
+            label = label.substring(start, end);
+            setSize(getMySize());
+            setPreferredSize(getMySize());
+
+            addMouseListener(new MouseAdapter()
+            {
+                /*
+                 * @see java.awt.event.MouseAdapter#mousePressed(java.awt.event.MouseEvent)
+                 */
+                public void mousePressed(MouseEvent e)
+                {
+                    selected = true;
+                    Point localCoords = new Point(e.getX(), e.getY());
+                    Point screenCoords = UtilityFunctions.getScreenCoordinates(PogComponent.this, localCoords);
+                    grabPog(pog, screenCoords, localCoords);
+                }
+
+                /*
+                 * @see java.awt.event.MouseAdapter#mouseReleased(java.awt.event.MouseEvent)
+                 */
+                public void mouseReleased(MouseEvent e)
+                {
+                    selected = false;
+                    releasePog();
+                }
+            });
+
+            addMouseMotionListener(new MouseMotionAdapter()
+            {
+                /*
+                 * @see java.awt.event.MouseMotionAdapter#mouseDragged(java.awt.event.MouseEvent)
+                 */
+                public void mouseDragged(MouseEvent e)
+                {
+                    mouseMoved(e);
+                }
+
+                /*
+                 * @see java.awt.event.MouseMotionAdapter#mouseMoved(java.awt.event.MouseEvent)
+                 */
+                public void mouseMoved(MouseEvent e)
+                {
+                    Point screenCoords = UtilityFunctions.getScreenCoordinates(PogComponent.this, new Point(e.getX(), e
+                        .getY()));
+                    moveGrabPosition(screenCoords);
+                }
+            });
+        }
+
+        /**
+         * @return The pog for this PogComponent.
+         */
+        public Pog getPog()
+        {
+            return pog;
+        }
+
+        /**
+         * @return The font to be used to draw the label.
+         */
+        private Font getMyFont()
+        {
+            return Font.decode("system-bold");
+        }
+
+        /**
+         * @return The computed dimensions for this PogComponent, based on the pog and label.
+         */
+        private Dimension getMySize()
+        {
+            int w = pog.getWidth();
+            int h = pog.getHeight();
+            if (label != null && label.length() > 0)
+            {
+                Font f = getMyFont();
+                FontRenderContext frc = new FontRenderContext(null, false, false);
+                Rectangle stringBounds = f.getStringBounds(label, frc).getBounds();
+                LineMetrics lm = f.getLineMetrics(PogsPanel.this.toString(), frc);
+                h += Math.round(lm.getHeight() - lm.getLeading()) + TEXT_PADDING;
+                if (stringBounds.width > w)
+                {
+                    w = stringBounds.width;
+                }
+            }
+
+            return new Dimension(w + TOTAL_SPACE, h + TOTAL_SPACE);
+        }
+
+        /*
+         * @see javax.swing.JComponent#paintComponent(java.awt.Graphics)
+         */
+        protected void paintComponent(Graphics g)
+        {
+            Graphics2D g2 = (Graphics2D)g;
+            Dimension d = getSize();
+            if (selected)
+            {
+                g2.setColor(COLOR_BACKGROUND);
+                g2.fillRect(MARGIN, MARGIN, d.width - (MARGIN * 2), d.height - (MARGIN * 2));
+                g2.setColor(COLOR_BORDER);
+                g2.drawRect(MARGIN, MARGIN, d.width - (MARGIN * 2) - 1, d.height - (MARGIN * 2) - 1);
+            }
+
+            pog.draw(g2, (d.width - pog.getWidth()) / 2, SPACE, null);
+
+            if (label != null && label.length() > 0)
+            {
+                g2.setFont(getMyFont());
+                FontMetrics fm = g2.getFontMetrics();
+                Rectangle stringBounds = fm.getStringBounds(label, g2).getBounds();
+                // g2.setColor(new Color(128, 128, 128, 255));
+                stringBounds.x = (d.width - stringBounds.width) / 2;
+                stringBounds.y = SPACE + pog.getHeight() + TEXT_PADDING;
+                stringBounds.height -= fm.getLeading();
+                // g2.fill(stringBounds);
+                g2.setColor(Color.WHITE);
+                g2.drawString(label, stringBounds.x, stringBounds.y + fm.getAscent() - fm.getLeading());
+            }
+            g2.dispose();
+        }
     }
 
-    public void init(GametableCanvas canvas, boolean bPogsMode)
+    // --- Members ---------------------------------------------------------------------------------------------------
+
+    /**
+     * A handle to the canvas.
+     */
+    private GametableCanvas m_canvas;
+
+    /**
+     * True if this panel is for pogs, false for underlays.
+     */
+    private boolean         m_bIsPogsMode;
+
+    /**
+     * The list of pogs held in this panel.
+     */
+    private List            m_pogs                = new ArrayList();
+
+    /**
+     * The list of PogComponents held in this panel.
+     */
+    private List            m_pogComponents       = new ArrayList();
+
+    // --- Pog Dragging Members ---
+
+    /**
+     * The currently grabbed pog.
+     */
+    private Pog             m_grabbedPog          = null;
+
+    /**
+     * The position of the currently grabbed pog.
+     */
+    private Point           m_grabbedPogPosition  = null;
+
+    /**
+     * The offset at which the pog was grabbed.
+     */
+    private Point           m_grabbedPogOffset    = null;
+
+    /**
+     * The current component for the grabbed pog.
+     */
+    private PogComponent    m_grabbedPogComponent = null;
+
+    // --- Constructors ----------------------------------------------------------------------------------------------
+
+    /**
+     * Constructor.
+     * 
+     * @param canvas Handle to the canvas.
+     * @param bPogsMode True if for Pogs, False if for Underlays.
+     */
+    public PogsPanel(GametableCanvas canvas, boolean bPogsMode)
     {
+        super(new FlowLayout(FlowLayout.LEADING, 5, 5), true);
+        setBackground(new Color(0x734D22));
         m_canvas = canvas;
         m_bIsPogsMode = bPogsMode;
-
-        if (m_bIsPogsMode)
-        {
-            // look in the "pogs" directory for pogs
-            File pogPath = new File("pogs");
-            if (pogPath.exists())
-            {
-                String[] files = pogPath.list();
-
-                for (int i = 0; i < files.length; i++)
-                {
-                    String filename = "pogs/" + files[i];
-                    File test = new File(filename);
-
-                    if (test.isFile())
-                    {
-                        try
-                        {
-                            Pog toAdd = new Pog();
-                            toAdd.init(m_canvas, filename);
-
-                            // add it to the appropriate size array
-                            addPog(toAdd);
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.log(Log.SYS, ex);
-                            // any exceptions thrown in this process cancel
-                            // the addition of that one pog.
-                        }
-                    }
-                }
-            }
-        }
-        else
-        {
-            // look in the "underlays" directory for underlays
-            File underlayPath = new File("underlays");
-            if (underlayPath.exists())
-            {
-                String[] files = underlayPath.list();
-
-                for (int i = 0; i < files.length; i++)
-                {
-                    String filename = "underlays/" + files[i];
-                    File test = new File(filename);
-
-                    if (test.isFile())
-                    {
-                        try
-                        {
-                            Pog toAdd = new Pog();
-                            toAdd.init(m_canvas, filename);
-
-                            // add it to the appropriate size array
-                            addUnderlay(toAdd);
-                        }
-                        catch (Exception ex)
-                        {
-                            // any exceptions thrown in this process cancel
-                            // the addition of that one pog.
-                        }
-                    }
-                }
-            }
-        }
-
-        m_pogs = sort(m_pogs);
-        m_underlays = sort(m_underlays);
-
-        addMouseListener(this);
-        addMouseMotionListener(this);
-        addMouseWheelListener(this);
-        addComponentListener(this);
         addKeyListener(m_canvas);
+        acquirePogs();
     }
 
+    // --- Methods ---------------------------------------------------------------------------------------------------
+
+    /**
+     * Ensures that this panel has all the available pogs loaded.
+     */
+    public void acquirePogs()
+    {
+        // TODO: only "acquire" new pogs
+        reset();
+        m_pogs = new ArrayList();
+        String modeStr = m_bIsPogsMode ? "pogs" : "underlays";
+        File pogPath = new File(modeStr);
+        if (pogPath.exists())
+        {
+            String[] files = pogPath.list();
+
+            int len = files.length;
+            for (int i = 0; i < len; ++i)
+            {
+                String filename = modeStr + File.separator + files[i];
+                File test = new File(filename);
+
+                if (test.isFile())
+                {
+                    try
+                    {
+                        Pog toAdd = new Pog();
+                        toAdd.init(m_canvas, filename);
+
+                        // add it to the appropriate array
+                        toAdd.m_bIsUnderlay = !m_bIsPogsMode;
+                        m_pogs.add(toAdd);
+                    }
+                    catch (Exception ex)
+                    {
+                        // any exceptions thrown in this process cancel
+                        // the addition of that one pog.
+                        Log.log(Log.SYS, ex);
+                    }
+                }
+            }
+        }
+
+        sortPogsByHeight(m_pogs);
+        populateChildren();
+    }
+
+    /**
+     * @return The list of pogs held in this panel.
+     */
     public List getPogs()
     {
-        if (m_bIsPogsMode)
-        {
-            return m_pogs;
-        }
-
-        return m_underlays;
+        return Collections.unmodifiableList(m_pogs);
     }
 
-    public void componentResized(ComponentEvent e)
+    /**
+     * @return Returns the currently grabbed pog.
+     */
+    public Pog getGrabbedPog()
     {
-        boundScroll();
+        return m_grabbedPog;
     }
 
-    public void componentMoved(ComponentEvent e)
+    /**
+     * @return Returns the position where the the currently grabbed pog is, in pog panel coordinates.
+     */
+    public Point getGrabPosition()
     {
+        return m_grabbedPogPosition;
     }
 
-    public void componentShown(ComponentEvent e)
+    /**
+     * @return Returns the position where the the currently grabbed pog is, in pog panel coordinates.
+     */
+    public Point getGrabOffset()
     {
+        return m_grabbedPogOffset;
     }
 
-    public void componentHidden(ComponentEvent e)
+    /**
+     * Resets this panel to a pristine state.
+     */
+    private void reset()
     {
+        removeAll();
+        m_pogComponents.clear();
+        m_pogs.clear();
+        releasePog();
     }
 
-    public void addPog(Pog toAdd)
+    private void grabPog(Pog p, Point pos, Point offset)
     {
-        toAdd.m_bIsUnderlay = false;
-        m_pogs.add(toAdd);
-    }
+        m_grabbedPog = new Pog(p);
+        m_grabbedPogPosition = pos;
+        m_grabbedPogOffset = offset;
+        // System.out.println("grabPog(" + (m_grabbedPog != null ? m_grabbedPog.m_fileName : null) + ", "
+        // + m_grabbedPogPosition + ")");
+        m_grabbedPogComponent = new PogComponent(p);
 
-    public void addUnderlay(Pog toAdd)
-    {
-        toAdd.m_bIsUnderlay = true;
-        m_underlays.add(toAdd);
-    }
-
-    public List sort(List toSort)
-    {
-        // sort the pogs by height
-        List heightSortedPogs = new ArrayList();
-        while (toSort.size() > 0)
-        {
-            // find the smallet height pog
-            Pog smallestPog = null;
-            for (int i = 0; i < toSort.size(); i++)
-            {
-                Pog pog = (Pog)toSort.get(i);
-                if (smallestPog == null)
-                {
-                    smallestPog = pog;
-                }
-                else
-                {
-                    if (pog.getHeight() < smallestPog.getHeight())
-                    {
-                        smallestPog = pog;
-                    }
-                }
-            }
-
-            heightSortedPogs.add(smallestPog);
-            toSort.remove(smallestPog);
-        }
-
-        return heightSortedPogs;
-    }
-
-    public void paint(Graphics g)
-    {
-        g.setColor(new Color(0x734D22));
-        g.fillRect(0, 0, getWidth(), getHeight());
-
-        g.translate(0, -m_scrollY);
-
-        // draw all the pogs, flowing them left to right, top to bottom.
-        // "line breaks" at size changes
-        int x = GUTTER_X;
-        int y = GUTTER_Y;
-
-        int tallestThisLine = 0;
-
-        for (int i = 0; i < getPogs().size(); i++)
-        {
-            Pog toDraw = (Pog)getPogs().get(i);
-            Pog nextToDraw = null;
-            if (i < getPogs().size() - 1)
-            {
-                nextToDraw = (Pog)getPogs().get(i + 1);
-            }
-
-            // draw the pog
-            toDraw.draw(g, x, y, this);
-
-            // note it's position
-            toDraw.setPosition(x, y);
-
-            // advance the x and y
-            x += toDraw.getWidth();
-            x += SPACING_X;
-
-            if (toDraw.getHeight() > tallestThisLine)
-            {
-                tallestThisLine = toDraw.getHeight();
-            }
-
-            if (nextToDraw != null)
-            {
-                if (x + nextToDraw.getWidth() > getWidth())
-                {
-                    // the next one won't fit. drop down a level
-                    x = GUTTER_X;
-                    y += tallestThisLine;
-                    y += SPACING_Y;
-                    tallestThisLine = 0;
-                }
-            }
-        }
-
-        // calculate the total height in use
-        if (x != GUTTER_X)
-        {
-            // we didn't happen to just finish a line, so...
-            y += tallestThisLine;
-            y += SPACING_Y;
-            x = GUTTER_X;
-        }
-
-        m_height = y;
-
-        if (m_bLDragging && !isHandMode() && m_selectedPog != null)
-        {
-            // they're dragging a pog around. draw it
-            m_selectedPog.draw(g, m_dragX - m_pogDragMouseInsetX, m_dragY - m_pogDragMouseInsetY + m_scrollY, this);
-        }
-
-        g.translate(0, m_scrollY);
-    }
-
-    public void paintSwitch(Graphics g)
-    {
-        // paint the little switch in the corner
-
-    }
-
-    public void updateDragInfo(MouseEvent e)
-    {
-        m_dragX = e.getX();
-        m_dragY = e.getY();
-
-        if (isHandMode())
-        {
-            m_scrollY = m_prevScrollY + m_clickY - m_dragY;
-        }
-        else if (m_selectedPog != null)
-        {
-            // let the canvas know what's going on
-            m_canvas.pogDrag();
-        }
-        boundScroll();
+        m_canvas.pogDrag();
         repaint();
     }
 
-    public void boundScroll()
+    private void releasePog()
     {
-        if (m_scrollY + getHeight() > m_height)
-        {
-            m_scrollY = m_height - getHeight();
-        }
-
-        if (m_scrollY < 0)
-        {
-            m_scrollY = 0;
-        }
-    }
-
-    public void mouseClicked(MouseEvent e)
-    {
-    }
-
-    public void mousePressed(MouseEvent e)
-    {
-        if (e.getButton() == MouseEvent.BUTTON3)
-        {
-            m_bRDragging = true;
-        }
-
-        if (e.getButton() == MouseEvent.BUTTON1)
-        {
-            m_bLDragging = true;
-        }
-
-        updateToolState();
-
-        m_clickX = e.getX();
-        m_clickY = e.getY();
-        m_prevScrollY = m_scrollY;
-
-        int modelX = m_clickX;
-        int modelY = m_clickY + m_scrollY;
-
-        updateDragInfo(e);
-
-        if (!isHandMode())
-        {
-            // they are clicking normally. They may be clicking a pog
-            m_selectedPog = null;
-            for (int j = 0; j < getPogs().size(); j++)
-            {
-                Pog check = (Pog)getPogs().get(j);
-                if (check.modelPtInBounds(modelX, modelY))
-                {
-                    // that's where they clicked
-                    m_selectedPog = new Pog();
-                    m_selectedPog.init(check);
-                    m_pogDragMouseInsetX = modelX - m_selectedPog.getX();
-                    m_pogDragMouseInsetY = modelY - m_selectedPog.getY();
-
-                    // make them "pick it up" a little for the visual queue
-                    m_pogDragMouseInsetX -= 5;
-                    m_pogDragMouseInsetY += 5;
-
-                    break;
-                }
-            }
-        }
-    }
-
-    public void mouseReleased(MouseEvent e)
-    {
-        m_bRDragging = false;
-        m_bLDragging = false;
-        updateDragInfo(e);
-
-        if (m_selectedPog != null)
+        // System.out.println("releasePog(" + (m_grabbedPog != null ? m_grabbedPog.m_fileName : null) + ", "
+        // + m_grabbedPogPosition + ")");
+        if (m_grabbedPog != null)
         {
             m_canvas.pogDrop();
-            m_selectedPog = null;
+            m_grabbedPog = null;
+            m_grabbedPogPosition = null;
+            m_grabbedPogOffset = null;
+            m_grabbedPogComponent = null;
+            repaint();
         }
-
-        updateToolState();
-        repaint();
     }
 
-    public void mouseEntered(MouseEvent e)
+    private void moveGrabPosition(Point pos)
     {
-        updateToolState();
-    }
-
-    public void mouseExited(MouseEvent e)
-    {
-    }
-
-    public void mouseDragged(MouseEvent e)
-    {
-        updateDragInfo(e);
-        repaint();
-    }
-
-    public void mouseMoved(MouseEvent e)
-    {
-    }
-
-    public void mouseWheelMoved(MouseWheelEvent e)
-    {
-        int nextScrollUpDist = GametableCanvas.BASE_SQUARE_SIZE * 10;
-        int nextScrollDownDist = GametableCanvas.BASE_SQUARE_SIZE * 10;
-
-        for (int i = 0; i < MAX_FACE; i++)
+        if (m_grabbedPog != null)
         {
-            for (int j = 0; j < getPogs().size(); j++)
+            m_grabbedPogPosition = pos;
+            // System.out.println("moveGrabPosition(" + (m_grabbedPog != null ? m_grabbedPog.m_fileName : null) + ", "
+            // + m_grabbedPogPosition + ")");
+            m_canvas.pogDrag();
+            repaint();
+        }
+    }
+
+    /**
+     * Takes the current pog list and adds them as components.
+     */
+    private void populateChildren()
+    {
+        int size = m_pogs.size();
+        for (int i = 0; i < size; ++i)
+        {
+            Pog p = (Pog)m_pogs.get(i);
+            PogComponent c = new PogComponent(p);
+            m_pogComponents.add(c);
+            add(c);
+        }
+        setSize(getPreferredSize());
+        revalidate();
+        repaint();
+    }
+
+    /**
+     * In-place sorts the list of pogs by height.
+     * 
+     * @param toSort List of Pogs to sort.
+     */
+    private static void sortPogsByHeight(List toSort)
+    {
+        Collections.sort(toSort, new Comparator()
+        {
+            /*
+             * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
+             */
+            public int compare(Object a, Object b)
             {
-                Pog pog = (Pog)getPogs().get(j);
+                Pog pa = (Pog)a;
+                Pog pb = (Pog)b;
+                return (pa.getHeight() - pb.getHeight());
+            }
+        });
+    }
 
-                int distAbove = m_scrollY - pog.getY();
-                if (distAbove > 0)
-                {
-                    if (distAbove < nextScrollUpDist)
-                    {
-                        nextScrollUpDist = distAbove;
-                    }
-                }
+    // --- Component Implementation ---
 
-                int distBelow = pog.getY() - m_scrollY;
-                if (distBelow > 0)
-                {
-                    if (distBelow < nextScrollDownDist)
-                    {
-                        nextScrollDownDist = distBelow;
-                    }
-                }
+    /*
+     * @see java.awt.Component#paint(java.awt.Graphics)
+     */
+    public void paint(Graphics g)
+    {
+        super.paint(g);
+        if (m_grabbedPogComponent != null)
+        {
+            Graphics2D g2 = (Graphics2D)g;
+            Point localPos = UtilityFunctions.getComponentCoordinates(this, getGrabPosition());
+            Point offset = getGrabOffset();
+            g2.translate(localPos.x - offset.x, localPos.y - offset.y);
+            m_grabbedPogComponent.paint(g2);
+            g2.dispose();
+        }
+    }
+
+    /*
+     * @see java.awt.Component#getPreferredSize()
+     */
+    public Dimension getPreferredSize()
+    {
+        int maxY = 0;
+        int maxX = 0;
+        Component[] comps = getComponents();
+        for (int i = 0; i < comps.length; ++i)
+        {
+            Rectangle r = comps[i].getBounds();
+            int y = (r.y + r.height) - 1;
+            if (y > maxY)
+            {
+                maxY = y;
+            }
+
+            int x = r.width - 1;
+            if (x > maxX)
+            {
+                maxX = x;
             }
         }
 
-        if (e.getWheelRotation() < 0)
+        if (getParent() != null)
         {
-            // scroll up
-            m_scrollY -= nextScrollUpDist;
-        }
-        else if (e.getWheelRotation() > 0)
-        {
-            // scroll down
-            m_scrollY += nextScrollDownDist;
+            Rectangle r = getParent().getBounds();
+            int y = (r.height - 1);
+            if (y > maxY)
+            {
+                maxY = y;
+            }
+
+            int x = (r.width - 1);
+            if (x > maxX)
+            {
+                maxX = x;
+            }
         }
 
-        boundScroll();
-
-        repaint();
+        return new Dimension(maxX + 2, maxY + 2);
     }
 
-    public void updateToolState()
+    // --- Scrollable Implementation ---
+
+    /*
+     * @see javax.swing.Scrollable#getPreferredScrollableViewportSize()
+     */
+    public Dimension getPreferredScrollableViewportSize()
     {
-        // if we have a drag in progress, we're not willing to change our mode
-        m_bIsHandMode = false;
-        if (m_bRDragging)
-        {
-            m_bIsHandMode = true;
-        }
-        setCursor();
+        // TODO: calculate size based on content
+        return getPreferredSize();
     }
 
-    public void setCursor()
+    /*
+     * @see javax.swing.Scrollable#getScrollableBlockIncrement(java.awt.Rectangle, int, int)
+     */
+    public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction)
     {
-        if (isHandMode())
-        {
-            setCursor(m_canvas.m_handCursor);
-        }
-        else
-        {
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-        }
+        return visibleRect.height * 3 / 4;
     }
 
-    public boolean isHandMode()
+    /*
+     * @see javax.swing.Scrollable#getScrollableTracksViewportHeight()
+     */
+    public boolean getScrollableTracksViewportHeight()
     {
-        return m_bIsHandMode;
+        return false;
     }
+
+    /*
+     * @see javax.swing.Scrollable#getScrollableTracksViewportWidth()
+     */
+    public boolean getScrollableTracksViewportWidth()
+    {
+        return true;
+    }
+
+    /*
+     * @see javax.swing.Scrollable#getScrollableUnitIncrement(java.awt.Rectangle, int, int)
+     */
+    public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction)
+    {
+        return visibleRect.height / 15;
+    }
+
 }

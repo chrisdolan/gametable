@@ -144,8 +144,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     JPanel                         m_textAreaPanel            = new JPanel();
     JPanel                         m_macroButtonsPanel        = new JPanel();
     public JSplitPane              m_mapPogSplitPane          = new JSplitPane();
-    public PogsPanel               m_pogsPanel                = new PogsPanel();
-    public PogsPanel               m_underlaysPanel           = new PogsPanel();
+    public PogsPanel               m_pogsPanel                = null;
+    public PogsPanel               m_underlaysPanel           = null;
     private JToolBar               m_toolBar                  = new JToolBar();
     private ButtonGroup            m_toolButtonGroup          = new ButtonGroup();
 
@@ -209,10 +209,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public ProgressSpinner         m_progressSpinner          = new ProgressSpinner();
 
     // the id that will be assigned to the next player to join
-    public int m_nextPlayerID;
+    public int                     m_nextPlayerID;
 
     // the id that will be assigned to the next player to join
-    public int m_nextStateID;
+    public int                     m_nextStateID;
 
     /**
      * Construct the frame
@@ -274,12 +274,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_textAndEntryPanel.setPreferredSize(new Dimension(500, 52));
             m_textAreaPanel.setLayout(new BorderLayout());
             m_mapPogSplitPane.setContinuousLayout(true);
-            m_pogsPanel.setMaximumSize(new Dimension(32767, 32767));
-            m_pogsPanel.setMinimumSize(new Dimension(1, 1));
-            m_pogsPanel.setPreferredSize(new Dimension(20, 10));
-            m_underlaysPanel.setMaximumSize(new Dimension(32767, 32767));
-            m_underlaysPanel.setMinimumSize(new Dimension(1, 1));
-            m_underlaysPanel.setPreferredSize(new Dimension(20, 10));
             m_macroButtonsPanel.setLayout(new BoxLayout(m_macroButtonsPanel, BoxLayout.Y_AXIS));
             m_macroButtonsPanel.setToolTipText("Macros");
             m_colorCombo.setMaximumSize(new Dimension(100, 21));
@@ -358,8 +352,14 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_mapChatSplitPane.add(m_mapPogSplitPane, JSplitPane.TOP);
             m_mapPogSplitPane.add(m_gametableCanvas, JSplitPane.BOTTOM);
             m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.TOP);
-            m_pogsTabbedPane.add(m_pogsPanel, "Pogs");
-            m_pogsTabbedPane.add(m_underlaysPanel, "Underlays");
+
+            m_pogsPanel = new PogsPanel(m_gametableCanvas, true);
+            m_underlaysPanel = new PogsPanel(m_gametableCanvas, false);
+            m_pogsTabbedPane.add(new JScrollPane(m_pogsPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), "Pogs");
+            m_pogsTabbedPane.add(new JScrollPane(m_underlaysPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), "Underlays");
+
             m_mapChatSplitPane.add(m_propertiesArea, JSplitPane.BOTTOM);
             m_propertiesArea.add(m_playerListScrollPane, BorderLayout.WEST);
             m_propertiesArea.add(m_textAreaPanel, BorderLayout.CENTER);
@@ -375,8 +375,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_colorCombo.setRenderer(renderer);
 
             m_gametableCanvas.init(this);
-            m_pogsPanel.init(m_gametableCanvas, true);
-            m_underlaysPanel.init(m_gametableCanvas, false);
+            m_pogsPanel.acquirePogs();
+            m_underlaysPanel.acquirePogs();
             addKeyListener(m_gametableCanvas);
 
             m_playerList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -1342,8 +1342,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         if (e.getSource() == m_reacquirePogsMenuItem)
         {
             // get the pogs stuff again. And refresh
-            m_pogsPanel.reaquirePogs();
-            m_underlaysPanel.reaquirePogs();
+            m_pogsPanel.acquirePogs();
+            m_underlaysPanel.acquirePogs();
         }
 
         if (e.getSource() == m_hostMenuItem)

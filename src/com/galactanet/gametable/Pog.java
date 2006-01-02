@@ -62,6 +62,11 @@ public class Pog
         m_ID = g_nextID++;
     }
 
+    public String toString()
+    {
+        return "[Pog name: " + m_fileName + " pos: " + m_position + " size: " + m_faceSize + "]"; 
+    }
+    
     public int getWidth()
     {
         return m_image.getWidth(m_canvas);

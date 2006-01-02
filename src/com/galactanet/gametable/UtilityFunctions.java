@@ -20,13 +20,13 @@ import javax.swing.JOptionPane;
 
 
 /**
- * TODO: comment
+ * A class full of various and sundry static utility functions.
  * 
  * @author sephalon
  */
 public class UtilityFunctions
 {
-    private static final Random random = getRandomInstance();
+    private static final Random random        = getRandomInstance();
 
     /**
      * The PNG signature to verify PNG data with.
@@ -393,23 +393,10 @@ public class UtilityFunctions
         }
     }
 
-    private static Random getRandomInstance()
-    {
-        // SHA1PRNG
-        Random rand;
-        try
-        {
-            rand = SecureRandom.getInstance("SHA1PRNG");
-        }
-        catch (NoSuchAlgorithmException e)
-        {
-            Log.log(Log.SYS, e);
-            rand = new Random();
-        }
-        rand.setSeed(System.currentTimeMillis());
-        return rand;
-    }
-
+    /**
+     * @param line String to break into words.
+     * @return An array of words found in the string.
+     */
     public static String[] breakIntoWords(String line)
     {
         boolean bDone = false;
@@ -433,18 +420,86 @@ public class UtilityFunctions
                 words.add(newWord);
             }
         }
-    
+
         if (words.size() == 0)
         {
             return null;
         }
-    
+
         String[] ret = new String[words.size()];
         for (int i = 0; i < ret.length; i++)
         {
             ret[i] = (String)words.get(i);
         }
-    
+
         return ret;
+    }
+
+    /**
+     * @param component Component to get screen coordinates of.
+     * @return The absolute screen coordinates of this component.
+     */
+    public static Point getScreenPosition(Component component)
+    {
+        Point retVal = new Point(component.getX(), component.getY());
+
+        Container container = component.getParent();
+        if (container != null)
+        {
+            Point parentPos = getScreenPosition(container);
+            return new Point(retVal.x + parentPos.x, retVal.y + parentPos.y);
+        }
+        return retVal;
+    }
+
+    /**
+     * @param component Component that componentPoint is relative to.
+     * @param componentPoint Point to convert to screen coordinates, relative to the given component.
+     * @return The screen-relative coordinates of componentPoint.
+     */
+    public static Point getScreenCoordinates(Component component, Point componentPoint)
+    {
+        Point screenPos = getScreenPosition(component);
+        return new Point(componentPoint.x + screenPos.x, componentPoint.y + screenPos.y);
+    }
+
+    /**
+     * @param component Component to get coordinates relative to.
+     * @param screenPoint Screen-relative coordinates to convert.
+     * @return Component-relative coordinates of the given screen coordinates.
+     */
+    public static Point getComponentCoordinates(Component component, Point screenPoint)
+    {
+        Point screenPos = getScreenPosition(component);
+        return new Point(screenPoint.x - screenPos.x, screenPoint.y - screenPos.y);
+    }
+
+    /**
+     * @return An instance of Random to use for all RNG.
+     */
+    private static Random getRandomInstance()
+    {
+        // SHA1PRNG
+        Random rand;
+        try
+        {
+            rand = SecureRandom.getInstance("SHA1PRNG");
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            Log.log(Log.SYS, e);
+            rand = new Random();
+        }
+        rand.setSeed(System.currentTimeMillis());
+        return rand;
+    }
+
+
+    /**
+     * Private constructor so no one can instantiate this. 
+     */
+    private UtilityFunctions()
+    {
+        throw new RuntimeException("Do not do this.");
     }
 }
