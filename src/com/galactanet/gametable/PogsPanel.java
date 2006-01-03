@@ -31,16 +31,17 @@ public class PogsPanel extends JPanel implements Scrollable
 {
     // --- Constants -------------------------------------------------------------------------------------------------
 
-    private static final int   TEXT_PADDING     = 0;
-    private static final int   PADDING          = 2;
-    private static final int   BORDER           = 1;
-    private static final int   MARGIN           = 0;
+    private static final int   POG_TEXT_PADDING     = 0;
+    private static final int   POG_PADDING          = 2;
+    private static final int   POG_BORDER           = 1;
+    private static final int   POG_MARGIN           = 1;
 
-    private static final Color COLOR_BORDER     = Color.BLACK;
-    private static final Color COLOR_BACKGROUND = new Color(0x66, 0x66, 0x66, 0x66);
+    private static final Color POG_BORDER_COLOR     = Color.BLACK;
+    private static final Color POG_BACKGROUND_COLOR = new Color(0x66, 0x66, 0x66, 0x66);
+    private static final Color BACKGROUND_COLOR     = new Color(0x73, 0x4D, 0x22);
 
-    private static final int   SPACE            = PADDING + BORDER + MARGIN;
-    private static final int   TOTAL_SPACE      = SPACE * 2;
+    private static final int   SPACE                = POG_PADDING + POG_BORDER + POG_MARGIN;
+    private static final int   TOTAL_SPACE          = SPACE * 2;
 
     // --- Types -----------------------------------------------------------------------------------------------------
 
@@ -160,7 +161,7 @@ public class PogsPanel extends JPanel implements Scrollable
                 FontRenderContext frc = new FontRenderContext(null, false, false);
                 Rectangle stringBounds = f.getStringBounds(label, frc).getBounds();
                 LineMetrics lm = f.getLineMetrics(PogsPanel.this.toString(), frc);
-                h += Math.round(lm.getHeight() - lm.getLeading()) + TEXT_PADDING;
+                h += Math.round(lm.getHeight() - lm.getLeading()) + POG_TEXT_PADDING;
                 if (stringBounds.width > w)
                 {
                     w = stringBounds.width;
@@ -179,10 +180,14 @@ public class PogsPanel extends JPanel implements Scrollable
             Dimension d = getSize();
             if (selected)
             {
-                g2.setColor(COLOR_BACKGROUND);
-                g2.fillRect(MARGIN, MARGIN, d.width - (MARGIN * 2), d.height - (MARGIN * 2));
-                g2.setColor(COLOR_BORDER);
-                g2.drawRect(MARGIN, MARGIN, d.width - (MARGIN * 2) - 1, d.height - (MARGIN * 2) - 1);
+                g2.setColor(POG_BORDER_COLOR);
+                g2.fillRect(POG_MARGIN, POG_MARGIN, d.width - (POG_MARGIN * 2), d.height - (POG_MARGIN * 2));
+                g2.setColor(BACKGROUND_COLOR);
+                g2.fillRect(POG_MARGIN + POG_BORDER, POG_MARGIN + POG_BORDER,
+                    d.width - ((POG_MARGIN + POG_BORDER) * 2), d.height - ((POG_MARGIN + POG_BORDER) * 2));
+                g2.setColor(POG_BACKGROUND_COLOR);
+                g2.fillRect(POG_MARGIN + POG_BORDER, POG_MARGIN + POG_BORDER,
+                    d.width - ((POG_MARGIN + POG_BORDER) * 2), d.height - ((POG_MARGIN + POG_BORDER) * 2));
             }
 
             pog.draw(g2, (d.width - pog.getWidth()) / 2, SPACE, null);
@@ -194,7 +199,7 @@ public class PogsPanel extends JPanel implements Scrollable
                 Rectangle stringBounds = fm.getStringBounds(label, g2).getBounds();
                 // g2.setColor(new Color(128, 128, 128, 255));
                 stringBounds.x = (d.width - stringBounds.width) / 2;
-                stringBounds.y = SPACE + pog.getHeight() + TEXT_PADDING;
+                stringBounds.y = SPACE + pog.getHeight() + POG_TEXT_PADDING;
                 stringBounds.height -= fm.getLeading();
                 // g2.fill(stringBounds);
                 g2.setColor(Color.WHITE);
@@ -264,7 +269,7 @@ public class PogsPanel extends JPanel implements Scrollable
     public PogsPanel(GametableCanvas canvas, boolean bPogsMode)
     {
         super(new FlowLayout(FlowLayout.LEADING, 5, 5), true);
-        setBackground(new Color(0x734D22));
+        setBackground(BACKGROUND_COLOR);
         m_canvas = canvas;
         m_bIsPogsMode = bPogsMode;
         addKeyListener(m_canvas);
