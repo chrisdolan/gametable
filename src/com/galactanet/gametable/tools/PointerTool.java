@@ -150,11 +150,11 @@ public class PointerTool extends NullTool
             if (m_clicked)
             {
                 String s = (String)JOptionPane.showInputDialog(GametableFrame.g_gameTableFrame, "Enter new Pog text:",
-                    "Pog Text", JOptionPane.PLAIN_MESSAGE, null, null, m_grabbedPog.m_dataStr);
+                    "Pog Text", JOptionPane.PLAIN_MESSAGE, null, null, m_grabbedPog.getText());
 
                 if (s != null)
                 {
-                    m_canvas.setPogData(m_grabbedPog.m_ID, s);
+                    m_canvas.setPogData(m_grabbedPog.getId(), s);
                 }
             }
             else
@@ -163,11 +163,11 @@ public class PointerTool extends NullTool
                 if (!m_canvas.isPointVisible(m_mousePosition))
                 {
                     // they removed this pog
-                    m_canvas.removePog(m_grabbedPog.m_ID);
+                    m_canvas.removePog(m_grabbedPog.getId());
                 }
                 else
                 {
-                    m_canvas.movePog(m_grabbedPog.m_ID, m_ghostPog.getX(), m_ghostPog.getY());
+                    m_canvas.movePog(m_grabbedPog.getId(), m_ghostPog.getX(), m_ghostPog.getY());
                 }
             }
         }

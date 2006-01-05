@@ -7,11 +7,10 @@ package com.galactanet.gametable;
 
 import java.awt.*;
 import java.awt.image.ImageObserver;
-import java.awt.image.PixelGrabber;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.IOException;
+
 
 
 /**
@@ -21,35 +20,31 @@ import java.io.IOException;
  */
 public class Pog
 {
-    public static int        g_nextID          = 10;
-    public static final Font FONT              = new Font("Arial", 0, 14);
+    private static final Color COLOR_BACKGROUND         = new Color(255, 255, 64, 192);
+    private static final Color COLOR_CHANGED_BACKGROUND = new Color(238, 156, 0, 192);
 
-    private Image            m_image;
-    private int              m_pixels[];
-    private GametableCanvas  m_canvas;
+    public static int          g_nextID                 = 10;
+    public static final Font   FONT                     = new Font("Arial", 0, 14);
+
+    private PogType            m_pogType;
+    private GametableCanvas    m_canvas;
 
     // model coordinates
-    private Point            m_position        = new Point(0, 0);
+    private Point              m_position               = new Point(0, 0);
+    private String             m_dataStr                = "";
+    private int                m_Id                     = 0;
+    private boolean            m_bTinted                = false;
+    private boolean            m_bTextChangeNotifying   = false;
 
-    // size
-    private int              m_faceSize;
-    public String            m_fileName;
 
-    public String            m_dataStr         = "";
-
-    public int               m_ID              = 0;
-    public boolean           m_bIsUnderlay     = false;
-    public boolean           m_bIsUnknownImage = false;
-
-    public boolean           m_bTinted = false;
-    
-    public boolean           m_bTextChangeNotifying = false;
-    
-    public static final Color COLOR_BACKGROUND = new Color(255, 255, 64, 192);
-    public static final Color COLOR_CHANGED_BACKGROUND = new Color(238, 156, 0, 192);
-
-    public Pog()
+    public Pog(DataInputStream dis) throws IOException
     {
+        initFromPacket(dis);
+    }
+
+    public Pog(PogType type)
+    {
+        init(GametableFrame.getGametableFrame().m_gametableCanvas, type);
     }
 
     public Pog(Pog toCopy)
@@ -59,137 +54,113 @@ public class Pog
 
     public void getUniqueID()
     {
-        m_ID = g_nextID++;
+        m_Id = g_nextID++;
     }
 
-    public String toString()
+    public int getId()
     {
-        return "[Pog name: " + m_fileName + " pos: " + m_position + " size: " + m_faceSize + "]"; 
+        return m_Id;
+    }
+
+    public boolean isTinted()
+    {
+        return m_bTinted;
     }
     
+    public void setTinted(boolean b)
+    {
+        m_bTinted = b;
+    }
+    
+    public String toString()
+    {
+        return "[Pog name: " + getFilename() + " pos: " + getPosition() + " size: " + getFaceSize() + "]";
+    }
+
+    public String getFilename()
+    {
+        return m_pogType.getFilename();
+    }
+
+    public PogType getPogType()
+    {
+        return m_pogType;
+    }
+
     public int getWidth()
     {
-        return m_image.getWidth(m_canvas);
+        return m_pogType.getWidth();
     }
 
     public int getHeight()
     {
-        return m_image.getHeight(m_canvas);
+        return m_pogType.getHeight();
     }
 
     public boolean isUnderlay()
     {
-        return m_bIsUnderlay;
+        return m_pogType.isUnderlay();
     }
 
     public void writeToPacket(DataOutputStream dos) throws IOException
     {
-        dos.writeUTF(m_fileName);
+        dos.writeUTF(getFilename());
         dos.writeInt(getX());
         dos.writeInt(getY());
-        dos.writeInt(m_faceSize);
-        dos.writeInt(m_ID);
+        dos.writeInt(getFaceSize());
+        dos.writeInt(m_Id);
         dos.writeUTF(m_dataStr);
-        dos.writeBoolean(m_bIsUnderlay);
+        dos.writeBoolean(isUnderlay());
     }
 
-    public void initFromPacket(DataInputStream dis) throws IOException
+    private void initFromPacket(DataInputStream dis) throws IOException
     {
-        m_fileName = dis.readUTF();
+        String filename = dis.readUTF();
         int x = dis.readInt();
         int y = dis.readInt();
         m_position = new Point(x, y);
-        m_faceSize = dis.readInt();
-        m_ID = dis.readInt();
+        int size = dis.readInt();
+        m_Id = dis.readInt();
         m_dataStr = dis.readUTF();
-        m_bIsUnderlay = dis.readBoolean();
+        // boolean underlay =
+        dis.readBoolean();
 
-        if (pogFileExists(m_fileName))
+        PogLibrary lib = GametableFrame.getGametableFrame().getPogLibrary();
+        PogType type = lib.getPog(filename);
+        if (type == null)
         {
-            init(GametableFrame.getGametableFrame().m_gametableCanvas, m_fileName);
+            type = lib.createPlaceholder(filename, size);
         }
-        else
-        {
-            String fileToLoad = "assets/pog_unk_1.png";
-            // the file doesn't exist. load up the default instead
-            switch (m_faceSize)
-            {
-                case 2:
-                {
-                    fileToLoad = "assets/pog_unk_2.png";
-                }
-                break;
-
-                case 3:
-                {
-                    fileToLoad = "assets/pog_unk_3.png";
-                }
-                break;
-            }
-
-            String properFilename = m_fileName;
-            init(GametableFrame.getGametableFrame().m_gametableCanvas, fileToLoad);
-            m_fileName = properFilename;
-            m_bIsUnknownImage = true;
-        }
-    }
-
-    public static boolean pogFileExists(String filename)
-    {
-        // if we're here we need to check for it in the pogs directory
-        File pogFile = new File(filename);
-        return pogFile.exists();
+        init(GametableFrame.getGametableFrame().m_gametableCanvas, type);
     }
 
     public void init(Pog orig)
     {
-        setPosition(orig.getPosition());
-        m_faceSize = orig.getFaceSize();
-        m_image = orig.m_image;
+        m_position = orig.m_position;
+        m_pogType = orig.m_pogType;
         m_canvas = orig.m_canvas;
-        m_fileName = orig.m_fileName;
-        m_pixels = orig.m_pixels;
-        m_bIsUnderlay = orig.m_bIsUnderlay;
         m_dataStr = new String(orig.m_dataStr);
     }
 
-    public void init(GametableCanvas canvas, String fullSizeImagePath)
+    public void init(GametableCanvas canvas, PogType type)
     {
-    	m_image = UtilityFunctions.getImage(fullSizeImagePath);
-
+        m_pogType = type;
         m_canvas = canvas;
-
-        // note the size of the pog
-        m_faceSize = m_image.getWidth(null) / GametableCanvas.BASE_SQUARE_SIZE;
-        if (m_faceSize < 0)
-        {
-            m_faceSize = 1;
-        }
-        
-        m_fileName = fullSizeImagePath;
-        
-        // prepare the hit pixels
-        setUpPixels();
-    }
-
-    public void reaquireImages()
-    {
-        init(m_canvas, m_fileName);
     }
 
     public int getHeightForZoomLevel()
     {
-    	int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
-    	double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
-        int imgSizeY = (int)(ratio * m_image.getHeight(null));
+        int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
+        double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
+        int imgSizeY = (int)(ratio * getHeight());
         return imgSizeY;
     }
 
     public int getWidthForZoomLevel()
     {
-    	int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
-    	double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
-        int imgSizeX = (int)(ratio * m_image.getWidth(null));
+        int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
+        double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
+        int imgSizeX = (int)(ratio * getWidth());
         return imgSizeX;
     }
 
@@ -205,7 +176,17 @@ public class Pog
 
     public int getFaceSize()
     {
-        return m_faceSize;
+        return m_pogType.getFaceSize();
+    }
+
+    public boolean testHit(Point modelPoint)
+    {
+        return m_pogType.testHit(modelToPog(modelPoint));
+    }
+
+    public boolean testHit(int modelX, int modelY)
+    {
+        return m_pogType.testHit(modelToPog(modelX, modelY));
     }
 
     public Point getPosition()
@@ -223,120 +204,59 @@ public class Pog
         setPosition(new Point(x, y));
     }
 
-    public void setUpPixels()
+    public String getText()
     {
-        Image offscreen = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice()
-            .getDefaultConfiguration().createCompatibleImage(getWidth(), getHeight(), Transparency.OPAQUE);
-        Graphics g = offscreen.getGraphics();
-        g.setColor(new Color(0xff00ff));
-        g.fillRect(0, 0, offscreen.getWidth(m_canvas), offscreen.getHeight(m_canvas));
-        g.drawImage(m_image, 0, 0, m_canvas);
-
-        // now grab the pixels
-        m_pixels = new int[offscreen.getWidth(m_canvas) * offscreen.getHeight(m_canvas)];
-        PixelGrabber pg = new PixelGrabber(offscreen, 0, 0, offscreen.getWidth(m_canvas),
-            offscreen.getHeight(m_canvas), m_pixels, 0, offscreen.getWidth(m_canvas));
-        try
-        {
-            pg.grabPixels();
-        }
-        catch (InterruptedException e)
-        {
-            Log.log(Log.SYS, e);
-            Thread.currentThread().interrupt();
-            return;
-        }
+        return m_dataStr;
     }
 
-    public boolean modelPtInBounds(int x, int y)
+    public void setText(String text)
     {
-        // convert to our local coordinates
-        int localX = x - getX();
-        int localY = y - getY();
-
-        // if it's not even in our rect, then forget it.
-        if (localX < 0)
-        {
-            return false;
-        }
-
-        if (localX >= getWidth())
-        {
-            return false;
-        }
-
-        if (localY < 0)
-        {
-            return false;
-        }
-
-        if (localY >= getHeight())
-        {
-            return false;
-        }
-
-        int idx = localX + localY * getWidth();
-        int c = m_pixels[idx];
-        if ((c & 0x00ffffff) == 0xff00ff)
-        {
-            return false;
-        }
-
-        return true;
+        m_dataStr = text;
+        displayPogDataChange();
     }
-    
+
     void displayPogDataChange()
     {
-    	// we don't do this if the game is receiving inital data.
-    	if ( PacketSourceState.isHostDumping() )
-    	{
-    		return;
-    	}
-    	
-    	// we also don't do this if the game is loading a file from disk.
-    	if ( PacketSourceState.isFileLoading() )
-    	{
-    		return;
-    	}
-    	
-    	m_bTextChangeNotifying = true;
+        // we don't do this if the game is receiving inital data.
+        if (PacketSourceState.isHostDumping())
+        {
+            return;
+        }
+
+        // we also don't do this if the game is loading a file from disk.
+        if (PacketSourceState.isFileLoading())
+        {
+            return;
+        }
+
+        m_bTextChangeNotifying = true;
     }
-    
+
     void stopDisplayPogDataChange()
     {
-    	m_bTextChangeNotifying = false;
+        m_bTextChangeNotifying = false;
     }
-    
+
     public void drawChangeText(Graphics g)
     {
-    	if ( !m_bTextChangeNotifying )
-    	{
-    		return;
-    	}
-    	drawStringToCanvas(g, true, COLOR_CHANGED_BACKGROUND);
+        if (!m_bTextChangeNotifying)
+        {
+            return;
+        }
+        drawStringToCanvas(g, true, COLOR_CHANGED_BACKGROUND);
     }
 
     public void draw(Graphics g, int x, int y, ImageObserver observer)
     {
-        // which image should we use?
-        Image toDraw = m_image;
-
-        // draw it
-        g.drawImage(toDraw, x, y, observer);
+        m_pogType.draw(g, x, y);
     }
-    
+
     public void drawScaled(Graphics g, int x, int y)
     {
         // we have to work with ratios, cause the pog could be large or huge, gargantuan, etc.
-        int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
-        double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
-        int imgSizeX = (int)(ratio * m_image.getWidth(null));
-        int imgSizeY = (int)(ratio * m_image.getHeight(null));
-
-        // blit with scaling 
-        g.drawImage(m_image, x, y, imgSizeX, imgSizeY, null);
-
-        // g.drawImage(m_image, x, y, m_canvas);
+        float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
+            / (float)GametableCanvas.BASE_SQUARE_SIZE;
+        m_pogType.drawScaled(g, x, y, scale);
     }
 
     public void drawGhostlyToCanvas(Graphics g)
@@ -349,42 +269,36 @@ public class Pog
 
     public void drawToCanvas(Graphics g)
     {
-    	// if we're tinted, draw tinted instead
-    	if ( m_bTinted )
-    	{
-    		drawTintedToCanvas(g);
-    		return;
-    	}
-    	
         // convert our model coordinates to draw coordinates
         Point drawCoords = m_canvas.modelToDraw(getPosition());
+        float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
+            / (float)GametableCanvas.BASE_SQUARE_SIZE;
 
-        drawScaled(g, drawCoords.x, drawCoords.y);
+        m_pogType.drawScaled(g, drawCoords.x, drawCoords.y, scale);
+
+        // if we're tinted, draw tinted
+        if (m_bTinted)
+        {
+            m_pogType.drawTint(g, drawCoords.x, drawCoords.y, scale, Color.GREEN);
+        }
     }
 
-    public void drawTintedToCanvas(Graphics g)
-    {
-        // convert our model coordinates to draw coordinates
-        Point drawCoords = m_canvas.modelToDraw(getPosition());
-
-        // draw it
-        drawScaled(g, drawCoords.x, drawCoords.y);
-        
-        // now draw a green 50% alpha square over it
-        Graphics2D g2 = (Graphics2D)g.create();
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-        g2.setColor(Color.GREEN);
-        int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
-        g2.fillRect(drawCoords.x, drawCoords.y, size, size);
-        g2.dispose();
-    }
-    
     public void drawDataStringToCanvas(Graphics gr, boolean bForceTextInBounds)
     {
-    	drawStringToCanvas(gr, bForceTextInBounds, COLOR_BACKGROUND);
-    	stopDisplayPogDataChange();
-	}
-    
+        drawStringToCanvas(gr, bForceTextInBounds, COLOR_BACKGROUND);
+        stopDisplayPogDataChange();
+    }
+
+    private Point modelToPog(Point modelPoint)
+    {
+        return new Point(modelPoint.x - m_position.x, modelPoint.y - m_position.y);
+    }
+
+    private Point modelToPog(int modelX, int modelY)
+    {
+        return new Point(modelX - m_position.x, modelY - m_position.y);
+    }
+
     private void drawStringToCanvas(Graphics gr, boolean bForceTextInBounds, Color backgroundColor)
     {
         Graphics2D g = (Graphics2D)gr.create();

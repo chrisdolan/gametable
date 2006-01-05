@@ -100,7 +100,7 @@ public class GametableMap
         {
             Pog pog = getPogAt(i);
 
-            if (pog.modelPtInBounds(modelPosition.x, modelPosition.y))
+            if (pog.testHit(modelPosition))
             {
                 // they clicked this pog
                 if (pog.isUnderlay())

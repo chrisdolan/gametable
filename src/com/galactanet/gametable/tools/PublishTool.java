@@ -15,6 +15,7 @@ import com.galactanet.gametable.LineSegment;
 import com.galactanet.gametable.GametableFrame;
 
 
+
 /**
  * Map tool for erasing lines.
  * 
@@ -25,7 +26,8 @@ public class PublishTool extends NullTool
     private GametableCanvas m_canvas;
     private Point           m_mouseAnchor;
     private Point           m_mouseFloat;
-    //private boolean         m_bEraseColor;
+
+    // private boolean m_bEraseColor;
 
     /**
      * Default Constructor.
@@ -57,13 +59,13 @@ public class PublishTool extends NullTool
      */
     public void mouseButtonPressed(int x, int y, int modifierMask)
     {
-    	if ( m_canvas.isPublicMap() )
-    	{
-    		// this tool is not useable on the public map. So we cancel this action
-    		GametableFrame.g_gameTableFrame.getToolManager().cancelToolAction();
-    		return;
-    	}
-    	
+        if (m_canvas.isPublicMap())
+        {
+            // this tool is not useable on the public map. So we cancel this action
+            GametableFrame.g_gameTableFrame.getToolManager().cancelToolAction();
+            return;
+        }
+
         m_mouseAnchor = new Point(x, y);
         m_mouseFloat = m_mouseAnchor;
     }
@@ -80,42 +82,42 @@ public class PublishTool extends NullTool
             m_canvas.repaint();
         }
     }
-    
+
     // turns off all the tinting for the pogs
     public void clearTints()
     {
-    	for ( int i=0 ; i<m_canvas.getActiveMap().getNumPogs() ; i++ )
-    	{
-    		m_canvas.getActiveMap().getPogAt(i).m_bTinted = false;
-    	}
+        for (int i = 0; i < m_canvas.getActiveMap().getNumPogs(); i++)
+        {
+            m_canvas.getActiveMap().getPogAt(i).setTinted(false);
+        }
     }
-    
+
     // sets all the pogs we're touching to be tinted
     public void setTints()
     {
-    	Rectangle selRect = createRectangle(m_mouseAnchor, m_mouseFloat);
-    	
-    	for ( int i=0 ; i<m_canvas.getActiveMap().getNumPogs() ; i++ )
-    	{
-    		Pog pog = m_canvas.getActiveMap().getPogAt(i);
-    		
-    		int size = pog.getFaceSize()*GametableCanvas.BASE_SQUARE_SIZE;
-    		Point tl = new Point(pog.getPosition());
-    		Point br = new Point(pog.getPosition());
-    		br.x += size;
-    		br.y += size;
-    		Rectangle pogRect = createRectangle(tl,br);
-    		
-    		if ( selRect.intersects(pogRect) )
-    		{
-    			// this pog will be sent
-    			pog.m_bTinted = true;
-    		}
-    		else
-    		{
-    			pog.m_bTinted = false;
-    		}
-    	}
+        Rectangle selRect = createRectangle(m_mouseAnchor, m_mouseFloat);
+
+        for (int i = 0; i < m_canvas.getActiveMap().getNumPogs(); i++)
+        {
+            Pog pog = m_canvas.getActiveMap().getPogAt(i);
+
+            int size = pog.getFaceSize() * GametableCanvas.BASE_SQUARE_SIZE;
+            Point tl = new Point(pog.getPosition());
+            Point br = new Point(pog.getPosition());
+            br.x += size;
+            br.y += size;
+            Rectangle pogRect = createRectangle(tl, br);
+
+            if (selRect.intersects(pogRect))
+            {
+                // this pog will be sent
+                pog.setTinted(true);
+            }
+            else
+            {
+                pog.setTinted(false);
+            }
+        }
     }
 
     /*
@@ -125,89 +127,90 @@ public class PublishTool extends NullTool
     {
         if (m_mouseAnchor != null && !m_mouseAnchor.equals(m_mouseFloat))
         {
-        	//GametableFrame frame = GametableFrame.g_gameTableFrame;
-        	
-        	// first off, copy all the pogs/underlays over to the public layer
-        	for ( int i=0 ; i<m_canvas.getPrivateMap().getNumPogs() ; i++ )
-        	{
-        		Pog pog = m_canvas.getActiveMap().getPogAt(i); 
-        		if ( pog.m_bTinted == true )
-				{
-					// this pog gets copied
-					Pog newPog = new Pog(pog);
-					newPog.getUniqueID();
-					
-					m_canvas.setActiveMap(m_canvas.getPublicMap());
-					m_canvas.addPog(newPog);
-					m_canvas.setActiveMap(m_canvas.getPrivateMap());
-				}
-        	}
-        	
-        	// now, copy over all the line segments. we run through all the
-        	// line segments on the private layer, and collect a list of the
-        	// ones that are at least partially in the rect
-        	List lineList = new ArrayList();
-        	
-        	for ( int i=0 ; i<m_canvas.getPrivateMap().getNumLines() ; i++ )
-        	{
-        		LineSegment ls = m_canvas.getPrivateMap().getLineAt(i);
-        		LineSegment result = ls.getPortionInsideRect(m_mouseAnchor, m_mouseFloat);
-        		
-        		if ( result != null )
-        		{
-        			lineList.add(result);
-        		}
-        	}
-        	
-        	// now we have the list of lines to move over. Make them into
-        	// a LineSegment[]
-        	LineSegment[] toAdd = new LineSegment[lineList.size()];
-        	for ( int i=0 ; i<toAdd.length ; i++ )
-        	{
-        		toAdd[i] = (LineSegment)lineList.get(i);
-        	}
-        	
-			m_canvas.setActiveMap(m_canvas.getPublicMap());
-			m_canvas.addLineSegments(toAdd);
-			m_canvas.setActiveMap(m_canvas.getPrivateMap());
-        	
-        	boolean bDeleteFromPrivate = false;
-        	if ((modifierMask & MODIFIER_CTRL) == 0) // not holding control
-        	{
-        		bDeleteFromPrivate = true;
-        	}
-        	
-        	// if bDeleteFromPrivate is set, then this is a MOVE, not a COPY,
-        	// so we have to remove the pieces from the private layer. 
-        	
-        	if ( bDeleteFromPrivate )
-        	{
-        		// remove the pogs that we moved
-            	for ( int i=0 ; i<m_canvas.getPrivateMap().getNumPogs() ; i++ )
-            	{
-            		Pog pog = m_canvas.getActiveMap().getPogAt(i); 
-            		if ( pog.m_bTinted == true )
-    				{
-						m_canvas.removePog(pog.m_ID);
-						i--;
-    				}
-            	}
-            	
-            	// remove the line segments
-            	Rectangle eraseRect = createRectangle(m_mouseAnchor, m_mouseFloat);
-            	m_canvas.erase(eraseRect, false, -1);
-        	}
+            // GametableFrame frame = GametableFrame.g_gameTableFrame;
+
+            // first off, copy all the pogs/underlays over to the public layer
+            for (int i = 0; i < m_canvas.getPrivateMap().getNumPogs(); i++)
+            {
+                Pog pog = m_canvas.getActiveMap().getPogAt(i);
+                if (pog.isTinted())
+                {
+                    // this pog gets copied
+                    Pog newPog = new Pog(pog);
+                    newPog.getUniqueID();
+
+                    m_canvas.setActiveMap(m_canvas.getPublicMap());
+                    m_canvas.addPog(newPog);
+                    m_canvas.setActiveMap(m_canvas.getPrivateMap());
+                }
+            }
+
+            // now, copy over all the line segments. we run through all the
+            // line segments on the private layer, and collect a list of the
+            // ones that are at least partially in the rect
+            List lineList = new ArrayList();
+
+            for (int i = 0; i < m_canvas.getPrivateMap().getNumLines(); i++)
+            {
+                LineSegment ls = m_canvas.getPrivateMap().getLineAt(i);
+                LineSegment result = ls.getPortionInsideRect(m_mouseAnchor, m_mouseFloat);
+
+                if (result != null)
+                {
+                    lineList.add(result);
+                }
+            }
+
+            // now we have the list of lines to move over. Make them into
+            // a LineSegment[]
+            LineSegment[] toAdd = new LineSegment[lineList.size()];
+            for (int i = 0; i < toAdd.length; i++)
+            {
+                toAdd[i] = (LineSegment)lineList.get(i);
+            }
+
+            m_canvas.setActiveMap(m_canvas.getPublicMap());
+            m_canvas.addLineSegments(toAdd);
+            m_canvas.setActiveMap(m_canvas.getPrivateMap());
+
+            boolean bDeleteFromPrivate = false;
+            if ((modifierMask & MODIFIER_CTRL) == 0) // not holding control
+            {
+                bDeleteFromPrivate = true;
+            }
+
+            // if bDeleteFromPrivate is set, then this is a MOVE, not a COPY,
+            // so we have to remove the pieces from the private layer.
+
+            if (bDeleteFromPrivate)
+            {
+                // remove the pogs that we moved
+                for (int i = 0; i < m_canvas.getPrivateMap().getNumPogs(); i++)
+                {
+                    Pog pog = m_canvas.getActiveMap().getPogAt(i);
+                    if (pog.isTinted())
+                    {
+                        m_canvas.removePog(pog.getId());
+                        i--;
+                    }
+                }
+
+                // remove the line segments
+                Rectangle eraseRect = createRectangle(m_mouseAnchor, m_mouseFloat);
+                m_canvas.erase(eraseRect, false, -1);
+            }
         }
         endAction();
     }
 
     public void endAction()
     {
-    	clearTints();
+        clearTints();
         m_mouseAnchor = null;
         m_mouseFloat = null;
         m_canvas.repaint();
     }
+
     /*
      * @see com.galactanet.gametable.AbstractTool#paint(java.awt.Graphics)
      */

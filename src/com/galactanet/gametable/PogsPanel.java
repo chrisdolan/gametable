@@ -55,27 +55,27 @@ public class PogsPanel extends JPanel implements Scrollable
         /**
          * The pog this PogComponent is adapting.
          */
-        private Pog    pog;
+        private PogType pog;
 
         /**
          * The label to display underneath this pog.
          */
-        private String label;
+        private String  label;
 
         /**
          * Whether this component is selected or not.
          */
-        boolean        selected = false;
+        boolean         selected = false;
 
         /**
          * Constructor.
          * 
          * @param p Pog to adapt.
          */
-        public PogComponent(Pog p)
+        public PogComponent(PogType p)
         {
             pog = p;
-            label = pog.m_fileName;
+            label = pog.getFilename();
             int start = label.lastIndexOf(File.separatorChar) + 1;
             int end = label.lastIndexOf('.');
             if (end < 0)
@@ -135,7 +135,7 @@ public class PogsPanel extends JPanel implements Scrollable
         /**
          * @return The pog for this PogComponent.
          */
-        public Pog getPog()
+        public PogType getPog()
         {
             return pog;
         }
@@ -190,7 +190,7 @@ public class PogsPanel extends JPanel implements Scrollable
                     d.width - ((POG_MARGIN + POG_BORDER) * 2), d.height - ((POG_MARGIN + POG_BORDER) * 2));
             }
 
-            pog.draw(g2, (d.width - pog.getWidth()) / 2, SPACE, null);
+            pog.draw(g2, (d.width - pog.getWidth()) / 2, SPACE);
 
             if (label != null && label.length() > 0)
             {
@@ -217,24 +217,9 @@ public class PogsPanel extends JPanel implements Scrollable
     private GametableCanvas m_canvas;
 
     /**
-     * True if this panel is for pogs, false for underlays.
-     */
-    private boolean         m_bIsPogsMode;
-
-    /**
      * The list of pogs held in this panel.
      */
-    private List            m_pogs                = new ArrayList();
-
-    /**
-     * The list of PogComponents held in this panel.
-     */
-    private List            m_pogComponents       = new ArrayList();
-
-    /**
-     * Set of acquired pog names.
-     */
-    private Set             m_acquiredPogs        = new HashSet();
+    private PogLibrary      m_pogs                = null;
 
     // --- Pog Dragging Members ---
 
@@ -266,78 +251,24 @@ public class PogsPanel extends JPanel implements Scrollable
      * @param canvas Handle to the canvas.
      * @param bPogsMode True if for Pogs, False if for Underlays.
      */
-    public PogsPanel(GametableCanvas canvas, boolean bPogsMode)
+    public PogsPanel(PogLibrary library, GametableCanvas canvas)
     {
         super(new FlowLayout(FlowLayout.LEADING, 5, 5), true);
-        setBackground(BACKGROUND_COLOR);
+        m_pogs = library;
         m_canvas = canvas;
-        m_bIsPogsMode = bPogsMode;
+        setBackground(BACKGROUND_COLOR);
         addKeyListener(m_canvas);
-        acquirePogs();
+        populateChildren();
     }
 
     // --- Methods ---------------------------------------------------------------------------------------------------
 
     /**
-     * Ensures that this panel has all the available pogs loaded.
+     * @return The pog library represented by this panel.
      */
-    public void acquirePogs()
+    public PogLibrary getPogLibrary()
     {
-        List newPogs = new ArrayList();
-        String modeStr = m_bIsPogsMode ? "pogs" : "underlays";
-        File pogPath = new File(modeStr);
-        if (pogPath.exists())
-        {
-            String[] files = pogPath.list();
-
-            int len = files.length;
-            for (int i = 0; i < len; ++i)
-            {
-                String filename = modeStr + File.separator + files[i];
-                if (m_acquiredPogs.contains(filename))
-                {
-                    continue;
-                }
-
-                File test = new File(filename);
-
-                if (test.isFile())
-                {
-                    try
-                    {
-                        Pog toAdd = new Pog();
-                        toAdd.init(m_canvas, filename);
-
-                        // add it to the appropriate array
-                        toAdd.m_bIsUnderlay = !m_bIsPogsMode;
-                        newPogs.add(toAdd);
-                        m_acquiredPogs.add(filename);
-                    }
-                    catch (Exception ex)
-                    {
-                        // any exceptions thrown in this process cancel
-                        // the addition of that one pog.
-                        Log.log(Log.SYS, ex);
-                    }
-                }
-            }
-        }
-
-        if (newPogs.size() > 0)
-        {
-            m_pogs.addAll(newPogs);
-            sortPogsByHeight(m_pogs);
-            removeAll();
-            populateChildren(m_pogs);
-        }
-    }
-
-    /**
-     * @return The list of pogs held in this panel.
-     */
-    public List getPogs()
-    {
-        return Collections.unmodifiableList(m_pogs);
+        return m_pogs;
     }
 
     /**
@@ -364,7 +295,27 @@ public class PogsPanel extends JPanel implements Scrollable
         return m_grabbedPogOffset;
     }
 
-    private void grabPog(Pog p, Point pos, Point offset)
+    /**
+     * Takes the current pog list and adds them as components.
+     */
+    public void populateChildren()
+    {
+        removeAll();
+        List pogs = new ArrayList(m_pogs.getAllPogs());
+        sortPogsByHeight(pogs);
+        int size = pogs.size();
+        for (int i = 0; i < size; ++i)
+        {
+            PogType p = (PogType)pogs.get(i);
+            PogComponent c = new PogComponent(p);
+            add(c);
+        }
+        setSize(getPreferredSize());
+        revalidate();
+        repaint();
+    }
+
+    private void grabPog(PogType p, Point pos, Point offset)
     {
         m_grabbedPog = new Pog(p);
         m_grabbedPogPosition = pos;
@@ -405,24 +356,6 @@ public class PogsPanel extends JPanel implements Scrollable
     }
 
     /**
-     * Takes the current pog list and adds them as components.
-     */
-    private void populateChildren(List pogs)
-    {
-        int size = pogs.size();
-        for (int i = 0; i < size; ++i)
-        {
-            Pog p = (Pog)pogs.get(i);
-            PogComponent c = new PogComponent(p);
-            m_pogComponents.add(c);
-            add(c);
-        }
-        setSize(getPreferredSize());
-        revalidate();
-        repaint();
-    }
-
-    /**
      * In-place sorts the list of pogs by height.
      * 
      * @param toSort List of Pogs to sort.
@@ -436,8 +369,8 @@ public class PogsPanel extends JPanel implements Scrollable
              */
             public int compare(Object a, Object b)
             {
-                Pog pa = (Pog)a;
-                Pog pb = (Pog)b;
+                PogType pa = (PogType)a;
+                PogType pb = (PogType)b;
                 return (pa.getHeight() - pb.getHeight());
             }
         });

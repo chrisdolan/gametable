@@ -10,9 +10,8 @@ import java.io.*;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Random;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -208,32 +207,6 @@ public class UtilityFunctions
         JOptionPane.showMessageDialog(parent, msg, title, JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // naming policy for cuts, comps and anims
-    public static boolean isValidName(String name)
-    {
-        if (name == null)
-        {
-            return false;
-        }
-
-        if (name.length() == 0)
-        {
-            return false;
-        }
-
-        // check character validity
-        for (int i = 0; i < name.length(); i++)
-        {
-            char curChar = name.charAt(i);
-            if (!(((curChar >= 'A') && (curChar <= 'Z')) || ((curChar >= '0') && (curChar <= '9')) || curChar == '_'))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     /**
      * Checks to see whether one file is an ancestor of another.
      * 
@@ -277,6 +250,42 @@ public class UtilityFunctions
         return true;
     }
 
+    /**
+     * Simple image cache.
+     */
+    private static Map g_imageCache = new HashMap();
+
+    /**
+     * Gets an image, caching it if possible.
+     * 
+     * @param name Name of image to get.
+     * @return Image retrieved, or null.
+     */
+    public static Image getCachedImage(String name)
+    {
+        Image image = (Image)g_imageCache.get(name);
+        if (image == null)
+        {
+            image = getImage(name);
+            if (image == null)
+            {
+                return null;
+            }
+            g_imageCache.put(name, image);
+        }
+        return image;
+    }
+    
+    /**
+     * Removes an image from the image cache.
+     * 
+     * @param name Name of the image to remove.
+     */
+    public static void removeCachedImage(String name)
+    {
+        g_imageCache.remove(name);
+    }
+
     public static Image getImage(String name)
     {
         Image img = getImageFromJar(name);
@@ -285,6 +294,7 @@ public class UtilityFunctions
             // couldn't find it in the jar. Try the local directory
             img = loadAndWait(GametableFrame.getGametableFrame().m_gametableCanvas, name);
         }
+
         return img;
     }
 
@@ -296,60 +306,90 @@ public class UtilityFunctions
 
     private static Image getImageFromJar(String name)
     {
-        URL imgURL = GametableFrame.getGametableFrame().m_gametableCanvas.getClass().getResource("/" + name);
-        if (imgURL == null)
+        URL imageUrl = GametableFrame.getGametableFrame().m_gametableCanvas.getClass().getResource("/" + name);
+        if (imageUrl == null)
         {
             return null;
         }
 
-        Toolkit tk = Toolkit.getDefaultToolkit();
-        Image img = null;
+        Image image = null;
         try
         {
-            MediaTracker m = new MediaTracker(GametableFrame.getGametableFrame().m_gametableCanvas);
-            img = tk.getImage(imgURL);
-            m.addImage(img, 0);
-            m.waitForAll();
+            image = Toolkit.getDefaultToolkit().createImage(imageUrl);
+            if (image == null)
+            {
+                return null;
+            }
+
+            MediaTracker tracker = new MediaTracker(GametableFrame.getGametableFrame().m_gametableCanvas);
+            tracker.addImage(image, 0);
+            tracker.waitForAll();
         }
         catch (Exception e)
         {
+            Log.log(Log.SYS, e);
+            return null;
         }
 
-        return img;
+        if (image.getWidth(null) < 1 || image.getHeight(null) < 1)
+        {
+            Log.log(Log.SYS, "JAR invalid file? " + name + " " + image.getWidth(null) + " x " + image.getHeight(null));
+            return null;
+        }
+
+        return image;
     }
 
-    private static Image loadAndWait(Component comp, String strName)
+    private static Image loadAndWait(Component component, String name)
     {
-        MediaTracker pMT = new MediaTracker(comp);
-        Image pImage = loadImage(strName, pMT);
+        MediaTracker tracker = new MediaTracker(component);
+        Image image = loadImage(name, tracker);
+
+        if (image == null)
+        {
+            return null;
+        }
+
         try
         {
-            pMT.waitForID(0); // ignore exceptions
+            tracker.waitForAll(); // ignore exceptions
+        }
+        catch (Exception e)
+        {
+            Log.log(Log.SYS, e);
+            return null;
+        }
+
+        if (image.getWidth(null) < 1 || image.getHeight(null) < 1)
+        {
+            Log.log(Log.SYS, "FS invalid file? " + name + " " + image.getWidth(null) + " x " + image.getHeight(null));
+            return null;
+        }
+
+        tracker = null;
+        return image;
+    }
+
+    private static Image loadImage(String name, MediaTracker tracker)
+    {
+        Image image = null;
+        try
+        {
+            image = Toolkit.getDefaultToolkit().createImage(name);
+            if (image == null)
+            {
+                return null;
+            }
+            tracker.addImage(image, 0);
         }
         catch (Exception e)
         {
             Log.log(Log.SYS, e);
         }
-        pMT = null;
-        return pImage;
+        return image;
     }
 
-    private static Image loadImage(String strName, MediaTracker pMT)
-    {
-        Image pImage = null;
-        try
-        {
-            pImage = Toolkit.getDefaultToolkit().getImage(strName);
-            pMT.addImage(pImage, 0);
-        }
-        catch (Exception e)
-        {
-            Log.log(Log.SYS, e);
-        }
-        return pImage;
-    }
-
-    public static String getLine(DataInputStream ds)
+    public static String getLine(DataInputStream in)
     {
         try
         {
@@ -360,7 +400,7 @@ public class UtilityFunctions
             {
                 // ready an empty string. If we have tl leave early, we'll return an empty string
 
-                char ch = (char)(ds.readByte());
+                char ch = (char)(in.readByte());
                 if (ch == '\r' || ch == '\n')
                 {
                     // if it's just a blank line, then press on
@@ -494,9 +534,8 @@ public class UtilityFunctions
         return rand;
     }
 
-
     /**
-     * Private constructor so no one can instantiate this. 
+     * Private constructor so no one can instantiate this.
      */
     private UtilityFunctions()
     {

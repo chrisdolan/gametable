@@ -125,7 +125,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     // which player I am
     public int                     m_myPlayerIdx;
 
-    String                         m_defaultName              = "Noname";
+    String                         m_defaultName              = System.getProperty("user.name");
     String                         m_defaultCharName          = "Nochar";
     String                         m_defaultIP                = "localhost";
     public int                     m_defaultPort              = DEFAULT_PORT;
@@ -205,6 +205,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     private ToolManager            m_toolManager              = new ToolManager();
     private JToggleButton          m_toolButtons[]            = null;
     private Preferences            m_preferences              = new Preferences();
+    private PogLibrary             m_pogLibrary               = null;
 
     public ProgressSpinner         m_progressSpinner          = new ProgressSpinner();
 
@@ -305,7 +306,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
                     String actionId = "tool" + toolId + "Action";
                     m_gametableCanvas.getActionMap().put(actionId, new ToolButtonAbstractAction(toolId));
-                    m_gametableCanvas.getInputMap().put(KeyStroke.getKeyStroke(info.getQuickKey(), 0, false), actionId);
+                    KeyStroke keystroke = KeyStroke.getKeyStroke(info.getQuickKey(), 0, false);
+                    m_gametableCanvas.getInputMap().put(keystroke, actionId);
+                    button.setToolTipText(info.getName());
                     List prefs = info.getTool().getPreferences();
                     for (int i = 0; i < prefs.size(); i++)
                     {
@@ -353,8 +356,12 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_mapPogSplitPane.add(m_gametableCanvas, JSplitPane.BOTTOM);
             m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.TOP);
 
-            m_pogsPanel = new PogsPanel(m_gametableCanvas, true);
-            m_underlaysPanel = new PogsPanel(m_gametableCanvas, false);
+            m_pogLibrary = new PogLibrary();
+            m_gametableCanvas.init(this);
+            addKeyListener(m_gametableCanvas);
+
+            m_pogsPanel = new PogsPanel(m_pogLibrary.getChild("pogs"), m_gametableCanvas);
+            m_underlaysPanel = new PogsPanel(m_pogLibrary.getChild("underlays"), m_gametableCanvas);
             m_pogsTabbedPane.add(new JScrollPane(m_pogsPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), "Pogs");
             m_pogsTabbedPane.add(new JScrollPane(m_underlaysPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
@@ -373,11 +380,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
             ColorComboCellRenderer renderer = new ColorComboCellRenderer();
             m_colorCombo.setRenderer(renderer);
-
-            m_gametableCanvas.init(this);
-            m_pogsPanel.acquirePogs();
-            m_underlaysPanel.acquirePogs();
-            addKeyListener(m_gametableCanvas);
 
             m_playerList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             m_myPlayerIdx = 0;
@@ -433,6 +435,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public Preferences getPreferences()
     {
         return m_preferences;
+    }
+
+    public PogLibrary getPogLibrary()
+    {
+        return m_pogLibrary;
     }
 
     public void updateWindowInfo()
@@ -655,9 +662,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         m_gametableCanvas.doAddPog(pog);
 
         // update the next pog id if necessary
-        if (pog.m_ID >= Pog.g_nextID)
+        if (pog.getId() >= Pog.g_nextID)
         {
-            Pog.g_nextID = pog.m_ID + 5;
+            Pog.g_nextID = pog.getId() + 5;
         }
 
         if (m_netStatus == NETSTATE_HOST)
@@ -1134,7 +1141,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         for (int i = 0; i < m_gametableCanvas.getActiveMap().getNumPogs(); i++)
         {
             Pog pog = m_gametableCanvas.getActiveMap().getPogAt(i);
-            removeArray[i] = pog.m_ID;
+            removeArray[i] = pog.getId();
         }
 
         m_gametableCanvas.removePogs(removeArray);
@@ -1341,9 +1348,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
         if (e.getSource() == m_reacquirePogsMenuItem)
         {
-            // get the pogs stuff again. And refresh
-            m_pogsPanel.acquirePogs();
-            m_underlaysPanel.acquirePogs();
+            reacquirePogs();
         }
 
         if (e.getSource() == m_hostMenuItem)
@@ -1463,6 +1468,25 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
                 m_gametableCanvas.requestFocus();
             }
         }
+    }
+
+    /**
+     * Reacquires pogs and then refreshes the pog list.
+     */
+    public void reacquirePogs()
+    {
+        m_pogLibrary.acquirePogs();
+        refreshPogList();
+    }
+
+    /**
+     * Reacquires pogs and then refreshes the pog list.
+     */
+    public void refreshPogList()
+    {
+        m_pogsPanel.populateChildren();
+        m_underlaysPanel.populateChildren();
+        m_gametableCanvas.repaint();
     }
 
     public void toggleLayer()

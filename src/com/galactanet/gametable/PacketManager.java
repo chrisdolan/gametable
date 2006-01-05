@@ -7,8 +7,8 @@ package com.galactanet.gametable;
 
 import java.awt.Rectangle;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.galactanet.gametable.net.Connection;
 
@@ -28,67 +28,67 @@ public class PacketManager
     }
 
     // packet sent by a new joiner as soon as he joins
-    public static final int PACKET_PLAYER              = 0;
+    public static final int PACKET_PLAYER         = 0;
 
     // packet sent by the host telling all the players in the game
-    public static final int PACKET_CAST                = 1;
+    public static final int PACKET_CAST           = 1;
 
     // packet with text to go to the text log
-    public static final int PACKET_TEXT                = 2;
+    public static final int PACKET_TEXT           = 2;
 
     // lines being added
-    public static final int PACKET_LINES               = 3;
+    public static final int PACKET_LINES          = 3;
 
     // Eraser used
-    public static final int PACKET_ERASE               = 4;
+    public static final int PACKET_ERASE          = 4;
 
     // Pog added
-    public static final int PACKET_ADDPOG              = 5;
+    public static final int PACKET_ADDPOG         = 5;
 
     // Pog removed
-    public static final int PACKET_REMOVEPOGS          = 6;
+    public static final int PACKET_REMOVEPOGS     = 6;
 
     // Pog moved
-    public static final int PACKET_MOVEPOG             = 7;
+    public static final int PACKET_MOVEPOG        = 7;
 
     // point state change
-    public static final int PACKET_POINT               = 8;
+    public static final int PACKET_POINT          = 8;
 
     // pog data change
-    public static final int PACKET_POGDATA             = 9;
+    public static final int PACKET_POGDATA        = 9;
 
     // recentering packet
-    public static final int PACKET_RECENTER            = 10;
+    public static final int PACKET_RECENTER       = 10;
 
     // join rejected
-    public static final int PACKET_REJECT              = 11;
+    public static final int PACKET_REJECT         = 11;
 
     // png data transfer
-    public static final int PACKET_FILE                = 12;
+    public static final int PACKET_FILE           = 12;
 
     // request for a png
-    public static final int PACKET_PNGREQUEST          = 13;
+    public static final int PACKET_PNGREQUEST     = 13;
 
     // notification of a hex mode / grid mode change
-    public static final int PACKET_HEX_MODE            = 14;
+    public static final int PACKET_HEX_MODE       = 14;
 
     // notification that the host is done sending you the inital packets
     // you get when you log in
-    public static final int PACKET_LOGIN_COMPLETE      = 15;
+    public static final int PACKET_LOGIN_COMPLETE = 15;
 
     // host sends PING, client sends back PING
-    public static final int PACKET_PING                = 16;
+    public static final int PACKET_PING           = 16;
 
     // an undo packet
-    public static final int PACKET_UNDO				   = 17;
+    public static final int PACKET_UNDO           = 17;
 
     // a redo packet
-    public static final int PACKET_REDO				   = 18;
+    public static final int PACKET_REDO           = 18;
 
     /**
      * Holding ground for POGs with no images yet.
      */
-    public static List      g_imagelessPogs            = new ArrayList();
+    public static Set       g_imagelessPogs       = new HashSet();
 
     public final static void readPacket(Connection conn, byte[] packet)
     {
@@ -527,7 +527,7 @@ public class PacketManager
         {
             int authorID = dis.readInt();
             int stateID = dis.readInt();
-            
+
             Rectangle r = new Rectangle();
             r.x = dis.readInt();
             r.y = dis.readInt();
@@ -572,20 +572,16 @@ public class PacketManager
 
         try
         {
-            Pog pog = new Pog();
-            pog.initFromPacket(dis);
-
-            if (pog.m_bIsUnknownImage)
+            Pog pog = new Pog(dis);
+            if (pog.getPogType().isUnknown())
             {
                 // we need this image
                 requestPogImage(conn, pog);
             }
-            else
-            {
-                // tell the model
-                GametableFrame gtFrame = GametableFrame.getGametableFrame();
-                gtFrame.addPogPacketReceived(pog);
-            }
+
+            // tell the model
+            GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.addPogPacketReceived(pog);
         }
         catch (IOException ex)
         {
@@ -595,24 +591,15 @@ public class PacketManager
 
     public static void requestPogImage(Connection conn, Pog pog)
     {
-        // add it to the list of pogs that need art
-        g_imagelessPogs.add(pog);
+        String desiredFile = pog.getFilename();
 
-        String desiredFile = pog.m_fileName;
-
-        // run through the list and see if there's alreay a pending request for that image
-        // (We don't check the last entry cause we just added that one.
-        // Hence the "g_imagelessPogs.size()-1" in the loop condition.)
-        for (int i = 0; i < g_imagelessPogs.size() - 1; i++)
+        if (g_imagelessPogs.contains(desiredFile))
         {
-            Pog aPog = (Pog)g_imagelessPogs.get(i);
-            if (desiredFile.equals(aPog.m_fileName))
-            {
-                // we already have a request pending for this file.
-                // no need to send another.
-                return;
-            }
+            return;
         }
+
+        // add it to the list of pogs that need art
+        g_imagelessPogs.add(desiredFile);
 
         // there are no pending requests for this file. Send one
         // if this somehow came from a null connection, return
@@ -837,7 +824,7 @@ public class PacketManager
             Log.log(Log.SYS, ex);
         }
     }
-    
+
     /** *********************** UNDO PACKET *********************************** */
     public static byte[] makeUndoPacket(int stateID)
     {
@@ -863,7 +850,7 @@ public class PacketManager
         try
         {
             int stateID = dis.readInt();
-            
+
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
             gtFrame.undoPacketReceived(stateID);
@@ -873,7 +860,7 @@ public class PacketManager
             Log.log(Log.SYS, ex);
         }
     }
-    
+
     /** *********************** REDO PACKET *********************************** */
     public static byte[] makeRedoPacket(int stateID)
     {
@@ -899,7 +886,7 @@ public class PacketManager
         try
         {
             int stateID = dis.readInt();
-            
+
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
             gtFrame.redoPacketReceived(stateID);
@@ -1096,29 +1083,26 @@ public class PacketManager
                 }
             }
 
-            // now save out the png file
-            FileOutputStream fos = new FileOutputStream(target);
-            fos.write(pngFile);
-
-            // finally, run through our pending pogs and see who needed that.
-            for (int i = 0; i < g_imagelessPogs.size(); i++)
+            File parentDir = target.getParentFile(); 
+            if (!parentDir.exists())
             {
-                Pog pog = (Pog)g_imagelessPogs.get(i);
-                if (pog.m_fileName.equals(filename))
-                {
-                    pog.reaquireImages();
-                    gtFrame.addPogPacketReceived(pog);
-                    g_imagelessPogs.remove(i);
-                    i--; // keep from skipping over stuff
-                }
+                parentDir.mkdirs();
             }
-
-            // tell the pog panels to check for the new image
-            GametableFrame.g_gameTableFrame.m_pogsPanel.acquirePogs();
-            GametableFrame.g_gameTableFrame.m_underlaysPanel.acquirePogs();
+            
+            // now save out the png file
+            OutputStream os = new BufferedOutputStream(new FileOutputStream(target));
+            os.write(pngFile);
+            os.flush();
+            os.close();
+            
+            PogType pogType = GametableFrame.g_gameTableFrame.getPogLibrary().getPog(filename);
+            pogType.load();
 
             // if we're done with imageless pogs, shut off the progress spinner
             gtFrame.m_progressSpinner.deactivate();
+
+            // tell the pog panels to check for the new image
+            GametableFrame.g_gameTableFrame.refreshPogList();
         }
         catch (IOException ex)
         {

@@ -622,7 +622,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         for (int i = 0; i < getActiveMap().getNumPogs(); i++)
         {
             Pog pog = getActiveMap().getPogAt(i);
-            if (pog.m_ID == id)
+            if (pog.getId() == id)
             {
                 return pog;
             }
@@ -758,9 +758,8 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             return;
         }
 
-        pog.m_dataStr = s;
-        pog.displayPogDataChange();
-
+        pog.setText(s);
+        
         repaint();
     }
 
@@ -839,7 +838,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
 
         // if they were dragging that pog, stop it
-        if (m_bLDragging && m_pogBeingDragged != null && m_pogBeingDragged.m_ID == id)
+        if (m_bLDragging && m_pogBeingDragged != null && m_pogBeingDragged.getId() == id)
         {
             m_pogBeingDragged = null;
             m_gametableFrame.logSystemMessage("The pog you were holding disappears out of your hands!");
