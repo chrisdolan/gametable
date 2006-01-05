@@ -102,6 +102,11 @@ public class Pog
         return m_pogType.isUnderlay();
     }
 
+    public boolean isUnknown()
+    {
+        return m_pogType.isUnknown();
+    }
+
     public void writeToPacket(DataOutputStream dos) throws IOException
     {
         dos.writeUTF(getFilename());

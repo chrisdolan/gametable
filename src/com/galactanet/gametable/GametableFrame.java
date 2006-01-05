@@ -2218,6 +2218,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         }
 
         repaint();
+        refreshPogList();
     }
 
     private void initializeExecutorThread()

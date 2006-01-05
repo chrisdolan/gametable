@@ -43,7 +43,7 @@ public class PogLibrary
     /**
      * A list of child libraries, sorted by name.
      */
-    private List            childLibraries        = new ArrayList();
+    private List            children              = new ArrayList();
 
     /**
      * The list of pogs in this library.
@@ -54,6 +54,11 @@ public class PogLibrary
      * Set of acquired pog names.
      */
     private Set             acquiredPogs          = new HashSet();
+
+    /**
+     * Set of acquired libraries.
+     */
+    private Set             acquiredLibraries     = new HashSet();
 
     /**
      * The parent library.
@@ -71,10 +76,8 @@ public class PogLibrary
     {
         location = new File(".").getCanonicalFile();
         name = getNameFromDirectory(location);
-        PogLibrary child = new PogLibrary(this, "pogs", LIBRARY_TYPE_POG);
-        childLibraries.add(child);
-        child = new PogLibrary(this, "underlays", LIBRARY_TYPE_UNDERLAY);
-        childLibraries.add(child);
+        addLibrary("pogs", LIBRARY_TYPE_POG);
+        addLibrary("underlays", LIBRARY_TYPE_UNDERLAY);
     }
 
     /**
@@ -120,9 +123,9 @@ public class PogLibrary
     /**
      * @return Returns the child libraries of this library.
      */
-    public List getChildLibraries()
+    public List getChildren()
     {
-        return Collections.unmodifiableList(childLibraries);
+        return Collections.unmodifiableList(children);
     }
 
     /**
@@ -169,7 +172,7 @@ public class PogLibrary
      */
     public List getAllPogs()
     {
-        int size = childLibraries.size();
+        int size = children.size();
         if (size < 1)
         {
             return getPogs();
@@ -178,7 +181,7 @@ public class PogLibrary
         List accum = new ArrayList(pogs);
         for (int i = 0; i < size; ++i)
         {
-            PogLibrary child = (PogLibrary)childLibraries.get(i);
+            PogLibrary child = (PogLibrary)children.get(i);
             accum.addAll(child.getAllPogs());
         }
 
@@ -230,10 +233,10 @@ public class PogLibrary
             }
         }
 
-        size = childLibraries.size();
+        size = children.size();
         for (int i = 0; i < size; ++i)
         {
-            PogLibrary child = (PogLibrary)childLibraries.get(i);
+            PogLibrary child = (PogLibrary)children.get(i);
             PogType pog = child.getPog(pogName);
             if (pog != null)
             {
@@ -253,9 +256,24 @@ public class PogLibrary
      */
     public PogType createPlaceholder(String filename, int face)
     {
+//        Log.log(Log.SYS, this + ".createPlaceholder(" + filename + ", " + face + ")");
         File f = new File(filename);
         File p = f.getParentFile();
-        if (!p.getAbsoluteFile().equals(getLocation()))
+        PogLibrary lib = findDeepestChild(p);
+        if (lib == null)
+        {
+            Log.log(Log.SYS, "unable to create library");
+            return null;
+        }
+
+        if (lib != this)
+        {
+            return lib.createPlaceholder(filename, face);
+        }
+
+        File absParent = p.getAbsoluteFile();
+        p.mkdirs();
+        if (!absParent.equals(getLocation()))
         {
             PogLibrary child = getChild(p.getPath());
             if (child != null)
@@ -263,26 +281,20 @@ public class PogLibrary
                 return child.createPlaceholder(filename, face);
             }
 
-            // TODO: handle library creation
-            return null;
+            File next = absParent;
+            while (!next.getParentFile().equals(getLocation()))
+            {
+                next = next.getParentFile();
+            }
+            child = addLibrary(next.getAbsolutePath(), libraryType);
+            if (child == null)
+            {
+                return null;
+            }
+            return child.createPlaceholder(filename, face);
         }
 
-        // Log.log(Log.SYS, this + ".createPlaceholder(" + filename + ", " + face + ")");
-        PogType retVal = null;
-        try
-        {
-            retVal = new PogType(filename, face, (libraryType == LIBRARY_TYPE_UNDERLAY));
-            pogs.add(retVal);
-            acquiredPogs.add(filename);
-        }
-        catch (Exception ex)
-        {
-            // any exceptions thrown in this process cancel
-            // the addition of that one pog.
-            Log.log(Log.SYS, ex);
-        }
-
-        return retVal;
+        return addPog(filename, face, libraryType);
     }
 
     /**
@@ -296,7 +308,8 @@ public class PogLibrary
         }
 
         boolean retVal = false;
-        // We don't want to scour the root directory for pogs
+
+        // We don't want to scour the root library for pogs
         if (getParent() != null)
         {
             String[] files = location.list();
@@ -309,45 +322,20 @@ public class PogLibrary
             for (int i = 0; i < len; ++i)
             {
                 String filename = path + files[i];
-                if (acquiredPogs.contains(filename))
-                {
-                    continue;
-                }
+                File file = new File(filename);
 
-                File test = new File(filename);
-
-                if (test.isFile() && test.canRead())
+                if (file.isFile() && file.canRead())
                 {
-                    try
+                    if (addPog(filename, 1, libraryType, true) != null)
                     {
-                        PogType pog = new PogType(filename, 1, (libraryType == LIBRARY_TYPE_UNDERLAY));
-                        if (!pog.isUnknown())
-                        {
-                            pogs.add(pog);
-                        }
-                        acquiredPogs.add(filename);
+                        retVal = true;
                     }
-                    catch (Exception ex)
-                    {
-                        // any exceptions thrown in this process cancel
-                        // the addition of that one pog.
-                        Log.log(Log.SYS, ex);
-                    }
-                    retVal = true;
                 }
-                else if (test.isDirectory() && test.canRead())
+                else if (file.isDirectory() && file.canRead())
                 {
-                    try
+                    if (addLibrary(filename, libraryType) != null)
                     {
-                        PogLibrary child = new PogLibrary(this, test.getAbsolutePath(), libraryType);
-                        childLibraries.add(child);
-                        acquiredPogs.add(filename);
-                    }
-                    catch (Exception ex)
-                    {
-                        // any exceptions thrown in this process cancel
-                        // the addition of that one directory.
-                        Log.log(Log.SYS, ex);
+                        retVal = true;
                     }
                 }
             }
@@ -363,10 +351,10 @@ public class PogLibrary
             }
         }
 
-        int size = childLibraries.size();
+        int size = children.size();
         for (int i = 0; i < size; ++i)
         {
-            PogLibrary child = (PogLibrary)childLibraries.get(i);
+            PogLibrary child = (PogLibrary)children.get(i);
             if (child.acquirePogs())
             {
                 retVal = true;
@@ -383,10 +371,39 @@ public class PogLibrary
      */
     public String toString()
     {
-        return "[PogLib " + name + " (" + pogs.size() + ")]";
+        return "[PogLib " + getLocation() + " (" + pogs.size() + ")]";
     }
 
     // --- Private Methods ---
+
+    private PogLibrary findDeepestChild(File path)
+    {
+        path = path.getAbsoluteFile();
+        
+        // trivial accept
+        if (path.equals(getLocation()))
+        {
+            return this;
+        }
+
+        int size = children.size();
+        for (int i = 0; i < size; ++i)
+        {
+            PogLibrary child = (PogLibrary)children.get(i);
+            PogLibrary lib = child.findDeepestChild(path);
+            if (lib != null)
+            {
+                return lib;
+            }
+        }
+
+        if (!UtilityFunctions.isAncestorFile(getLocation(), path))
+        {
+            return null;
+        }
+
+        return this;
+    }
 
     /**
      * Gets a child by the exact name.
@@ -406,10 +423,10 @@ public class PogLibrary
             // use the old one.
         }
 
-        int size = childLibraries.size();
+        int size = children.size();
         for (int i = 0; i < size; ++i)
         {
-            PogLibrary child = (PogLibrary)childLibraries.get(i);
+            PogLibrary child = (PogLibrary)children.get(i);
             if (f.equals(child.getLocation()))
             {
                 return child;
@@ -440,4 +457,94 @@ public class PogLibrary
         }
         return new String(temp.substring(start, end));
     }
+
+
+    /**
+     * In-place sorts the list of pogs by height.
+     * 
+     * @param toSort List of Pogs to sort.
+     */
+    private static void sortPogsByLabel(List toSort)
+    {
+        Collections.sort(toSort, new Comparator()
+        {
+            /*
+             * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
+             */
+            public int compare(Object a, Object b)
+            {
+                PogType pa = (PogType)a;
+                PogType pb = (PogType)b;
+                return pa.getLabel().compareTo(pb.getLabel());
+            }
+        });
+    }
+
+    
+    private PogType addPog(String pogName, int facing, int type)
+    {
+        return addPog(pogName, facing, type, false);
+    }
+
+    private PogType addPog(String pogName, int facing, int type, boolean ignoreOnFail)
+    {
+        try
+        {
+            File f = new File(pogName).getAbsoluteFile();
+            if (acquiredPogs.contains(f))
+            {
+                return null;
+            }
+
+            PogType pog = new PogType(pogName, facing, (type == LIBRARY_TYPE_UNDERLAY));
+            if (!ignoreOnFail || !pog.isUnknown())
+            {
+                //Log.log(Log.SYS, new Exception(this + " added: " + pog));
+                pogs.add(pog);
+                sortPogsByLabel(pogs);
+            }
+            acquiredPogs.add(f);
+            return pog;
+        }
+        catch (Exception ex)
+        {
+            // any exceptions thrown in this process cancel
+            // the addition of that one pog.
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
+    /**
+     * Adds library to this library, ensuring it doesn't already exist.
+     * 
+     * @param libName
+     * @param type
+     * @return
+     */
+    private PogLibrary addLibrary(String libName, int type)
+    {
+        try
+        {
+            File libDir = new File(libName).getAbsoluteFile();
+            if (acquiredLibraries.contains(libDir))
+            {
+                return null;
+            }
+
+            PogLibrary child = new PogLibrary(this, libDir.getPath(), type);
+            children.add(child);
+            //Log.log(Log.SYS, new Exception(this + " added: " + child));
+            acquiredLibraries.add(libDir);
+            return child;
+        }
+        catch (Exception ex)
+        {
+            // any exceptions thrown in this process cancel
+            // the addition of that one directory.
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
 }

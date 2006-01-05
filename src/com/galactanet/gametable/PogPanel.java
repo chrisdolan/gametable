@@ -180,7 +180,7 @@ public class PogPanel extends JPanel
             library = lib;
             children = new Vector();
 
-            List childLibs = library.getChildLibraries();
+            List childLibs = library.getChildren();
             for (int i = 0; i < childLibs.size(); i++)
             {
                 children.add(new LibraryNode((PogLibrary)childLibs.get(i)));
