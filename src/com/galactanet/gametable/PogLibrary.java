@@ -18,8 +18,12 @@ import java.util.*;
  */
 public class PogLibrary
 {
+    // --- Constants -------------------------------------------------------------------------------------------------
+
     public static final int LIBRARY_TYPE_POG      = 0;
     public static final int LIBRARY_TYPE_UNDERLAY = 1;
+
+    // --- Members ---------------------------------------------------------------------------------------------------
 
     /**
      * The short name of this library. Unique within the parent library.
@@ -56,8 +60,25 @@ public class PogLibrary
      */
     private PogLibrary      parent                = null;
 
+    // --- Constructors ----------------------------------------------------------------------------------------------
+
     /**
-     * Constructor
+     * Root PogLibrary Constructor.
+     * 
+     * @throws IOException
+     */
+    public PogLibrary() throws IOException
+    {
+        location = new File(".").getCanonicalFile();
+        name = getNameFromDirectory(location);
+        PogLibrary child = new PogLibrary(this, "pogs", LIBRARY_TYPE_POG);
+        childLibraries.add(child);
+        child = new PogLibrary(this, "underlays", LIBRARY_TYPE_UNDERLAY);
+        childLibraries.add(child);
+    }
+
+    /**
+     * Child PogLibrary Constructor.
      */
     public PogLibrary(PogLibrary mommy, String directory, int type) throws IOException
     {
@@ -73,15 +94,7 @@ public class PogLibrary
         acquirePogs();
     }
 
-    public PogLibrary() throws IOException
-    {
-        location = new File(".").getCanonicalFile();
-        name = getNameFromDirectory(location);
-        PogLibrary child = new PogLibrary(this, "pogs", LIBRARY_TYPE_POG);
-        childLibraries.add(child);
-        child = new PogLibrary(this, "underlays", LIBRARY_TYPE_UNDERLAY);
-        childLibraries.add(child);
-    }
+    // --- Methods ---------------------------------------------------------------------------------------------------
 
     /**
      * @return Returns the parent library.
@@ -231,6 +244,13 @@ public class PogLibrary
         return null;
     }
 
+    /**
+     * Creates a placeholder PogType for a pog that hasn't been received yet. Delegates to children if appropriate.
+     * 
+     * @param filename Filename of pog to create placeholder for.
+     * @param face What we think the face size of the pog is at this point.
+     * @return Placeholder PogType
+     */
     public PogType createPlaceholder(String filename, int face)
     {
         File f = new File(filename);
@@ -247,7 +267,7 @@ public class PogLibrary
             return null;
         }
 
-        Log.log(Log.SYS, this + ".createPlaceholder(" + filename + ", " + face + ")");
+        // Log.log(Log.SYS, this + ".createPlaceholder(" + filename + ", " + face + ")");
         PogType retVal = null;
         try
         {
@@ -356,6 +376,16 @@ public class PogLibrary
         return retVal;
     }
 
+    // --- Object Implementation ---
+
+    /*
+     * @see java.lang.Object#toString()
+     */
+    public String toString()
+    {
+        return "[PogLib " + name + " (" + pogs.size() + ")]";
+    }
+
     // --- Private Methods ---
 
     /**
@@ -389,6 +419,12 @@ public class PogLibrary
         return null;
     }
 
+    /**
+     * Calculated the library name from a directory file.
+     * 
+     * @param file Directory to use to calculate name.
+     * @return Name of this library node.
+     */
     private static String getNameFromDirectory(File file)
     {
         String temp = file.getAbsolutePath();

@@ -146,6 +146,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public JSplitPane              m_mapPogSplitPane          = new JSplitPane();
     public PogsPanel               m_pogsPanel                = null;
     public PogsPanel               m_underlaysPanel           = null;
+    public PogPanel                m_pogPanel                 = null;
     private JToolBar               m_toolBar                  = new JToolBar();
     private ButtonGroup            m_toolButtonGroup          = new ButtonGroup();
 
@@ -362,6 +363,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
             m_pogsPanel = new PogsPanel(m_pogLibrary.getChild("pogs"), m_gametableCanvas);
             m_underlaysPanel = new PogsPanel(m_pogLibrary.getChild("underlays"), m_gametableCanvas);
+            m_pogPanel = new PogPanel(m_pogLibrary, m_gametableCanvas);
+            m_pogsTabbedPane.add(m_pogPanel, "Tree");
             m_pogsTabbedPane.add(new JScrollPane(m_pogsPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), "Pogs");
             m_pogsTabbedPane.add(new JScrollPane(m_underlaysPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
@@ -1486,6 +1489,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     {
         m_pogsPanel.populateChildren();
         m_underlaysPanel.populateChildren();
+        m_pogPanel.populateChildren();
         m_gametableCanvas.repaint();
     }
 

@@ -327,18 +327,19 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public PogsPanel getActivePogsArea()
     {
-        JScrollPane scrollPane = (JScrollPane)m_gametableFrame.m_pogsTabbedPane.getSelectedComponent();
-
-        return (PogsPanel)scrollPane.getViewport().getView();
+        Component component = m_gametableFrame.m_pogsTabbedPane.getSelectedComponent();
+        if (component instanceof JScrollPane)
+        {
+            JScrollPane scrollPane = (JScrollPane)component;
+            return (PogsPanel)scrollPane.getViewport().getView();
+        }
+        return null;
     }
 
-    // conversion from pogsview coords
-    public Point pogsViewToCanvasView(int x, int y)
+    public PogPanel getPogPanel()
     {
-        x -= getActivePogsArea().getWidth();
-        x -= m_gametableFrame.m_mapPogSplitPane.getDividerSize();
-        y += getActivePogsArea().getY();
-        return new Point(x, y);
+        Component component = m_gametableFrame.m_pogsTabbedPane.getSelectedComponent();
+        return (PogPanel)component;
     }
 
     public static int getSquareSizeForZoom(int level)
@@ -759,7 +760,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
 
         pog.setText(s);
-        
+
         repaint();
     }
 
@@ -996,7 +997,16 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         m_bPogBeingDragged = false;
         updatePogDropLoc();
 
-        Pog pog = getActivePogsArea().getGrabbedPog();
+        Pog pog = null;
+        if (getActivePogsArea() != null)
+        {
+            pog = getActivePogsArea().getGrabbedPog();
+        }
+        else
+        {
+            pog = getPogPanel().getGrabbedPog();
+        }
+
         if (pog != null)
         {
             // only add the pog if it's in the viewport
@@ -1067,31 +1077,61 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void updatePogDropLoc()
     {
-        Point pogView = getActivePogsArea().getGrabPosition();
-        Point pogGrabOffset = getActivePogsArea().getGrabOffset();
-
-        // convert to our coordinates
-        Point canvasView = UtilityFunctions.getComponentCoordinates(this, pogView);
-
-        // now convert to model coordinates
-        Point canvasModel = viewToModel(canvasView);
-
-
-        // massage the pog location
-        // m_pogDragInsetX = getActivePogsArea().m_pogDragMouseInsetX;
-        // m_pogDragInsetY = getActivePogsArea().m_pogDragMouseInsetY;
-        getActivePogsArea().getGrabbedPog().setPosition(canvasModel.x - pogGrabOffset.x,
-            canvasModel.y - pogGrabOffset.y);
-
-        // this function is only called when we're dragging from the pogs
-        // area. So we have to cheexe our "current Mouse" coordinates
-        m_currentMouseX = canvasView.x;
-        m_currentMouseY = canvasView.y;
-
-        // now, snap to grid if they don't have the control key down
-        if (!m_bControlKeyDown)
+        if (getActivePogsArea() != null)
         {
-            snapPogToGrid(getActivePogsArea().getGrabbedPog());
+            PogsPanel panel = getActivePogsArea();
+            Point pogView = panel.getGrabPosition();
+            Point pogGrabOffset = panel.getGrabOffset();
+
+            // convert to our coordinates
+            Point canvasView = UtilityFunctions.getComponentCoordinates(this, pogView);
+
+            // now convert to model coordinates
+            Point canvasModel = viewToModel(canvasView);
+
+            // massage the pog location
+            // m_pogDragInsetX = getActivePogsArea().m_pogDragMouseInsetX;
+            // m_pogDragInsetY = getActivePogsArea().m_pogDragMouseInsetY;
+            panel.getGrabbedPog().setPosition(canvasModel.x - pogGrabOffset.x, canvasModel.y - pogGrabOffset.y);
+
+            // this function is only called when we're dragging from the pogs
+            // area. So we have to cheexe our "current Mouse" coordinates
+            m_currentMouseX = canvasView.x;
+            m_currentMouseY = canvasView.y;
+
+            // now, snap to grid if they don't have the control key down
+            if (!m_bControlKeyDown)
+            {
+                snapPogToGrid(panel.getGrabbedPog());
+            }
+        }
+        else if (getPogPanel() != null)
+        {
+            PogPanel panel = getPogPanel();
+            Point pogView = panel.getGrabPosition();
+            Point pogGrabOffset = panel.getGrabOffset();
+
+            // convert to our coordinates
+            Point canvasView = UtilityFunctions.getComponentCoordinates(this, pogView);
+
+            // now convert to model coordinates
+            Point canvasModel = viewToModel(canvasView);
+
+            // massage the pog location
+            // m_pogDragInsetX = getActivePogsArea().m_pogDragMouseInsetX;
+            // m_pogDragInsetY = getActivePogsArea().m_pogDragMouseInsetY;
+            panel.getGrabbedPog().setPosition(canvasModel.x - pogGrabOffset.x, canvasModel.y - pogGrabOffset.y);
+
+            // this function is only called when we're dragging from the pogs
+            // area. So we have to cheexe our "current Mouse" coordinates
+            m_currentMouseX = canvasView.x;
+            m_currentMouseY = canvasView.y;
+
+            // now, snap to grid if they don't have the control key down
+            if (!m_bControlKeyDown)
+            {
+                snapPogToGrid(panel.getGrabbedPog());
+            }
         }
     }
 
@@ -1179,7 +1219,14 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
 
         repaint();
-        getActivePogsArea().repaint();
+        if (getActivePogsArea() != null)
+        {
+            getActivePogsArea().repaint();
+        }
+        else
+        {
+            getPogPanel().repaint();
+        }
     }
 
     public void checkSnap()
@@ -1238,7 +1285,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public void updateLocation(MouseEvent e)
     {
-        if (e.getSource() == getActivePogsArea())
+        if (e.getSource() == getActivePogsArea() || e.getSource() == getPogPanel())
         {
             Point canvasView = UtilityFunctions.getComponentCoordinates(this, new Point(e.getX(), e.getY()));
             m_dragX = canvasView.x;
@@ -1551,9 +1598,19 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             // there could be a pog drag in progress
             if (m_bPogBeingDragged)
             {
-                if (getActivePogsArea().getGrabbedPog().isUnderlay())
+                Pog pog = null;
+                if (getActivePogsArea() != null)
                 {
-                    getActivePogsArea().getGrabbedPog().drawToCanvas(g);
+                    pog = getActivePogsArea().getGrabbedPog();
+                }
+                else if (getPogPanel() != null)
+                {
+                    pog = getPogPanel().getGrabbedPog();
+                }
+
+                if (pog.isUnderlay())
+                {
+                    pog.drawGhostlyToCanvas(g);
                 }
             }
 
@@ -1601,14 +1658,25 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             // there could be a pog drag in progress
             if (m_bPogBeingDragged)
             {
-                if (!getActivePogsArea().getGrabbedPog().isUnderlay())
+                Pog pog = null;
+                if (getActivePogsArea() != null)
                 {
-                    getActivePogsArea().getGrabbedPog().drawToCanvas(g);
+                    pog = getActivePogsArea().getGrabbedPog();
+                }
+                else if (getPogPanel() != null)
+                {
+                    pog = getPogPanel().getGrabbedPog();
+                }
+
+                if (!pog.isUnderlay())
+                {
+                    pog.drawGhostlyToCanvas(g);
                 }
             }
         }
 
         // draw the cursor overlays
+        g.setFont(Font.decode("system-bold-12"));
         for (int i = 0; i < m_gametableFrame.m_players.size(); i++)
         {
             Player plr = (Player)m_gametableFrame.m_players.get(i);
@@ -1620,7 +1688,21 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
                 Image hand = m_pointCursorImages[idx];
 
                 // 5px offset to align with mouse pointer
-                g.drawImage(hand, pointingAt.x, pointingAt.y - 5, null);
+                int drawX = pointingAt.x;
+                int drawY = pointingAt.y - 5;
+                g.drawImage(hand, drawX, drawY, null);
+                FontMetrics fm = g.getFontMetrics();
+                drawY -= fm.getHeight() + 2;
+                Rectangle r = fm.getStringBounds(plr.getCharacterName(), g).getBounds();
+                r.height -= fm.getLeading();
+                r.width -= 1;
+                final int padding = 3;
+                r.grow(padding, 0);
+                g.setColor(new Color(192, 192, 192, 128));
+                g.fillRect(drawX - padding, drawY, r.width, r.height);
+                g.setColor(Color.BLACK);
+                g.drawRect(drawX - padding, drawY, r.width - 1, r.height - 1);
+                g.drawString(plr.getCharacterName(), drawX, drawY + fm.getAscent() - fm.getLeading());
             }
         }
 

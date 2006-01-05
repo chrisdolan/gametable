@@ -84,8 +84,9 @@ public class PogsPanel extends JPanel implements Scrollable
             }
 
             label = label.substring(start, end);
-            setSize(getMySize());
-            setPreferredSize(getMySize());
+            Dimension size = getMySize();
+            setSize(size);
+            setPreferredSize(size);
 
             addMouseListener(new MouseAdapter()
             {

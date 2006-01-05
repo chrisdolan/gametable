@@ -8,6 +8,7 @@ package com.galactanet.gametable;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
+import java.io.File;
 import java.util.BitSet;
 
 
@@ -87,7 +88,7 @@ public class PogType
         {
             m_bUnknown = false;
             m_faceSize = Math.max(getWidth(), getHeight()) / GametableCanvas.BASE_SQUARE_SIZE;
-            //Log.log(Log.SYS, "loaded: " + this);
+            // Log.log(Log.SYS, "loaded: " + this);
         }
 
         if (m_faceSize < 0)
@@ -153,6 +154,24 @@ public class PogType
     public String getFilename()
     {
         return m_filename;
+    }
+
+    /**
+     * @return A nice label for this pog.
+     */
+    public String getLabel()
+    {
+        String label = getFilename();
+        int start = label.lastIndexOf(File.separatorChar) + 1;
+        int end = label.lastIndexOf('.');
+        if (end < 0)
+        {
+            end = label.length();
+        }
+
+        label = label.substring(start, end);
+
+        return new String(label);
     }
 
     /**
@@ -290,7 +309,8 @@ public class PogType
      */
     public String toString()
     {
-        return "[PogType@" + hashCode() + " name: " + m_filename + " size: " + m_faceSize + ", unknown: " + isUnknown() + "]";
+        return "[PogType@" + hashCode() + " name: " + m_filename + " size: " + m_faceSize + ", unknown: " + isUnknown()
+            + "]";
     }
 
     // --- Private Methods ---
