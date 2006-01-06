@@ -333,7 +333,7 @@ public class UtilityFunctions
 
         if (image.getWidth(null) < 1 || image.getHeight(null) < 1)
         {
-            Log.log(Log.SYS, "JAR invalid file? " + name + " " + image.getWidth(null) + " x " + image.getHeight(null));
+            //Log.log(Log.SYS, "JAR invalid file? " + name + " " + image.getWidth(null) + " x " + image.getHeight(null));
             return null;
         }
 
@@ -362,7 +362,7 @@ public class UtilityFunctions
 
         if (image.getWidth(null) < 1 || image.getHeight(null) < 1)
         {
-            Log.log(Log.SYS, "FS invalid file? " + name + " " + image.getWidth(null) + " x " + image.getHeight(null));
+            //Log.log(Log.SYS, "FS invalid file? " + name + " " + image.getWidth(null) + " x " + image.getHeight(null));
             return null;
         }
 

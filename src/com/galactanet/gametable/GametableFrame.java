@@ -2034,9 +2034,15 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     public void loadPrefs()
     {
+        File file = new File("prefs.prf");
+        if (!file.exists())
+        {
+            return;
+        }
+        
         try
         {
-            FileInputStream prefFile = new FileInputStream("prefs.prf");
+            FileInputStream prefFile = new FileInputStream(file);
             DataInputStream prefDis = new DataInputStream(prefFile);
 
             m_defaultName = prefDis.readUTF();
@@ -2145,6 +2151,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     public void loadState(File file)
     {
+        if (!file.exists())
+        {
+            return;
+        }
+        
         try
         {
             FileInputStream input = new FileInputStream(file);
