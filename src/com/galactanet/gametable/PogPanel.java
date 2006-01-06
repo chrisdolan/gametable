@@ -33,7 +33,7 @@ public class PogPanel extends JPanel
     // --- Constants -------------------------------------------------------------------------------------------------
 
     private static final int   POG_TEXT_PADDING     = 4;
-    private static final int   POG_PADDING          = 2;
+    private static final int   POG_PADDING          = 1;
     private static final int   POG_BORDER           = 0;
     private static final int   POG_MARGIN           = 0;
 
