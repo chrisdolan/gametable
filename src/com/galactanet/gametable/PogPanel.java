@@ -14,6 +14,8 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.event.TreeExpansionEvent;
+import javax.swing.event.TreeExpansionListener;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeNode;
@@ -66,6 +68,96 @@ public class PogPanel extends JPanel
     }
 
     // --- Types -----------------------------------------------------------------------------------------------------
+
+    private class BranchTracker implements TreeExpansionListener
+    {
+        private Set     expandedNodes  = new HashSet();
+        private Set     collapsedNodes = new HashSet();
+        private boolean ignore         = false;
+
+        public BranchTracker()
+        {
+        }
+
+        public void reset()
+        {
+            expandedNodes.clear();
+        }
+
+        public void restoreTree(JTree tree)
+        {
+            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            LibraryNode root = (LibraryNode)model.getRoot();
+
+            ignore = true;
+            try
+            {
+                Iterator iterator = new HashSet(expandedNodes).iterator();
+                while (iterator.hasNext())
+                {
+                    PogLibrary lib = (PogLibrary)iterator.next();
+                    LibraryNode node = root.findNodeFor(lib);
+                    if (node != null)
+                    {
+                        TreePath path = new TreePath(model.getPathToRoot(node));
+                        tree.expandPath(path);
+                    }
+                    else
+                    {
+                        expandedNodes.remove(node.getLibrary());
+                    }
+                }
+
+                iterator = new HashSet(collapsedNodes).iterator();
+                while (iterator.hasNext())
+                {
+                    PogLibrary lib = (PogLibrary)iterator.next();
+                    LibraryNode node = root.findNodeFor(lib);
+                    if (node != null)
+                    {
+                        TreePath path = new TreePath(model.getPathToRoot(node));
+                        tree.collapseRow(tree.getRowForPath(path));
+                    }
+                    else
+                    {
+                        collapsedNodes.remove(node.getLibrary());
+                    }
+                }
+            }
+            finally
+            {
+                ignore = false;
+            }
+        }
+
+        // --- TreeExpansionListener Implementation ---
+
+        /*
+         * @see javax.swing.event.TreeExpansionListener#treeExpanded(javax.swing.event.TreeExpansionEvent)
+         */
+        public void treeExpanded(TreeExpansionEvent event)
+        {
+            if (!ignore)
+            {
+                LibraryNode node = (LibraryNode)event.getPath().getLastPathComponent();
+                expandedNodes.add(node.getLibrary());
+                collapsedNodes.remove(node.getLibrary());
+            }
+        }
+
+        /*
+         * @see javax.swing.event.TreeExpansionListener#treeCollapsed(javax.swing.event.TreeExpansionEvent)
+         */
+        public void treeCollapsed(TreeExpansionEvent event)
+        {
+            if (!ignore)
+            {
+                LibraryNode node = (LibraryNode)event.getPath().getLastPathComponent();
+                expandedNodes.remove(node.getLibrary());
+                collapsedNodes.add(node.getLibrary());
+            }
+        }
+    }
 
     private static class PogNode implements TreeNode
     {
@@ -183,7 +275,7 @@ public class PogPanel extends JPanel
             List childLibs = library.getChildren();
             for (int i = 0; i < childLibs.size(); i++)
             {
-                children.add(new LibraryNode((PogLibrary)childLibs.get(i)));
+                children.add(new LibraryNode(this, (PogLibrary)childLibs.get(i)));
             }
 
             List pogs = library.getPogs();
@@ -201,6 +293,63 @@ public class PogPanel extends JPanel
             return library;
         }
 
+        /**
+         * Recursively finds the node representing that library.
+         * 
+         * @param lib Library to find node for.
+         * @return Node for library, or null if not found.
+         */
+        public LibraryNode findNodeFor(PogLibrary lib)
+        {
+            if (getLibrary().equals(lib))
+            {
+                return this;
+            }
+
+            for (int i = 0, size = children.size(); i < size; ++i)
+            {
+                Object o = children.get(i);
+                if (!(o instanceof LibraryNode))
+                {
+                    continue;
+                }
+
+                LibraryNode child = (LibraryNode)o;
+                LibraryNode node = child.findNodeFor(lib);
+                if (node != null)
+                {
+                    return node;
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Recursively finds the node representing that library.
+         * 
+         * @param lib Library to find node for.
+         * @return Node for library, or null if not found.
+         */
+        public PogNode findNodeFor(PogType pogType)
+        {
+            for (int i = 0, size = children.size(); i < size; ++i)
+            {
+                Object o = children.get(i);
+                if (o instanceof LibraryNode)
+                {
+                    continue;
+                }
+
+                PogNode child = (PogNode)o;
+                PogType pog = child.getPog();
+                if (pog.equals(pogType))
+                {
+                    return child;
+                }
+            }
+            return null;
+        }
+
         // --- Object Implementation ---
 
         /*
@@ -209,6 +358,33 @@ public class PogPanel extends JPanel
         public String toString()
         {
             return library.getName();
+        }
+
+        /*
+         * @see java.lang.Object#hashCode()
+         */
+        public int hashCode()
+        {
+            return getLibrary().hashCode();
+        }
+
+        /*
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
+        public boolean equals(Object o)
+        {
+            if (o == this)
+            {
+                return true;
+            }
+
+            LibraryNode node = (LibraryNode)o;
+            if (node.getLibrary().equals(getLibrary()))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         // --- TreeNode Implementation ---
@@ -440,6 +616,8 @@ public class PogPanel extends JPanel
      */
     private PogType         m_hoverPog           = null;
 
+    private BranchTracker   m_branchTracker      = new BranchTracker();
+
     // --- Child Components ---
 
     private JScrollPane     scrollPane           = null;
@@ -504,6 +682,7 @@ public class PogPanel extends JPanel
     public void populateChildren()
     {
         pogTree.setModel(new DefaultTreeModel(new LibraryNode(m_library)));
+        m_branchTracker.restoreTree(pogTree);
     }
 
     private void grabPog(PogType p, Point pos, Point offset)
@@ -636,6 +815,7 @@ public class PogPanel extends JPanel
             pogTree.setSelectionModel(null);
             pogTree.setCellRenderer(new PogTreeCellRenderer());
             pogTree.setRowHeight(0);
+            pogTree.addTreeExpansionListener(m_branchTracker);
 
             pogTree.addMouseListener(new MouseAdapter()
             {
@@ -663,10 +843,24 @@ public class PogPanel extends JPanel
                 {
                     releasePog();
                 }
+
+                /*
+                 * @see java.awt.event.MouseListener#mouseReleased(java.awt.event.MouseEvent)
+                 */
+                public void mouseExited(MouseEvent e)
+                {
+                    if (m_hoverPog != null)
+                    {
+                        m_hoverPog = null;
+                        repaint();
+                    }
+                }
+
             });
 
             pogTree.addMouseMotionListener(new MouseMotionAdapter()
             {
+
                 /*
                  * @see java.awt.event.MouseMotionAdapter#mouseDragged(java.awt.event.MouseEvent)
                  */
