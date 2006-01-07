@@ -592,11 +592,10 @@ public class PacketManager
 
     public static void readAddPogPacket(Connection conn, DataInputStream dis)
     {
-
         try
         {
             Pog pog = new Pog(dis);
-            if (pog.getPogType().isUnknown())
+            if (pog.isUnknown())
             {
                 // we need this image
                 requestPogImage(conn, pog);
@@ -686,7 +685,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** MOVEPOG PACKET *********************************** */
+    /* *********************** MOVEPOG PACKET *********************************** */
+    
     public static byte[] makeMovePogPacket(int id, int newX, int newY)
     {
         try
@@ -710,7 +710,6 @@ public class PacketManager
 
     public static void readMovePogPacket(DataInputStream dis)
     {
-
         try
         {
             int id = dis.readInt();
@@ -727,7 +726,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** POINT PACKET *********************************** */
+    /* *********************** POINT PACKET *********************************** */
+    
     public static byte[] makePointPacket(int plrIdx, int x, int y, boolean bPointing)
     {
         try
@@ -770,7 +770,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** POGDATA PACKET *********************************** */
+    /* *********************** POGDATA PACKET *********************************** */
+    
     public static byte[] makePogDataPacket(int id, String s)
     {
         try
@@ -793,7 +794,6 @@ public class PacketManager
 
     public static void readPogDataPacket(DataInputStream dis)
     {
-
         try
         {
             int id = dis.readInt();
@@ -808,7 +808,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** RECENTER PACKET *********************************** */
+    /* *********************** RECENTER PACKET *********************************** */
+    
     public static byte[] makeRecenterPacket(int x, int y, int zoom)
     {
         try
@@ -848,7 +849,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** UNDO PACKET *********************************** */
+    /* *********************** UNDO PACKET *********************************** */
+    
     public static byte[] makeUndoPacket(int stateID)
     {
         try
@@ -884,7 +886,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** REDO PACKET *********************************** */
+    /* *********************** REDO PACKET *********************************** */
+    
     public static byte[] makeRedoPacket(int stateID)
     {
         try
@@ -920,7 +923,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** REJECT PACKET *********************************** */
+    /* *********************** REJECT PACKET *********************************** */
+    
     public static byte[] makeRejectPacket(int reason)
     {
         try
@@ -957,7 +961,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** HEX MODE PACKET *********************************** */
+    /* *********************** HEX MODE PACKET *********************************** */
+    
     public static byte[] makeGridModePacket(int hexMode)
     {
         try
@@ -1045,7 +1050,7 @@ public class PacketManager
             dos.writeUTF("image/png");
 
             // write the filename
-            dos.writeUTF(filename);
+            dos.writeUTF(UtilityFunctions.getUniversalPath(filename));
 
             // now write the data length
             dos.writeInt(pngFileData.length);
@@ -1071,7 +1076,7 @@ public class PacketManager
             gtFrame.m_progressSpinner.activate(gtFrame);
 
             // the file name
-            String filename = dis.readUTF();
+            String filename = UtilityFunctions.getLocalPath(dis.readUTF());
 
             // read the length of the png file data
             int len = dis.readInt();
@@ -1099,11 +1104,11 @@ public class PacketManager
                 String temp = filename.toLowerCase();
                 if (temp.contains("underlay"))
                 {
-                    target = new File("underlays/" + target.getName());
+                    target = new File("underlays" + UtilityFunctions.LOCAL_SEPARATOR + target.getName());
                 }
                 else if (temp.contains("pog"))
                 {
-                    target = new File("pogs/" + target.getName());
+                    target = new File("pogs" + UtilityFunctions.LOCAL_SEPARATOR + target.getName());
                 }
                 else
                 {
@@ -1241,7 +1246,7 @@ public class PacketManager
             DataOutputStream dos = new DataOutputStream(baos);
 
             dos.writeInt(PACKET_PNGREQUEST); // type
-            dos.writeUTF(filename);
+            dos.writeUTF(UtilityFunctions.getUniversalPath(filename));
 
             return baos.toByteArray();
         }
@@ -1257,7 +1262,7 @@ public class PacketManager
         try
         {
             // someone wants a png file from us.
-            String filename = dis.readUTF();
+            String filename = UtilityFunctions.getLocalPath(dis.readUTF());
 
             // make a png packet and send it back
             byte[] packet = makePngPacket(filename);

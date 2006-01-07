@@ -11,8 +11,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.font.FontRenderContext;
 import java.awt.font.LineMetrics;
-import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import javax.swing.JComponent;
@@ -76,7 +77,7 @@ public class PogsPanel extends JPanel implements Scrollable
         {
             pog = p;
             label = pog.getFilename();
-            int start = label.lastIndexOf(File.separatorChar) + 1;
+            int start = label.lastIndexOf("/") + 1;
             int end = label.lastIndexOf('.');
             if (end < 0)
             {

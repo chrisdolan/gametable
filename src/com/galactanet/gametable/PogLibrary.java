@@ -202,17 +202,9 @@ public class PogLibrary
             return child;
         }
 
-        String newName = location.getPath() + File.separator + libraryName;
-        try
-        {
-            newName = new File(newName).getCanonicalFile().getPath();
-        }
-        catch (IOException ioe)
-        {
-            newName = new File(newName).getAbsolutePath();
-        }
+        File childPath = UtilityFunctions.getCanonicalFile(new File(location.getPath() + UtilityFunctions.LOCAL_SEPARATOR + libraryName));
 
-        return getChildExact(newName);
+        return getChildExact(childPath.getPath());
     }
 
     /**
@@ -256,9 +248,10 @@ public class PogLibrary
      */
     public PogType createPlaceholder(String filename, int face)
     {
-//        Log.log(Log.SYS, this + ".createPlaceholder(" + filename + ", " + face + ")");
+        Log.log(Log.SYS, this + ".createPlaceholder(" + filename + ", " + face + ")");
         File f = new File(filename);
         File p = f.getParentFile();
+        Log.log(Log.SYS, "F: " + f + ", P: " + p);
         PogLibrary lib = findDeepestChild(p);
         if (lib == null)
         {
@@ -314,12 +307,10 @@ public class PogLibrary
         {
             String[] files = location.list();
 
-            String rootPath = getRoot().getPath() + File.separator;
-            String path = getPath() + File.separator;
-            path = path.substring(rootPath.length());
+            File rootLocation = getRoot().getLocation();
+            String path = UtilityFunctions.getRelativePath(rootLocation, location) + UtilityFunctions.LOCAL_SEPARATOR;
 
-            int len = files.length;
-            for (int i = 0; i < len; ++i)
+            for (int i = 0, size = files.length; i < size; ++i)
             {
                 String filename = path + files[i];
                 File file = new File(filename);
@@ -378,6 +369,7 @@ public class PogLibrary
 
     private PogLibrary findDeepestChild(File path)
     {
+        Log.log(Log.SYS, "findDeepestChild(" + path + ")");
         path = path.getAbsoluteFile();
         
         // trivial accept
@@ -413,21 +405,12 @@ public class PogLibrary
      */
     private PogLibrary getChildExact(String libraryName)
     {
-        File f = new File(libraryName).getAbsoluteFile();
-        try
-        {
-            f = f.getCanonicalFile();
-        }
-        catch (IOException ioe)
-        {
-            // use the old one.
-        }
-
+        File file = UtilityFunctions.getCanonicalFile(new File(libraryName));
         int size = children.size();
         for (int i = 0; i < size; ++i)
         {
             PogLibrary child = (PogLibrary)children.get(i);
-            if (f.equals(child.getLocation()))
+            if (file.equals(child.getLocation()))
             {
                 return child;
             }
@@ -445,12 +428,13 @@ public class PogLibrary
     private static String getNameFromDirectory(File file)
     {
         String temp = file.getAbsolutePath();
-        int start = temp.lastIndexOf(File.separatorChar) + 1;
+        int start = temp.lastIndexOf(UtilityFunctions.LOCAL_SEPARATOR) + 1;
         if (start == temp.length())
         {
-            start = temp.lastIndexOf(File.separatorChar, start - 1) + 1;
+            start = temp.lastIndexOf(UtilityFunctions.LOCAL_SEPARATOR, start - 1) + 1;
         }
-        int end = temp.indexOf(File.separatorChar, start);
+        
+        int end = temp.indexOf(UtilityFunctions.LOCAL_SEPARATOR, start);
         if (end < 0)
         {
             end = temp.length();

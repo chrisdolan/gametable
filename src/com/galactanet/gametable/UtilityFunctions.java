@@ -25,19 +25,23 @@ import javax.swing.JOptionPane;
  */
 public class UtilityFunctions
 {
-    private static final Random random        = getRandomInstance();
+    private static final Random random              = getRandomInstance();
 
     /**
      * The PNG signature to verify PNG data with.
      */
-    private static final byte[] PNG_SIGNATURE = {
+    private static final byte[] PNG_SIGNATURE       = {
         (byte)(137 & 0xFF), 80, 78, 71, 13, 10, 26, 10
-                                              };
+                                                    };
 
-    public final static int     NO            = 0;
-    public final static int     YES           = 1;
-    public final static int     CANCEL        = -1;
+    public static final char    UNIVERSAL_SEPARATOR = '/';
+    public static final char    LOCAL_SEPARATOR     = File.separatorChar;
 
+    public final static int     NO                  = 0;
+    public final static int     YES                 = 1;
+    public final static int     CANCEL              = -1;
+
+    
     public static int getRandom(int max)
     {
         return random.nextInt(max);
@@ -210,6 +214,93 @@ public class UtilityFunctions
     public static void msgBox(Component parent, String msg, String title)
     {
         JOptionPane.showMessageDialog(parent, msg, title, JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    /**
+     * Gets the canonical/absolute file of the given file.
+     * 
+     * @param file File to canonicalize.
+     * @return Canonicalized file.
+     */
+    public static File getCanonicalFile(File file)
+    {
+        try
+        {
+            return file.getCanonicalFile();
+        }
+        catch (IOException ioe)
+        {
+            return file.getAbsoluteFile();
+        }
+    }
+
+    /**
+     * Converts the filename to use UNIVERSAL_SEPERATOR.
+     * 
+     * @param path Path to canonicalize.
+     * @return Canonicalized Path.
+     */
+    public static String getUniversalPath(String path)
+    {
+        StringBuffer buffer = new StringBuffer();
+        for (int i = 0, size = path.length(); i < size; ++i)
+        {
+            char c = path.charAt(i);
+            if (c == '/' || c == '\\')
+            {
+                buffer.append(UNIVERSAL_SEPARATOR);
+            }
+            else
+            {
+                buffer.append(c);
+            }
+        }
+
+        return buffer.toString();
+    }
+
+    /**
+     * Converts the filename to use File.seperatorChar.
+     * 
+     * @param path Path to canonicalize.
+     * @return Canonicalized Path.
+     */
+    public static String getLocalPath(String path)
+    {
+        StringBuffer buffer = new StringBuffer();
+        for (int i = 0, size = path.length(); i < size; ++i)
+        {
+            char c = path.charAt(i);
+            if (c == '/' || c == '\\')
+            {
+                buffer.append(LOCAL_SEPARATOR);
+            }
+            else
+            {
+                buffer.append(c);
+            }
+        }
+
+        return buffer.toString();
+    }
+
+    /**
+     * Gets the child path relative to the parent path.
+     * 
+     * @param parent Parent path.
+     * @param child Child path.
+     * @return The relative path.
+     */
+    public static String getRelativePath(File parent, File child)
+    {
+        String parentPath = getLocalPath(getCanonicalFile(parent).getPath());
+        if (parentPath.charAt(parentPath.length() - 1) != LOCAL_SEPARATOR)
+        {
+            parentPath = parentPath + LOCAL_SEPARATOR;
+        }
+        String childPath = getLocalPath(getCanonicalFile(child).getPath());
+
+        return new String(childPath.substring(parentPath.length()));
     }
 
     /**

@@ -8,7 +8,6 @@ package com.galactanet.gametable;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
-import java.io.File;
 import java.util.BitSet;
 
 
@@ -40,7 +39,7 @@ public class PogType
      */
     public PogType(String filename, int reportedFaceSize, boolean underlay)
     {
-        m_filename = filename;
+        m_filename = UtilityFunctions.getLocalPath(filename);
         m_bUnderlay = underlay;
         m_faceSize = reportedFaceSize;
         load();
@@ -82,11 +81,12 @@ public class PogType
                     }
                     break;
                 }
+
                 m_image = UtilityFunctions.getCachedImage(fileToLoad);
                 if (m_faceSize > 3)
                 {
                     int size = m_faceSize * GametableCanvas.BASE_SQUARE_SIZE;
-                    m_image = m_image.getScaledInstance(size, size, Image.SCALE_SMOOTH);
+                    m_image = UtilityFunctions.getScaledInstance(m_image, size, size);
                 }
             }
         }
@@ -178,7 +178,7 @@ public class PogType
     public String getLabel()
     {
         String label = getFilename();
-        int start = label.lastIndexOf(File.separatorChar) + 1;
+        int start = label.lastIndexOf(UtilityFunctions.LOCAL_SEPARATOR) + 1;
         int end = label.lastIndexOf('.');
         if (end < 0)
         {

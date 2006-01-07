@@ -274,11 +274,13 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
             m_mapChatSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
             m_mapChatSplitPane.setContinuousLayout(true);
             m_mapChatSplitPane.setResizeWeight(1.0);
+            m_mapChatSplitPane.setBorder(null);
             m_gametableCanvas.setMaximumSize(new Dimension(32767, 32767));
             m_gametableCanvas.setPreferredSize(new Dimension(500, 400));
             m_textAndEntryPanel.setPreferredSize(new Dimension(500, 52));
             m_textAreaPanel.setLayout(new BorderLayout());
             m_mapPogSplitPane.setContinuousLayout(true);
+            m_mapPogSplitPane.setBorder(null);
             m_macroButtonsPanel.setLayout(new BoxLayout(m_macroButtonsPanel, BoxLayout.Y_AXIS));
             m_colorCombo.setMaximumSize(new Dimension(100, 21));
             m_toolBar.setFloatable(false);

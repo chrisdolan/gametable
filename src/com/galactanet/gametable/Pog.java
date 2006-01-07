@@ -9,6 +9,7 @@ import java.awt.*;
 import java.awt.image.ImageObserver;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 
 
@@ -35,7 +36,6 @@ public class Pog
     private int                m_Id                     = 0;
     private boolean            m_bTinted                = false;
     private boolean            m_bTextChangeNotifying   = false;
-
 
     public Pog(DataInputStream dis) throws IOException
     {
@@ -66,12 +66,12 @@ public class Pog
     {
         return m_bTinted;
     }
-    
+
     public void setTinted(boolean b)
     {
         m_bTinted = b;
     }
-    
+
     public String toString()
     {
         return "[Pog name: " + getFilename() + " pos: " + getPosition() + " size: " + getFaceSize() + "]";
@@ -120,7 +120,15 @@ public class Pog
 
     private void initFromPacket(DataInputStream dis) throws IOException
     {
-        String filename = dis.readUTF();
+        String filename = UtilityFunctions.getLocalPath(dis.readUTF());
+        Log.log(Log.SYS, "initFromPacket: " + filename);
+        PogLibrary lib = GametableFrame.getGametableFrame().getPogLibrary();
+        filename = UtilityFunctions.getRelativePath(lib.getLocation(), new File(filename));
+        Log.log(Log.SYS, "initFromPacket2: " + filename);
+        filename = UtilityFunctions.getLocalPath(filename);
+        Log.log(Log.SYS, "initFromPacket2: " + filename);
+        Log.log(Log.SYS, "File.separator: " + File.separator);
+
         int x = dis.readInt();
         int y = dis.readInt();
         m_position = new Point(x, y);
@@ -130,7 +138,6 @@ public class Pog
         // boolean underlay =
         dis.readBoolean();
 
-        PogLibrary lib = GametableFrame.getGametableFrame().getPogLibrary();
         PogType type = lib.getPog(filename);
         if (type == null)
         {

@@ -611,7 +611,7 @@ public class PogPanel extends JPanel
      * Pog that mouse is hovering over, if any.
      */
     private PogType         m_hoverPog           = null;
-
+    private Point           m_mousePosition      = null;
     private BranchTracker   m_branchTracker      = new BranchTracker();
 
     // --- Child Components ---
@@ -737,41 +737,36 @@ public class PogPanel extends JPanel
             m_grabbedPog.getPogType().drawGhostly(g2, 0, 0);
             g2.dispose();
         }
-        else if (m_hoverPog != null)
+        else if (m_hoverPog != null && m_mousePosition != null)
         {
             Graphics2D g2 = (Graphics2D)g;
-            Point localPos = getMousePosition();
-            if (localPos != null)
+            int drawX = m_mousePosition.x;
+            int drawY = m_mousePosition.y + 16;
+            int overBottom = (drawY + m_hoverPog.getHeight()) - getHeight();
+            int overTop = -(drawY - (m_hoverPog.getHeight() + 16));
+            if (overBottom > overTop)
             {
-                int drawX = localPos.x;
-                int drawY = localPos.y + 16;
-                int overBottom = (drawY + m_hoverPog.getHeight()) - getHeight();
-                int overTop = -(drawY - (m_hoverPog.getHeight() + 16));
-                if (overBottom > overTop)
-                {
-                    drawY -= m_hoverPog.getHeight() + 16;
-                }
-
-                if (drawX > getWidth() - m_hoverPog.getWidth() - HOVER_MARGIN)
-                {
-                    drawX = getWidth() - m_hoverPog.getWidth() - HOVER_MARGIN;
-                }
-
-                if (drawX < HOVER_MARGIN)
-                {
-                    drawX = HOVER_MARGIN;
-                }
-
-                g2.translate(drawX, drawY);
-                g2.setColor(POG_BACKGROUND_COLOR);
-                g2.fillRect(-POG_PADDING, -POG_PADDING, m_hoverPog.getWidth() + POG_PADDING * 2, m_hoverPog.getHeight()
-                    + POG_PADDING * 2);
-                g2.setColor(POG_BORDER_COLOR);
-                g2.drawRect(-POG_PADDING, -POG_PADDING, m_hoverPog.getWidth() + POG_PADDING * 2 - 1, m_hoverPog
-                    .getHeight()
-                    + POG_PADDING * 2 - 1);
-                m_hoverPog.drawTranslucent(g2, 0, 0, 0.9f);
+                drawY -= m_hoverPog.getHeight() + 16;
             }
+
+            if (drawX > getWidth() - m_hoverPog.getWidth() - HOVER_MARGIN)
+            {
+                drawX = getWidth() - m_hoverPog.getWidth() - HOVER_MARGIN;
+            }
+
+            if (drawX < HOVER_MARGIN)
+            {
+                drawX = HOVER_MARGIN;
+            }
+
+            g2.translate(drawX, drawY);
+            g2.setColor(POG_BACKGROUND_COLOR);
+            g2.fillRect(-POG_PADDING, -POG_PADDING, m_hoverPog.getWidth() + POG_PADDING * 2, m_hoverPog.getHeight()
+                + POG_PADDING * 2);
+            g2.setColor(POG_BORDER_COLOR);
+            g2.drawRect(-POG_PADDING, -POG_PADDING, m_hoverPog.getWidth() + POG_PADDING * 2 - 1, m_hoverPog.getHeight()
+                + POG_PADDING * 2 - 1);
+            m_hoverPog.drawTranslucent(g2, 0, 0, 0.9f);
             g2.dispose();
         }
     }
@@ -826,8 +821,7 @@ public class PogPanel extends JPanel
                     if (val instanceof PogNode)
                     {
                         PogNode node = (PogNode)val;
-                        Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e
-                            .getY()));
+                        Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e.getY()));
                         Point localCoords = new Point(node.getPog().getWidth() / 2, node.getPog().getHeight() / 2);
                         grabPog(node.getPog(), screenCoords, localCoords);
                     }
@@ -844,8 +838,17 @@ public class PogPanel extends JPanel
                 /*
                  * @see java.awt.event.MouseListener#mouseReleased(java.awt.event.MouseEvent)
                  */
+                public void mouseEntered(MouseEvent e)
+                {
+                    m_mousePosition = new Point(e.getX(), e.getY());
+                }
+
+                /*
+                 * @see java.awt.event.MouseListener#mouseReleased(java.awt.event.MouseEvent)
+                 */
                 public void mouseExited(MouseEvent e)
                 {
+                    m_mousePosition = null;
                     if (m_hoverPog != null)
                     {
                         m_hoverPog = null;
@@ -857,7 +860,6 @@ public class PogPanel extends JPanel
 
             pogTree.addMouseMotionListener(new MouseMotionAdapter()
             {
-
                 /*
                  * @see java.awt.event.MouseMotionAdapter#mouseDragged(java.awt.event.MouseEvent)
                  */
@@ -871,7 +873,8 @@ public class PogPanel extends JPanel
                  */
                 public void mouseMoved(MouseEvent e)
                 {
-                    Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e.getY()));
+                    m_mousePosition = new Point(e.getX(), e.getY());
+                    Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, m_mousePosition);
                     moveGrabPosition(screenCoords);
 
                     TreePath path = pogTree.getPathForLocation(e.getX(), e.getY());
