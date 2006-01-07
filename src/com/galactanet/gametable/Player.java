@@ -13,7 +13,7 @@ import com.galactanet.gametable.net.Connection;
 /**
  * TODO: comment
  * 
- * @author iffy
+ * @author sephalon
  */
 public class Player
 {
@@ -29,13 +29,13 @@ public class Player
     private Point      m_point;
     private Point      m_prevPoint;
     
-    public int m_ID;
+    private int m_id;
 
     public Player(String playerName, String characterName, int id)
     {
         m_playerName = playerName;
         m_characterName = characterName;
-        m_ID = id;
+        m_id = id;
     }
 
     public String toString()
@@ -62,6 +62,22 @@ public class Player
     public String getCharacterName()
     {
         return m_characterName;
+    }
+
+    /**
+     * @param id The m_Id to set.
+     */
+    public void setId(int id)
+    {
+        this.m_id = id;
+    }
+
+    /**
+     * @return Returns the m_Id.
+     */
+    public int getId()
+    {
+        return m_id;
     }
 
     /**

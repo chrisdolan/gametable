@@ -326,7 +326,7 @@ public class PacketManager
                 Player plr = (Player)gtFrame.m_players.get(i);
                 dos.writeUTF(plr.getCharacterName());
                 dos.writeUTF(plr.getPlayerName());
-                dos.writeInt(plr.m_ID);
+                dos.writeInt(plr.getId());
                 dos.writeBoolean(plr.isHostPlayer());
             }
 
