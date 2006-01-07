@@ -646,6 +646,7 @@ public class PogPanel extends JPanel
         setLayout(new BorderLayout());
         setBackground(BACKGROUND_COLOR);
         add(getScrollPane(), BorderLayout.CENTER);
+        addKeyListener(m_canvas);
     }
 
     /**
