@@ -15,6 +15,8 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
 
 import com.galactanet.gametable.net.Connection;
 import com.galactanet.gametable.net.NetworkThread;
@@ -86,9 +88,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     JMenuItem                      m_exitMenuItem             = new JMenuItem("Exit");
 
     JMenu                          m_networkMenu              = new JMenu("Network");
+    JMenuItem                      m_listPlayersMenuItem      = new JMenuItem("List Players");
     JMenuItem                      m_hostMenuItem             = new JMenuItem("Host...");
     JMenuItem                      m_joinMenuItem             = new JMenuItem("Join...");
-    JMenuItem                      m_disconnect               = new JMenuItem("Disconnect");
+    JMenuItem                      m_disconnectMenuItem       = new JMenuItem("Disconnect");
 
     JMenu                          m_editMenu                 = new JMenu("Edit");
     JMenuItem                      m_undoMenuItem             = new JMenuItem("Undo");
@@ -96,13 +99,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     JMenu                          m_mapMenu                  = new JMenu("Map");
     JMenuItem                      m_clearMapMenuItem         = new JMenuItem("Clear Layer");
-    JMenuItem                      m_recenter                 = new JMenuItem("Recenter All Players");
+    JMenuItem                      m_recenterMapMenuItem      = new JMenuItem("Recenter All Players");
     JCheckBoxMenuItem              m_privateLayerModeMenuItem = new JCheckBoxMenuItem("Manipulate Private Layer");
 
     JMenu                          m_gridModeMenu             = new JMenu("Grid Mode");
-    JCheckBoxMenuItem              m_noGridModeItem           = new JCheckBoxMenuItem("No Grid");
-    JCheckBoxMenuItem              m_squareGridModeItem       = new JCheckBoxMenuItem("Square Grid");
-    JCheckBoxMenuItem              m_hexGridModeItem          = new JCheckBoxMenuItem("Hex Grid");
+    JCheckBoxMenuItem              m_noGridModeMenuItem       = new JCheckBoxMenuItem("No Grid");
+    JCheckBoxMenuItem              m_squareGridModeMenuItem   = new JCheckBoxMenuItem("Square Grid");
+    JCheckBoxMenuItem              m_hexGridModeMenuItem      = new JCheckBoxMenuItem("Hex Grid");
 
     JMenu                          m_diceMacrosMenu           = new JMenu("Dice Macros");
     JMenuItem                      m_addDiceMacroMenuItem     = new JMenuItem("Add...");
@@ -115,7 +118,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
     JPanel                         m_propertiesArea           = new JPanel();
     public GametableCanvas         m_gametableCanvas          = new GametableCanvas();
-    JList                          m_playerList               = new JList();
 
     boolean                        m_bInitted;
     Dimension                      m_prevRightSize            = new Dimension(-1, -1);
@@ -131,7 +133,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public int                     m_defaultPort              = DEFAULT_PORT;
     String                         m_defaultPassword          = "";
 
-    JScrollPane                    m_playerListScrollPane     = new JScrollPane();
     JPanel                         m_textAndEntryPanel        = new JPanel();
     public JTextField              m_textEntry                = new JTextField();
     JScrollPane2                   m_textLogScroller          = new JScrollPane2();
@@ -142,6 +143,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     boolean                        m_bDisregardDividerChanges = true;
     int                            m_prevDividerLocFromBottom = -1;
     JPanel                         m_textAreaPanel            = new JPanel();
+    JScrollPane                    m_macrosScrollPane         = new JScrollPane(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
     JPanel                         m_macroButtonsPanel        = new JPanel();
     public JSplitPane              m_mapPogSplitPane          = new JSplitPane();
     public PogsPanel               m_pogsPanel                = null;
@@ -240,14 +242,15 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_redoMenuItem.addActionListener(this);
             m_clearMapMenuItem.setActionCommand("clearPogs");
             m_clearMapMenuItem.addActionListener(this);
-            m_noGridModeItem.addActionListener(this);
-            m_squareGridModeItem.addActionListener(this);
-            m_hexGridModeItem.addActionListener(this);
+            m_noGridModeMenuItem.addActionListener(this);
+            m_squareGridModeMenuItem.addActionListener(this);
+            m_hexGridModeMenuItem.addActionListener(this);
             m_privateLayerModeMenuItem.addActionListener(this);
             m_hostMenuItem.addActionListener(this);
             m_joinMenuItem.addActionListener(this);
-            m_disconnect.addActionListener(this);
-            m_recenter.addActionListener(this);
+            m_listPlayersMenuItem.addActionListener(this);
+            m_disconnectMenuItem.addActionListener(this);
+            m_recenterMapMenuItem.addActionListener(this);
             m_addDiceMacroMenuItem.addActionListener(this);
             m_removeDiceMacroMenuItem.addActionListener(this);
             m_aboutMenuItem.addActionListener(this);
@@ -261,7 +264,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_propertiesArea.setPreferredSize(new Dimension(70, 100));
             m_propertiesArea.setRequestFocusEnabled(true);
             m_propertiesArea.setLayout(new BorderLayout());
-            m_playerListScrollPane.setPreferredSize(new Dimension(180, 120));
             m_textAndEntryPanel.setLayout(new BorderLayout());
             m_textLog.setDoubleBuffered(true);
             m_textLog.setPreferredSize(new Dimension(500, 21));
@@ -277,7 +279,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_textAreaPanel.setLayout(new BorderLayout());
             m_mapPogSplitPane.setContinuousLayout(true);
             m_macroButtonsPanel.setLayout(new BoxLayout(m_macroButtonsPanel, BoxLayout.Y_AXIS));
-            m_macroButtonsPanel.setToolTipText("Macros");
             m_colorCombo.setMaximumSize(new Dimension(100, 21));
             m_toolBar.add(m_colorCombo, null);
             try
@@ -332,9 +333,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_fileMenu.add(m_reacquirePogsMenuItem);
             m_fileMenu.add(m_exitMenuItem);
 
-            m_gridModeMenu.add(m_noGridModeItem);
-            m_gridModeMenu.add(m_squareGridModeItem);
-            m_gridModeMenu.add(m_hexGridModeItem);
+            m_gridModeMenu.add(m_noGridModeMenuItem);
+            m_gridModeMenu.add(m_squareGridModeMenuItem);
+            m_gridModeMenu.add(m_hexGridModeMenuItem);
 
             m_menuBar.add(m_editMenu);
             m_editMenu.add(m_undoMenuItem);
@@ -343,7 +344,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_menuBar.add(m_networkMenu);
             m_menuBar.add(m_mapMenu);
             m_mapMenu.add(m_clearMapMenuItem);
-            m_mapMenu.add(m_recenter);
+            m_mapMenu.add(m_recenterMapMenuItem);
             m_mapMenu.add(m_gridModeMenu);
             m_mapMenu.add(m_privateLayerModeMenuItem);
             m_menuBar.add(m_diceMacrosMenu);
@@ -353,9 +354,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_textAndEntryPanel.add(m_textLogScroller, BorderLayout.CENTER);
             m_contentPane.add(m_toolBar, BorderLayout.NORTH);
             m_textLogScroller.getViewport().add(m_textLog, null);
-            m_mapChatSplitPane.add(m_mapPogSplitPane, JSplitPane.TOP);
-            m_mapPogSplitPane.add(m_gametableCanvas, JSplitPane.BOTTOM);
-            m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.TOP);
+            m_textLog.addKeyListener(m_gametableCanvas);
 
             m_pogLibrary = new PogLibrary();
             m_gametableCanvas.init(this);
@@ -370,28 +369,33 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_pogsTabbedPane.add(new JScrollPane(m_underlaysPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), "Underlays");
 
-            m_mapChatSplitPane.add(m_propertiesArea, JSplitPane.BOTTOM);
-            m_propertiesArea.add(m_playerListScrollPane, BorderLayout.WEST);
             m_propertiesArea.add(m_textAreaPanel, BorderLayout.CENTER);
-            m_playerListScrollPane.getViewport().add(m_playerList, null);
-            m_textAreaPanel.add(m_macroButtonsPanel, BorderLayout.WEST);
+            m_textAreaPanel.add(m_macrosScrollPane, BorderLayout.WEST);
+            m_macrosScrollPane.setViewportView(m_macroButtonsPanel);
+            m_macrosScrollPane.setBorder(new CompoundBorder(new EmptyBorder(0, 0, 0, 5), m_macrosScrollPane.getBorder()));
             m_textAreaPanel.add(m_textAndEntryPanel, BorderLayout.CENTER);
             m_mapChatSplitPane.addPropertyChangeListener(this);
-            m_contentPane.add(m_mapChatSplitPane, BorderLayout.CENTER);
+            m_mapChatSplitPane.add(m_gametableCanvas, JSplitPane.TOP);
+            m_mapChatSplitPane.add(m_propertiesArea, JSplitPane.BOTTOM);
 
-            m_disconnect.setEnabled(false);
+            m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.LEFT);
+            m_mapPogSplitPane.add(m_mapChatSplitPane, JSplitPane.RIGHT);
+            m_contentPane.add(m_mapPogSplitPane, BorderLayout.CENTER);
+
+            
+            m_disconnectMenuItem.setEnabled(false);
 
             ColorComboCellRenderer renderer = new ColorComboCellRenderer();
             m_colorCombo.setRenderer(renderer);
 
-            m_playerList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             m_myPlayerIdx = 0;
 
             m_textLog.setEditable(false);
             m_gametableCanvas.requestFocus();
+            m_networkMenu.add(m_listPlayersMenuItem);
             m_networkMenu.add(m_hostMenuItem);
             m_networkMenu.add(m_joinMenuItem);
-            m_networkMenu.add(m_disconnect);
+            m_networkMenu.add(m_disconnectMenuItem);
             m_diceMacrosMenu.add(m_addDiceMacroMenuItem);
             m_diceMacrosMenu.add(m_removeDiceMacroMenuItem);
 
@@ -475,7 +479,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     // returns the player id of this client
     public int getMeID()
     {
-        return getMePlayer().m_ID;
+        return getMePlayer().getId();
     }
 
     public void componentMoved(ComponentEvent e)
@@ -771,7 +775,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             // remove this player
             m_players.remove(dead);
-            refreshPlayerListBox();
             sendCastInfo();
             postSystemMessage("" + dead.getPlayerName() + " has left the session");
         }
@@ -891,7 +894,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         player.setConnection(connection);
 
         // set their ID
-        player.m_ID = m_nextPlayerID;
+        player.setId(m_nextPlayerID);
         m_nextPlayerID++;
 
         // tell everyone about the new guy
@@ -987,10 +990,10 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         me.setHostPlayer(true);
         m_myPlayerIdx = 0;
 
-        refreshPlayerListBox();
-
         m_networkThread = new NetworkThread(m_defaultPort);
         m_networkThread.start();
+        // TODO: fix hosting failure detection
+
         initializeExecutorThread();
         m_netStatus = NETSTATE_HOST;
         String message = "Hosting on port: " + m_defaultPort;
@@ -999,7 +1002,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         m_hostMenuItem.setEnabled(false);
         m_joinMenuItem.setEnabled(false);
-        m_disconnect.setEnabled(true);
+        m_disconnectMenuItem.setEnabled(true);
         setTitle(GametableApp.VERSION + " - " + me.getCharacterName());
 
         // when you host, all the undo stacks clear
@@ -1072,7 +1075,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
             m_hostMenuItem.setEnabled(false);
             m_joinMenuItem.setEnabled(false);
-            m_disconnect.setEnabled(true);
+            m_disconnectMenuItem.setEnabled(true);
             setTitle(GametableApp.VERSION + " - " + me.getCharacterName());
         }
         catch (Exception ex)
@@ -1105,13 +1108,12 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
 
         m_hostMenuItem.setEnabled(true);
         m_joinMenuItem.setEnabled(true);
-        m_disconnect.setEnabled(false);
+        m_disconnectMenuItem.setEnabled(false);
 
         m_players = new ArrayList();
         Player me = new Player(m_defaultName, m_defaultCharName, -1);
         m_players.add(me);
         m_myPlayerIdx = 0;
-        refreshPlayerListBox();
         setTitle(GametableApp.VERSION);
 
         // we might have disconnected during inital data recipt
@@ -1161,21 +1163,21 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     {
         if (m_gametableCanvas.m_gridMode == m_gametableCanvas.m_noGridMode)
         {
-            m_noGridModeItem.setState(true);
-            m_squareGridModeItem.setState(false);
-            m_hexGridModeItem.setState(false);
+            m_noGridModeMenuItem.setState(true);
+            m_squareGridModeMenuItem.setState(false);
+            m_hexGridModeMenuItem.setState(false);
         }
         else if (m_gametableCanvas.m_gridMode == m_gametableCanvas.m_squareGridMode)
         {
-            m_noGridModeItem.setState(false);
-            m_squareGridModeItem.setState(true);
-            m_hexGridModeItem.setState(false);
+            m_noGridModeMenuItem.setState(false);
+            m_squareGridModeMenuItem.setState(true);
+            m_hexGridModeMenuItem.setState(false);
         }
         else if (m_gametableCanvas.m_gridMode == m_gametableCanvas.m_hexGridMode)
         {
-            m_noGridModeItem.setState(false);
-            m_squareGridModeItem.setState(false);
-            m_hexGridModeItem.setState(true);
+            m_noGridModeMenuItem.setState(false);
+            m_squareGridModeMenuItem.setState(false);
+            m_hexGridModeMenuItem.setState(true);
         }
     }
 
@@ -1363,7 +1365,11 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             join();
         }
-        if (e.getSource() == m_disconnect)
+        if (e.getSource() == m_listPlayersMenuItem)
+        {
+            parseSlashCommand("/who");
+        }
+        if (e.getSource() == m_disconnectMenuItem)
         {
             disconnect();
         }
@@ -1372,7 +1378,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             UtilityFunctions.msgBox(this, GametableApp.VERSION + " by Andy Weir and David Ghandehari", "Version");
         }
 
-        if (e.getSource() == m_noGridModeItem)
+        if (e.getSource() == m_noGridModeMenuItem)
         {
             m_gametableCanvas.m_gridMode = m_gametableCanvas.m_noGridMode;
             send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_NONE));
@@ -1380,7 +1386,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             repaint();
             postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
         }
-        if (e.getSource() == m_squareGridModeItem)
+        if (e.getSource() == m_squareGridModeMenuItem)
         {
             m_gametableCanvas.m_gridMode = m_gametableCanvas.m_squareGridMode;
             send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_SQUARES));
@@ -1388,7 +1394,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             repaint();
             postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
         }
-        if (e.getSource() == m_hexGridModeItem)
+        if (e.getSource() == m_hexGridModeMenuItem)
         {
             m_gametableCanvas.m_gridMode = m_gametableCanvas.m_hexGridMode;
             send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_HEX));
@@ -1402,7 +1408,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             toggleLayer();
         }
 
-        if (e.getSource() == m_recenter)
+        if (e.getSource() == m_recenterMapMenuItem)
         {
             int result = UtilityFunctions.yesNoDialog(this, "This will recenter everyone's map view to match yours, "
                 + "and will set their zoom levels to match yours. Are you sure you want to do this?", "Recenter?");
@@ -1568,16 +1574,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void addPlayer(Object player)
     {
         m_players.add(player);
-        refreshPlayerListBox();
-    }
-
-    public void refreshPlayerListBox()
-    {
-        Object[] playerList = m_players.toArray();
-        m_playerList = new JList(playerList);
-        PlayerListCellRenderer renderer = new PlayerListCellRenderer();
-        m_playerList.setCellRenderer(renderer);
-        m_playerListScrollPane.getViewport().add(m_playerList, null);
     }
 
     public void addMacro(String name, String macro)
@@ -1670,12 +1666,13 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             newButton.setPreferredSize(new Dimension(120, 20));
             newButton.setText(dm.getName());
             newButton.addActionListener(this);
+            newButton.setToolTipText(dm.toString());
 
             m_macroButtons.add(newButton);
             m_macroButtonsPanel.add(newButton);
         }
 
-        m_macroButtonsPanel.revalidate();
+        m_macrosScrollPane.revalidate();
 
         repaint();
     }
@@ -1835,6 +1832,16 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             // find and kill this macro
             removeMacro(words[1]);
         }
+        else if (words[0].equals("/who"))
+        {
+            logSystemMessage("Who's connected:");
+            for (int i = 0, size = m_players.size(); i < size; ++i)
+            {
+                Player player = (Player)m_players.get(i);
+                logSystemMessage("   " + player.toString());
+            }
+            logSystemMessage(m_players.size() + " player" + (m_players.size() > 1 ? "s" : ""));
+        }
         else if (words[0].equals("/roll"))
         {
             // req. 1 param
@@ -1951,7 +1958,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             logSystemMessage("/macro: macro a die roll");
             logSystemMessage("/macrodelete: deletes an unwanted macro");
             logSystemMessage("/roll: roll dice");
-            logSystemMessage("// list all slash commands");
+            logSystemMessage("/who: lists connected players");
+            logSystemMessage("// or /help: list all slash commands");
         }
     }
 
