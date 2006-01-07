@@ -357,8 +357,14 @@ public class PogType
 
     private Image getScaledImage(float scale)
     {
+        if (scale == 1.0)
+        {
+            return m_image;
+        }
+        
         if (m_lastScaledImage == null || Math.round(m_lastScale * 10) != Math.round(scale * 10))
         {
+            //System.out.println(this + " scale: " + m_lastScale + " -> " + scale);  
             m_lastScale = scale;
             m_lastScaledImage = UtilityFunctions.getScaledInstance(m_image, m_lastScale);
         }
