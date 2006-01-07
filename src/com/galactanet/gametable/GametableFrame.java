@@ -1053,7 +1053,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_gametableCanvas.getPublicMap().setScroll(0, 0);
             m_gametableCanvas.getPublicMap().clearPogs();
             m_gametableCanvas.getPublicMap().clearLines();
-            PacketManager.g_imagelessPogs.clear();
+            //PacketManager.g_imagelessPogs.clear();
 
             // send the packet
             while (!conn.isConnected())

@@ -63,12 +63,17 @@ public class UtilityFunctions
 
     public static byte[] loadFileToArray(String filename)
     {
-        File theFile = new File(filename);
-        return loadFileToArray(theFile);
+        File file = new File(filename);
+        return loadFileToArray(file);
     }
 
     public static byte[] loadFileToArray(File file)
     {
+        if (!file.exists())
+        {
+            return null;
+        }
+
         try
         {
             DataInputStream infile = new DataInputStream(new FileInputStream(file));
@@ -275,7 +280,7 @@ public class UtilityFunctions
         }
         return image;
     }
-    
+
     /**
      * Removes an image from the image cache.
      * 
@@ -333,7 +338,8 @@ public class UtilityFunctions
 
         if (image.getWidth(null) < 1 || image.getHeight(null) < 1)
         {
-            //Log.log(Log.SYS, "JAR invalid file? " + name + " " + image.getWidth(null) + " x " + image.getHeight(null));
+            // Log.log(Log.SYS, "JAR invalid file? " + name + " " + image.getWidth(null) + " x " +
+            // image.getHeight(null));
             return null;
         }
 
@@ -362,12 +368,61 @@ public class UtilityFunctions
 
         if (image.getWidth(null) < 1 || image.getHeight(null) < 1)
         {
-            //Log.log(Log.SYS, "FS invalid file? " + name + " " + image.getWidth(null) + " x " + image.getHeight(null));
+            // Log.log(Log.SYS, "FS invalid file? " + name + " " + image.getWidth(null) + " x " +
+            // image.getHeight(null));
             return null;
         }
 
         tracker = null;
         return image;
+    }
+
+    public static Image getScaledInstance(Image image, float scale)
+    {
+        if (image == null)
+        {
+            return null;
+        }
+
+        waitForImage(image);
+
+        int width = Math.round(image.getWidth(null) * scale);
+        int height = Math.round(image.getHeight(null) * scale);
+
+        return getScaledInstance(image, width, height);
+    }
+
+    public static Image getScaledInstance(Image image, int width, int height)
+    {
+        if (image == null)
+        {
+            return null;
+        }
+
+        // TODO: Option for SMOOTH vs FAST?
+        Image scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        if (scaledImage == null)
+        {
+            return null;
+        }
+
+        waitForImage(scaledImage);
+
+        return scaledImage;
+    }
+
+    private static void waitForImage(Image image)
+    {
+        MediaTracker tracker = new MediaTracker(GametableFrame.getGametableFrame());
+        tracker.addImage(image, 0);
+        try
+        {
+            tracker.waitForAll();
+        }
+        catch (Exception e)
+        {
+            Log.log(Log.SYS, e);
+        }
     }
 
     private static Image loadImage(String name, MediaTracker tracker)

@@ -7,8 +7,7 @@ package com.galactanet.gametable;
 
 import java.awt.Rectangle;
 import java.io.*;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import com.galactanet.gametable.net.Connection;
 
@@ -21,11 +20,7 @@ import com.galactanet.gametable.net.Connection;
  */
 public class PacketManager
 {
-    // prevent instantiation
-    private PacketManager()
-    {
-        throw new RuntimeException("PacketManager should not be instantiated!");
-    }
+    // --- Constants -------------------------------------------------------------------------------------------------
 
     // packet sent by a new joiner as soon as he joins
     public static final int PACKET_PLAYER         = 0;
@@ -85,12 +80,34 @@ public class PacketManager
     // a redo packet
     public static final int PACKET_REDO           = 18;
 
-    /**
-     * Holding ground for POGs with no images yet.
-     */
-    public static Set       g_imagelessPogs       = new HashSet();
+    // --- Static Members --------------------------------------------------------------------------------------------
 
-    public final static void readPacket(Connection conn, byte[] packet)
+    /**
+     * Set of files already asked for.
+     * TODO: Add some kind of timed retry feature.
+     */
+    private static Set      g_requestedFiles      = new HashSet();
+
+    /**
+     * A Map of sets of pending incoming requests that could not be fulfilled.
+     */
+    private static Map      g_unfulfilledRequests = new HashMap();
+
+    // --- Static Methods --------------------------------------------------------------------------------------------
+
+    private static void addUnfulfilledRequest(String filename, Connection connection)
+    {
+        Set set = (Set)g_unfulfilledRequests.get(filename);
+        if (set == null)
+        {
+            set = new HashSet();
+            g_unfulfilledRequests.put(filename, set);
+        }
+
+        set.add(connection);
+    }
+
+    public static void readPacket(Connection conn, byte[] packet)
     {
         try
         {
@@ -291,7 +308,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** CAST PACKET *********************************** */
+    /* *********************** CAST PACKET *********************************** */
+
     public static byte[] makeCastPacket(Player recipient)
     {
         try
@@ -353,7 +371,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** PLAYER PACKET *********************************** */
+    /* *********************** PLAYER PACKET *********************************** */
+
     public static byte[] makePlayerPacket(Player plr, String password)
     {
         try
@@ -407,7 +426,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** TEXT PACKET *********************************** */
+    /* *********************** TEXT PACKET *********************************** */
+
     public static byte[] makeTextPacket(String text)
     {
         try
@@ -444,7 +464,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** LINES PACKET *********************************** */
+    /* *********************** LINES PACKET *********************************** */
+
     public static byte[] makeLinesPacket(LineSegment[] lines, int authorPlayerID, int stateID)
     {
         try
@@ -493,7 +514,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** ERASE PACKET *********************************** */
+    /* *********************** ERASE PACKET *********************************** */
+
     public static byte[] makeErasePacket(Rectangle r, boolean bColorSpecific, int color, int authorPlayerID, int stateID)
     {
         try
@@ -547,7 +569,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** ADDPOG PACKET *********************************** */
+    /* *********************** ADDPOG PACKET *********************************** */
+
     public static byte[] makeAddPogPacket(Pog pog)
     {
         try
@@ -593,13 +616,13 @@ public class PacketManager
     {
         String desiredFile = pog.getFilename();
 
-        if (g_imagelessPogs.contains(desiredFile))
+        if (g_requestedFiles.contains(desiredFile))
         {
             return;
         }
 
         // add it to the list of pogs that need art
-        g_imagelessPogs.add(desiredFile);
+        g_requestedFiles.add(desiredFile);
 
         // there are no pending requests for this file. Send one
         // if this somehow came from a null connection, return
@@ -611,7 +634,8 @@ public class PacketManager
         conn.sendPacket(makePngRequestPacket(desiredFile));
     }
 
-    /** *********************** REMOVEPOG PACKET *********************************** */
+    /* *********************** REMOVEPOG PACKET *********************************** */
+
     public static byte[] makeRemovePogsPacket(int ids[])
     {
         try
@@ -641,7 +665,6 @@ public class PacketManager
 
     public static void readRemovePogsPacket(DataInputStream dis)
     {
-
         try
         {
             // the number of pogs to be removed is first
@@ -971,7 +994,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** FILE PACKET *********************************** */
+    /* *********************** FILE PACKET *********************************** */
+
     public static void readFilePacket(DataInputStream dis)
     {
         // get the mime type of the file
@@ -997,9 +1021,18 @@ public class PacketManager
         }
     }
 
-    /** *********************** PNG PACKET *********************************** */
+    /* *********************** PNG PACKET *********************************** */
+
     public static byte[] makePngPacket(String filename)
     {
+        // load the entire png file
+        byte[] pngFileData = UtilityFunctions.loadFileToArray(filename);
+
+        if (pngFileData == null)
+        {
+            return null;
+        }
+
         try
         {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -1013,9 +1046,6 @@ public class PacketManager
 
             // write the filename
             dos.writeUTF(filename);
-
-            // load the entire png file
-            byte[] pngFileData = UtilityFunctions.loadFileToArray(filename);
 
             // now write the data length
             dos.writeInt(pngFileData.length);
@@ -1083,18 +1113,18 @@ public class PacketManager
                 }
             }
 
-            File parentDir = target.getParentFile(); 
+            File parentDir = target.getParentFile();
             if (!parentDir.exists())
             {
                 parentDir.mkdirs();
             }
-            
+
             // now save out the png file
             OutputStream os = new BufferedOutputStream(new FileOutputStream(target));
             os.write(pngFile);
             os.flush();
             os.close();
-            
+
             PogType pogType = GametableFrame.g_gameTableFrame.getPogLibrary().getPog(filename);
             pogType.load();
 
@@ -1103,6 +1133,44 @@ public class PacketManager
 
             // tell the pog panels to check for the new image
             GametableFrame.g_gameTableFrame.refreshPogList();
+
+            // Ok, now send the file out to any previously unfulfilled requests.
+            File providedFile = new File(filename).getCanonicalFile();
+            Iterator iterator = g_unfulfilledRequests.keySet().iterator();
+            byte[] packet = null;
+            while (iterator.hasNext())
+            {
+                String requestedFilename = (String)iterator.next();
+                Set connections = (Set)g_unfulfilledRequests.get(requestedFilename);
+                if (connections.isEmpty())
+                {
+                    iterator.remove();
+                    continue;
+                }
+                
+                File requestedFile = new File(requestedFilename).getCanonicalFile();
+                if (requestedFile.equals(providedFile))
+                {
+                    if (packet == null)
+                    {
+                        packet = makePngPacket(filename);
+                        if (packet == null)
+                        {
+                            // Still can't make packet
+                            // TODO: echo failure message to peoples?
+                            break;
+                        }
+                    }
+
+                    // send to everyone asking for this file
+                    Iterator connectionIterator = connections.iterator();
+                    while (connectionIterator.hasNext())
+                    {
+                        Connection connection = (Connection)connectionIterator.next();
+                        connection.sendPacket(packet);
+                    }
+                }
+            }
         }
         catch (IOException ex)
         {
@@ -1110,7 +1178,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** GRM PACKET *********************************** */
+    /* *********************** GRM PACKET *********************************** */
+
     public static byte[] makeGrmPacket(byte[] grmData)
     {
         // grmData will be the contents of the file
@@ -1162,7 +1231,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** PNG REQUEST PACKET *********************************** */
+    /* *********************** PNG REQUEST PACKET *********************************** */
+
     public static byte[] makePngRequestPacket(String filename)
     {
         try
@@ -1184,7 +1254,6 @@ public class PacketManager
 
     public static void readPngRequestPacket(Connection conn, DataInputStream dis)
     {
-
         try
         {
             // someone wants a png file from us.
@@ -1196,6 +1265,10 @@ public class PacketManager
             {
                 conn.sendPacket(packet);
             }
+            else
+            {
+                addUnfulfilledRequest(filename, conn);
+            }
         }
         catch (IOException ex)
         {
@@ -1203,7 +1276,8 @@ public class PacketManager
         }
     }
 
-    /** *********************** TEXT PACKET *********************************** */
+    /* *********************** TEXT PACKET *********************************** */
+
     public static byte[] makeLoginCompletePacket()
     {
         try
@@ -1232,7 +1306,8 @@ public class PacketManager
         gtFrame.loginCompletePacketReceived();
     }
 
-    /** *********************** PING PACKET *********************************** */
+    /* *********************** PING PACKET *********************************** */
+
     public static byte[] makePingPacket()
     {
         try
@@ -1259,6 +1334,14 @@ public class PacketManager
         // tell the model
         GametableFrame gtFrame = GametableFrame.getGametableFrame();
         gtFrame.pingPacketReceived();
+    }
+
+    // --- Constructors ----------------------------------------------------------------------------------------------
+
+    // prevent instantiation
+    private PacketManager()
+    {
+        throw new RuntimeException("PacketManager should not be instantiated!");
     }
 
 }

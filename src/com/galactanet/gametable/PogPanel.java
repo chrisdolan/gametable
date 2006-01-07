@@ -32,14 +32,14 @@ public class PogPanel extends JPanel
 {
     // --- Constants -------------------------------------------------------------------------------------------------
 
+    public static final int    POG_ICON_SIZE        = 32;
+
     private static final int   POG_TEXT_PADDING     = 4;
     private static final int   POG_PADDING          = 1;
     private static final int   POG_BORDER           = 0;
     private static final int   POG_MARGIN           = 0;
 
     private static final int   HOVER_MARGIN         = 8;
-
-    private static final int   POG_ICON_SIZE        = 32;
 
     private static final Color POG_BORDER_COLOR     = Color.BLACK;
     private static final Color POG_BACKGROUND_COLOR = new Color(0x73, 0x4D, 0x22, 0xCC);
@@ -545,12 +545,8 @@ public class PogPanel extends JPanel
             g2.addRenderingHints(RENDERING_HINTS);
             if (pogType != null)
             {
-                int maxDim = Math.max(pogType.getWidth(), pogType.getHeight());
-                float scale = POG_ICON_SIZE / (float)maxDim;
-                int pogWidth = Math.round(pogType.getWidth() * scale);
-                int pogHeight = Math.round(pogType.getHeight() * scale);
-                pogType.drawScaled(g2, SPACE + (POG_ICON_SIZE - pogWidth) / 2, SPACE + (POG_ICON_SIZE - pogHeight) / 2,
-                    scale);
+                pogType.drawListIcon(g2, SPACE + (POG_ICON_SIZE - pogType.getListIconWidth()) / 2, SPACE
+                    + (POG_ICON_SIZE - pogType.getListIconHeight()) / 2);
 
                 String label = pogType.getLabel();
                 if (label != null && label.length() > 0)

@@ -23,6 +23,10 @@ public class PogType
     // --- Members ---------------------------------------------------------------------------------------------------
 
     private Image   m_image;
+    private Image   m_listIcon;
+    private Image   m_lastScaledImage;
+    private float   m_lastScale;
+    
     private BitSet  m_hitMap;
     private int     m_faceSize;
     private String  m_filename;
@@ -51,6 +55,8 @@ public class PogType
     {
         Image oldImage = m_image;
         m_image = UtilityFunctions.getImage(m_filename);
+        m_listIcon = null;
+        m_lastScaledImage = null;
         if (m_image == null)
         {
             // the file doesn't exist. load up the a placeholder
@@ -130,6 +136,16 @@ public class PogType
             return m_faceSize * GametableCanvas.BASE_SQUARE_SIZE;
         }
         return m_image.getHeight(null);
+    }
+
+    public int getListIconWidth()
+    {
+        return getListIcon().getWidth(null);
+    }
+
+    public int getListIconHeight()
+    {
+        return getListIcon().getHeight(null);
     }
 
     /**
@@ -254,7 +270,20 @@ public class PogType
      */
     public void drawScaled(Graphics g, int x, int y, float scale)
     {
-        g.drawImage(m_image, x, y, Math.round(getWidth() * scale), Math.round(getHeight() * scale), null);
+        g.drawImage(getScaledImage(scale), x, y, null);
+    }
+
+    /**
+     * Draws the pog onto the given graphics context at the given scale.
+     * 
+     * @param g Context to draw onto.
+     * @param x X position to draw at.
+     * @param y Y position to draw at.
+     * @param scale What scale to draw the pog at.
+     */
+    public void drawListIcon(Graphics g, int x, int y)
+    {
+        g.drawImage(getListIcon(), x, y, null);
     }
 
     /**
@@ -314,6 +343,27 @@ public class PogType
     }
 
     // --- Private Methods ---
+
+    private Image getListIcon()
+    {
+        if (m_listIcon == null)
+        {
+            int maxDim = Math.max(getWidth(), getHeight());
+            float scale = PogPanel.POG_ICON_SIZE / (float)maxDim;
+            m_listIcon = UtilityFunctions.getScaledInstance(m_image, scale);
+        }
+        return m_listIcon;
+    }
+
+    private Image getScaledImage(float scale)
+    {
+        if (m_lastScaledImage == null || Math.round(m_lastScale * 10) != Math.round(scale * 10))
+        {
+            m_lastScale = scale;
+            m_lastScaledImage = UtilityFunctions.getScaledInstance(m_image, m_lastScale);
+        }
+        return m_lastScaledImage;
+    }
 
     /**
      * Initializes the hit map from the source image.
