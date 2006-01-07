@@ -1009,6 +1009,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void hostThreadFailed()
     {
         logAlertMessage("Failed to host.");
+        m_networkThread.interrupt();
         m_networkThread = null;
         disconnect();
     }
@@ -1053,7 +1054,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_gametableCanvas.getPublicMap().setScroll(0, 0);
             m_gametableCanvas.getPublicMap().clearPogs();
             m_gametableCanvas.getPublicMap().clearLines();
-            //PacketManager.g_imagelessPogs.clear();
+            // PacketManager.g_imagelessPogs.clear();
 
             // send the packet
             while (!conn.isConnected())
@@ -2039,7 +2040,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             return;
         }
-        
+
         try
         {
             FileInputStream prefFile = new FileInputStream(file);
@@ -2155,7 +2156,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         {
             return;
         }
-        
+
         try
         {
             FileInputStream input = new FileInputStream(file);
