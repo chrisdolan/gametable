@@ -6,7 +6,6 @@
 package com.galactanet.gametable;
 
 import java.awt.*;
-import java.awt.dnd.*;
 import java.awt.event.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -31,8 +30,8 @@ import com.galactanet.gametable.prefs.Preferences;
  * 
  * @author sephalon
  */
-public class GametableFrame extends JFrame implements ComponentListener, DropTargetListener, DragGestureListener,
-    PropertyChangeListener, ActionListener, KeyListener
+public class GametableFrame extends JFrame implements ComponentListener, PropertyChangeListener, ActionListener,
+    KeyListener
 {
     class ToolButtonActionListener implements ActionListener
     {
@@ -143,7 +142,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     boolean                        m_bDisregardDividerChanges = true;
     int                            m_prevDividerLocFromBottom = -1;
     JPanel                         m_textAreaPanel            = new JPanel();
-    JScrollPane                    m_macrosScrollPane         = new JScrollPane(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+    JScrollPane                    m_macrosScrollPane         = new JScrollPane(
+                                                                  ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+                                                                  ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
     JPanel                         m_macroButtonsPanel        = new JPanel();
     public JSplitPane              m_mapPogSplitPane          = new JSplitPane();
     public PogsPanel               m_pogsPanel                = null;
@@ -280,7 +281,9 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_mapPogSplitPane.setContinuousLayout(true);
             m_macroButtonsPanel.setLayout(new BoxLayout(m_macroButtonsPanel, BoxLayout.Y_AXIS));
             m_colorCombo.setMaximumSize(new Dimension(100, 21));
+            m_toolBar.setFloatable(false);
             m_toolBar.add(m_colorCombo, null);
+            m_toolBar.add(Box.createHorizontalStrut(5));
             try
             {
                 m_toolManager.initialize();
@@ -372,7 +375,8 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_propertiesArea.add(m_textAreaPanel, BorderLayout.CENTER);
             m_textAreaPanel.add(m_macrosScrollPane, BorderLayout.WEST);
             m_macrosScrollPane.setViewportView(m_macroButtonsPanel);
-            m_macrosScrollPane.setBorder(new CompoundBorder(new EmptyBorder(0, 0, 0, 5), m_macrosScrollPane.getBorder()));
+            m_macrosScrollPane
+                .setBorder(new CompoundBorder(new EmptyBorder(0, 0, 0, 5), m_macrosScrollPane.getBorder()));
             m_textAreaPanel.add(m_textAndEntryPanel, BorderLayout.CENTER);
             m_mapChatSplitPane.addPropertyChangeListener(this);
             m_mapChatSplitPane.add(m_gametableCanvas, JSplitPane.TOP);
@@ -382,7 +386,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_mapPogSplitPane.add(m_mapChatSplitPane, JSplitPane.RIGHT);
             m_contentPane.add(m_mapPogSplitPane, BorderLayout.CENTER);
 
-            
             m_disconnectMenuItem.setEnabled(false);
 
             ColorComboCellRenderer renderer = new ColorComboCellRenderer();
@@ -492,30 +495,6 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     }
 
     public void componentHidden(ComponentEvent e)
-    {
-    }
-
-    public void dragEnter(DropTargetDragEvent dtde)
-    {
-    }
-
-    public void dragOver(DropTargetDragEvent dtde)
-    {
-    }
-
-    public void dropActionChanged(DropTargetDragEvent dtde)
-    {
-    }
-
-    public void dragExit(DropTargetEvent dte)
-    {
-    }
-
-    public void dragGestureRecognized(DragGestureEvent dge)
-    {
-    }
-
-    public void drop(final java.awt.dnd.DropTargetDropEvent e)
     {
     }
 
@@ -2044,8 +2023,23 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
     public void loadPrefs()
     {
         File file = new File("prefs.prf");
+        if (!file.canWrite())
+        {
+            Log.log(Log.SYS, "Unable to write: " + file);
+        }
+
         if (!file.exists())
         {
+            // DEFAULTS
+            m_mapChatSplitPane.setDividerLocation(0.8);
+            m_mapPogSplitPane.setDividerLocation(150);
+            m_windowSize.width = 800;
+            m_windowSize.height = 600;
+            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            m_windowPos.x = (screenSize.width - m_windowSize.width) / 2;
+            m_windowPos.y = (screenSize.height - m_windowSize.height) / 2;
+            m_bMaximized = false;
+            applyWindowInfo();
             return;
         }
 
@@ -2067,16 +2061,7 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
             m_windowPos.x = prefDis.readInt();
             m_windowPos.y = prefDis.readInt();
             m_bMaximized = prefDis.readBoolean();
-            setSize(m_windowSize);
-            setLocation(m_windowPos);
-            if (m_bMaximized)
-            {
-                setExtendedState(MAXIMIZED_BOTH);
-            }
-            else
-            {
-                setExtendedState(NORMAL);
-            }
+            applyWindowInfo();
 
             // divider locations
             m_bDisregardDividerChanges = true;
@@ -2105,6 +2090,25 @@ public class GametableFrame extends JFrame implements ComponentListener, DropTar
         catch (IOException ex1)
         {
             Log.log(Log.SYS, ex1);
+        }
+    }
+
+    /**
+     * Updates the frame size and position based on the preferences stored.
+     */
+    public void applyWindowInfo()
+    {
+        Point locCopy = new Point(m_windowPos);
+        setSize(m_windowSize);
+        m_windowPos = locCopy;
+        setLocation(locCopy);
+        if (m_bMaximized)
+        {
+            setExtendedState(MAXIMIZED_BOTH);
+        }
+        else
+        {
+            setExtendedState(NORMAL);
         }
     }
 
