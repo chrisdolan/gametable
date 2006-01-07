@@ -71,9 +71,8 @@ public class PogPanel extends JPanel
 
     private class BranchTracker implements TreeExpansionListener
     {
-        private Set     expandedNodes  = new HashSet();
-        private Set     collapsedNodes = new HashSet();
-        private boolean ignore         = false;
+        private Set expandedNodes  = new HashSet();
+        private Set collapsedNodes = new HashSet();
 
         public BranchTracker()
         {
@@ -89,7 +88,7 @@ public class PogPanel extends JPanel
             DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
             LibraryNode root = (LibraryNode)model.getRoot();
 
-            ignore = true;
+            tree.removeTreeExpansionListener(this);
             try
             {
                 Iterator iterator = new HashSet(expandedNodes).iterator();
@@ -126,7 +125,7 @@ public class PogPanel extends JPanel
             }
             finally
             {
-                ignore = false;
+                tree.addTreeExpansionListener(this);
             }
         }
 
@@ -137,12 +136,9 @@ public class PogPanel extends JPanel
          */
         public void treeExpanded(TreeExpansionEvent event)
         {
-            if (!ignore)
-            {
-                LibraryNode node = (LibraryNode)event.getPath().getLastPathComponent();
-                expandedNodes.add(node.getLibrary());
-                collapsedNodes.remove(node.getLibrary());
-            }
+            LibraryNode node = (LibraryNode)event.getPath().getLastPathComponent();
+            expandedNodes.add(node.getLibrary());
+            collapsedNodes.remove(node.getLibrary());
         }
 
         /*
@@ -150,12 +146,9 @@ public class PogPanel extends JPanel
          */
         public void treeCollapsed(TreeExpansionEvent event)
         {
-            if (!ignore)
-            {
-                LibraryNode node = (LibraryNode)event.getPath().getLastPathComponent();
-                expandedNodes.remove(node.getLibrary());
-                collapsedNodes.add(node.getLibrary());
-            }
+            LibraryNode node = (LibraryNode)event.getPath().getLastPathComponent();
+            expandedNodes.remove(node.getLibrary());
+            collapsedNodes.add(node.getLibrary());
         }
     }
 
@@ -482,6 +475,7 @@ public class PogPanel extends JPanel
             Dimension size = getMySize();
             setSize(size);
             setPreferredSize(size);
+   
             return this;
         }
 
@@ -821,7 +815,8 @@ public class PogPanel extends JPanel
                     if (val instanceof PogNode)
                     {
                         PogNode node = (PogNode)val;
-                        Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e.getY()));
+                        Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e
+                            .getY()));
                         Point localCoords = new Point(node.getPog().getWidth() / 2, node.getPog().getHeight() / 2);
                         grabPog(node.getPog(), screenCoords, localCoords);
                     }
@@ -873,8 +868,8 @@ public class PogPanel extends JPanel
                  */
                 public void mouseMoved(MouseEvent e)
                 {
-                    m_mousePosition = new Point(e.getX(), e.getY());
-                    Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, m_mousePosition);
+                    Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e.getY()));
+                    m_mousePosition = UtilityFunctions.getComponentCoordinates(PogPanel.this, screenCoords);
                     moveGrabPosition(screenCoords);
 
                     TreePath path = pogTree.getPathForLocation(e.getX(), e.getY());
