@@ -388,7 +388,7 @@ public class UtilityFunctions
         if (img == null)
         {
             // couldn't find it in the jar. Try the local directory
-            img = loadAndWait(GametableFrame.getGametableFrame().m_gametableCanvas, name);
+            img = loadAndWait(GametableFrame.getGametableFrame().getGametableCanvas(), name);
         }
 
         return img;
@@ -402,7 +402,7 @@ public class UtilityFunctions
 
     private static Image getImageFromJar(String name)
     {
-        URL imageUrl = GametableFrame.getGametableFrame().m_gametableCanvas.getClass().getResource("/" + name);
+        URL imageUrl = GametableFrame.getGametableFrame().getGametableCanvas().getClass().getResource("/" + name);
         if (imageUrl == null)
         {
             return null;
@@ -417,7 +417,7 @@ public class UtilityFunctions
                 return null;
             }
 
-            MediaTracker tracker = new MediaTracker(GametableFrame.getGametableFrame().m_gametableCanvas);
+            MediaTracker tracker = new MediaTracker(GametableFrame.getGametableFrame().getGametableCanvas());
             tracker.addImage(image, 0);
             tracker.waitForAll();
         }

@@ -7,13 +7,12 @@ package com.galactanet.gametable;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.*;
 import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.border.BevelBorder;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 
@@ -26,12 +25,11 @@ import com.galactanet.gametable.prefs.Preferences;
 
 
 /**
- * TODO: comment
+ * The main Gametable Frame class.
  * 
  * @author sephalon
  */
-public class GametableFrame extends JFrame implements ComponentListener, PropertyChangeListener, ActionListener,
-    KeyListener
+public class GametableFrame extends JFrame implements ActionListener
 {
     class ToolButtonActionListener implements ActionListener
     {
@@ -47,8 +45,8 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
          */
         public void actionPerformed(ActionEvent e)
         {
-            m_gametableCanvas.setActiveTool(m_id);
-            m_gametableCanvas.requestFocus();
+            getGametableCanvas().setActiveTool(m_id);
+            getGametableCanvas().requestFocus();
         }
     }
 
@@ -63,111 +61,99 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
 
         public void actionPerformed(ActionEvent event)
         {
-            m_gametableCanvas.setActiveTool(m_id);
-            m_gametableCanvas.requestFocus();
+            getGametableCanvas().setActiveTool(m_id);
+            getGametableCanvas().requestFocus();
         }
     }
 
-    // Global instance of the frame
-    public static GametableFrame   g_gameTableFrame;
-
     // this gets bumped up every time the comm protocols change
-    public final static int        COMM_VERSION               = 10;
-    public final static int        PING_INTERVAL              = 2500;
+    public final static int       COMM_VERSION            = 10;
+    public final static int       PING_INTERVAL           = 2500;
 
-    JPanel                         m_contentPane;
+    public final static int       NETSTATE_NONE           = 0;
+    public final static int       NETSTATE_HOST           = 1;
+    public final static int       NETSTATE_JOINED         = 2;
 
-    JMenuBar                       m_menuBar                  = new JMenuBar();
+    public final static int       REJECT_INVALID_PASSWORD = 0;
+    public final static int       REJECT_VERSION_MISMATCH = 1;
 
-    JMenu                          m_fileMenu                 = new JMenu("File");
-    JMenuItem                      m_openMenuItem             = new JMenuItem("Open...");
-    JMenuItem                      m_saveMenuItem             = new JMenuItem("Save");
-    JMenuItem                      m_saveAsMenuItem           = new JMenuItem("Save As...");
-    JMenuItem                      m_reacquirePogsMenuItem    = new JMenuItem("Reacquire Pogs");
-    JMenuItem                      m_exitMenuItem             = new JMenuItem("Exit");
+    public final static int       DEFAULT_PORT            = 6812;
 
-    JMenu                          m_networkMenu              = new JMenu("Network");
-    JMenuItem                      m_listPlayersMenuItem      = new JMenuItem("List Players");
-    JMenuItem                      m_hostMenuItem             = new JMenuItem("Host...");
-    JMenuItem                      m_joinMenuItem             = new JMenuItem("Join...");
-    JMenuItem                      m_disconnectMenuItem       = new JMenuItem("Disconnect");
+    public final static Integer[] COLORS                  = {
+        new Integer(new Color(0, 0, 0).getRGB()), new Integer(new Color(198, 198, 198).getRGB()),
+        new Integer(new Color(0, 0, 255).getRGB()), new Integer(new Color(0, 255, 0).getRGB()),
+        new Integer(new Color(0, 255, 255).getRGB()), new Integer(new Color(255, 0, 0).getRGB()),
+        new Integer(new Color(255, 0, 255).getRGB()), new Integer(new Color(255, 255, 0).getRGB()),
+        new Integer(new Color(255, 255, 255).getRGB()), new Integer(new Color(0, 0, 132).getRGB()),
+        new Integer(new Color(0, 132, 0).getRGB()), new Integer(new Color(0, 132, 132).getRGB()),
+        new Integer(new Color(132, 0, 0).getRGB()), new Integer(new Color(132, 0, 132).getRGB()),
+        new Integer(new Color(132, 132, 0).getRGB()), new Integer(new Color(132, 132, 132).getRGB())
+                                                          };
 
-    JMenu                          m_editMenu                 = new JMenu("Edit");
-    JMenuItem                      m_undoMenuItem             = new JMenuItem("Undo");
-    JMenuItem                      m_redoMenuItem             = new JMenuItem("Redo");
+    /**
+     * The global gametable instance.
+     */
+    private static GametableFrame g_gametableFrame;
 
-    JMenu                          m_mapMenu                  = new JMenu("Map");
-    JMenuItem                      m_clearMapMenuItem         = new JMenuItem("Clear Layer");
-    JMenuItem                      m_recenterMapMenuItem      = new JMenuItem("Recenter All Players");
-    JCheckBoxMenuItem              m_privateLayerModeMenuItem = new JCheckBoxMenuItem("Manipulate Private Layer");
+    /**
+     * @return The global GametableFrame instance.
+     */
+    public static GametableFrame getGametableFrame()
+    {
+        return g_gametableFrame;
+    }
 
-    JMenu                          m_gridModeMenu             = new JMenu("Grid Mode");
-    JCheckBoxMenuItem              m_noGridModeMenuItem       = new JCheckBoxMenuItem("No Grid");
-    JCheckBoxMenuItem              m_squareGridModeMenuItem   = new JCheckBoxMenuItem("Square Grid");
-    JCheckBoxMenuItem              m_hexGridModeMenuItem      = new JCheckBoxMenuItem("Hex Grid");
+    private JMenuItem              m_hostMenuItem;
+    private JMenuItem              m_joinMenuItem;
+    private JMenuItem              m_disconnectMenuItem;
 
-    JMenu                          m_diceMacrosMenu           = new JMenu("Dice Macros");
-    JMenuItem                      m_addDiceMacroMenuItem     = new JMenuItem("Add...");
-    JMenuItem                      m_removeDiceMacroMenuItem  = new JMenuItem("Remove...");
+    private JCheckBoxMenuItem      m_noGridModeMenuItem     = new JCheckBoxMenuItem("No Grid");
+    private JCheckBoxMenuItem      m_squareGridModeMenuItem = new JCheckBoxMenuItem("Square Grid");
+    private JCheckBoxMenuItem      m_hexGridModeMenuItem    = new JCheckBoxMenuItem("Hex Grid");
+    private JCheckBoxMenuItem      m_togglePrivateMapMenuItem;
 
-    JMenu                          m_toolsMenu                = new JMenu("Tools");
+    private JPanel                 m_chatPanel              = new JPanel();
+    private GametableCanvas        m_gametableCanvas        = new GametableCanvas();
 
-    JMenu                          m_helpMenu                 = new JMenu("Help");
-    JMenuItem                      m_aboutMenuItem            = new JMenuItem("About");
-
-    JPanel                         m_propertiesArea           = new JPanel();
-    public GametableCanvas         m_gametableCanvas          = new GametableCanvas();
-
-    boolean                        m_bInitted;
-    Dimension                      m_prevRightSize            = new Dimension(-1, -1);
-
-    public List                    m_players                  = new ArrayList();
+    private List                   m_players                = new ArrayList();
 
     // which player I am
-    public int                     m_myPlayerIdx;
+    private int                    m_myPlayerIndex;
 
-    String                         m_defaultName              = System.getProperty("user.name");
-    String                         m_defaultCharName          = "Nochar";
-    String                         m_defaultIP                = "localhost";
-    public int                     m_defaultPort              = DEFAULT_PORT;
-    String                         m_defaultPassword          = "";
+    public String                  m_playerName             = System.getProperty("user.name");
+    public String                  m_characterName          = "Nochar";
+    public String                  m_ipAddress              = "localhost";
+    public int                     m_port                   = DEFAULT_PORT;
+    public String                  m_password               = "";
 
-    JPanel                         m_textAndEntryPanel        = new JPanel();
-    public JTextField              m_textEntry                = new JTextField();
-    JScrollPane2                   m_textLogScroller          = new JScrollPane2();
-    JTextPane                      m_textLog                  = new JTextPane();
-    JSplitPane                     m_mapChatSplitPane         = new JSplitPane();
+    private JPanel                 m_textAndEntryPanel      = new JPanel();
+    public JTextField              m_textEntry              = new JTextField();
+    private JScrollPane2           m_textLogScroller        = new JScrollPane2();
+    private JTextPane              m_textLog                = new JTextPane();
+    private JSplitPane             m_mapChatSplitPane       = new JSplitPane();
 
-    boolean                        m_bFirstPaint              = true;
-    boolean                        m_bDisregardDividerChanges = true;
-    int                            m_prevDividerLocFromBottom = -1;
-    JPanel                         m_textAreaPanel            = new JPanel();
-    JScrollPane                    m_macrosScrollPane         = new JScrollPane(
-                                                                  ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
-                                                                  ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-    JPanel                         m_macroButtonsPanel        = new JPanel();
-    public JSplitPane              m_mapPogSplitPane          = new JSplitPane();
-    public PogsPanel               m_pogsPanel                = null;
-    public PogsPanel               m_underlaysPanel           = null;
-    public PogPanel                m_pogPanel                 = null;
-    private JToolBar               m_toolBar                  = new JToolBar();
-    private ButtonGroup            m_toolButtonGroup          = new ButtonGroup();
+    private JPanel                 m_textAreaPanel          = new JPanel();
+    private JScrollPane            m_macrosScrollPane       = new JScrollPane(
+                                                                ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+                                                                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+    private JPanel                 m_macroButtonsPanel      = new JPanel();
+    private JSplitPane             m_mapPogSplitPane        = new JSplitPane();
+    private PogPanel               m_pogPanel               = null;
+    private JToolBar               m_toolBar                = new JToolBar();
+    private ButtonGroup            m_toolButtonGroup        = new ButtonGroup();
 
-    private List                   m_macros                   = new ArrayList();
-    private Map                    m_macroMap                 = new HashMap();
-    private List                   m_macroButtons             = new ArrayList();
+    private List                   m_macros                 = new ArrayList();
+    private Map                    m_macroMap               = new HashMap();
+    private List                   m_macroButtons           = new ArrayList();
 
-    public final static int        NETSTATE_NONE              = 0;
-    public final static int        NETSTATE_HOST              = 1;
-    public final static int        NETSTATE_JOINED            = 2;
-    public int                     m_netStatus                = NETSTATE_NONE;
+    private int                    m_netStatus              = NETSTATE_NONE;
 
     private volatile NetworkThread m_networkThread;
     private PeriodicExecutorThread m_executorThread;
 
-    private long                   m_lastPingTime             = 0;
+    private long                   m_lastPingTime           = 0;
 
-    public Color                   m_drawColor                = Color.BLACK;
+    public Color                   m_drawColor              = Color.BLACK;
 
     // window size and position
     private Point                  m_windowPos;
@@ -177,28 +163,12 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
     // a flag to tell the app
     // not to size or center us.
     public boolean                 m_bLoadedState;
-    public JTabbedPane             m_pogsTabbedPane           = new JTabbedPane();
-    private JComboBox              m_colorCombo               = new JComboBox(g_comboColors);
+    public JTabbedPane             m_pogsTabbedPane         = new JTabbedPane();
+    private JComboBox              m_colorCombo             = new JComboBox(COLORS);
 
     // full of Strings
-    private List                   m_textSent                 = new ArrayList();
-    private int                    m_textSentLoc              = 0;
-
-    public final static int        REJECT_INVALID_PASSWORD    = 0;
-    public final static int        REJECT_VERSION_MISMATCH    = 1;
-
-    public final static int        DEFAULT_PORT               = 6812;
-
-    public final static Integer[]  g_comboColors              = {
-        new Integer(new Color(0, 0, 0).getRGB()), new Integer(new Color(198, 198, 198).getRGB()),
-        new Integer(new Color(0, 0, 255).getRGB()), new Integer(new Color(0, 255, 0).getRGB()),
-        new Integer(new Color(0, 255, 255).getRGB()), new Integer(new Color(255, 0, 0).getRGB()),
-        new Integer(new Color(255, 0, 255).getRGB()), new Integer(new Color(255, 255, 0).getRGB()),
-        new Integer(new Color(255, 255, 255).getRGB()), new Integer(new Color(0, 0, 132).getRGB()),
-        new Integer(new Color(0, 132, 0).getRGB()), new Integer(new Color(0, 132, 132).getRGB()),
-        new Integer(new Color(132, 0, 0).getRGB()), new Integer(new Color(132, 0, 132).getRGB()),
-        new Integer(new Color(132, 132, 0).getRGB()), new Integer(new Color(132, 132, 132).getRGB()),
-                                                              };
+    private List                   m_textSent               = new ArrayList();
+    private int                    m_textSentLoc            = 0;
 
     // The current file path used by save and open.
     // NULL if unset.
@@ -206,225 +176,29 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
     public File                    m_actingFilePublic;
     public File                    m_actingFilePrivate;
 
-    private ToolManager            m_toolManager              = new ToolManager();
-    private JToggleButton          m_toolButtons[]            = null;
-    private Preferences            m_preferences              = new Preferences();
-    private PogLibrary             m_pogLibrary               = null;
+    private ToolManager            m_toolManager            = new ToolManager();
+    private JToggleButton          m_toolButtons[]          = null;
+    private Preferences            m_preferences            = new Preferences();
+    private PogLibrary             m_pogLibrary             = null;
 
-    public ProgressSpinner         m_progressSpinner          = new ProgressSpinner();
-
-    // the id that will be assigned to the next player to join
-    public int                     m_nextPlayerID;
+    public ProgressSpinner         m_progressSpinner        = new ProgressSpinner();
 
     // the id that will be assigned to the next player to join
-    public int                     m_nextStateID;
+    public int                     m_nextPlayerId;
+
+    // the id that will be assigned to the change made
+    public int                     m_nextStateId;
 
     /**
      * Construct the frame
      */
     public GametableFrame()
     {
-        setTitle(GametableApp.VERSION);
-        g_gameTableFrame = this;
+        g_gametableFrame = this;
 
-        this.addComponentListener(this);
-        enableEvents(AWTEvent.WINDOW_EVENT_MASK);
         try
         {
-            m_contentPane = (JPanel)this.getContentPane();
-            setSize(new Dimension(600, 500));
-
-            m_openMenuItem.addActionListener(this);
-            m_saveMenuItem.addActionListener(this);
-            m_saveAsMenuItem.addActionListener(this);
-            m_reacquirePogsMenuItem.addActionListener(this);
-            m_exitMenuItem.addActionListener(this);
-            m_undoMenuItem.addActionListener(this);
-            m_redoMenuItem.addActionListener(this);
-            m_clearMapMenuItem.setActionCommand("clearPogs");
-            m_clearMapMenuItem.addActionListener(this);
-            m_noGridModeMenuItem.addActionListener(this);
-            m_squareGridModeMenuItem.addActionListener(this);
-            m_hexGridModeMenuItem.addActionListener(this);
-            m_privateLayerModeMenuItem.addActionListener(this);
-            m_hostMenuItem.addActionListener(this);
-            m_joinMenuItem.addActionListener(this);
-            m_listPlayersMenuItem.addActionListener(this);
-            m_disconnectMenuItem.addActionListener(this);
-            m_recenterMapMenuItem.addActionListener(this);
-            m_addDiceMacroMenuItem.addActionListener(this);
-            m_removeDiceMacroMenuItem.addActionListener(this);
-            m_aboutMenuItem.addActionListener(this);
-
-            m_contentPane.setLayout(new BorderLayout());
-            m_contentPane.setMaximumSize(new Dimension(32767, 32767));
-            m_contentPane.setPreferredSize(new Dimension(2000, 300));
-            m_contentPane.setRequestFocusEnabled(true);
-            m_propertiesArea.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
-            m_propertiesArea.setMinimumSize(new Dimension(10, 10));
-            m_propertiesArea.setPreferredSize(new Dimension(70, 100));
-            m_propertiesArea.setRequestFocusEnabled(true);
-            m_propertiesArea.setLayout(new BorderLayout());
-            m_textAndEntryPanel.setLayout(new BorderLayout());
-            m_textLog.setDoubleBuffered(true);
-            m_textLog.setPreferredSize(new Dimension(500, 21));
-            m_textEntry.addActionListener(new GametableFrame_m_textEntry_actionAdapter(this));
-            m_textLogScroller.setDoubleBuffered(true);
-            m_textLogScroller.setPreferredSize(new Dimension(450, 31));
-            m_mapChatSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
-            m_mapChatSplitPane.setContinuousLayout(true);
-            m_mapChatSplitPane.setResizeWeight(1.0);
-            m_mapChatSplitPane.setBorder(null);
-            m_gametableCanvas.setMaximumSize(new Dimension(32767, 32767));
-            m_gametableCanvas.setPreferredSize(new Dimension(500, 400));
-            m_textAndEntryPanel.setPreferredSize(new Dimension(500, 52));
-            m_textAreaPanel.setLayout(new BorderLayout());
-            m_mapPogSplitPane.setContinuousLayout(true);
-            m_mapPogSplitPane.setBorder(null);
-            m_macroButtonsPanel.setLayout(new BoxLayout(m_macroButtonsPanel, BoxLayout.Y_AXIS));
-            m_colorCombo.setMaximumSize(new Dimension(100, 21));
-            m_toolBar.setFloatable(false);
-            m_toolBar.add(m_colorCombo, null);
-            m_toolBar.add(Box.createHorizontalStrut(5));
-            try
-            {
-                m_toolManager.initialize();
-                int buttonSize = m_toolManager.getMaxIconSize();
-                int numTools = m_toolManager.getNumTools();
-                m_toolButtons = new JToggleButton[numTools];
-                for (int toolId = 0; toolId < numTools; toolId++)
-                {
-                    ToolManager.Info info = m_toolManager.getToolInfo(toolId);
-                    Image im = UtilityFunctions.createDrawableImage(buttonSize, buttonSize);
-                    {
-                        Graphics g = im.getGraphics();
-                        Image icon = info.getIcon();
-                        int offsetX = (buttonSize - icon.getWidth(null)) / 2;
-                        int offsetY = (buttonSize - icon.getHeight(null)) / 2;
-                        g.drawImage(info.getIcon(), offsetX, offsetY, null);
-                        g.dispose();
-                    }
-
-                    JToggleButton button = new JToggleButton(new ImageIcon(im));
-                    m_toolBar.add(button);
-                    button.addActionListener(new ToolButtonActionListener(toolId));
-                    m_toolButtonGroup.add(button);
-                    m_toolButtons[toolId] = button;
-
-                    String actionId = "tool" + toolId + "Action";
-                    m_gametableCanvas.getActionMap().put(actionId, new ToolButtonAbstractAction(toolId));
-                    KeyStroke keystroke = KeyStroke.getKeyStroke(info.getQuickKey(), 0, false);
-                    m_gametableCanvas.getInputMap().put(keystroke, actionId);
-                    button.setToolTipText(info.getName());
-                    List prefs = info.getTool().getPreferences();
-                    for (int i = 0; i < prefs.size(); i++)
-                    {
-                        m_preferences.addPreference((PreferenceDescriptor)prefs.get(i));
-                    }
-                }
-            }
-            catch (IOException ioe)
-            {
-                Log.log(Log.SYS, "Failure initializing tools.");
-                Log.log(Log.SYS, ioe);
-            }
-
-            // add tile combo here.
-
-            m_menuBar.add(m_fileMenu);
-            m_fileMenu.add(m_openMenuItem);
-            m_fileMenu.add(m_saveMenuItem);
-            m_fileMenu.add(m_saveAsMenuItem);
-            m_fileMenu.add(m_reacquirePogsMenuItem);
-            m_fileMenu.add(m_exitMenuItem);
-
-            m_gridModeMenu.add(m_noGridModeMenuItem);
-            m_gridModeMenu.add(m_squareGridModeMenuItem);
-            m_gridModeMenu.add(m_hexGridModeMenuItem);
-
-            m_menuBar.add(m_editMenu);
-            m_editMenu.add(m_undoMenuItem);
-            m_editMenu.add(m_redoMenuItem);
-
-            m_menuBar.add(m_networkMenu);
-            m_menuBar.add(m_mapMenu);
-            m_mapMenu.add(m_clearMapMenuItem);
-            m_mapMenu.add(m_recenterMapMenuItem);
-            m_mapMenu.add(m_gridModeMenu);
-            m_mapMenu.add(m_privateLayerModeMenuItem);
-            m_menuBar.add(m_diceMacrosMenu);
-            m_menuBar.add(m_helpMenu);
-            m_helpMenu.add(m_aboutMenuItem);
-            m_textAndEntryPanel.add(m_textEntry, BorderLayout.SOUTH);
-            m_textAndEntryPanel.add(m_textLogScroller, BorderLayout.CENTER);
-            m_contentPane.add(m_toolBar, BorderLayout.NORTH);
-            m_textLogScroller.getViewport().add(m_textLog, null);
-            m_textLog.addKeyListener(m_gametableCanvas);
-
-            m_pogLibrary = new PogLibrary();
-            m_gametableCanvas.init(this);
-            addKeyListener(m_gametableCanvas);
-
-            m_pogsPanel = new PogsPanel(m_pogLibrary.getChild("pogs"), m_gametableCanvas);
-            m_underlaysPanel = new PogsPanel(m_pogLibrary.getChild("underlays"), m_gametableCanvas);
-            m_pogPanel = new PogPanel(m_pogLibrary, m_gametableCanvas);
-            m_pogsTabbedPane.add(m_pogPanel, "Tree");
-            m_pogsTabbedPane.add(new JScrollPane(m_pogsPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), "Pogs");
-            m_pogsTabbedPane.add(new JScrollPane(m_underlaysPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), "Underlays");
-
-            m_propertiesArea.add(m_textAreaPanel, BorderLayout.CENTER);
-            m_textAreaPanel.add(m_macrosScrollPane, BorderLayout.WEST);
-            m_macrosScrollPane.setViewportView(m_macroButtonsPanel);
-            m_macrosScrollPane
-                .setBorder(new CompoundBorder(new EmptyBorder(0, 0, 0, 5), m_macrosScrollPane.getBorder()));
-            m_textAreaPanel.add(m_textAndEntryPanel, BorderLayout.CENTER);
-            m_mapChatSplitPane.addPropertyChangeListener(this);
-            m_mapChatSplitPane.add(m_gametableCanvas, JSplitPane.TOP);
-            m_mapChatSplitPane.add(m_propertiesArea, JSplitPane.BOTTOM);
-
-            m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.LEFT);
-            m_mapPogSplitPane.add(m_mapChatSplitPane, JSplitPane.RIGHT);
-            m_contentPane.add(m_mapPogSplitPane, BorderLayout.CENTER);
-
-            m_disconnectMenuItem.setEnabled(false);
-
-            ColorComboCellRenderer renderer = new ColorComboCellRenderer();
-            m_colorCombo.setRenderer(renderer);
-
-            m_myPlayerIdx = 0;
-
-            m_textLog.setEditable(false);
-            m_gametableCanvas.requestFocus();
-            m_networkMenu.add(m_listPlayersMenuItem);
-            m_networkMenu.add(m_hostMenuItem);
-            m_networkMenu.add(m_joinMenuItem);
-            m_networkMenu.add(m_disconnectMenuItem);
-            m_diceMacrosMenu.add(m_addDiceMacroMenuItem);
-            m_diceMacrosMenu.add(m_removeDiceMacroMenuItem);
-
-            addMacro("d20", "d20");
-
-            // load the primary map
-            m_gametableCanvas.setActiveMap(m_gametableCanvas.getPrivateMap());
-            PacketSourceState.beginFileLoad();
-            loadState(new File("autosavepvt.grm"));
-            PacketSourceState.endFileLoad();
-
-            m_gametableCanvas.setActiveMap(m_gametableCanvas.getPublicMap());
-            loadState(new File("autosave.grm"));
-            loadPrefs();
-
-            addPlayer(new Player(m_defaultName, m_defaultCharName, -1));
-
-            m_textEntry.addKeyListener(this);
-            m_colorCombo.addActionListener(this);
-            updateGridModeMenu();
-            m_bInitted = true;
-            setJMenuBar(m_menuBar);
-
-            updatePrivateLayerModeMenuItem();
+            initialize();
         }
         catch (Exception e)
         {
@@ -432,26 +206,848 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         }
     }
 
-    public static GametableFrame getGametableFrame()
+    /**
+     * Performs initialization.
+     * 
+     * @throws IOException
+     */
+    private void initialize() throws IOException
     {
-        return g_gameTableFrame;
+        setTitle(GametableApp.VERSION);
+        setJMenuBar(getMainMenuBar());
+        m_noGridModeMenuItem.addActionListener(this);
+        m_squareGridModeMenuItem.addActionListener(this);
+        m_hexGridModeMenuItem.addActionListener(this);
+
+        setLayout(new BorderLayout());
+
+        m_chatPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        m_chatPanel.setLayout(new BorderLayout());
+
+        m_textAndEntryPanel.setLayout(new BorderLayout());
+
+        m_textEntry.addActionListener(new ActionListener()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                // they hit return on the text bar
+                String entered = m_textEntry.getText();
+                if (entered.length() == 0)
+                {
+                    // useless string.
+                    // return focus to the map
+                    getGametableCanvas().requestFocus();
+                    return;
+                }
+
+                m_textSent.add(entered);
+                m_textSentLoc = m_textSent.size();
+
+                // parse for commands
+                if (entered.charAt(0) == '/')
+                {
+                    parseSlashCommand(entered);
+                }
+                else
+                {
+                    postMessage(getMyPlayer().getCharacterName() + "> " + entered);
+                }
+
+                m_textEntry.setText("");
+            }
+        });
+
+        m_textEntry.addKeyListener(new KeyAdapter()
+        {
+            public void keyPressed(KeyEvent e)
+            {
+                int code = e.getKeyCode();
+
+                if (code == KeyEvent.VK_UP)
+                {
+                    m_textSentLoc--;
+                    if (m_textSentLoc < 0)
+                    {
+                        m_textSentLoc = 0;
+                    }
+                    else
+                    {
+                        m_textEntry.setText((String)m_textSent.get(m_textSentLoc));
+                    }
+                }
+
+                if (code == KeyEvent.VK_DOWN)
+                {
+                    m_textSentLoc++;
+
+                    if (m_textSentLoc > m_textSent.size())
+                    {
+                        m_textSentLoc = m_textSent.size();
+                    }
+                    else
+                    {
+                        if (m_textSentLoc == m_textSent.size())
+                        {
+                            m_textEntry.setText("");
+                        }
+                        else
+                        {
+                            m_textEntry.setText((String)m_textSent.get(m_textSentLoc));
+                        }
+                    }
+                }
+            }
+        });
+
+        m_textAndEntryPanel.add(m_textEntry, BorderLayout.SOUTH);
+
+        m_textLogScroller.setDoubleBuffered(true);
+        m_textAndEntryPanel.add(m_textLogScroller, BorderLayout.CENTER);
+
+        m_textLog.setDoubleBuffered(true);
+
+        m_mapChatSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
+        m_mapChatSplitPane.setContinuousLayout(true);
+        m_mapChatSplitPane.setResizeWeight(1.0);
+        m_mapChatSplitPane.setBorder(null);
+
+        m_textAreaPanel.setLayout(new BorderLayout());
+
+        m_mapPogSplitPane.setContinuousLayout(true);
+        m_mapPogSplitPane.setBorder(null);
+
+        m_macroButtonsPanel.setLayout(new BoxLayout(m_macroButtonsPanel, BoxLayout.Y_AXIS));
+
+        m_colorCombo.setMaximumSize(new Dimension(100, 21));
+        m_toolBar.setFloatable(false);
+        m_toolBar.setBorder(new EmptyBorder(2, 5, 2, 5));
+        m_toolBar.add(m_colorCombo, null);
+        m_toolBar.add(Box.createHorizontalStrut(5));
+
+        initializeTools();
+
+        add(m_toolBar, BorderLayout.NORTH);
+        m_textLogScroller.getViewport().add(m_textLog, null);
+
+        m_pogLibrary = new PogLibrary();
+        getGametableCanvas().init(this);
+
+        m_pogPanel = new PogPanel(m_pogLibrary, getGametableCanvas());
+        m_pogsTabbedPane.add(m_pogPanel, "Tree");
+
+        m_chatPanel.add(m_textAreaPanel, BorderLayout.CENTER);
+        m_textAreaPanel.add(m_macrosScrollPane, BorderLayout.WEST);
+        m_macrosScrollPane.setViewportView(m_macroButtonsPanel);
+        m_macrosScrollPane.setBorder(new CompoundBorder(new EmptyBorder(0, 0, 0, 5), m_macrosScrollPane.getBorder()));
+        m_textAreaPanel.add(m_textAndEntryPanel, BorderLayout.CENTER);
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(new BevelBorder(BevelBorder.LOWERED));
+        panel.add(getGametableCanvas(), BorderLayout.CENTER);
+        m_mapChatSplitPane.add(panel, JSplitPane.TOP);
+        m_mapChatSplitPane.add(m_chatPanel, JSplitPane.BOTTOM);
+
+        m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.LEFT);
+        m_mapPogSplitPane.add(m_mapChatSplitPane, JSplitPane.RIGHT);
+        add(m_mapPogSplitPane, BorderLayout.CENTER);
+
+        m_disconnectMenuItem.setEnabled(false);
+
+        ColorComboCellRenderer renderer = new ColorComboCellRenderer();
+        m_colorCombo.setRenderer(renderer);
+
+        m_textLog.setEditable(false);
+
+        // load the primary map
+        getGametableCanvas().setActiveMap(getGametableCanvas().getPrivateMap());
+        PacketSourceState.beginFileLoad();
+        loadState(new File("autosavepvt.grm"));
+        PacketSourceState.endFileLoad();
+
+        getGametableCanvas().setActiveMap(getGametableCanvas().getPublicMap());
+        loadState(new File("autosave.grm"));
+        loadPrefs();
+
+        addPlayer(new Player(m_playerName, m_characterName, -1));
+        this.m_myPlayerIndex = 0;
+
+        m_colorCombo.addActionListener(this);
+        updateGridModeMenu();
+        updatePrivateLayerModeMenuItem();
+
+        addComponentListener(new ComponentAdapter()
+        {
+            public void componentResized(ComponentEvent event)
+            {
+                updateWindowInfo();
+            }
+
+            public void componentMoved(ComponentEvent e)
+            {
+                updateWindowInfo();
+            }
+
+        });
+
+        addWindowListener(new WindowAdapter()
+        {
+            /*
+             * @see java.awt.event.WindowAdapter#windowClosing(java.awt.event.WindowEvent)
+             */
+            public void windowClosing(WindowEvent e)
+            {
+                saveAll();
+            }
+
+            /*
+             * @see java.awt.event.WindowListener#windowClosed(java.awt.event.WindowEvent)
+             */
+            public void windowClosed(WindowEvent e)
+            {
+                saveAll();
+            }
+        });
     }
 
-    public int getNewStateID()
+    /**
+     * Initializes the tools from the ToolManager.
+     */
+    private void initializeTools()
     {
-        int ret = m_nextStateID;
-        m_nextStateID++;
-        return ret;
+        try
+        {
+            m_toolManager.initialize();
+            int buttonSize = m_toolManager.getMaxIconSize();
+            int numTools = m_toolManager.getNumTools();
+            m_toolButtons = new JToggleButton[numTools];
+            for (int toolId = 0; toolId < numTools; toolId++)
+            {
+                ToolManager.Info info = m_toolManager.getToolInfo(toolId);
+                Image im = UtilityFunctions.createDrawableImage(buttonSize, buttonSize);
+                {
+                    Graphics g = im.getGraphics();
+                    Image icon = info.getIcon();
+                    int offsetX = (buttonSize - icon.getWidth(null)) / 2;
+                    int offsetY = (buttonSize - icon.getHeight(null)) / 2;
+                    g.drawImage(info.getIcon(), offsetX, offsetY, null);
+                    g.dispose();
+                }
+
+                JToggleButton button = new JToggleButton(new ImageIcon(im));
+                m_toolBar.add(button);
+                button.addActionListener(new ToolButtonActionListener(toolId));
+                m_toolButtonGroup.add(button);
+                m_toolButtons[toolId] = button;
+
+                String actionId = "tool" + toolId + "Action";
+                getGametableCanvas().getActionMap().put(actionId, new ToolButtonAbstractAction(toolId));
+                KeyStroke keystroke = KeyStroke.getKeyStroke(info.getQuickKey(), 0, false);
+                getGametableCanvas().getInputMap().put(keystroke, actionId);
+                button.setToolTipText(info.getName());
+                List prefs = info.getTool().getPreferences();
+                for (int i = 0; i < prefs.size(); i++)
+                {
+                    m_preferences.addPreference((PreferenceDescriptor)prefs.get(i));
+                }
+            }
+        }
+        catch (IOException ioe)
+        {
+            Log.log(Log.SYS, "Failure initializing tools.");
+            Log.log(Log.SYS, ioe);
+        }
     }
 
+    // --- Menus ---
+
+    private JMenuBar getMainMenuBar()
+    {
+        JMenuBar menuBar = new JMenuBar();
+        menuBar.add(getFileMenu());
+        menuBar.add(getEditMenu());
+        menuBar.add(getNetworkMenu());
+        menuBar.add(getMapMenu());
+        menuBar.add(getDiceMenu());
+        menuBar.add(getHelpMenu());
+
+        return menuBar;
+    }
+
+    private JMenu getFileMenu()
+    {
+        JMenu menu = new JMenu("File");
+
+        menu.add(getOpenMapMenuItem());
+        menu.add(getSaveMapMenuItem());
+        menu.add(getSaveMapAsMenuItem());
+        menu.add(getScanForPogsMenuItem());
+        menu.add(getQuitMenuItem());
+
+        return menu;
+    }
+
+    private JMenu getEditMenu()
+    {
+        JMenu menu = new JMenu("Edit");
+        menu.add(getUndoMenuItem());
+        menu.add(getRedoMenuItem());
+
+        return menu;
+    }
+
+    private JMenu getNetworkMenu()
+    {
+        JMenu menu = new JMenu("Network");
+        menu.add(getListPlayersMenuItem());
+        menu.add(getHostMenuItem());
+        menu.add(getJoinMenuItem());
+        menu.add(getDisconnectMenuItem());
+
+        return menu;
+    }
+
+    private JMenu getMapMenu()
+    {
+        JMenu menu = new JMenu("Map");
+        menu.add(getClearMapMenuItem());
+        menu.add(getRecenterAllPlayersMenuItem());
+        menu.add(getGridModeMenu());
+        menu.add(getTogglePrivateMapMenuItem());
+
+        return menu;
+    }
+
+    private JMenu getGridModeMenu()
+    {
+        JMenu menu = new JMenu("Grid Mode");
+        menu.add(m_noGridModeMenuItem);
+        menu.add(m_squareGridModeMenuItem);
+        menu.add(m_hexGridModeMenuItem);
+
+        return menu;
+    }
+
+    private JMenu getDiceMenu()
+    {
+        JMenu menu = new JMenu("Dice");
+        menu.add(getAddDiceMenuItem());
+        menu.add(getDeleteDiceMenuItem());
+        return menu;
+    }
+
+    private JMenu getHelpMenu()
+    {
+        JMenu menu = new JMenu("Help");
+        menu.add(getAboutMenuItem());
+
+        return menu;
+    }
+
+    // --- MenuItems ---
+
+    private JMenuItem getOpenMapMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Open Map...");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl pressed O"));
+        item.addActionListener(new ActionListener()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                // opening while on the public layer...
+                if (getGametableCanvas().getActiveMap() == getGametableCanvas().getPublicMap())
+                {
+                    File openFile = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
+
+                    if (openFile == null)
+                    {
+                        // they cancelled out of the open
+                        return;
+                    }
+
+                    m_actingFilePublic = openFile;
+
+                    int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
+                        "This will load a map file, replacing all existing map data for you and all players in the "
+                            + "session. Are you sure you want to do this?", "Confirm Load");
+                    if (result == UtilityFunctions.YES)
+                    {
+
+                        if (m_actingFilePublic != null)
+                        {
+                            // clear the state
+                            eraseAll();
+
+                            // load
+                            if (m_netStatus == NETSTATE_JOINED)
+                            {
+                                // joiners dispatch the save file to the host
+                                // for processing
+                                byte grmFile[] = UtilityFunctions.loadFileToArray(m_actingFilePublic);
+                                if (grmFile != null)
+                                {
+                                    send(PacketManager.makeGrmPacket(grmFile));
+                                }
+                            }
+                            else
+                            {
+                                // actually do the load if we're the host or offline
+                                loadState(m_actingFilePublic);
+                            }
+
+                            postSystemMessage(getMyPlayer().getPlayerName() + " loads a new map.");
+                        }
+                    }
+                }
+                else
+                {
+                    // opening while on the private layer
+                    m_actingFilePrivate = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
+                    if (m_actingFilePrivate != null)
+                    {
+                        // we have to pretend we're not connected while loading. We
+                        // don't want these packets to be propagatet to other players
+                        int oldStatus = m_netStatus;
+                        m_netStatus = NETSTATE_NONE;
+                        PacketSourceState.beginFileLoad();
+                        loadState(m_actingFilePrivate);
+                        PacketSourceState.endFileLoad();
+                        m_netStatus = oldStatus;
+                    }
+                }
+            }
+        });
+
+        return item;
+    }
+
+    public JMenuItem getSaveMapMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Save Map");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl pressed S"));
+        item.addActionListener(new ActionListener()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                if (getGametableCanvas().isPublicMap())
+                {
+                    if (m_actingFilePublic == null)
+                    {
+                        m_actingFilePublic = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+                    }
+
+                    if (m_actingFilePublic != null)
+                    {
+                        // save the file
+                        saveState(getGametableCanvas().getActiveMap(), m_actingFilePublic);
+                    }
+                }
+                else
+                {
+                    if (m_actingFilePrivate == null)
+                    {
+                        m_actingFilePrivate = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+                    }
+
+                    if (m_actingFilePrivate != null)
+                    {
+                        // save the file
+                        saveState(getGametableCanvas().getActiveMap(), m_actingFilePrivate);
+                    }
+                }
+            }
+        });
+
+        return item;
+    }
+
+    public JMenuItem getSaveMapAsMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Save Map As...");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl shift pressed S"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                if (getGametableCanvas().isPublicMap())
+                {
+                    m_actingFilePublic = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+                    if (m_actingFilePublic != null)
+                    {
+                        saveState(getGametableCanvas().getActiveMap(), m_actingFilePublic);
+                    }
+                }
+                else
+                {
+                    m_actingFilePrivate = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+                    if (m_actingFilePrivate != null)
+                    {
+                        saveState(getGametableCanvas().getActiveMap(), m_actingFilePrivate);
+                    }
+                }
+            }
+        });
+
+        return item;
+    }
+
+    private JMenuItem getScanForPogsMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Scan for Pogs");
+        item.setAccelerator(KeyStroke.getKeyStroke("F5"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                reacquirePogs();
+            }
+        });
+
+        return item;
+    }
+
+    private JMenuItem getQuitMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Quit");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl Q"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                dispose();
+            }
+        });
+
+        return item;
+    }
+
+    private JMenuItem getUndoMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Undo");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl Z"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                getGametableCanvas().undo();
+            }
+        });
+
+        return item;
+    }
+
+    private JMenuItem getRedoMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Redo");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl Y"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                getGametableCanvas().redo();
+            }
+        });
+
+        return item;
+    }
+
+    private JMenuItem getListPlayersMenuItem()
+    {
+        JMenuItem item = new JMenuItem("List Players");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl W"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                parseSlashCommand("/who");
+            }
+        });
+        return item;
+    }
+
+    private JMenuItem getHostMenuItem()
+    {
+        if (m_hostMenuItem == null)
+        {
+            JMenuItem item = new JMenuItem("Host...");
+            item.addActionListener(new ActionListener()
+            {
+                public void actionPerformed(ActionEvent e)
+                {
+                    host();
+                }
+            });
+
+            m_hostMenuItem = item;
+        }
+        return m_hostMenuItem;
+    }
+
+    private JMenuItem getJoinMenuItem()
+    {
+        if (m_joinMenuItem == null)
+        {
+            JMenuItem item = new JMenuItem("Join...");
+            item.addActionListener(new ActionListener()
+            {
+                public void actionPerformed(ActionEvent e)
+                {
+                    join();
+                }
+            });
+            m_joinMenuItem = item;
+        }
+        return m_joinMenuItem;
+    }
+
+    private JMenuItem getDisconnectMenuItem()
+    {
+        if (m_disconnectMenuItem == null)
+        {
+            JMenuItem item = new JMenuItem("Disconnect");
+            item.addActionListener(new ActionListener()
+            {
+                public void actionPerformed(ActionEvent e)
+                {
+                    disconnect();
+                }
+            });
+            m_disconnectMenuItem = item;
+        }
+        return m_disconnectMenuItem;
+    }
+
+    private JMenuItem getClearMapMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Clear Map");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                int res = UtilityFunctions.yesNoDialog(GametableFrame.this,
+                    "This will clear all lines, pogs, and underlays on the entire layer. Are you sure?", "Clear Map");
+                if (res == UtilityFunctions.YES)
+                {
+                    eraseAllPogs();
+                    eraseAllLines();
+                    repaint();
+                }
+            }
+        });
+
+        return item;
+    }
+
+    private JMenuItem getRecenterAllPlayersMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Recenter all Players");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
+                    "This will recenter everyone's map view to match yours, "
+                        + "and will set their zoom levels to match yours. Are you sure you want to do this?",
+                    "Recenter?");
+                if (result == UtilityFunctions.YES)
+                {
+                    // get our view center
+                    int viewCenterX = getGametableCanvas().getWidth() / 2;
+                    int viewCenterY = getGametableCanvas().getHeight() / 2;
+
+                    // convert to model coordinates
+                    Point modelCenter = getGametableCanvas().viewToModel(viewCenterX, viewCenterY);
+                    getGametableCanvas().recenterView(modelCenter.x, modelCenter.y, getGametableCanvas().m_zoom);
+                    postSystemMessage(getMyPlayer().getPlayerName() + " Recenters everyone's view!");
+                }
+            }
+        });
+        return item;
+    }
+
+    private JMenuItem getTogglePrivateMapMenuItem()
+    {
+        if (m_togglePrivateMapMenuItem == null)
+        {
+            JCheckBoxMenuItem item = new JCheckBoxMenuItem("Edit Private Map");
+            item.setAccelerator(KeyStroke.getKeyStroke("ctrl T"));
+            item.addActionListener(new ActionListener()
+            {
+                public void actionPerformed(ActionEvent e)
+                {
+                    toggleLayer();
+                }
+            });
+
+            m_togglePrivateMapMenuItem = item;
+        }
+
+        return m_togglePrivateMapMenuItem;
+    }
+
+    private JMenuItem getAddDiceMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Add...");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                NewMacroDialog dlg = new NewMacroDialog();
+                dlg.setModal(true);
+                dlg.setVisible(true);
+
+                if (dlg.m_bAccepted)
+                {
+                    // extrace the macro from the controls and add it
+                    String name = dlg.m_nameEntry.getText();
+                    String macro = dlg.m_rollEntry.getText();
+                    if (getMacro(name) != null)
+                    {
+                        int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
+                            "You already have a macro named \"" + name + "\", "
+                                + "are you sure you want to replace it with \"" + macro + "\"?", "Replace Macro?");
+                        if (result == UtilityFunctions.YES)
+                        {
+                            addMacro(name, macro);
+                        }
+                    }
+                    else
+                    {
+                        addMacro(name, macro);
+                    }
+                }
+            }
+        });
+        return item;
+    }
+
+    private JMenuItem getDeleteDiceMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Delete...");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                Object[] list = m_macros.toArray();
+                // give them a list of macros they can delete
+                Object sel = JOptionPane.showInputDialog(GametableFrame.this, "Select Dice Macro to remove:",
+                    "Remove Dice Macro", JOptionPane.PLAIN_MESSAGE, null, list, list[0]);
+                if (sel != null)
+                {
+                    removeMacro((DiceMacro)sel);
+                }
+            }
+        });
+        return item;
+    }
+
+    private JMenuItem getAboutMenuItem()
+    {
+        JMenuItem item = new JMenuItem("About");
+        item.setAccelerator(KeyStroke.getKeyStroke("F1"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                UtilityFunctions.msgBox(GametableFrame.this, GametableApp.VERSION
+                    + " by Andy Weir and David Ghandehari", "Version");
+            }
+        });
+        return item;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        if (e.getSource() == m_colorCombo)
+        {
+            Integer col = (Integer)m_colorCombo.getSelectedItem();
+            m_drawColor = new Color(col.intValue());
+        }
+        else if (e.getSource() == m_noGridModeMenuItem)
+        {
+            getGametableCanvas().m_gridMode = getGametableCanvas().m_noGridMode;
+            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_NONE));
+            updateGridModeMenu();
+            repaint();
+            postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
+        }
+        else if (e.getSource() == m_squareGridModeMenuItem)
+        {
+            getGametableCanvas().m_gridMode = getGametableCanvas().m_squareGridMode;
+            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_SQUARES));
+            updateGridModeMenu();
+            repaint();
+            postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
+        }
+        else if (e.getSource() == m_hexGridModeMenuItem)
+        {
+            getGametableCanvas().m_gridMode = getGametableCanvas().m_hexGridMode;
+            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_HEX));
+            updateGridModeMenu();
+            repaint();
+            postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
+        }
+        else
+        {
+            // check the macro buttons
+            for (int i = 0; i < m_macroButtons.size(); i++)
+            {
+                if (e.getSource() == m_macroButtons.get(i))
+                {
+                    // found our man
+                    DiceMacro macro = (DiceMacro)m_macros.get(i);
+                    String result = macro.doMacro();
+                    postMessage(result);
+
+                    // send focus back where it belongs
+                    getGametableCanvas().requestFocus();
+                }
+            }
+        }
+    }
+
+    /**
+     * @return Returns the m_netStatus.
+     */
+    public int getNetStatus()
+    {
+        return m_netStatus;
+    }
+
+    public int getNewStateId()
+    {
+        return m_nextStateId++;
+    }
+
+    /**
+     * @return The preferences object.
+     */
     public Preferences getPreferences()
     {
         return m_preferences;
     }
 
+    /**
+     * @return The root pog library.
+     */
     public PogLibrary getPogLibrary()
     {
         return m_pogLibrary;
+    }
+
+    /**
+     * @return Returns the gametableCanvas.
+     */
+    public GametableCanvas getGametableCanvas()
+    {
+        return m_gametableCanvas;
     }
 
     public void updateWindowInfo()
@@ -470,34 +1066,28 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         }
     }
 
-    // interface overrides
-    public void componentResized(ComponentEvent event)
+    /**
+     * @return The player representing this client.
+     */
+    public Player getMyPlayer()
     {
-        updateWindowInfo();
+        return (Player)m_players.get(getMyPlayerIndex());
     }
 
-    public Player getMePlayer()
+    /**
+     * @return Returns the player list.
+     */
+    public List getPlayers()
     {
-        return (Player)m_players.get(m_myPlayerIdx);
+        return Collections.unmodifiableList(m_players);
     }
 
-    // returns the player id of this client
-    public int getMeID()
+    /**
+     * @return The id of the player representing this client.
+     */
+    public int getMyPlayerId()
     {
-        return getMePlayer().getId();
-    }
-
-    public void componentMoved(ComponentEvent e)
-    {
-        updateWindowInfo();
-    }
-
-    public void componentShown(ComponentEvent e)
-    {
-    }
-
-    public void componentHidden(ComponentEvent e)
-    {
+        return getMyPlayer().getId();
     }
 
     public void loginCompletePacketReceived()
@@ -509,8 +1099,8 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         PacketSourceState.endHostDump();
 
         // seed our undo stack with this as the bottom rung
-        m_gametableCanvas.getPublicMap().beginUndoableAction();
-        m_gametableCanvas.getPublicMap().endUndoableAction(-1, -1);
+        getGametableCanvas().getPublicMap().beginUndoableAction();
+        getGametableCanvas().getPublicMap().endUndoableAction(-1, -1);
     }
 
     public void pingPacketReceived()
@@ -542,7 +1132,7 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
 
     public void recenterPacketReceived(int x, int y, int zoom)
     {
-        m_gametableCanvas.doRecenterView(x, y, zoom);
+        getGametableCanvas().doRecenterView(x, y, zoom);
 
         if (m_netStatus == NETSTATE_HOST)
         {
@@ -554,13 +1144,13 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
     {
         // when you get a pog data change, the pog will show that change
         // to you for a while
-        Pog pog = m_gametableCanvas.getPogByID(id);
+        Pog pog = getGametableCanvas().getPogByID(id);
         if (pog != null)
         {
             pog.displayPogDataChange();
         }
 
-        m_gametableCanvas.doSetPogData(id, s);
+        getGametableCanvas().doSetPogData(id, s);
 
         if (m_netStatus == NETSTATE_HOST)
         {
@@ -581,7 +1171,7 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
 
     public void undoPacketReceived(int stateID)
     {
-        m_gametableCanvas.doUndo(stateID);
+        getGametableCanvas().doUndo(stateID);
 
         if (m_netStatus == NETSTATE_HOST)
         {
@@ -594,7 +1184,7 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
 
     public void redoPacketReceived(int stateID)
     {
-        m_gametableCanvas.doRedo(stateID);
+        getGametableCanvas().doRedo(stateID);
 
         if (m_netStatus == NETSTATE_HOST)
         {
@@ -608,7 +1198,7 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
     public void pointPacketReceived(int plrIdx, int x, int y, boolean bPointing)
     {
         // we're not interested in point packets of our own hand
-        if (plrIdx != m_myPlayerIdx)
+        if (plrIdx != getMyPlayerIndex())
         {
             Player plr = (Player)m_players.get(plrIdx);
             plr.setPoint(x, y);
@@ -620,12 +1210,12 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
             send(PacketManager.makePointPacket(plrIdx, x, y, bPointing));
         }
 
-        m_gametableCanvas.repaint();
+        getGametableCanvas().repaint();
     }
 
     public void movePogPacketReceived(int id, int newX, int newY)
     {
-        m_gametableCanvas.doMovePog(id, newX, newY);
+        getGametableCanvas().doMovePog(id, newX, newY);
 
         if (m_netStatus == NETSTATE_HOST)
         {
@@ -636,7 +1226,7 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
 
     public void removePogsPacketReceived(int ids[])
     {
-        m_gametableCanvas.doRemovePogs(ids);
+        getGametableCanvas().doRemovePogs(ids);
 
         if (m_netStatus == NETSTATE_HOST)
         {
@@ -647,7 +1237,7 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
 
     public void addPogPacketReceived(Pog pog)
     {
-        m_gametableCanvas.doAddPog(pog);
+        getGametableCanvas().doAddPog(pog);
 
         // update the next pog id if necessary
         if (pog.getId() >= Pog.g_nextID)
@@ -668,12 +1258,12 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         {
             // if we're the host, send it to the clients
             // and give it a genuine state ID first
-            stateID = this.getNewStateID();
+            stateID = this.getNewStateId();
             send(PacketManager.makeErasePacket(r, bColorSpecific, color, authorID, stateID));
         }
 
         // erase the lines
-        m_gametableCanvas.doErase(r, bColorSpecific, color, authorID, stateID);
+        getGametableCanvas().doErase(r, bColorSpecific, color, authorID, stateID);
     }
 
     public void linesPacketReceived(LineSegment[] lines, int authorID, int stateID)
@@ -682,12 +1272,12 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         {
             // if we're the host, send it to the clients
             // and give it a genuine state ID first
-            stateID = this.getNewStateID();
+            stateID = this.getNewStateId();
             send(PacketManager.makeLinesPacket(lines, authorID, stateID));
         }
 
         // add the lines to the array
-        m_gametableCanvas.doAddLineSegments(lines, authorID, stateID);
+        getGametableCanvas().doAddLineSegments(lines, authorID, stateID);
     }
 
     public void textPacketReceived(String text)
@@ -707,7 +1297,7 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
     public void gridModePacketReceived(int gridMode)
     {
         // note the new grid mode
-        m_gametableCanvas.setGridModeByID(gridMode);
+        getGametableCanvas().setGridModeByID(gridMode);
         updateGridModeMenu();
 
         if (m_netStatus == NETSTATE_HOST)
@@ -719,9 +1309,23 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         repaint();
     }
 
-    public int getPlayerIdx(Player plr)
+    /**
+     * Finds the index of a given player.
+     * 
+     * @param player Player to find index of.
+     * @return Index of the given player, or -1.
+     */
+    public int getPlayerIndex(Player player)
     {
-        return m_players.indexOf(plr);
+        return m_players.indexOf(player);
+    }
+
+    /**
+     * @return Returns the myPlayerIndex.
+     */
+    public int getMyPlayerIndex()
+    {
+        return m_myPlayerIndex;
     }
 
     public Player getPlayerFromConnection(Connection conn)
@@ -822,10 +1426,10 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
             addPlayer(players[i]);
         }
 
-        m_myPlayerIdx = ourIdx;
+        this.m_myPlayerIndex = ourIdx;
 
         // any time the cast changes, all the undo stacks clear
-        m_gametableCanvas.clearUndoStacks();
+        getGametableCanvas().clearUndoStacks();
     }
 
     public void send(byte[] packet)
@@ -863,7 +1467,7 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
     {
         confirmHost();
 
-        if (!m_defaultPassword.equals(password))
+        if (!m_password.equals(password))
         {
             // rejected!
             kick(connection, REJECT_INVALID_PASSWORD);
@@ -875,8 +1479,8 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         player.setConnection(connection);
 
         // set their ID
-        player.setId(m_nextPlayerID);
-        m_nextPlayerID++;
+        player.setId(m_nextPlayerId);
+        m_nextPlayerId++;
 
         // tell everyone about the new guy
         postSystemMessage(player.getPlayerName() + " has joined the session");
@@ -885,21 +1489,21 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         sendCastInfo();
 
         // all the undo stacks clear
-        m_gametableCanvas.clearUndoStacks();
+        getGametableCanvas().clearUndoStacks();
 
         // tell the new guy the entire state of the game
         // lines
-        LineSegment[] lines = new LineSegment[m_gametableCanvas.getPublicMap().getNumLines()];
-        for (int i = 0; i < m_gametableCanvas.getPublicMap().getNumLines(); i++)
+        LineSegment[] lines = new LineSegment[getGametableCanvas().getPublicMap().getNumLines()];
+        for (int i = 0; i < getGametableCanvas().getPublicMap().getNumLines(); i++)
         {
-            lines[i] = m_gametableCanvas.getPublicMap().getLineAt(i);
+            lines[i] = getGametableCanvas().getPublicMap().getLineAt(i);
         }
         send(PacketManager.makeLinesPacket(lines, -1, -1), player);
 
         // pogs
-        for (int i = 0; i < m_gametableCanvas.getPublicMap().getNumPogs(); i++)
+        for (int i = 0; i < getGametableCanvas().getPublicMap().getNumPogs(); i++)
         {
-            Pog pog = m_gametableCanvas.getPublicMap().getPogAt(i);
+            Pog pog = getGametableCanvas().getPublicMap().getPogAt(i);
             send(PacketManager.makeAddPogPacket(pog), player);
         }
 
@@ -907,12 +1511,12 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         send(PacketManager.makeLoginCompletePacket(), player);
 
         // finally, have the player recenter on the host's view
-        int viewCenterX = m_gametableCanvas.getWidth() / 2;
-        int viewCenterY = m_gametableCanvas.getHeight() / 2;
+        int viewCenterX = getGametableCanvas().getWidth() / 2;
+        int viewCenterY = getGametableCanvas().getHeight() / 2;
 
         // convert to model coordinates
-        Point modelCenter = m_gametableCanvas.viewToModel(viewCenterX, viewCenterY);
-        send(PacketManager.makeRecenterPacket(modelCenter.x, modelCenter.y, m_gametableCanvas.m_zoom), player);
+        Point modelCenter = getGametableCanvas().viewToModel(viewCenterX, viewCenterY);
+        send(PacketManager.makeRecenterPacket(modelCenter.x, modelCenter.y, getGametableCanvas().m_zoom), player);
     }
 
     public void sendCastInfo()
@@ -962,22 +1566,22 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         }
 
         // clear out all players
-        m_nextPlayerID = 0;
+        m_nextPlayerId = 0;
         m_players = new ArrayList();
-        Player me = new Player(m_defaultName, m_defaultCharName, m_nextPlayerID); // this means the host is always
+        Player me = new Player(m_playerName, m_characterName, m_nextPlayerId); // this means the host is always
         // player 0
-        m_nextPlayerID++;
+        m_nextPlayerId++;
         m_players.add(me);
         me.setHostPlayer(true);
-        m_myPlayerIdx = 0;
+        this.m_myPlayerIndex = 0;
 
-        m_networkThread = new NetworkThread(m_defaultPort);
+        m_networkThread = new NetworkThread(m_port);
         m_networkThread.start();
         // TODO: fix hosting failure detection
 
         initializeExecutorThread();
         m_netStatus = NETSTATE_HOST;
-        String message = "Hosting on port: " + m_defaultPort;
+        String message = "Hosting on port: " + m_port;
         logSystemMessage(message);
         Log.log(Log.NET, message);
 
@@ -987,7 +1591,7 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         setTitle(GametableApp.VERSION + " - " + me.getCharacterName());
 
         // when you host, all the undo stacks clear
-        m_gametableCanvas.clearUndoStacks();
+        getGametableCanvas().clearUndoStacks();
     }
 
     public void hostThreadFailed()
@@ -1023,28 +1627,28 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         {
             m_networkThread = new NetworkThread();
             m_networkThread.start();
-            Connection conn = new Connection(m_defaultIP, m_defaultPort);
+            Connection conn = new Connection(m_ipAddress, m_port);
             m_networkThread.add(conn);
 
             // now that we've successfully made a connection, let the host know
             // who we are
             m_players = new ArrayList();
-            Player me = new Player(m_defaultName, m_defaultCharName, -1);
+            Player me = new Player(m_playerName, m_characterName, -1);
             me.setConnection(conn);
             m_players.add(me);
-            m_myPlayerIdx = 0;
+            this.m_myPlayerIndex = 0;
 
             // reset game data
-            m_gametableCanvas.getPublicMap().setScroll(0, 0);
-            m_gametableCanvas.getPublicMap().clearPogs();
-            m_gametableCanvas.getPublicMap().clearLines();
+            getGametableCanvas().getPublicMap().setScroll(0, 0);
+            getGametableCanvas().getPublicMap().clearPogs();
+            getGametableCanvas().getPublicMap().clearLines();
             // PacketManager.g_imagelessPogs.clear();
 
             // send the packet
             while (!conn.isConnected())
             {
             }
-            conn.sendPacket(PacketManager.makePlayerPacket(me, m_defaultPassword));
+            conn.sendPacket(PacketManager.makePlayerPacket(me, m_password));
 
             PacketSourceState.beginHostDump();
 
@@ -1092,9 +1696,9 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         m_disconnectMenuItem.setEnabled(false);
 
         m_players = new ArrayList();
-        Player me = new Player(m_defaultName, m_defaultCharName, -1);
+        Player me = new Player(m_playerName, m_characterName, -1);
         m_players.add(me);
-        m_myPlayerIdx = 0;
+        this.m_myPlayerIndex = 0;
         setTitle(GametableApp.VERSION);
 
         // we might have disconnected during inital data recipt
@@ -1115,7 +1719,7 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         toErase.height = Integer.MAX_VALUE;
 
         // go to town
-        m_gametableCanvas.erase(toErase, false, 0);
+        getGametableCanvas().erase(toErase, false, 0);
 
         repaint();
     }
@@ -1123,15 +1727,15 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
     public void eraseAllPogs()
     {
         // make an int array of all the IDs
-        int removeArray[] = new int[m_gametableCanvas.getActiveMap().getNumPogs()];
+        int removeArray[] = new int[getGametableCanvas().getActiveMap().getNumPogs()];
 
-        for (int i = 0; i < m_gametableCanvas.getActiveMap().getNumPogs(); i++)
+        for (int i = 0; i < getGametableCanvas().getActiveMap().getNumPogs(); i++)
         {
-            Pog pog = m_gametableCanvas.getActiveMap().getPogAt(i);
+            Pog pog = getGametableCanvas().getActiveMap().getPogAt(i);
             removeArray[i] = pog.getId();
         }
 
-        m_gametableCanvas.removePogs(removeArray);
+        getGametableCanvas().removePogs(removeArray);
     }
 
     public void eraseAll()
@@ -1142,19 +1746,19 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
 
     public void updateGridModeMenu()
     {
-        if (m_gametableCanvas.m_gridMode == m_gametableCanvas.m_noGridMode)
+        if (getGametableCanvas().m_gridMode == getGametableCanvas().m_noGridMode)
         {
             m_noGridModeMenuItem.setState(true);
             m_squareGridModeMenuItem.setState(false);
             m_hexGridModeMenuItem.setState(false);
         }
-        else if (m_gametableCanvas.m_gridMode == m_gametableCanvas.m_squareGridMode)
+        else if (getGametableCanvas().m_gridMode == getGametableCanvas().m_squareGridMode)
         {
             m_noGridModeMenuItem.setState(false);
             m_squareGridModeMenuItem.setState(true);
             m_hexGridModeMenuItem.setState(false);
         }
-        else if (m_gametableCanvas.m_gridMode == m_gametableCanvas.m_hexGridMode)
+        else if (getGametableCanvas().m_gridMode == getGametableCanvas().m_hexGridMode)
         {
             m_noGridModeMenuItem.setState(false);
             m_squareGridModeMenuItem.setState(false);
@@ -1167,297 +1771,15 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         // note the tool ID of the publish tool
         int toolId = m_toolManager.getToolInfo("Publish").getId();
 
-        if (m_gametableCanvas.isPublicMap())
+        if (getGametableCanvas().isPublicMap())
         {
-            m_privateLayerModeMenuItem.setState(false);
+            m_togglePrivateMapMenuItem.setState(false);
             m_toolButtons[toolId].setEnabled(false);
         }
         else
         {
-            m_privateLayerModeMenuItem.setState(true);
+            m_togglePrivateMapMenuItem.setState(true);
             m_toolButtons[toolId].setEnabled(true);
-        }
-    }
-
-    public void actionPerformed(ActionEvent e)
-    {
-        if (e.getSource() == m_clearMapMenuItem)
-        {
-            int res = UtilityFunctions.yesNoDialog(this,
-                "This will clear all lines, pogs, and underlays on the entire layer. Are you sure?", "Clear Map");
-            if (res == UtilityFunctions.YES)
-            {
-                eraseAllPogs();
-                eraseAllLines();
-                repaint();
-            }
-        }
-
-        if (e.getSource() == m_colorCombo)
-        {
-            Integer col = (Integer)m_colorCombo.getSelectedItem();
-            m_drawColor = new Color(col.intValue());
-        }
-
-        if (e.getSource() == m_undoMenuItem)
-        {
-            m_gametableCanvas.undo();
-        }
-
-        if (e.getSource() == m_redoMenuItem)
-        {
-            m_gametableCanvas.redo();
-        }
-
-        if (e.getSource() == m_exitMenuItem)
-        {
-            saveState(m_gametableCanvas.getPublicMap(), new File("autosave.grm"));
-            saveState(m_gametableCanvas.getPrivateMap(), new File("autosavepvt.grm"));
-            savePrefs();
-            System.exit(0);
-        }
-        if (e.getSource() == m_openMenuItem)
-        {
-            // opening while on the public layer...
-            if (m_gametableCanvas.getActiveMap() == m_gametableCanvas.getPublicMap())
-            {
-                File openFile = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
-
-                if (openFile == null)
-                {
-                    // they cancelled out of the open
-                    return;
-                }
-
-                m_actingFilePublic = openFile;
-
-                int result = UtilityFunctions
-                    .yesNoDialog(
-                        this,
-                        "This will load a map file, replacing all existing map data for you and all players in the session. Are you sure you want to do this?",
-                        "Confirm Load");
-                if (result == UtilityFunctions.YES)
-                {
-
-                    if (m_actingFilePublic != null)
-                    {
-                        // clear the state
-                        eraseAll();
-
-                        // load
-                        if (m_netStatus == NETSTATE_JOINED)
-                        {
-                            // joiners dispatch the save file to the host
-                            // for processing
-                            byte grmFile[] = UtilityFunctions.loadFileToArray(m_actingFilePublic);
-                            if (grmFile != null)
-                            {
-                                send(PacketManager.makeGrmPacket(grmFile));
-                            }
-                        }
-                        else
-                        {
-                            // actually do the load if we're the host or offline
-                            loadState(m_actingFilePublic);
-                        }
-
-                        postSystemMessage(getMePlayer().getPlayerName() + " loads a new map.");
-                    }
-                }
-            }
-            else
-            {
-                // opening while on the private layer
-                m_actingFilePrivate = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
-                if (m_actingFilePrivate != null)
-                {
-                    // we have to pretend we're not connected while loading. We
-                    // don't want these packets to be propagatet to other players
-                    int oldStatus = m_netStatus;
-                    m_netStatus = NETSTATE_NONE;
-                    PacketSourceState.beginFileLoad();
-                    loadState(m_actingFilePrivate);
-                    PacketSourceState.endFileLoad();
-                    m_netStatus = oldStatus;
-                }
-            }
-        }
-        if (e.getSource() == m_saveMenuItem)
-        {
-            if (m_gametableCanvas.isPublicMap())
-            {
-                if (m_actingFilePublic == null)
-                {
-                    m_actingFilePublic = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
-                }
-
-                if (m_actingFilePublic != null)
-                {
-                    // save the file
-                    saveState(m_gametableCanvas.getActiveMap(), m_actingFilePublic);
-                }
-            }
-            else
-            {
-                if (m_actingFilePrivate == null)
-                {
-                    m_actingFilePrivate = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
-                }
-
-                if (m_actingFilePrivate != null)
-                {
-                    // save the file
-                    saveState(m_gametableCanvas.getActiveMap(), m_actingFilePrivate);
-                }
-            }
-
-        }
-        if (e.getSource() == m_saveAsMenuItem)
-        {
-            if (m_gametableCanvas.isPublicMap())
-            {
-                m_actingFilePublic = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
-                if (m_actingFilePublic != null)
-                {
-                    // save the file
-                    saveState(m_gametableCanvas.getActiveMap(), m_actingFilePublic);
-                }
-            }
-            else
-            {
-                m_actingFilePrivate = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
-                if (m_actingFilePrivate != null)
-                {
-                    // save the file
-                    saveState(m_gametableCanvas.getActiveMap(), m_actingFilePrivate);
-                }
-            }
-        }
-        if (e.getSource() == m_reacquirePogsMenuItem)
-        {
-            reacquirePogs();
-        }
-
-        if (e.getSource() == m_hostMenuItem)
-        {
-            host();
-        }
-        if (e.getSource() == m_joinMenuItem)
-        {
-            join();
-        }
-        if (e.getSource() == m_listPlayersMenuItem)
-        {
-            parseSlashCommand("/who");
-        }
-        if (e.getSource() == m_disconnectMenuItem)
-        {
-            disconnect();
-        }
-        if (e.getSource() == m_aboutMenuItem)
-        {
-            UtilityFunctions.msgBox(this, GametableApp.VERSION + " by Andy Weir and David Ghandehari", "Version");
-        }
-
-        if (e.getSource() == m_noGridModeMenuItem)
-        {
-            m_gametableCanvas.m_gridMode = m_gametableCanvas.m_noGridMode;
-            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_NONE));
-            updateGridModeMenu();
-            repaint();
-            postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
-        }
-        if (e.getSource() == m_squareGridModeMenuItem)
-        {
-            m_gametableCanvas.m_gridMode = m_gametableCanvas.m_squareGridMode;
-            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_SQUARES));
-            updateGridModeMenu();
-            repaint();
-            postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
-        }
-        if (e.getSource() == m_hexGridModeMenuItem)
-        {
-            m_gametableCanvas.m_gridMode = m_gametableCanvas.m_hexGridMode;
-            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_HEX));
-            updateGridModeMenu();
-            repaint();
-            postSystemMessage(getMePlayer().getPlayerName() + " changes the grid mode.");
-        }
-
-        if (e.getSource() == m_privateLayerModeMenuItem)
-        {
-            toggleLayer();
-        }
-
-        if (e.getSource() == m_recenterMapMenuItem)
-        {
-            int result = UtilityFunctions.yesNoDialog(this, "This will recenter everyone's map view to match yours, "
-                + "and will set their zoom levels to match yours. Are you sure you want to do this?", "Recenter?");
-            if (result == UtilityFunctions.YES)
-            {
-                // get our view center
-                int viewCenterX = m_gametableCanvas.getWidth() / 2;
-                int viewCenterY = m_gametableCanvas.getHeight() / 2;
-
-                // convert to model coordinates
-                Point modelCenter = m_gametableCanvas.viewToModel(viewCenterX, viewCenterY);
-                m_gametableCanvas.recenterView(modelCenter.x, modelCenter.y, m_gametableCanvas.m_zoom);
-                postSystemMessage(getMePlayer().getPlayerName() + " Recenters everyone's view!");
-            }
-        }
-
-        if (e.getSource() == m_addDiceMacroMenuItem)
-        {
-            NewMacroDialog dlg = new NewMacroDialog();
-            dlg.setModal(true);
-            dlg.setVisible(true);
-
-            if (dlg.m_bAccepted)
-            {
-                // extrace the macro from the controls and add it
-                String name = dlg.m_nameEntry.getText();
-                String macro = dlg.m_rollEntry.getText();
-                if (getMacro(name) != null)
-                {
-                    int result = UtilityFunctions.yesNoDialog(this, "You already have a macro named \"" + name + "\", "
-                        + "are you sure you want to replace it with \"" + macro + "\"?", "Replace Macro?");
-                    if (result == UtilityFunctions.YES)
-                    {
-                        addMacro(name, macro);
-                    }
-                }
-                else
-                {
-                    addMacro(name, macro);
-                }
-            }
-        }
-
-        if (e.getSource() == m_removeDiceMacroMenuItem)
-        {
-            Object[] list = m_macros.toArray();
-            // give them a list of macros they can delete
-            Object sel = JOptionPane.showInputDialog(this, "Select Dice Macro to remove:", "Remove Dice Macro",
-                JOptionPane.PLAIN_MESSAGE, null, list, list[0]);
-            if (sel != null)
-            {
-                removeMacro((DiceMacro)sel);
-            }
-        }
-
-        // check the macro buttons
-        for (int i = 0; i < m_macroButtons.size(); i++)
-        {
-            if (e.getSource() == m_macroButtons.get(i))
-            {
-                // found our man
-                DiceMacro macro = (DiceMacro)m_macros.get(i);
-                String result = macro.doMacro();
-                postMessage(result);
-
-                // send focus back where it belongs
-                m_gametableCanvas.requestFocus();
-            }
         }
     }
 
@@ -1475,22 +1797,23 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
      */
     public void refreshPogList()
     {
-        m_pogsPanel.populateChildren();
-        m_underlaysPanel.populateChildren();
         m_pogPanel.populateChildren();
-        m_gametableCanvas.repaint();
+        getGametableCanvas().repaint();
     }
 
+    /**
+     * Toggles between the two layers.
+     */
     public void toggleLayer()
     {
         // toggle the map we're on
-        if (m_gametableCanvas.isPublicMap())
+        if (getGametableCanvas().isPublicMap())
         {
-            m_gametableCanvas.setActiveMap(m_gametableCanvas.getPrivateMap());
+            getGametableCanvas().setActiveMap(getGametableCanvas().getPrivateMap());
         }
         else
         {
-            m_gametableCanvas.setActiveMap(m_gametableCanvas.getPublicMap());
+            getGametableCanvas().setActiveMap(getGametableCanvas().getPublicMap());
         }
 
         updatePrivateLayerModeMenuItem();
@@ -1499,47 +1822,6 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         getToolManager().cancelToolAction();
 
         repaint();
-    }
-
-    public void propertyChange(PropertyChangeEvent evt)
-    {
-        if (evt.getPropertyName().equals("dividerLocation"))
-        {
-            if (m_bDisregardDividerChanges)
-            {
-                return;
-            }
-
-            // note the new divider location
-            int fromBottom = m_mapChatSplitPane.getHeight() - m_mapChatSplitPane.getDividerLocation();
-            if (fromBottom == 16)
-            {
-                m_bDisregardDividerChanges = true;
-                m_mapChatSplitPane.setDividerLocation(getHeight() - m_prevDividerLocFromBottom);
-                m_bDisregardDividerChanges = false;
-                return;
-            }
-            m_prevDividerLocFromBottom = fromBottom;
-        }
-    }
-
-    public void paint(Graphics g)
-    {
-        if (m_bFirstPaint)
-        {
-            if (!m_bLoadedState)
-            {
-                m_mapChatSplitPane.setDividerLocation(0.7);
-                m_prevDividerLocFromBottom = m_mapChatSplitPane.getHeight() - m_mapChatSplitPane.getDividerLocation();
-            }
-
-            m_bFirstPaint = false;
-            m_bDisregardDividerChanges = false;
-            m_gametableCanvas.requestFocus();
-
-            repaint();
-        }
-        super.paint(g);
     }
 
     public ToolManager getToolManager()
@@ -1552,7 +1834,7 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         m_toolButtons[toolId].setSelected(true);
     }
 
-    public void addPlayer(Object player)
+    public void addPlayer(Player player)
     {
         m_players.add(player);
     }
@@ -1681,96 +1963,6 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         {
             m_textLogScroller.disregardNextPaint();
         }
-    }
-
-    protected void processWindowEvent(WindowEvent e)
-    {
-        super.processWindowEvent(e);
-        if (e.getID() == WindowEvent.WINDOW_CLOSING)
-        {
-            saveState(m_gametableCanvas.getPublicMap(), new File("autosave.grm"));
-            saveState(m_gametableCanvas.getPrivateMap(), new File("autosavepvt.grm"));
-            savePrefs();
-            System.exit(0);
-        }
-    }
-
-    public void keyTyped(KeyEvent e)
-    {
-    }
-
-    public void keyPressed(KeyEvent e)
-    {
-        if (e.getSource() == m_textEntry)
-        {
-            int code = e.getKeyCode();
-
-            if (code == KeyEvent.VK_UP)
-            {
-                m_textSentLoc--;
-                if (m_textSentLoc < 0)
-                {
-                    m_textSentLoc = 0;
-                }
-                else
-                {
-                    m_textEntry.setText((String)m_textSent.get(m_textSentLoc));
-                }
-            }
-
-            if (code == KeyEvent.VK_DOWN)
-            {
-                m_textSentLoc++;
-
-                if (m_textSentLoc > m_textSent.size())
-                {
-                    m_textSentLoc = m_textSent.size();
-                }
-                else
-                {
-                    if (m_textSentLoc == m_textSent.size())
-                    {
-                        m_textEntry.setText("");
-                    }
-                    else
-                    {
-                        m_textEntry.setText((String)m_textSent.get(m_textSentLoc));
-                    }
-                }
-            }
-        }
-    }
-
-    public void keyReleased(KeyEvent e)
-    {
-    }
-
-    void m_textEntry_actionPerformed(ActionEvent e)
-    {
-        // they hit return on the text bar
-        String entered = m_textEntry.getText();
-        if (entered.length() == 0)
-        {
-            // useless string.
-            // return focus to the map
-            m_gametableCanvas.requestFocus();
-            return;
-        }
-
-        m_textSent.add(entered);
-        m_textSentLoc = m_textSent.size();
-
-        // parse for commands
-        if (entered.charAt(0) == '/')
-        {
-            parseSlashCommand(entered);
-        }
-        else
-        {
-            postMessage(getMePlayer().getCharacterName() + "> " + entered);
-        }
-
-        m_textEntry.setText("");
     }
 
     public void parseSlashCommand(String text)
@@ -1931,7 +2123,7 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
 
                 first = false;
             }
-            postMessage(getMePlayer().getCharacterName() + " rolls " + rollBuf + ": [" + resultBuf + "] = " + total);
+            postMessage(getMyPlayer().getCharacterName() + " rolls " + rollBuf + ": [" + resultBuf + "] = " + total);
         }
         else if (words[0].equals("//") || words[0].equals("/help"))
         {
@@ -1983,14 +2175,14 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
             FileOutputStream prefFile = new FileOutputStream("prefs.prf");
             DataOutputStream prefDos = new DataOutputStream(prefFile);
 
-            prefDos.writeUTF(m_defaultName);
-            prefDos.writeUTF(m_defaultCharName);
-            prefDos.writeUTF(m_defaultIP);
-            prefDos.writeInt(m_defaultPort);
-            prefDos.writeUTF(m_defaultPassword);
-            prefDos.writeInt(m_gametableCanvas.getPublicMap().getScrollX());
-            prefDos.writeInt(m_gametableCanvas.getPublicMap().getScrollY());
-            prefDos.writeInt(m_gametableCanvas.m_zoom);
+            prefDos.writeUTF(m_playerName);
+            prefDos.writeUTF(m_characterName);
+            prefDos.writeUTF(m_ipAddress);
+            prefDos.writeInt(m_port);
+            prefDos.writeUTF(m_password);
+            prefDos.writeInt(getGametableCanvas().getPublicMap().getScrollX());
+            prefDos.writeInt(getGametableCanvas().getPublicMap().getScrollY());
+            prefDos.writeInt(getGametableCanvas().m_zoom);
 
             prefDos.writeInt(m_windowSize.width);
             prefDos.writeInt(m_windowSize.height);
@@ -2025,23 +2217,18 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
     public void loadPrefs()
     {
         File file = new File("prefs.prf");
-        if (!file.canWrite())
-        {
-            Log.log(Log.SYS, "Unable to write: " + file);
-        }
-
         if (!file.exists())
         {
             // DEFAULTS
-            m_mapChatSplitPane.setDividerLocation(0.8);
+            m_mapChatSplitPane.setDividerLocation(0.75);
             m_mapPogSplitPane.setDividerLocation(150);
-            m_windowSize.width = 800;
-            m_windowSize.height = 600;
+            m_windowSize = new Dimension(800, 600);
             Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-            m_windowPos.x = (screenSize.width - m_windowSize.width) / 2;
-            m_windowPos.y = (screenSize.height - m_windowSize.height) / 2;
+            m_windowPos = new Point((screenSize.width - m_windowSize.width) / 2,
+                (screenSize.height - m_windowSize.height) / 2);
             m_bMaximized = false;
             applyWindowInfo();
+            addMacro("d20", "d20");
             return;
         }
 
@@ -2050,26 +2237,23 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
             FileInputStream prefFile = new FileInputStream(file);
             DataInputStream prefDis = new DataInputStream(prefFile);
 
-            m_defaultName = prefDis.readUTF();
-            m_defaultCharName = prefDis.readUTF();
-            m_defaultIP = prefDis.readUTF();
-            m_defaultPort = prefDis.readInt();
-            m_defaultPassword = prefDis.readUTF();
-            m_gametableCanvas.setPrimaryScroll(m_gametableCanvas.getPublicMap(), prefDis.readInt(), prefDis.readInt());
-            m_gametableCanvas.setZoom(prefDis.readInt());
+            m_playerName = prefDis.readUTF();
+            m_characterName = prefDis.readUTF();
+            m_ipAddress = prefDis.readUTF();
+            m_port = prefDis.readInt();
+            m_password = prefDis.readUTF();
+            getGametableCanvas().setPrimaryScroll(getGametableCanvas().getPublicMap(), prefDis.readInt(),
+                prefDis.readInt());
+            getGametableCanvas().setZoom(prefDis.readInt());
 
-            m_windowSize.width = prefDis.readInt();
-            m_windowSize.height = prefDis.readInt();
-            m_windowPos.x = prefDis.readInt();
-            m_windowPos.y = prefDis.readInt();
+            m_windowSize = new Dimension(prefDis.readInt(), prefDis.readInt());
+            m_windowPos = new Point(prefDis.readInt(), prefDis.readInt());
             m_bMaximized = prefDis.readBoolean();
             applyWindowInfo();
 
             // divider locations
-            m_bDisregardDividerChanges = true;
             m_mapChatSplitPane.setDividerLocation(prefDis.readInt());
             m_mapPogSplitPane.setDividerLocation(prefDis.readInt());
-            m_bDisregardDividerChanges = false;
 
             m_macros = new ArrayList();
             int numMacros = prefDis.readInt();
@@ -2142,7 +2326,7 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
             }
 
             // grid state
-            byte gridModePacket[] = PacketManager.makeGridModePacket(m_gametableCanvas.getGridModeID());
+            byte gridModePacket[] = PacketManager.makeGridModePacket(getGametableCanvas().getGridModeID());
             dos.writeInt(gridModePacket.length);
             dos.write(gridModePacket);
 
@@ -2289,21 +2473,14 @@ public class GametableFrame extends JFrame implements ComponentListener, Propert
         });
         m_executorThread.start();
     }
-}
 
-
-
-class GametableFrame_m_textEntry_actionAdapter implements java.awt.event.ActionListener
-{
-    GametableFrame adaptee;
-
-    GametableFrame_m_textEntry_actionAdapter(GametableFrame a)
+    /**
+     * 
+     */
+    private void saveAll()
     {
-        adaptee = a;
-    }
-
-    public void actionPerformed(ActionEvent e)
-    {
-        adaptee.m_textEntry_actionPerformed(e);
+        saveState(getGametableCanvas().getPublicMap(), new File("autosave.grm"));
+        saveState(getGametableCanvas().getPrivateMap(), new File("autosavepvt.grm"));
+        savePrefs();
     }
 }

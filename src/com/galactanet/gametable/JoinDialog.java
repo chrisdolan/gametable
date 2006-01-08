@@ -149,11 +149,11 @@ public class JoinDialog extends JDialog implements FocusListener
         outerBox.add(Box.createVerticalStrut(PADDING));
 
         // set default values
-        m_charNameEntry.setText(GametableFrame.getGametableFrame().m_defaultCharName);
-        m_plrNameEntry.setText(GametableFrame.getGametableFrame().m_defaultName);
-        m_textEntry.setText(GametableFrame.getGametableFrame().m_defaultIP);
-        m_portEntry.setText("" + GametableFrame.getGametableFrame().m_defaultPort);
-        m_passwordEntry.setText(GametableFrame.getGametableFrame().m_defaultPassword);
+        m_charNameEntry.setText(GametableFrame.getGametableFrame().m_characterName);
+        m_plrNameEntry.setText(GametableFrame.getGametableFrame().m_playerName);
+        m_textEntry.setText(GametableFrame.getGametableFrame().m_ipAddress);
+        m_portEntry.setText("" + GametableFrame.getGametableFrame().m_port);
+        m_passwordEntry.setText(GametableFrame.getGametableFrame().m_password);
 
         // we want to know if any of those text entry areas get focus
         m_textEntry.addFocusListener(this);
@@ -185,10 +185,10 @@ public class JoinDialog extends JDialog implements FocusListener
         m_bAccepted = true;
 
         // update the default names
-        GametableFrame.getGametableFrame().m_defaultCharName = m_charNameEntry.getText();
-        GametableFrame.getGametableFrame().m_defaultName = m_plrNameEntry.getText();
-        GametableFrame.getGametableFrame().m_defaultIP = m_textEntry.getText();
-        GametableFrame.getGametableFrame().m_defaultPassword = m_passwordEntry.getText();
+        GametableFrame.getGametableFrame().m_characterName = m_charNameEntry.getText();
+        GametableFrame.getGametableFrame().m_playerName = m_plrNameEntry.getText();
+        GametableFrame.getGametableFrame().m_ipAddress = m_textEntry.getText();
+        GametableFrame.getGametableFrame().m_password = m_passwordEntry.getText();
         getPort();
 
         dispose();
@@ -198,11 +198,11 @@ public class JoinDialog extends JDialog implements FocusListener
     {
         try
         {
-            GametableFrame.getGametableFrame().m_defaultPort = Integer.parseInt(m_portEntry.getText());
+            GametableFrame.getGametableFrame().m_port = Integer.parseInt(m_portEntry.getText());
         }
         catch (NumberFormatException ex)
         {
-            GametableFrame.getGametableFrame().m_defaultPort = GametableFrame.DEFAULT_PORT;
+            GametableFrame.getGametableFrame().m_port = GametableFrame.DEFAULT_PORT;
         }
     }
 

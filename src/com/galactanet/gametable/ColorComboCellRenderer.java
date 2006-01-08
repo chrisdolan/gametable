@@ -30,12 +30,12 @@ public class ColorComboCellRenderer extends JLabel implements ListCellRenderer
         int width = 79;
         int height = 17;
 
-        m_icons = new ImageIcon[GametableFrame.g_comboColors.length];
-        m_selectedIcons = new ImageIcon[GametableFrame.g_comboColors.length];
+        m_icons = new ImageIcon[GametableFrame.COLORS.length];
+        m_selectedIcons = new ImageIcon[GametableFrame.COLORS.length];
 
         for (int i = 0; i < m_icons.length; i++)
         {
-            Color col = new Color(GametableFrame.g_comboColors[i].intValue());
+            Color col = new Color(GametableFrame.COLORS[i].intValue());
             Image img = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice()
                 .getDefaultConfiguration().createCompatibleImage(width, height, Transparency.BITMASK);
             createImage(width, height);
@@ -73,9 +73,9 @@ public class ColorComboCellRenderer extends JLabel implements ListCellRenderer
         // find the color needed
         int col = ((Integer)value).intValue();
         int idx = -1;
-        for (int i = 0; i < GametableFrame.g_comboColors.length; i++)
+        for (int i = 0; i < GametableFrame.COLORS.length; i++)
         {
-            if (GametableFrame.g_comboColors[i].intValue() == col)
+            if (GametableFrame.COLORS[i].intValue() == col)
             {
                 idx = i;
             }

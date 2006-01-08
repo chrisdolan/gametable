@@ -62,7 +62,7 @@ public class PublishTool extends NullTool
         if (m_canvas.isPublicMap())
         {
             // this tool is not useable on the public map. So we cancel this action
-            GametableFrame.g_gameTableFrame.getToolManager().cancelToolAction();
+            GametableFrame.getGametableFrame().getToolManager().cancelToolAction();
             return;
         }
 

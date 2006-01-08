@@ -9,9 +9,10 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 
 import com.galactanet.gametable.tools.NullTool;
@@ -23,8 +24,8 @@ import com.galactanet.gametable.tools.NullTool;
  * 
  * @author sephalon
  */
-public class GametableCanvas extends JButton implements MouseListener, MouseMotionListener, KeyListener,
-    ComponentListener, ItemSelectable, MouseWheelListener
+public class GametableCanvas extends JComponent implements MouseListener, MouseMotionListener, KeyListener,
+    MouseWheelListener
 {
     public final static int     VALUE_X               = 0;
     public final static int     VALUE_Y               = 1;
@@ -168,10 +169,10 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     public GametableCanvas()
     {
+        setRequestFocusEnabled(true);
         addMouseListener(this);
         addMouseMotionListener(this);
         addKeyListener(this);
-        addComponentListener(this);
 
         m_activeMap = m_publicMap;
     }
@@ -681,7 +682,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
     {
         m_gametableFrame.send(PacketManager.makeRecenterPacket(modelCenterX, modelCenterY, zoomLevel));
 
-        if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+        if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
         {
             doRecenterView(modelCenterX, modelCenterY, zoomLevel);
         }
@@ -738,7 +739,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         {
             m_gametableFrame.send(PacketManager.makePogDataPacket(id, s));
 
-            if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
             {
                 doSetPogData(id, s);
             }
@@ -768,7 +769,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         {
             m_gametableFrame.send(PacketManager.makeMovePogPacket(id, newX, newY));
 
-            if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
             {
                 doMovePog(id, newX, newY);
             }
@@ -809,7 +810,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         {
             m_gametableFrame.send(PacketManager.makeRemovePogsPacket(ids));
 
-            if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
             {
                 doRemovePogs(ids);
             }
@@ -852,7 +853,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         {
             m_gametableFrame.send(PacketManager.makeAddPogPacket(toAdd));
 
-            if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
             {
                 doAddPog(toAdd);
             }
@@ -877,22 +878,22 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             // if we're a joiner, just push it to the host
             // stateID is irrelevant if we're a joiner
             int stateID = -1;
-            if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
             {
-                stateID = m_gametableFrame.getNewStateID();
+                stateID = m_gametableFrame.getNewStateId();
             }
-            m_gametableFrame.send(PacketManager.makeLinesPacket(lines, m_gametableFrame.getMeID(), stateID));
+            m_gametableFrame.send(PacketManager.makeLinesPacket(lines, m_gametableFrame.getMyPlayerId(), stateID));
 
             // if we're the host or if we're offline, go ahead and add them now
-            if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
             {
-                doAddLineSegments(lines, m_gametableFrame.getMeID(), stateID);
+                doAddLineSegments(lines, m_gametableFrame.getMyPlayerId(), stateID);
             }
         }
         else
         {
             // state ids are irrelevant on the private layer
-            doAddLineSegments(lines, m_gametableFrame.getMeID(), 0);
+            doAddLineSegments(lines, m_gametableFrame.getMyPlayerId(), 0);
         }
     }
 
@@ -918,21 +919,21 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
             // if we're a joiner, just push it to the host
             // stateID is irrelevant if we're a joiner
             int stateID = -1;
-            if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
             {
-                stateID = m_gametableFrame.getNewStateID();
+                stateID = m_gametableFrame.getNewStateId();
             }
-            m_gametableFrame.send(PacketManager.makeErasePacket(r, bColorSpecific, color, m_gametableFrame.getMeID(),
-                stateID));
-            if (m_gametableFrame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+            m_gametableFrame.send(PacketManager.makeErasePacket(r, bColorSpecific, color, m_gametableFrame
+                .getMyPlayerId(), stateID));
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
             {
-                doErase(r, bColorSpecific, color, m_gametableFrame.getMeID(), stateID);
+                doErase(r, bColorSpecific, color, m_gametableFrame.getMyPlayerId(), stateID);
             }
         }
         else
         {
             // stateID is irrelevant for the private layer
-            doErase(r, bColorSpecific, color, m_gametableFrame.getMeID(), 0);
+            doErase(r, bColorSpecific, color, m_gametableFrame.getMyPlayerId(), 0);
         }
     }
 
@@ -1185,29 +1186,9 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         setPrimaryScroll(getActiveMap(), scrX, scrY);
     }
 
-    /** *********************************************************** */
+    /* *********************************************************** */
     // KeyListener events
-    /** *********************************************************** */
-    public void addItemListener(ItemListener l)
-    {
-        listenerList.add(ItemListener.class, l);
-    }
-
-    public void removeItemListener(ItemListener l)
-    {
-        listenerList.remove(ItemListener.class, l);
-    }
-
-    public Object[] getSelectedObjects()
-    {
-        if (isSelected() == false)
-        {
-            return null;
-        }
-        Object[] selectedObjects = new Object[1];
-        selectedObjects[0] = getText();
-        return selectedObjects;
-    }
+    /* *********************************************************** */
 
     public void keyTyped(KeyEvent e)
     {
@@ -1297,7 +1278,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
     private boolean isPointing()
     {
-        Player me = m_gametableFrame.getMePlayer();
+        Player me = m_gametableFrame.getMyPlayer();
         return me.isPointing();
     }
 
@@ -1306,12 +1287,12 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
      */
     private void pointAt(Point pointLocation)
     {
-        Player me = m_gametableFrame.getMePlayer();
+        Player me = m_gametableFrame.getMyPlayer();
 
         if (pointLocation == null)
         {
             me.setPointing(false);
-            m_gametableFrame.send(PacketManager.makePointPacket(m_gametableFrame.m_myPlayerIdx, 0, 0, false));
+            m_gametableFrame.send(PacketManager.makePointPacket(m_gametableFrame.getMyPlayerIndex(), 0, 0, false));
             repaint();
             return;
         }
@@ -1319,7 +1300,7 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         me.setPointing(true);
         me.setPoint(pointLocation);
 
-        m_gametableFrame.send(PacketManager.makePointPacket(m_gametableFrame.m_myPlayerIdx, me.getPoint().x, me
+        m_gametableFrame.send(PacketManager.makePointPacket(m_gametableFrame.getMyPlayerIndex(), me.getPoint().x, me
             .getPoint().y, true));
 
         setToolCursor(-1);
@@ -1534,9 +1515,10 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
 
         // draw the cursor overlays
         g.setFont(Font.decode("system-bold-12"));
-        for (int i = 0; i < m_gametableFrame.m_players.size(); i++)
+        List players = m_gametableFrame.getPlayers();
+        for (int i = 0; i < players.size(); i++)
         {
-            Player plr = (Player)m_gametableFrame.m_players.get(i);
+            Player plr = (Player)players.get(i);
             if (plr.isPointing())
             {
                 // draw this player's point cursor
@@ -1639,35 +1621,6 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }
     }
 
-    /*
-     * public void drawLines(Graphics g, int topLeftX, int topLeftY, int width, int height) { if (m_zoom == 4) { // we
-     * don't draw lines at the furthest zoom level return; } // This code works out which is the first square to draw on
-     * the visible // portion of the map, and how many to draw // we are "tiling" an image across the visible area. In
-     * the case of square mode, // we do this just by drawing lines. For hexes we have an actual image to tile. // A
-     * trick here we have to deal with is that hexes are not horizontally interchangeable // across one unit size. That
-     * is to say: If you shift a hex map over 1 hex width to the // left or right, it will not look the same as it used
-     * to. Because the hexes in row N // are 1/2 a hex higher than the nexes in row N-1 and row N+1. Because of this,
-     * when in hex // mode, // we have to make our "tiling square size" twice as wide. int tilingSquareX = m_squareSize;
-     * int tilingSquareY = m_squareSize; if (m_bHexMode) { tilingSquareX *= 2; } int qx = Math.abs(topLeftX) /
-     * tilingSquareX; if (topLeftX < 0) { qx++; qx = -qx; } int qy = Math.abs(topLeftY) / tilingSquareY; if (topLeftY <
-     * 0) { qy++; qy = -qy; } int linesXOffset = qx * tilingSquareX; int linesYOffset = qy * tilingSquareY; int vLines =
-     * width / tilingSquareX + 2; int hLines = height / tilingSquareY + 2; if (m_bHexMode) { // draw a hex grid Image
-     * toTile = m_hexImages[m_zoom]; // this offsets the hexes to be "centered" in the square grid that would // be
-     * there if we were in square mode (Doing things this way means that the // x-position treatment of pogs doesn't
-     * have to change while in hex mode. int offsetX = -m_hexImageOffsets[m_zoom] / 2; // each tiling of hex images is 4
-     * hexes high. so we incrememt by 4 for (int j = 0; j < hLines; j += 4) { // every "tiling" of the hex map draws 4
-     * vertical rows of hexes // that works out to be 2 tileSquare sizes (cause each tileSquare width is // 2 columns of
-     * hexes. for (int i = 0; i < vLines; i += 2) { // the x value: // starts at the "linesXOffset" calculated at the
-     * top of this routine. // that represents the first vertical column of hexes visible on screen. // add to that
-     * i*m_squareSize, to offset horizontally as we traverse the loop. // then add our little offsetX, whose purpose is
-     * described in it's declaration. int x = linesXOffset + i * tilingSquareX + offsetX; // the y location is much the
-     * same, except we need no x offset nudge. int y = linesYOffset + j * tilingSquareY; g.drawImage(toTile, x, y,
-     * this); } } } else { // draw a square grid g.setColor(Color.GRAY); if (m_zoom < 4) { for (int i = 0; i < vLines;
-     * i++) { g.drawLine(i * m_squareSize + linesXOffset, topLeftY, i * m_squareSize + linesXOffset, height + topLeftY); }
-     * for (int i = 0; i < hLines; i++) { g.drawLine(topLeftX, i * m_squareSize + linesYOffset, width + topLeftX, i *
-     * m_squareSize + linesYOffset); } } } }
-     */
-
     public static void drawDottedRect(Graphics g, int x, int y, int width, int height)
     {
         Graphics2D g2d = (Graphics2D)g;
@@ -1699,24 +1652,5 @@ public class GametableCanvas extends JButton implements MouseListener, MouseMoti
         }, 0f));
         g.drawLine(x, y, x2, y2);
         g2d.setStroke(oldStroke);
-    }
-
-    /** *********************************************************** */
-    // component listening
-    /** *********************************************************** */
-    public void componentResized(ComponentEvent e)
-    {
-    }
-
-    public void componentMoved(ComponentEvent e)
-    {
-    }
-
-    public void componentShown(ComponentEvent e)
-    {
-    }
-
-    public void componentHidden(ComponentEvent e)
-    {
     }
 }

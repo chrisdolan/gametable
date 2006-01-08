@@ -69,6 +69,11 @@ public class PogPanel extends JPanel
 
     // --- Types -----------------------------------------------------------------------------------------------------
 
+    /**
+     * Class to track the status of branches in the pog tree.
+     *
+     * @author Iffy
+     */
     private class BranchTracker implements TreeExpansionListener
     {
         private Set expandedNodes  = new HashSet();
@@ -152,6 +157,11 @@ public class PogPanel extends JPanel
         }
     }
 
+    /**
+     * A Leaf TreeNode representing a Pog.
+     *
+     * @author Iffy
+     */
     private static class PogNode implements TreeNode
     {
         private LibraryNode parent;
@@ -248,6 +258,11 @@ public class PogPanel extends JPanel
         }
     }
 
+    /**
+     * A TreeNode representing a library.
+     *
+     * @author Iffy
+     */
     private static class LibraryNode implements TreeNode
     {
         private LibraryNode parent;
@@ -439,6 +454,11 @@ public class PogPanel extends JPanel
         }
     }
 
+    /**
+     * Cell renderer for the tree.
+     *
+     * @author Iffy
+     */
     private static class PogTreeCellRenderer extends JComponent implements TreeCellRenderer
     {
         PogLibrary library  = null;
@@ -537,6 +557,7 @@ public class PogPanel extends JPanel
         {
             Graphics2D g2 = (Graphics2D)g;
             g2.addRenderingHints(RENDERING_HINTS);
+            g2.setColor(Color.BLACK);
             if (pogType != null)
             {
                 pogType.drawListIcon(g2, SPACE + (POG_ICON_SIZE - pogType.getListIconWidth()) / 2, SPACE
@@ -550,7 +571,6 @@ public class PogPanel extends JPanel
                     Rectangle stringBounds = fm.getStringBounds(label, g2).getBounds();
                     stringBounds.x = SPACE + POG_ICON_SIZE + POG_TEXT_PADDING;
                     stringBounds.y = SPACE + (POG_ICON_SIZE - stringBounds.height) / 2;
-                    g2.setColor(Color.WHITE);
                     g2.drawString(label, stringBounds.x, stringBounds.y + fm.getAscent());
                 }
             }
@@ -564,7 +584,6 @@ public class PogPanel extends JPanel
                     Rectangle stringBounds = fm.getStringBounds(label, g2).getBounds();
                     stringBounds.x = SPACE;
                     stringBounds.y = SPACE;
-                    g2.setColor(Color.WHITE);
                     g2.drawString(label, stringBounds.x, stringBounds.y + fm.getAscent());
                 }
             }

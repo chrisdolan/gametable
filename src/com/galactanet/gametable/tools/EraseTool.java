@@ -90,7 +90,7 @@ public class EraseTool extends NullTool
             if (m_bEraseColor)
             {
                 m_canvas.erase(createRectangle(m_mouseAnchor, m_mouseFloat), true,
-                    GametableFrame.g_gameTableFrame.m_drawColor.getRGB());
+                    GametableFrame.getGametableFrame().m_drawColor.getRGB());
             }
             else
             {

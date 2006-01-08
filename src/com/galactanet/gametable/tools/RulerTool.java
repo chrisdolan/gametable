@@ -109,7 +109,7 @@ public class RulerTool extends NullTool
             double squaresDistance = m_canvas.modelToSquares(dist);
             squaresDistance = Math.round(squaresDistance * 100) / 100.0;
 
-            Color drawColor = GametableFrame.g_gameTableFrame.m_drawColor;
+            Color drawColor = GametableFrame.getGametableFrame().m_drawColor;
             g2.setColor(new Color(drawColor.getRed(), drawColor.getGreen(), drawColor.getBlue(), 102));
             g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             Point drawAnchor = m_canvas.modelToDraw(m_mouseAnchor);

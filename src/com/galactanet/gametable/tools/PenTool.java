@@ -56,7 +56,7 @@ public class PenTool extends NullTool
     public void mouseButtonPressed(int x, int y, int modifierMask)
     {
         // TODO: move m_drawColor into some more reasonable access point
-        m_penAsset = new PenAsset(GametableFrame.g_gameTableFrame.m_drawColor);
+        m_penAsset = new PenAsset(GametableFrame.getGametableFrame().m_drawColor);
         m_penAsset.addPoint(x, y);
     }
 

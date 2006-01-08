@@ -248,10 +248,9 @@ public class PogLibrary
      */
     public PogType createPlaceholder(String filename, int face)
     {
-        Log.log(Log.SYS, this + ".createPlaceholder(" + filename + ", " + face + ")");
+//        Log.log(Log.SYS, this + ".createPlaceholder(" + filename + ", " + face + ")");
         File f = new File(filename);
         File p = f.getParentFile();
-        Log.log(Log.SYS, "F: " + f + ", P: " + p);
         PogLibrary lib = findDeepestChild(p);
         if (lib == null)
         {
@@ -369,7 +368,6 @@ public class PogLibrary
 
     private PogLibrary findDeepestChild(File path)
     {
-        Log.log(Log.SYS, "findDeepestChild(" + path + ")");
         path = path.getAbsoluteFile();
         
         // trivial accept

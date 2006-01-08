@@ -416,7 +416,7 @@ public class DiceMacro
             return "";
         }
 
-        Player me = GametableFrame.getGametableFrame().getMePlayer();
+        Player me = GametableFrame.getGametableFrame().getMyPlayer();
         String name = me.getCharacterName();
 
         Result result = roll();

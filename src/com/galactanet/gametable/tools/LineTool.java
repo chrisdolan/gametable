@@ -86,7 +86,7 @@ public class LineTool extends NullTool
     {
         if (m_mouseAnchor != null)
         {
-            LineSegment ls = new LineSegment(m_mouseAnchor, m_mouseFloat, GametableFrame.g_gameTableFrame.m_drawColor);
+            LineSegment ls = new LineSegment(m_mouseAnchor, m_mouseFloat, GametableFrame.getGametableFrame().m_drawColor);
             m_canvas.addLineSegments(new LineSegment[] {
                 ls
             });
@@ -118,7 +118,7 @@ public class LineTool extends NullTool
             double squaresDistance = m_canvas.modelToSquares(dist);
             squaresDistance = Math.round(squaresDistance * 100) / 100.0;
 
-            Color drawColor = GametableFrame.g_gameTableFrame.m_drawColor;
+            Color drawColor = GametableFrame.getGametableFrame().m_drawColor;
             g2.setColor(new Color(drawColor.getRed(), drawColor.getGreen(), drawColor.getBlue(), 102));
             g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             Point drawAnchor = m_canvas.modelToDraw(m_mouseAnchor);

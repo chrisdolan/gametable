@@ -315,23 +315,25 @@ public class PacketManager
         try
         {
             // create a packet with all the players in it
-            GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            GametableFrame frame = GametableFrame.getGametableFrame();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(baos);
 
             dos.writeInt(PACKET_CAST);
-            dos.writeInt(gtFrame.m_players.size());
-            for (int i = 0; i < gtFrame.m_players.size(); i++)
+
+            List players = frame.getPlayers();
+            dos.writeInt(players.size());
+            for (int i = 0; i < players.size(); i++)
             {
-                Player plr = (Player)gtFrame.m_players.get(i);
-                dos.writeUTF(plr.getCharacterName());
-                dos.writeUTF(plr.getPlayerName());
-                dos.writeInt(plr.getId());
-                dos.writeBoolean(plr.isHostPlayer());
+                Player player = (Player)players.get(i);
+                dos.writeUTF(player.getCharacterName());
+                dos.writeUTF(player.getPlayerName());
+                dos.writeInt(player.getId());
+                dos.writeBoolean(player.isHostPlayer());
             }
 
             // finally, tell the recipient which player he is
-            int whichPlayer = gtFrame.m_players.indexOf(recipient);
+            int whichPlayer = frame.getPlayerIndex(recipient);
             dos.writeInt(whichPlayer);
 
             return baos.toByteArray();
@@ -1088,7 +1090,7 @@ public class PacketManager
             // validate PNG file
             if (!UtilityFunctions.isPngData(pngFile))
             {
-                GametableFrame.g_gameTableFrame.logAlertMessage("Illegal pog data: \"" + filename
+                GametableFrame.getGametableFrame().logAlertMessage("Illegal pog data: \"" + filename
                     + "\", aborting transfer.");
                 return;
             }
@@ -1096,11 +1098,9 @@ public class PacketManager
             // validate file location
             File here = new File("").getAbsoluteFile();
             File target = new File(filename).getAbsoluteFile();
-            // Log.log(Log.NET, "here: " + here + ", target: " + target + ", ancestor?: "
-            // + UtilityFunctions.isAncestorFile(here, target));
             if (!UtilityFunctions.isAncestorFile(here, target))
             {
-                GametableFrame.g_gameTableFrame.logAlertMessage("Malicious pog path? \"" + filename + "\"");
+                GametableFrame.getGametableFrame().logAlertMessage("Malicious pog path? \"" + filename + "\"");
                 String temp = filename.toLowerCase();
                 if (temp.contains("underlay"))
                 {
@@ -1112,7 +1112,7 @@ public class PacketManager
                 }
                 else
                 {
-                    GametableFrame.g_gameTableFrame.logAlertMessage("Illegal pog path: \"" + filename
+                    GametableFrame.getGametableFrame().logAlertMessage("Illegal pog path: \"" + filename
                         + "\", aborting transfer.");
                     return;
                 }
@@ -1130,14 +1130,14 @@ public class PacketManager
             os.flush();
             os.close();
 
-            PogType pogType = GametableFrame.g_gameTableFrame.getPogLibrary().getPog(filename);
+            PogType pogType = GametableFrame.getGametableFrame().getPogLibrary().getPog(filename);
             pogType.load();
 
             // if we're done with imageless pogs, shut off the progress spinner
             gtFrame.m_progressSpinner.deactivate();
 
             // tell the pog panels to check for the new image
-            GametableFrame.g_gameTableFrame.refreshPogList();
+            GametableFrame.getGametableFrame().refreshPogList();
 
             // Ok, now send the file out to any previously unfulfilled requests.
             File providedFile = new File(filename).getCanonicalFile();
@@ -1203,7 +1203,6 @@ public class PacketManager
             dos.writeInt(grmData.length);
 
             // and finally, the data itself
-            Log.log(Log.SYS, "Sent:" + grmData.length);
             dos.write(grmData);
 
             return baos.toByteArray();

@@ -200,7 +200,7 @@ public class GametableMap
 		}
 		
 		// the most recent action has to be yours for it to be undoable
-		int myID = GametableFrame.g_gameTableFrame.getMeID();
+		int myID = GametableFrame.getGametableFrame().getMyPlayerId();
 		
 		MapState lastUndoable = (MapState)m_undoLevels.get(m_undoLevels.size()-1);
 		if ( lastUndoable.m_playerID == myID )
@@ -226,7 +226,7 @@ public class GametableMap
 		}
 		
 		// you can't redo if it's not an action you did
-		int myID = GametableFrame.g_gameTableFrame.getMeID();
+		int myID = GametableFrame.getGametableFrame().getMyPlayerId();
 		
 		MapState nextRedoable = (MapState)m_undoLevels.get(m_redoIndex);
 		if ( nextRedoable.m_playerID == myID )
@@ -240,15 +240,15 @@ public class GametableMap
 	public void redoNextRecent()
 	{
 		MapState nextRedoable = (MapState)m_undoLevels.get(m_redoIndex);
-		GametableFrame frame = GametableFrame.g_gameTableFrame;
-		GametableCanvas canvas = frame.m_gametableCanvas;
+		GametableFrame frame = GametableFrame.getGametableFrame();
+		GametableCanvas canvas = frame.getGametableCanvas();
 		if ( m_bIsSharedMap )
 		{
 	    	if ( canvas.isPublicMap() )
 	    	{
 	    		frame.send(PacketManager.makeRedoPacket(nextRedoable.m_stateID));
 		
-		        if (frame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+		        if (frame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
 		        {
 					redo(nextRedoable.m_stateID);
 		        }
@@ -363,13 +363,13 @@ public class GametableMap
 		if ( m_bIsSharedMap )
 		{
 			MapState lastUndoable = (MapState)m_undoLevels.get(useableStackSize-1);
-			GametableFrame frame = GametableFrame.g_gameTableFrame;
-			GametableCanvas canvas = frame.m_gametableCanvas;
+			GametableFrame frame = GametableFrame.getGametableFrame();
+			GametableCanvas canvas = frame.getGametableCanvas();
 	    	if ( canvas.isPublicMap() )
 	    	{
 	    		frame.send(PacketManager.makeUndoPacket(lastUndoable.m_stateID));
 		
-		        if (frame.m_netStatus != GametableFrame.NETSTATE_JOINED)
+		        if (frame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
 		        {
 					undo(lastUndoable.m_stateID);
 		        }

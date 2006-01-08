@@ -97,7 +97,7 @@ public class PointerTool extends NullTool
             m_grabOffset = new Point(m_grabbedPog.getX() - m_mousePosition.x, m_grabbedPog.getY() - m_mousePosition.y);
             setSnapping(modifierMask);
         }
-        else if (GametableFrame.g_gameTableFrame.getPreferences().getBooleanValue(PREF_DRAG))
+        else if (GametableFrame.getGametableFrame().getPreferences().getBooleanValue(PREF_DRAG))
         {
             m_startScroll = m_canvas.drawToModel(m_canvas.getPublicMap().getScrollX(), m_canvas.getPublicMap()
                 .getScrollY());
@@ -149,7 +149,7 @@ public class PointerTool extends NullTool
         {
             if (m_clicked)
             {
-                String s = (String)JOptionPane.showInputDialog(GametableFrame.g_gameTableFrame, "Enter new Pog text:",
+                String s = (String)JOptionPane.showInputDialog(GametableFrame.getGametableFrame(), "Enter new Pog text:",
                     "Pog Text", JOptionPane.PLAIN_MESSAGE, null, null, m_grabbedPog.getText());
 
                 if (s != null)
@@ -223,7 +223,7 @@ public class PointerTool extends NullTool
 
     private void hoverCursorCheck()
     {
-        if (GametableFrame.g_gameTableFrame.getPreferences().getBooleanValue(PREF_DRAG))
+        if (GametableFrame.getGametableFrame().getPreferences().getBooleanValue(PREF_DRAG))
         {
             Pog pog = m_canvas.getActiveMap().getPogAt(m_mousePosition);
             if (pog != null)

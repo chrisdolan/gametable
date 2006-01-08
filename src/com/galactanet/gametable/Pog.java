@@ -15,7 +15,7 @@ import java.io.IOException;
 
 
 /**
- * TODO: comment
+ * Represents an instance of a PogType on the Map.
  * 
  * @author sephalon
  */
@@ -44,7 +44,7 @@ public class Pog
 
     public Pog(PogType type)
     {
-        init(GametableFrame.getGametableFrame().m_gametableCanvas, type);
+        init(GametableFrame.getGametableFrame().getGametableCanvas(), type);
     }
 
     public Pog(Pog toCopy)
@@ -121,13 +121,8 @@ public class Pog
     private void initFromPacket(DataInputStream dis) throws IOException
     {
         String filename = UtilityFunctions.getLocalPath(dis.readUTF());
-        Log.log(Log.SYS, "initFromPacket: " + filename);
         PogLibrary lib = GametableFrame.getGametableFrame().getPogLibrary();
         filename = UtilityFunctions.getRelativePath(lib.getLocation(), new File(filename));
-        Log.log(Log.SYS, "initFromPacket2: " + filename);
-        filename = UtilityFunctions.getLocalPath(filename);
-        Log.log(Log.SYS, "initFromPacket2: " + filename);
-        Log.log(Log.SYS, "File.separator: " + File.separator);
 
         int x = dis.readInt();
         int y = dis.readInt();
@@ -143,7 +138,7 @@ public class Pog
         {
             type = lib.createPlaceholder(filename, size);
         }
-        init(GametableFrame.getGametableFrame().m_gametableCanvas, type);
+        init(GametableFrame.getGametableFrame().getGametableCanvas(), type);
     }
 
     public void init(Pog orig)

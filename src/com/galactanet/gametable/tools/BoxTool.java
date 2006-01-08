@@ -85,7 +85,7 @@ public class BoxTool extends NullTool
         if (m_mouseAnchor != null && !m_mouseAnchor.equals(m_mouseFloat))
         {
         	// we're going to add 4 lines
-            Color drawColor = GametableFrame.g_gameTableFrame.m_drawColor;
+            Color drawColor = GametableFrame.getGametableFrame().m_drawColor;
         	Point topLeft = new Point(m_mouseAnchor);
         	Point bottomRight = new Point(m_mouseFloat);
         	Point topRight = new Point(bottomRight.x, topLeft.y);
@@ -132,7 +132,7 @@ public class BoxTool extends NullTool
             double squaresDistance = m_canvas.modelToSquares(dist);
             squaresDistance = Math.round(squaresDistance * 100) / 100.0;
 
-            Color drawColor = GametableFrame.g_gameTableFrame.m_drawColor;
+            Color drawColor = GametableFrame.getGametableFrame().m_drawColor;
             g2.setColor(new Color(drawColor.getRed(), drawColor.getGreen(), drawColor.getBlue(), 102));
             g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             Rectangle rect = createRectangle(m_canvas.modelToDraw(m_mouseAnchor), m_canvas.modelToDraw(m_mouseFloat));

@@ -350,7 +350,7 @@ public class ToolManager
     // shortcut function to get the active tool
     public Tool getActiveTool()
     {
-    	return GametableFrame.g_gameTableFrame.m_gametableCanvas.getActiveTool();    	
+    	return GametableFrame.getGametableFrame().getGametableCanvas().getActiveTool();    	
     }
     
     // mouse event functions.
