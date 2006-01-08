@@ -46,7 +46,6 @@ public class GametableFrame extends JFrame implements ActionListener
         public void actionPerformed(ActionEvent e)
         {
             getGametableCanvas().setActiveTool(m_id);
-            getGametableCanvas().requestFocus();
         }
     }
 
@@ -61,8 +60,11 @@ public class GametableFrame extends JFrame implements ActionListener
 
         public void actionPerformed(ActionEvent event)
         {
+            if (getFocusOwner() instanceof JTextField)
+            {
+                return;
+            }
             getGametableCanvas().setActiveTool(m_id);
-            getGametableCanvas().requestFocus();
         }
     }
 
@@ -344,7 +346,7 @@ public class GametableFrame extends JFrame implements ActionListener
         m_macrosScrollPane.setBorder(new CompoundBorder(new EmptyBorder(0, 0, 0, 5), m_macrosScrollPane.getBorder()));
         m_textAreaPanel.add(m_textAndEntryPanel, BorderLayout.CENTER);
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new BevelBorder(BevelBorder.LOWERED));
+        panel.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED), new EmptyBorder(1, 1, 1, 1)));
         panel.add(getGametableCanvas(), BorderLayout.CENTER);
         m_mapChatSplitPane.add(panel, JSplitPane.TOP);
         m_mapChatSplitPane.add(m_chatPanel, JSplitPane.BOTTOM);
@@ -409,6 +411,8 @@ public class GametableFrame extends JFrame implements ActionListener
                 saveAll();
             }
         });
+
+        m_gametableCanvas.requestFocus();
     }
 
     /**
@@ -441,11 +445,16 @@ public class GametableFrame extends JFrame implements ActionListener
                 m_toolButtonGroup.add(button);
                 m_toolButtons[toolId] = button;
 
-                String actionId = "tool" + toolId + "Action";
-                getGametableCanvas().getActionMap().put(actionId, new ToolButtonAbstractAction(toolId));
-                KeyStroke keystroke = KeyStroke.getKeyStroke(info.getQuickKey(), 0, false);
-                getGametableCanvas().getInputMap().put(keystroke, actionId);
-                button.setToolTipText(info.getName());
+                String keyInfo = "";
+                if (info.getQuickKey() != null)
+                {
+                    String actionId = "tool" + toolId + "Action";
+                    getGametableCanvas().getActionMap().put(actionId, new ToolButtonAbstractAction(toolId));
+                    KeyStroke keystroke = KeyStroke.getKeyStroke("ctrl " + info.getQuickKey());
+                    getGametableCanvas().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keystroke, actionId);
+                    keyInfo = " (Ctrl+" + info.getQuickKey() +")";
+                }
+                button.setToolTipText(info.getName() + keyInfo);
                 List prefs = info.getTool().getPreferences();
                 for (int i = 0; i < prefs.size(); i++)
                 {

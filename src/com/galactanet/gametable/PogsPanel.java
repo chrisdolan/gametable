@@ -259,7 +259,6 @@ public class PogsPanel extends JPanel implements Scrollable
         m_pogs = library;
         m_canvas = canvas;
         setBackground(BACKGROUND_COLOR);
-        addKeyListener(m_canvas);
         populateChildren();
     }
 

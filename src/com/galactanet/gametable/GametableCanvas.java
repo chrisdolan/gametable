@@ -12,8 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.swing.JComponent;
-import javax.swing.JScrollPane;
+import javax.swing.*;
+import javax.swing.border.*;
 
 import com.galactanet.gametable.tools.NullTool;
 
@@ -24,41 +24,42 @@ import com.galactanet.gametable.tools.NullTool;
  * 
  * @author sephalon
  */
-public class GametableCanvas extends JComponent implements MouseListener, MouseMotionListener, KeyListener,
-    MouseWheelListener
+public class GametableCanvas extends JComponent implements MouseListener, MouseMotionListener, MouseWheelListener
 {
-    public final static int     VALUE_X               = 0;
-    public final static int     VALUE_Y               = 1;
+    public final static int     VALUE_X                = 0;
+    public final static int     VALUE_Y                = 1;
 
-    public final static int     SNAP_DISTANCE         = 8;
+    public final static int     SNAP_DISTANCE          = 8;
 
     // drag modes
-    public final static int     TOOL_MODE_ARROW       = 0;
-    public final static int     TOOL_MODE_POINT       = 1;
-    public final static int     TOOL_MODE_PEN         = 2;
-    public final static int     TOOL_MODE_HAND        = 3;
-    public final static int     TOOL_MODE_ERASER      = 4;
-    public final static int     TOOL_MODE_LINE        = 5;
+    public final static int     TOOL_MODE_ARROW        = 0;
+    public final static int     TOOL_MODE_POINT        = 1;
+    public final static int     TOOL_MODE_PEN          = 2;
+    public final static int     TOOL_MODE_HAND         = 3;
+    public final static int     TOOL_MODE_ERASER       = 4;
+    public final static int     TOOL_MODE_LINE         = 5;
 
-    public final static int     NUM_POINT_CURSORS     = 8;
-    public final static int     POINT_CURSOR_OFFSET_X = 5;
-    public final static int     POINT_CURSOR_OFFSET_Y = 6;
+    public final static int     NUM_POINT_CURSORS      = 8;
+    public final static int     POINT_CURSOR_OFFSET_X  = 5;
+    public final static int     POINT_CURSOR_OFFSET_Y  = 6;
 
     // grid modes
-    public final static int     GRID_MODE_NONE        = 0;
-    public final static int     GRID_MODE_SQUARES     = 1;
-    public final static int     GRID_MODE_HEX         = 2;
+    public final static int     GRID_MODE_NONE         = 0;
+    public final static int     GRID_MODE_SQUARES      = 1;
+    public final static int     GRID_MODE_HEX          = 2;
 
     // the size of a square at max zoom level (0)
-    public final static int     BASE_SQUARE_SIZE      = 64;
+    public final static int     BASE_SQUARE_SIZE       = 64;
 
-    public final static int     NUM_ZOOM_LEVELS       = 5;
+    public final static int     NUM_ZOOM_LEVELS        = 5;
+
+    private static final int    KEYBOARD_SCROLL_AMOUNT = 50;
 
     public Image                m_mapBk;
 
     // this is the map (or layer) that all players share
-    private GametableMap        m_publicMap           = new GametableMap(true);
-    private GametableMap        m_privateMap          = new GametableMap(false);
+    private GametableMap        m_publicMap            = new GametableMap(true);
+    private GametableMap        m_privateMap           = new GametableMap(false);
 
     // this points to whichever map is presently active
     private GametableMap        m_activeMap;
@@ -68,7 +69,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     Cursor                      m_penCursor;
     Cursor                      m_emptyCursor;
     Cursor                      m_eraserCursor;
-    Image[]                     m_pointCursorImages   = new Image[NUM_POINT_CURSORS];
+    Image[]                     m_pointCursorImages    = new Image[NUM_POINT_CURSORS];
 
     // the frame
     private GametableFrame      m_gametableFrame;
@@ -77,10 +78,10 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     // This is the number of screen pixels that are
     // used per model pixel. It's never less than 1
-    public int                  m_zoom                = 1;
+    public int                  m_zoom                 = 1;
 
     // the size of a square at the current zoom level
-    public int                  m_squareSize          = getSquareSizeForZoom(m_zoom);
+    public int                  m_squareSize           = getSquareSizeForZoom(m_zoom);
 
     // hand tool
     int                         m_handToolStartX;
@@ -92,6 +93,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     boolean                     m_bSpaceKeyDown;
     boolean                     m_bShiftKeyDown;
     boolean                     m_bControlKeyDown;
+    boolean                     m_bAltKeyDown;
 
     // drag stuff
     // where they first clicked
@@ -129,21 +131,21 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     Pog                         m_pogMouseOver;
 
-    SquareGridMode              m_squareGridMode      = new SquareGridMode();
-    HexGridMode                 m_hexGridMode         = new HexGridMode();
-    GridMode                    m_noGridMode          = new GridMode();
+    SquareGridMode              m_squareGridMode       = new SquareGridMode();
+    HexGridMode                 m_hexGridMode          = new HexGridMode();
+    GridMode                    m_noGridMode           = new GridMode();
     GridMode                    m_gridMode;
 
-    private int                 m_activeToolId        = -1;
-    private static final Tool   NULL_TOOL             = new NullTool();
+    private int                 m_activeToolId         = -1;
+    private static final Tool   NULL_TOOL              = new NullTool();
 
-    public final static boolean SPECIAL_RIGHT_CLICK   = true;                         // true if
+    public final static boolean SPECIAL_RIGHT_CLICK    = true;                         // true if
     // special
     // right-click
     // behaviour
     // is
     // enabled
-    public boolean              m_bRightClicking;                                     // true if
+    public boolean              m_bRightClicking;                                      // true if
     // the
     // current
     // mouse
@@ -152,7 +154,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     // initiated
     // with a
     // right-click
-    public int                  m_preRightClickToolID;                                // the id of
+    public int                  m_preRightClickToolID;                                 // the id of
 
     // the tool
     // that we
@@ -165,16 +167,318 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     // this is the color used to overlay on top of the public layer
     // when the user is on the private layer. It's white with 50% alpha
-    public Color                OVERLAY_COLOR         = new Color(255, 255, 255, 128);
+    public Color                OVERLAY_COLOR          = new Color(255, 255, 255, 128);
 
     public GametableCanvas()
     {
+        setFocusable(true);
         setRequestFocusEnabled(true);
+        requestFocus();
+
         addMouseListener(this);
         addMouseMotionListener(this);
-        addKeyListener(this);
+        addFocusListener(new FocusListener()
+        {
+            /*
+             * @see java.awt.event.FocusListener#focusGained(java.awt.event.FocusEvent)
+             */
+            public void focusGained(FocusEvent e)
+            {
+                JPanel panel = (JPanel)getParent();
+                panel.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED), LineBorder.createBlackLineBorder()));
+            }
+
+            /*
+             * @see java.awt.event.FocusListener#focusLost(java.awt.event.FocusEvent)
+             */
+            public void focusLost(FocusEvent e)
+            {
+                JPanel panel = (JPanel)getParent();
+                panel.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED), new EmptyBorder(1, 1, 1, 1)));
+            }
+
+        });
+
+        initializeKeys();
 
         m_activeMap = m_publicMap;
+    }
+
+    /**
+     * Initializes all the keys for the canvas.
+     */
+    private void initializeKeys()
+    {
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed SPACE"), "startPointing");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released SPACE"), "stopPointing");
+
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("shift pressed SHIFT"), "shiftDown");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released SHIFT"), "shiftUp");
+
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("control pressed CONTROL"), "controlDown");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released CONTROL"), "controlUp");
+
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("alt pressed ALT"), "altDown");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released ALT"), "altUp");
+
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed SUBTRACT"), "zoomIn");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed MINUS"), "zoomIn");
+
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed ADD"), "zoomOut");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed PLUS"), "zoomOut");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed EQUALS"), "zoomOut");
+
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed SLASH"), "startSlash");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed ENTER"), "startText");
+
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed UP"), "scrollUp");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed KP_UP"), "scrollUp");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed DOWN"), "scrollDown");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed KP_DOWN"), "scrollDown");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed LEFT"), "scrollLeft");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed KP_LEFT"), "scrollLeft");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed RIGHT"), "scrollRight");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed KP_RIGHT"), "scrollRight");
+
+        getActionMap().put("startPointing", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
+                {
+                    return;
+                }
+
+                if (!m_bMouseOnView || getActiveTool().isBeingUsed())
+                {
+                    // no pointing if the mouse is outside the view area, or the active tool is
+                    // being used.
+                    return;
+                }
+
+                // we're only interested in doing this if they aren't already
+                // holding the space key.
+                if (m_bSpaceKeyDown == false)
+                {
+                    m_bSpaceKeyDown = true;
+
+                    pointAt(m_mouseModelFloat);
+                }
+            }
+        });
+
+        getActionMap().put("stopPointing", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                m_bSpaceKeyDown = false;
+                pointAt(null);
+            }
+        });
+
+        getActionMap().put("shiftDown", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                m_bShiftKeyDown = true;
+            }
+        });
+
+        getActionMap().put("shiftUp", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                m_bShiftKeyDown = false;
+            }
+        });
+
+        getActionMap().put("controlDown", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                m_bControlKeyDown = true;
+            }
+        });
+
+        getActionMap().put("controlUp", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                m_bControlKeyDown = true;
+            }
+        });
+
+        getActionMap().put("altDown", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                m_bAltKeyDown = true;
+            }
+        });
+
+        getActionMap().put("altUp", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                m_bAltKeyDown = true;
+            }
+        });
+
+        getActionMap().put("zoomIn", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
+                {
+                    return;
+                }
+
+                centerZoom(1);
+            }
+        });
+
+        getActionMap().put("zoomOut", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
+                {
+                    return;
+                }
+
+                centerZoom(-1);
+            }
+        });
+
+        getActionMap().put("startSlash", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
+                {
+                    return;
+                }
+
+                m_gametableFrame.m_textEntry.setText("/");
+                m_gametableFrame.m_textEntry.requestFocus();
+            }
+        });
+
+        getActionMap().put("startText", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                m_gametableFrame.m_textEntry.requestFocus();
+            }
+        });
+
+        getActionMap().put("scrollUp", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
+                {
+                    return;
+                }
+
+                GametableMap map = getActiveMap();
+                Point p = drawToModel(map.getScrollX(), map.getScrollY());
+                scrollMapTo(p.x, p.y - KEYBOARD_SCROLL_AMOUNT);
+            }
+        });
+
+        getActionMap().put("scrollDown", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
+                {
+                    return;
+                }
+
+                GametableMap map = getActiveMap();
+                Point p = drawToModel(map.getScrollX(), map.getScrollY());
+                scrollMapTo(p.x, p.y + KEYBOARD_SCROLL_AMOUNT);
+            }
+        });
+
+        getActionMap().put("scrollLeft", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
+                {
+                    return;
+                }
+
+                GametableMap map = getActiveMap();
+                Point p = drawToModel(map.getScrollX(), map.getScrollY());
+                scrollMapTo(p.x - KEYBOARD_SCROLL_AMOUNT, p.y);
+            }
+        });
+
+        getActionMap().put("scrollRight", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
+                {
+                    return;
+                }
+
+                GametableMap map = getActiveMap();
+                Point p = drawToModel(map.getScrollX(), map.getScrollY());
+                scrollMapTo(p.x + KEYBOARD_SCROLL_AMOUNT, p.y);
+            }
+        });
     }
 
     public void init(GametableFrame frame)
@@ -536,6 +840,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     public void mousePressed(MouseEvent e)
     {
+        requestFocus();
         m_mouseModelAnchor = viewToModel(e.getX(), e.getY());
         m_mouseModelFloat = m_mouseModelAnchor;
         if (isPointing())
@@ -1186,105 +1491,12 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         setPrimaryScroll(getActiveMap(), scrX, scrY);
     }
 
-    /* *********************************************************** */
-    // KeyListener events
-    /* *********************************************************** */
-
-    public void keyTyped(KeyEvent e)
-    {
-    }
-
-    public void keyPressed(KeyEvent e)
-    {
-        int code = e.getKeyCode();
-        switch (code)
-        {
-            case KeyEvent.VK_SPACE:
-                if (!m_bMouseOnView || getActiveTool().isBeingUsed())
-                {
-                    // no pointing if the mouse is outside the view area, or the active tool is
-                    // being used.
-                    return;
-                }
-
-                // we're only interested in doing this if they aren't already
-                // holding the space key.
-                if (m_bSpaceKeyDown == false)
-                {
-                    m_bSpaceKeyDown = true;
-
-                    pointAt(m_mouseModelFloat);
-                    e.consume();
-                }
-            break;
-            case KeyEvent.VK_SHIFT:
-                m_bShiftKeyDown = true;
-                repaint();
-                e.consume();
-            break;
-
-            case KeyEvent.VK_CONTROL:
-                m_bControlKeyDown = true;
-                e.consume();
-            break;
-
-            case KeyEvent.VK_MINUS:
-            case KeyEvent.VK_SUBTRACT:
-                centerZoom(1);
-                e.consume();
-            break;
-
-            case KeyEvent.VK_EQUALS:
-            case KeyEvent.VK_ADD:
-                centerZoom(-1);
-                e.consume();
-            break;
-
-            case KeyEvent.VK_ENTER:
-                // shift focus to the chat area
-                m_gametableFrame.m_textEntry.requestFocus();
-            break;
-            case KeyEvent.VK_SLASH:
-                m_gametableFrame.m_textEntry.setText("/");
-                m_gametableFrame.m_textEntry.requestFocus();
-            break;
-            case KeyEvent.VK_T:
-            {
-                m_gametableFrame.toggleLayer();
-            }
-            break;
-            case KeyEvent.VK_Z:
-            {
-                int mods = e.getModifiers();
-                if ((mods & InputEvent.CTRL_MASK) != 0)
-                {
-
-                    if ((mods & InputEvent.SHIFT_MASK) != 0)
-                    {
-                        // shift-ctrl-z is redo
-                        redo();
-                    }
-                    else
-                    {
-                        // control-z is undo
-                        undo();
-                    }
-                }
-            }
-            break;
-        }
-        // repaint();
-    }
-
     private boolean isPointing()
     {
         Player me = m_gametableFrame.getMyPlayer();
         return me.isPointing();
     }
 
-    /**
-     * 
-     */
     private void pointAt(Point pointLocation)
     {
         Player me = m_gametableFrame.getMyPlayer();
@@ -1306,27 +1518,6 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         setToolCursor(-1);
 
         repaint();
-    }
-
-    public void keyReleased(KeyEvent e)
-    {
-        switch (e.getKeyCode())
-        {
-            case KeyEvent.VK_SPACE:
-                m_bSpaceKeyDown = false;
-                pointAt(null);
-                e.consume();
-            break;
-            case KeyEvent.VK_SHIFT:
-                m_bShiftKeyDown = false;
-                repaint();
-                e.consume();
-            break;
-            case KeyEvent.VK_CONTROL:
-                m_bControlKeyDown = false;
-                e.consume();
-            break;
-        }
     }
 
     /** *********************************************************** */

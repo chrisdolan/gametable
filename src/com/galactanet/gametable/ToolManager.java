@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.List;
 
 
+
 /**
  * A class to load and configure Tools.
  * 
@@ -34,8 +35,6 @@ public class ToolManager
     private static final String PROPERTY_CURSORS         = ".cursors.";
     private static final String CURSOR_FIELD_PREFIX      = "Cursor.";
 
-
-
     /**
      * Class that encapsulates all the information for a specific tool.
      * 
@@ -47,10 +46,8 @@ public class ToolManager
         private String name;
         private Tool   tool;
         private Image  icon;
-        private int    quickKey;
+        private String quickKey;
         private List   cursors = new ArrayList();
-
-
 
         /**
          * Constructor.
@@ -80,22 +77,26 @@ public class ToolManager
                 throw new IllegalArgumentException("Unable to create Tool info object.", e);
             }
 
-            String keyName = quickKeyName.toUpperCase();
-            if (!keyName.startsWith("VK_"))
+            quickKeyName = quickKeyName.toUpperCase();
+            String keyName = quickKeyName;
+            if (!quickKeyName.startsWith("VK_"))
             {
-                keyName = "VK_" + keyName;
+                keyName = "VK_" + quickKeyName;
+            } else {
+                quickKeyName = quickKeyName.substring(3);
             }
-            
+
             try
             {
-                quickKey = KeyEvent.class.getField(keyName).getInt(null);
+                KeyEvent.class.getField(keyName).getInt(null);
             }
             catch (Exception e)
             {
-                quickKey = -1;
-                Log.log(Log.SYS, "Unable to set quickKey to " + quickKeyName + " (" + keyName +")");
+                quickKey = null;
+                Log.log(Log.SYS, "Unable to set quickKey to " + quickKeyName + " (" + keyName + ")");
                 Log.log(Log.SYS, e);
             }
+            quickKey = quickKeyName;
         }
 
         /**
@@ -161,16 +162,14 @@ public class ToolManager
         /**
          * @return Returns the quickKey.
          */
-        public int getQuickKey()
+        public String getQuickKey()
         {
             return quickKey;
         }
     }
 
-
-
-    private List infoList    = new ArrayList();
-    private Map  nameInfoMap = new HashMap();
+    private List    infoList           = new ArrayList();
+    private Map     nameInfoMap        = new HashMap();
 
     // when this is true, no mouse events will be dispatched.
     // it is set to false when a mousePressed event is received.
@@ -331,7 +330,9 @@ public class ToolManager
             {
                 props.load(new FileInputStream(file));
             }
-        } else {
+        }
+        else
+        {
             props.load(new FileInputStream(file));
         }
         initialize(props);
@@ -346,44 +347,44 @@ public class ToolManager
     {
         initialize(DEFAULT_TOOLS_PROPERTIES);
     }
-    
+
     // shortcut function to get the active tool
     public Tool getActiveTool()
     {
-    	return GametableFrame.getGametableFrame().getGametableCanvas().getActiveTool();    	
+        return GametableFrame.getGametableFrame().getGametableCanvas().getActiveTool();
     }
-    
+
     // mouse event functions.
     public void mouseButtonPressed(int x, int y, int flags)
     {
-    	m_bActionCancelled = false;
-    	getActiveTool().mouseButtonPressed(x, y, flags);
+        m_bActionCancelled = false;
+        getActiveTool().mouseButtonPressed(x, y, flags);
     }
 
     public void mouseMoved(int x, int y, int flags)
     {
-    	// we call this even if the action has been cancelled. 
-    	// Some tools set their cursor and do other things while no mouse button is down. 
-    	getActiveTool().mouseMoved(x, y, flags);
+        // we call this even if the action has been cancelled.
+        // Some tools set their cursor and do other things while no mouse button is down.
+        getActiveTool().mouseMoved(x, y, flags);
     }
-    
+
     public void mouseButtonReleased(int x, int y, int flags)
     {
-    	if ( m_bActionCancelled )
-    	{
-    		// this action has been cancelled. 
-    		return;
-    	}
-    	getActiveTool().mouseButtonReleased(x, y, flags);
+        if (m_bActionCancelled)
+        {
+            // this action has been cancelled.
+            return;
+        }
+        getActiveTool().mouseButtonReleased(x, y, flags);
     }
-    
+
     public void cancelToolAction()
     {
-    	// whatever they were up to is halted immediately.
-    	// no further mouse stuff will be dispatched until the
-    	// next mouseButtonPressed is called
-    	getActiveTool().endAction(); 
-    	m_bActionCancelled = true;
+        // whatever they were up to is halted immediately.
+        // no further mouse stuff will be dispatched until the
+        // next mouseButtonPressed is called
+        getActiveTool().endAction();
+        m_bActionCancelled = true;
     }
 
     /**
