@@ -136,7 +136,7 @@ public class GametableFrame extends JFrame implements ActionListener
     public String                  m_password               = "";
 
     private JPanel                 m_textAndEntryPanel      = new JPanel();
-    public JTextField              m_textEntry              = new JTextField();
+    private JTextField             m_textEntry              = new JTextField();
     private ChatLogPane            m_chatLog                = new ChatLogPane();
     private JSplitPane             m_mapChatSplitPane       = new JSplitPane();
 
@@ -238,6 +238,7 @@ public class GametableFrame extends JFrame implements ActionListener
             });
         }
 
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
         setTitle(GametableApp.VERSION);
         setJMenuBar(getMainMenuBar());
         m_noGridModeMenuItem.addActionListener(this);
@@ -360,6 +361,8 @@ public class GametableFrame extends JFrame implements ActionListener
 
         m_pogPanel = new PogPanel(m_pogLibrary, getGametableCanvas());
         m_pogsTabbedPane.add(m_pogPanel, "Pog Library");
+        m_pogsTabbedPane.add(new JPanel(), "Active Pogs");
+        m_pogsTabbedPane.add(new JPanel(), "Dice Macros");
         m_pogsTabbedPane.setFocusable(false);
 
         m_chatPanel.add(m_textAreaPanel, BorderLayout.CENTER);
@@ -429,6 +432,38 @@ public class GametableFrame extends JFrame implements ActionListener
             public void windowClosed(WindowEvent e)
             {
                 saveAll();
+            }
+        });
+
+        m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed SLASH"),
+            "startSlash");
+        m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed ENTER"),
+            "startText");
+        m_gametableCanvas.getActionMap().put("startSlash", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                if (getFocusOwner() instanceof JTextField)
+                {
+                    return;
+                }
+
+                m_textEntry.setText("/");
+                m_textEntry.requestFocus();
+            }
+        });
+
+        m_gametableCanvas.getActionMap().put("startText", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                m_textEntry.requestFocus();
             }
         });
 
@@ -1161,7 +1196,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
             case REJECT_VERSION_MISMATCH:
             {
-                logSystemMessage("The host is running a different comm-version of Gametable. Connection refused.");
+                logSystemMessage("The host is using a different version of the Gametable network protocol. Connection aborted.");
             }
             break;
         }
@@ -1178,13 +1213,13 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
-    public void pogDataPacketReceived(int id, String s)
+    public void pogDataPacketReceived(int id, String s, Map toAdd, Set toDelete)
     {
-        getGametableCanvas().doSetPogData(id, s);
+        getGametableCanvas().doSetPogData(id, s, toAdd, toDelete);
 
         if (m_netStatus == NETSTATE_HOST)
         {
-            m_networkThread.send(PacketManager.makePogDataPacket(id, s));
+            m_networkThread.send(PacketManager.makePogDataPacket(id, s, toAdd, toDelete));
         }
     }
 

@@ -80,11 +80,11 @@ public class PacketManager
     // a redo packet
     public static final int PACKET_REDO           = 18;
 
+
     // --- Static Members --------------------------------------------------------------------------------------------
 
     /**
-     * Set of files already asked for.
-     * TODO: Add some kind of timed retry feature.
+     * Set of files already asked for. TODO: Add some kind of timed retry feature.
      */
     private static Set      g_requestedFiles      = new HashSet();
 
@@ -688,7 +688,7 @@ public class PacketManager
     }
 
     /* *********************** MOVEPOG PACKET *********************************** */
-    
+
     public static byte[] makeMovePogPacket(int id, int newX, int newY)
     {
         try
@@ -729,7 +729,7 @@ public class PacketManager
     }
 
     /* *********************** POINT PACKET *********************************** */
-    
+
     public static byte[] makePointPacket(int plrIdx, int x, int y, boolean bPointing)
     {
         try
@@ -773,8 +773,13 @@ public class PacketManager
     }
 
     /* *********************** POGDATA PACKET *********************************** */
-    
+
     public static byte[] makePogDataPacket(int id, String s)
+    {
+        return makePogDataPacket(id, s, null, null);
+    }
+
+    public static byte[] makePogDataPacket(int id, String s, Map toAdd, Set toDelete)
     {
         try
         {
@@ -783,7 +788,46 @@ public class PacketManager
 
             dos.writeInt(PACKET_POGDATA);
             dos.writeInt(id);
-            dos.writeUTF(s);
+            if (s != null)
+            {
+                dos.writeBoolean(true);
+                dos.writeUTF(s);
+            }
+            else
+            {
+                dos.writeBoolean(false);
+            }
+
+            // removing
+            if (toDelete == null)
+            {
+                dos.writeInt(0);
+            }
+            else
+            {
+                dos.writeInt(toDelete.size());
+                for (Iterator iterator = toDelete.iterator(); iterator.hasNext();)
+                {
+                    String key = (String)iterator.next();
+                    dos.writeUTF(key);
+                }
+            }
+
+            // adding
+            if (toAdd == null)
+            {
+                dos.writeInt(0);
+            }
+            else
+            {
+                dos.writeInt(toAdd.size());
+                for (Iterator iterator = toAdd.entrySet().iterator(); iterator.hasNext();)
+                {
+                    Map.Entry entry = (Map.Entry)iterator.next();
+                    dos.writeUTF((String)entry.getKey());
+                    dos.writeUTF((String)entry.getValue());
+                }
+            }
 
             return baos.toByteArray();
         }
@@ -799,19 +843,39 @@ public class PacketManager
         try
         {
             int id = dis.readInt();
-            String s = dis.readUTF();
+            String name = null;
+            if (dis.readBoolean())
+            {
+                name = dis.readUTF();
+            }
+
+            Set toDelete = new HashSet();
+            int numToDelete = dis.readInt();
+            for (int i = 0; i < numToDelete; ++i)
+            {
+                toDelete.add(dis.readUTF());
+            }
+            Map toAdd = new HashMap();
+            int numToAdd = dis.readInt();
+            for (int i = 0; i < numToAdd; ++i)
+            {
+                String key = dis.readUTF();
+                String value = dis.readUTF();
+                toAdd.put(key, value);
+            }
+
             // tell the model
-            GametableFrame gtFrame = GametableFrame.getGametableFrame();
-            gtFrame.pogDataPacketReceived(id, s);
+            GametableFrame.getGametableFrame().pogDataPacketReceived(id, name, toAdd, toDelete);
         }
         catch (IOException ex)
         {
             Log.log(Log.SYS, ex);
         }
     }
+    
 
     /* *********************** RECENTER PACKET *********************************** */
-    
+
     public static byte[] makeRecenterPacket(int x, int y, int zoom)
     {
         try
@@ -852,7 +916,7 @@ public class PacketManager
     }
 
     /* *********************** UNDO PACKET *********************************** */
-    
+
     public static byte[] makeUndoPacket(int stateID)
     {
         try
@@ -889,7 +953,7 @@ public class PacketManager
     }
 
     /* *********************** REDO PACKET *********************************** */
-    
+
     public static byte[] makeRedoPacket(int stateID)
     {
         try
@@ -926,7 +990,7 @@ public class PacketManager
     }
 
     /* *********************** REJECT PACKET *********************************** */
-    
+
     public static byte[] makeRejectPacket(int reason)
     {
         try
@@ -964,7 +1028,7 @@ public class PacketManager
     }
 
     /* *********************** HEX MODE PACKET *********************************** */
-    
+
     public static byte[] makeGridModePacket(int hexMode)
     {
         try
@@ -1090,8 +1154,8 @@ public class PacketManager
             // validate PNG file
             if (!UtilityFunctions.isPngData(pngFile))
             {
-                GametableFrame.getGametableFrame().logAlertMessage("Illegal pog data: \"" + filename
-                    + "\", aborting transfer.");
+                GametableFrame.getGametableFrame().logAlertMessage(
+                    "Illegal pog data: \"" + filename + "\", aborting transfer.");
                 return;
             }
 
@@ -1112,8 +1176,8 @@ public class PacketManager
                 }
                 else
                 {
-                    GametableFrame.getGametableFrame().logAlertMessage("Illegal pog path: \"" + filename
-                        + "\", aborting transfer.");
+                    GametableFrame.getGametableFrame().logAlertMessage(
+                        "Illegal pog path: \"" + filename + "\", aborting transfer.");
                     return;
                 }
             }
@@ -1152,7 +1216,7 @@ public class PacketManager
                     iterator.remove();
                     continue;
                 }
-                
+
                 File requestedFile = new File(requestedFilename).getCanonicalFile();
                 if (requestedFile.equals(providedFile))
                 {

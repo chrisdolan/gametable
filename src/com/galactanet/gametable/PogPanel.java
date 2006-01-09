@@ -43,7 +43,8 @@ public class PogPanel extends JPanel
 
     private static final Color POG_BORDER_COLOR     = Color.BLACK;
     private static final Color POG_BACKGROUND_COLOR = new Color(0x66, 0x66, 0x66, 0xCC);
-    private static final Color BACKGROUND_COLOR     = Color.LIGHT_GRAY;
+    private static final Color BACKGROUND_COLOR     = new Color(0xFF, 0xFF, 0xFE);
+    private static final Font  FONT_NODE            = Font.decode("sansserif-12");
 
     private static final int   SPACE                = POG_PADDING + POG_BORDER + POG_MARGIN;
     private static final int   TOTAL_SPACE          = SPACE * 2;
@@ -71,7 +72,7 @@ public class PogPanel extends JPanel
 
     /**
      * Class to track the status of branches in the pog tree.
-     *
+     * 
      * @author Iffy
      */
     private class BranchTracker implements TreeExpansionListener
@@ -159,7 +160,7 @@ public class PogPanel extends JPanel
 
     /**
      * A Leaf TreeNode representing a Pog.
-     *
+     * 
      * @author Iffy
      */
     private static class PogNode implements TreeNode
@@ -260,7 +261,7 @@ public class PogPanel extends JPanel
 
     /**
      * A TreeNode representing a library.
-     *
+     * 
      * @author Iffy
      */
     private static class LibraryNode implements TreeNode
@@ -456,7 +457,7 @@ public class PogPanel extends JPanel
 
     /**
      * Cell renderer for the tree.
-     *
+     * 
      * @author Iffy
      */
     private static class PogTreeCellRenderer extends JComponent implements TreeCellRenderer
@@ -495,7 +496,7 @@ public class PogPanel extends JPanel
             Dimension size = getMySize();
             setSize(size);
             setPreferredSize(size);
-   
+
             return this;
         }
 
@@ -504,7 +505,7 @@ public class PogPanel extends JPanel
          */
         private Font getMyFont()
         {
-            return Font.decode("system-12");
+            return FONT_NODE;
         }
 
         /**

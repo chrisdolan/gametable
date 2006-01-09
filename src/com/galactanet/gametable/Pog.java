@@ -11,10 +11,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
 
 
@@ -41,6 +38,35 @@ public class Pog
      * Background color for changed pog text.
      */
     private static final Color COLOR_CHANGED_BACKGROUND   = new Color(238, 156, 0, 192);
+
+    /**
+     * Font to use for displaying pog text.
+     */
+    private static final Font  FONT_TEXT                  = Font.decode("sansserif-bold-12");
+
+    /**
+     * Font to use for displaying attribute names.
+     */
+    private static final Font  FONT_ATTRIBUTE_NAME        = Font.decode("sansserif-bold-12");
+
+    /**
+     * Font to use for displaying attribute names.
+     */
+    private static final Font  FONT_ATTRIBUTE_VALUE       = Font.decode("sansserif-12");
+
+    // --- Types -----------------------------------------------------------------------------------------------------
+
+    private static class Attribute
+    {
+        public String name;
+        public String value;
+        
+        public Attribute(String n, String v)
+        {
+            name = n;
+            value = v;
+        }
+    }
 
     // --- Static Members --------------------------------------------------------------------------------------------
 
@@ -126,6 +152,15 @@ public class Pog
         m_text = dis.readUTF();
         // boolean underlay =
         dis.readBoolean();
+        int numAttributes = dis.readInt();
+        m_attributes.clear();
+        for (int i = 0; i < numAttributes; i++)
+        {
+            String key = dis.readUTF();
+            String value = dis.readUTF();
+            setAttribute(key, value);
+        }
+        m_bTextChangeNotifying = false;
 
         PogType type = lib.getPog(filename);
         if (type == null)
@@ -249,24 +284,40 @@ public class Pog
 
     public String getAttribute(String name)
     {
-        return (String)m_attributes.get(name);
+        String normalizedName = UtilityFunctions.normalizeName(name);
+        Attribute a = (Attribute)m_attributes.get(normalizedName);
+        return a.value;
     }
 
     public Set getAttributeNames()
     {
-        return Collections.unmodifiableSet(m_attributes.keySet());
+        Set s = new HashSet();
+        for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
+        {
+            Attribute attribute = (Attribute)iterator.next();
+            s.add(attribute.name);
+        }
+        return Collections.unmodifiableSet(s);
+    }
+
+    public boolean hasAttributes()
+    {
+        return !m_attributes.isEmpty();
     }
 
     // --- Setters ---
 
     public void setAttribute(String name, String value)
     {
-        m_attributes.put(name, value);
+        String normalizedName = UtilityFunctions.normalizeName(name);
+        m_attributes.put(normalizedName, new Attribute(name, value));
+        displayPogDataChange();
     }
 
     public void removeAttribute(String name)
     {
-        m_attributes.remove(name);
+        String normalizedName = UtilityFunctions.normalizeName(name);
+        m_attributes.remove(normalizedName);
     }
 
     public void setTinted(boolean b)
@@ -355,6 +406,13 @@ public class Pog
         dos.writeInt(m_id);
         dos.writeUTF(m_text);
         dos.writeBoolean(isUnderlay());
+        dos.writeInt(m_attributes.size());
+        for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
+        {
+            Attribute attribute = (Attribute)iterator.next();
+            dos.writeUTF(attribute.name);
+            dos.writeUTF(attribute.value);
+        }
     }
 
     // --- Object Implementation ---
@@ -403,26 +461,21 @@ public class Pog
 
     private void drawStringToCanvas(Graphics gr, boolean bForceTextInBounds, Color backgroundColor)
     {
-        Graphics2D g = (Graphics2D)gr.create();
         if (m_text == null)
         {
-            return;
+            m_text = "";
         }
-
-        if (m_text.length() == 0)
-        {
-            return;
-        }
-
+        Graphics2D g = (Graphics2D)gr.create();
+        g.setFont(FONT_TEXT);
         FontMetrics metrics = g.getFontMetrics();
         Rectangle stringBounds = metrics.getStringBounds(m_text, g).getBounds();
 
         int totalWidth = stringBounds.width + 6;
         int totalHeight = stringBounds.height + 1;
 
-        Rectangle backgroundRect = new Rectangle();
         Point pogDrawCoords = m_canvas.modelToDraw(getPosition());
         int viewWidth = getHeightForZoomLevel();
+        Rectangle backgroundRect = new Rectangle();
         backgroundRect.x = pogDrawCoords.x + (viewWidth - totalWidth) / 2;
         backgroundRect.y = pogDrawCoords.y - totalHeight - 4;
         backgroundRect.width = totalWidth;
@@ -452,16 +505,76 @@ public class Pog
             }
         }
 
-        g.setColor(backgroundColor);
-        g.fill(backgroundRect);
+        if (m_text.length() > 0)
+        {
+            g.setColor(backgroundColor);
+            g.fill(backgroundRect);
 
-        int stringX = backgroundRect.x + (backgroundRect.width - stringBounds.width) / 2;
-        int stringY = backgroundRect.y + (backgroundRect.height - stringBounds.height) / 2 + metrics.getAscent();
+            int stringX = backgroundRect.x + (backgroundRect.width - stringBounds.width) / 2;
+            int stringY = backgroundRect.y + (backgroundRect.height - stringBounds.height) / 2 + metrics.getAscent();
 
-        g.setColor(Color.BLACK);
-        g.drawString(m_text, stringX, stringY);
+            g.setColor(Color.BLACK);
+            g.drawString(m_text, stringX, stringY);
 
-        g.drawRect(backgroundRect.x, backgroundRect.y, backgroundRect.width - 1, backgroundRect.height - 1);
+            g.drawRect(backgroundRect.x, backgroundRect.y, backgroundRect.width - 1, backgroundRect.height - 1);
+        }
+        drawAttributes(g, backgroundRect.x + (backgroundRect.width / 2), backgroundRect.y + backgroundRect.height);
+        g.dispose();
+    }
+
+    private void drawAttributes(Graphics g, int x, int y)
+    {
+        int numAttributes = m_attributes.size();
+        if (numAttributes < 1)
+        {
+            return;
+        }
+
+        Graphics2D g2 = (Graphics2D)g.create();
+        FontMetrics nameMetrics = g2.getFontMetrics(FONT_ATTRIBUTE_NAME);
+        FontMetrics valueMetrics = g2.getFontMetrics(FONT_ATTRIBUTE_VALUE);
+        int maxLineHeight = Math.max(nameMetrics.getHeight(), valueMetrics.getHeight());
+        int height = maxLineHeight * numAttributes;
+        final int PADDING = 3;
+        final int SPACE = PADDING * 2;
+        int width = 0;
+        for (Iterator iterator = m_attributes.keySet().iterator(); iterator.hasNext();)
+        {
+            String name = (String)iterator.next();
+            String value = getAttribute(name);
+            int attrWidth = nameMetrics.stringWidth(name + ": ") + valueMetrics.stringWidth(value);
+            if (attrWidth > width)
+            {
+                width = attrWidth;
+            }
+        }
+
+        height += SPACE;
+        width += SPACE;
+
+        int drawX = x - width / 2;
+        int drawY = y;
+        g2.setColor(COLOR_ATTRIBUTE_BACKGROUND);
+        g2.fillRect(drawX, drawY, width, height);
+        g2.setColor(Color.BLACK);
+        g2.drawRect(drawX, drawY, width - 1, height - 1);
+
+        drawX += PADDING;
+        drawY += PADDING + nameMetrics.getAscent();
+        for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
+        {
+            Attribute attribute = (Attribute)iterator.next();
+            String drawString = attribute.name + ": ";
+            g2.setFont(FONT_ATTRIBUTE_NAME);
+            g2.drawString(drawString, drawX, drawY);
+            int nameWidth = nameMetrics.stringWidth(drawString);
+            g2.setFont(FONT_ATTRIBUTE_VALUE);
+            drawString = attribute.value;
+            g2.drawString(attribute.value, drawX + nameWidth, drawY);
+            drawY += maxLineHeight;
+        }
+
+        g2.dispose();
     }
 
 }
