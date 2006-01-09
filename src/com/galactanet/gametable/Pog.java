@@ -11,6 +11,10 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 
 
@@ -21,21 +25,73 @@ import java.io.IOException;
  */
 public class Pog
 {
-    private static final Color COLOR_BACKGROUND         = new Color(255, 255, 64, 192);
-    private static final Color COLOR_CHANGED_BACKGROUND = new Color(238, 156, 0, 192);
+    // --- Constants -------------------------------------------------------------------------------------------------
 
-    public static int          g_nextID                 = 10;
-    public static final Font   FONT                     = new Font("Arial", 0, 14);
+    /**
+     * Background color for pog text.
+     */
+    private static final Color COLOR_BACKGROUND           = new Color(255, 255, 64, 192);
 
+    /**
+     * Background color for pog text.
+     */
+    private static final Color COLOR_ATTRIBUTE_BACKGROUND = new Color(64, 255, 64, 192);
+
+    /**
+     * Background color for changed pog text.
+     */
+    private static final Color COLOR_CHANGED_BACKGROUND   = new Color(238, 156, 0, 192);
+
+    // --- Static Members --------------------------------------------------------------------------------------------
+
+    /**
+     * Unique global Id for pogs.
+     */
+    public static int          g_nextId                   = 10;
+
+    // --- Members ---------------------------------------------------------------------------------------------------
+
+    /**
+     * The PogType of this Pog.
+     */
     private PogType            m_pogType;
+
+    /**
+     * Lame handle to canvas.
+     */
     private GametableCanvas    m_canvas;
 
-    // model coordinates
-    private Point              m_position               = new Point(0, 0);
-    private String             m_dataStr                = "";
-    private int                m_Id                     = 0;
-    private boolean            m_bTinted                = false;
-    private boolean            m_bTextChangeNotifying   = false;
+    /**
+     * Position of the pog on the map in map coordinates.
+     */
+    private Point              m_position                 = new Point(0, 0);
+
+    /**
+     * The primary label for the Pog.
+     */
+    private String             m_text                     = "";
+
+    /**
+     * The unique id of this pog.
+     */
+    private int                m_id                       = 0;
+
+    /**
+     * Is this pog tinted?
+     */
+    private boolean            m_bTinted                  = false;
+
+    /**
+     * True if this pog is notifying the world that it's text had changed.
+     */
+    private boolean            m_bTextChangeNotifying     = false;
+
+    /**
+     * Name/value pairs of the attributes assigned to this pog.
+     */
+    private Map                m_attributes               = new TreeMap();
+
+    // --- Constructors ----------------------------------------------------------------------------------------------
 
     public Pog(DataInputStream dis) throws IOException
     {
@@ -52,29 +108,62 @@ public class Pog
         init(toCopy);
     }
 
-    public void getUniqueID()
+    // --- Methods ---------------------------------------------------------------------------------------------------
+
+    // --- Initialization ---
+
+    private void initFromPacket(DataInputStream dis) throws IOException
     {
-        m_Id = g_nextID++;
+        String filename = UtilityFunctions.getLocalPath(dis.readUTF());
+        PogLibrary lib = GametableFrame.getGametableFrame().getPogLibrary();
+        filename = UtilityFunctions.getRelativePath(lib.getLocation(), new File(filename));
+
+        int x = dis.readInt();
+        int y = dis.readInt();
+        m_position = new Point(x, y);
+        int size = dis.readInt();
+        m_id = dis.readInt();
+        m_text = dis.readUTF();
+        // boolean underlay =
+        dis.readBoolean();
+
+        PogType type = lib.getPog(filename);
+        if (type == null)
+        {
+            type = lib.createPlaceholder(filename, size);
+        }
+        init(GametableFrame.getGametableFrame().getGametableCanvas(), type);
     }
+
+    public void init(Pog orig)
+    {
+        m_position = orig.m_position;
+        m_pogType = orig.m_pogType;
+        m_canvas = orig.m_canvas;
+        m_text = new String(orig.m_text);
+    }
+
+    public void init(GametableCanvas canvas, PogType type)
+    {
+        m_pogType = type;
+        m_canvas = canvas;
+    }
+
+    public void assignUniqueId()
+    {
+        m_id = g_nextId++;
+    }
+
+    // --- Accessors ---
 
     public int getId()
     {
-        return m_Id;
+        return m_id;
     }
 
     public boolean isTinted()
     {
         return m_bTinted;
-    }
-
-    public void setTinted(boolean b)
-    {
-        m_bTinted = b;
-    }
-
-    public String toString()
-    {
-        return "[Pog name: " + getFilename() + " pos: " + getPosition() + " size: " + getFaceSize() + "]";
     }
 
     public String getFilename()
@@ -105,54 +194,6 @@ public class Pog
     public boolean isUnknown()
     {
         return m_pogType.isUnknown();
-    }
-
-    public void writeToPacket(DataOutputStream dos) throws IOException
-    {
-        dos.writeUTF(getFilename());
-        dos.writeInt(getX());
-        dos.writeInt(getY());
-        dos.writeInt(getFaceSize());
-        dos.writeInt(m_Id);
-        dos.writeUTF(m_dataStr);
-        dos.writeBoolean(isUnderlay());
-    }
-
-    private void initFromPacket(DataInputStream dis) throws IOException
-    {
-        String filename = UtilityFunctions.getLocalPath(dis.readUTF());
-        PogLibrary lib = GametableFrame.getGametableFrame().getPogLibrary();
-        filename = UtilityFunctions.getRelativePath(lib.getLocation(), new File(filename));
-
-        int x = dis.readInt();
-        int y = dis.readInt();
-        m_position = new Point(x, y);
-        int size = dis.readInt();
-        m_Id = dis.readInt();
-        m_dataStr = dis.readUTF();
-        // boolean underlay =
-        dis.readBoolean();
-
-        PogType type = lib.getPog(filename);
-        if (type == null)
-        {
-            type = lib.createPlaceholder(filename, size);
-        }
-        init(GametableFrame.getGametableFrame().getGametableCanvas(), type);
-    }
-
-    public void init(Pog orig)
-    {
-        m_position = orig.m_position;
-        m_pogType = orig.m_pogType;
-        m_canvas = orig.m_canvas;
-        m_dataStr = new String(orig.m_dataStr);
-    }
-
-    public void init(GametableCanvas canvas, PogType type)
-    {
-        m_pogType = type;
-        m_canvas = canvas;
     }
 
     public int getHeightForZoomLevel()
@@ -201,6 +242,38 @@ public class Pog
         return m_position;
     }
 
+    public String getText()
+    {
+        return m_text;
+    }
+
+    public String getAttribute(String name)
+    {
+        return (String)m_attributes.get(name);
+    }
+
+    public Set getAttributeNames()
+    {
+        return Collections.unmodifiableSet(m_attributes.keySet());
+    }
+
+    // --- Setters ---
+
+    public void setAttribute(String name, String value)
+    {
+        m_attributes.put(name, value);
+    }
+
+    public void removeAttribute(String name)
+    {
+        m_attributes.remove(name);
+    }
+
+    public void setTinted(boolean b)
+    {
+        m_bTinted = b;
+    }
+
     public void setPosition(Point pos)
     {
         m_position = pos;
@@ -211,47 +284,13 @@ public class Pog
         setPosition(new Point(x, y));
     }
 
-    public String getText()
-    {
-        return m_dataStr;
-    }
-
     public void setText(String text)
     {
-        m_dataStr = text;
+        m_text = text;
         displayPogDataChange();
     }
 
-    void displayPogDataChange()
-    {
-        // we don't do this if the game is receiving inital data.
-        if (PacketSourceState.isHostDumping())
-        {
-            return;
-        }
-
-        // we also don't do this if the game is loading a file from disk.
-        if (PacketSourceState.isFileLoading())
-        {
-            return;
-        }
-
-        m_bTextChangeNotifying = true;
-    }
-
-    void stopDisplayPogDataChange()
-    {
-        m_bTextChangeNotifying = false;
-    }
-
-    public void drawChangeText(Graphics g)
-    {
-        if (!m_bTextChangeNotifying)
-        {
-            return;
-        }
-        drawStringToCanvas(g, true, COLOR_CHANGED_BACKGROUND);
-    }
+    // --- Drawing ---
 
     public void draw(Graphics g, int x, int y, ImageObserver observer)
     {
@@ -290,10 +329,66 @@ public class Pog
         }
     }
 
-    public void drawDataStringToCanvas(Graphics gr, boolean bForceTextInBounds)
+    public void drawTextToCanvas(Graphics gr, boolean bForceTextInBounds)
     {
         drawStringToCanvas(gr, bForceTextInBounds, COLOR_BACKGROUND);
         stopDisplayPogDataChange();
+    }
+
+    public void drawChangedTextToCanvas(Graphics g)
+    {
+        if (!m_bTextChangeNotifying)
+        {
+            return;
+        }
+        drawStringToCanvas(g, true, COLOR_CHANGED_BACKGROUND);
+    }
+
+    // --- Miscellany ---
+
+    public void writeToPacket(DataOutputStream dos) throws IOException
+    {
+        dos.writeUTF(getFilename());
+        dos.writeInt(getX());
+        dos.writeInt(getY());
+        dos.writeInt(getFaceSize());
+        dos.writeInt(m_id);
+        dos.writeUTF(m_text);
+        dos.writeBoolean(isUnderlay());
+    }
+
+    // --- Object Implementation ---
+
+    /*
+     * @see java.lang.Object#toString()
+     */
+    public String toString()
+    {
+        return "[Pog name: " + getFilename() + " pos: " + getPosition() + " size: " + getFaceSize() + "]";
+    }
+
+    // --- Private Helpers ---
+
+    private void displayPogDataChange()
+    {
+        // we don't do this if the game is receiving inital data.
+        if (PacketSourceState.isHostDumping())
+        {
+            return;
+        }
+
+        // we also don't do this if the game is loading a file from disk.
+        if (PacketSourceState.isFileLoading())
+        {
+            return;
+        }
+
+        m_bTextChangeNotifying = true;
+    }
+
+    private void stopDisplayPogDataChange()
+    {
+        m_bTextChangeNotifying = false;
     }
 
     private Point modelToPog(Point modelPoint)
@@ -309,18 +404,18 @@ public class Pog
     private void drawStringToCanvas(Graphics gr, boolean bForceTextInBounds, Color backgroundColor)
     {
         Graphics2D g = (Graphics2D)gr.create();
-        if (m_dataStr == null)
+        if (m_text == null)
         {
             return;
         }
 
-        if (m_dataStr.length() == 0)
+        if (m_text.length() == 0)
         {
             return;
         }
 
         FontMetrics metrics = g.getFontMetrics();
-        Rectangle stringBounds = metrics.getStringBounds(m_dataStr, g).getBounds();
+        Rectangle stringBounds = metrics.getStringBounds(m_text, g).getBounds();
 
         int totalWidth = stringBounds.width + 6;
         int totalHeight = stringBounds.height + 1;
@@ -364,8 +459,9 @@ public class Pog
         int stringY = backgroundRect.y + (backgroundRect.height - stringBounds.height) / 2 + metrics.getAscent();
 
         g.setColor(Color.BLACK);
-        g.drawString(m_dataStr, stringX, stringY);
+        g.drawString(m_text, stringX, stringY);
 
         g.drawRect(backgroundRect.x, backgroundRect.y, backgroundRect.width - 1, backgroundRect.height - 1);
     }
+
 }

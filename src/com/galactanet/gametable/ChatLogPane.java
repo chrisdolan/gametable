@@ -110,7 +110,7 @@ public class ChatLogPane extends JPanel implements Scrollable
 		// location of the next font run
 		public int m_endX;
 		public int m_endY;
-	};
+	}
 	
 	public void addText(String toAdd)
 	{

@@ -137,7 +137,7 @@ public class PublishTool extends NullTool
                 {
                     // this pog gets copied
                     Pog newPog = new Pog(pog);
-                    newPog.getUniqueID();
+                    newPog.assignUniqueId();
 
                     m_canvas.setActiveMap(m_canvas.getPublicMap());
                     m_canvas.addPog(newPog);

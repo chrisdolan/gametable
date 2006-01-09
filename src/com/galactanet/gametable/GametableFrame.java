@@ -7,6 +7,8 @@ package com.galactanet.gametable;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.*;
 import java.util.*;
 import java.util.List;
@@ -68,7 +70,10 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
-    // this gets bumped up every time the comm protocols change
+    /**
+     * The version of the communications protocal used by this build. This needs to change whenever an incompatibility
+     * arises betwen versions.
+     */
     public final static int       COMM_VERSION            = 10;
     public final static int       PING_INTERVAL           = 2500;
 
@@ -91,6 +96,8 @@ public class GametableFrame extends JFrame implements ActionListener
         new Integer(new Color(132, 0, 0).getRGB()), new Integer(new Color(132, 0, 132).getRGB()),
         new Integer(new Color(132, 132, 0).getRGB()), new Integer(new Color(132, 132, 132).getRGB())
                                                           };
+
+    private final static boolean  DEBUG_FOCUS             = false;
 
     /**
      * The global gametable instance.
@@ -130,7 +137,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
     private JPanel                 m_textAndEntryPanel      = new JPanel();
     public JTextField              m_textEntry              = new JTextField();
-    private ChatLogPane            m_chatLog		        = new ChatLogPane();
+    private ChatLogPane            m_chatLog                = new ChatLogPane();
     private JSplitPane             m_mapChatSplitPane       = new JSplitPane();
 
     private JPanel                 m_textAreaPanel          = new JPanel();
@@ -164,7 +171,7 @@ public class GametableFrame extends JFrame implements ActionListener
     // a flag to tell the app
     // not to size or center us.
     public boolean                 m_bLoadedState;
-    public JTabbedPane             m_pogsTabbedPane         = new JTabbedPane();
+    private JTabbedPane            m_pogsTabbedPane         = new JTabbedPane();
     private JComboBox              m_colorCombo             = new JComboBox(COLORS);
 
     // full of Strings
@@ -214,6 +221,23 @@ public class GametableFrame extends JFrame implements ActionListener
      */
     private void initialize() throws IOException
     {
+        if (DEBUG_FOCUS)
+        {
+            KeyboardFocusManager man = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+            man.addPropertyChangeListener(new PropertyChangeListener()
+            {
+                /*
+                 * @see java.beans.PropertyChangeListener#propertyChange(java.beans.PropertyChangeEvent)
+                 */
+                public void propertyChange(PropertyChangeEvent evt)
+                {
+                    System.out.println("propertyChange(" + evt.getPropertyName() + ": " + evt.getOldValue() + " -> "
+                        + evt.getNewValue() + ")");
+                }
+
+            });
+        }
+
         setTitle(GametableApp.VERSION);
         setJMenuBar(getMainMenuBar());
         m_noGridModeMenuItem.addActionListener(this);
@@ -321,6 +345,7 @@ public class GametableFrame extends JFrame implements ActionListener
         m_macroButtonsPanel.setLayout(new BoxLayout(m_macroButtonsPanel, BoxLayout.Y_AXIS));
 
         m_colorCombo.setMaximumSize(new Dimension(100, 21));
+        m_colorCombo.setFocusable(false);
         m_toolBar.setFloatable(false);
         m_toolBar.setBorder(new EmptyBorder(2, 5, 2, 5));
         m_toolBar.add(m_colorCombo, null);
@@ -334,7 +359,8 @@ public class GametableFrame extends JFrame implements ActionListener
         getGametableCanvas().init(this);
 
         m_pogPanel = new PogPanel(m_pogLibrary, getGametableCanvas());
-        m_pogsTabbedPane.add(m_pogPanel, "Tree");
+        m_pogsTabbedPane.add(m_pogPanel, "Pog Library");
+        m_pogsTabbedPane.setFocusable(false);
 
         m_chatPanel.add(m_textAreaPanel, BorderLayout.CENTER);
         m_textAreaPanel.add(m_macrosScrollPane, BorderLayout.WEST);
@@ -436,6 +462,7 @@ public class GametableFrame extends JFrame implements ActionListener
                 JToggleButton button = new JToggleButton(new ImageIcon(im));
                 m_toolBar.add(button);
                 button.addActionListener(new ToolButtonActionListener(toolId));
+                button.setFocusable(false);
                 m_toolButtonGroup.add(button);
                 m_toolButtons[toolId] = button;
 
@@ -446,7 +473,7 @@ public class GametableFrame extends JFrame implements ActionListener
                     getGametableCanvas().getActionMap().put(actionId, new ToolButtonAbstractAction(toolId));
                     KeyStroke keystroke = KeyStroke.getKeyStroke("ctrl " + info.getQuickKey());
                     getGametableCanvas().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keystroke, actionId);
-                    keyInfo = " (Ctrl+" + info.getQuickKey() +")";
+                    keyInfo = " (Ctrl+" + info.getQuickKey() + ")";
                 }
                 button.setToolTipText(info.getName() + keyInfo);
                 List prefs = info.getTool().getPreferences();
@@ -1030,6 +1057,14 @@ public class GametableFrame extends JFrame implements ActionListener
     }
 
     /**
+     * @return The pog panel.
+     */
+    public PogPanel getPogPanel()
+    {
+        return m_pogPanel;
+    }
+
+    /**
      * @return The preferences object.
      */
     public Preferences getPreferences()
@@ -1145,14 +1180,6 @@ public class GametableFrame extends JFrame implements ActionListener
 
     public void pogDataPacketReceived(int id, String s)
     {
-        // when you get a pog data change, the pog will show that change
-        // to you for a while
-        Pog pog = getGametableCanvas().getPogByID(id);
-        if (pog != null)
-        {
-            pog.displayPogDataChange();
-        }
-
         getGametableCanvas().doSetPogData(id, s);
 
         if (m_netStatus == NETSTATE_HOST)
@@ -1243,9 +1270,9 @@ public class GametableFrame extends JFrame implements ActionListener
         getGametableCanvas().doAddPog(pog);
 
         // update the next pog id if necessary
-        if (pog.getId() >= Pog.g_nextID)
+        if (pog.getId() >= Pog.g_nextId)
         {
-            Pog.g_nextID = pog.getId() + 5;
+            Pog.g_nextId = pog.getId() + 5;
         }
 
         if (m_netStatus == NETSTATE_HOST)
@@ -1823,6 +1850,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
         // if they toggled the layer, whatever tool they're using is cancelled
         getToolManager().cancelToolAction();
+        getGametableCanvas().requestFocus();
 
         repaint();
     }
@@ -1933,6 +1961,7 @@ public class GametableFrame extends JFrame implements ActionListener
             newButton.setText(dm.getName());
             newButton.addActionListener(this);
             newButton.setToolTipText(dm.toString());
+            newButton.setFocusable(false);
 
             m_macroButtons.add(newButton);
             m_macroButtonsPanel.add(newButton);
@@ -1955,7 +1984,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
     public void logMessage(String text)
     {
-    	m_chatLog.addText(text);
+        m_chatLog.addText(text);
     }
 
     public void parseSlashCommand(String text)

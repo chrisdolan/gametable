@@ -631,7 +631,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     public PogPanel getPogPanel()
     {
-        Component component = m_gametableFrame.m_pogsTabbedPane.getSelectedComponent();
+        Component component = m_gametableFrame.getPogPanel();
         return (PogPanel)component;
     }
 
@@ -1143,7 +1143,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     public void addPog(Pog toAdd)
     {
-        toAdd.getUniqueID();
+        toAdd.assignUniqueId();
         if (isPublicMap())
         {
             m_gametableFrame.send(PacketManager.makeAddPogPacket(toAdd));
@@ -1681,14 +1681,14 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                     Pog pog = mapToDraw.getPogAt(i);
                     if (pog != mouseOverPog)
                     {
-                        pog.drawDataStringToCanvas(g, false);
+                        pog.drawTextToCanvas(g, false);
                     }
                 }
             }
 
             if (mouseOverPog != null)
             {
-                mouseOverPog.drawDataStringToCanvas(g, true);
+                mouseOverPog.drawTextToCanvas(g, true);
             }
         }
 
@@ -1698,7 +1698,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
             Pog pog = mapToDraw.getPogAt(i);
             if (pog != mouseOverPog)
             {
-                pog.drawChangeText(g);
+                pog.drawChangedTextToCanvas(g);
             }
         }
 

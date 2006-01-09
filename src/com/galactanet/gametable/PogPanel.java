@@ -42,8 +42,8 @@ public class PogPanel extends JPanel
     private static final int   HOVER_MARGIN         = 8;
 
     private static final Color POG_BORDER_COLOR     = Color.BLACK;
-    private static final Color POG_BACKGROUND_COLOR = new Color(0x73, 0x4D, 0x22, 0xCC);
-    private static final Color BACKGROUND_COLOR     = new Color(0x73, 0x4D, 0x22);
+    private static final Color POG_BACKGROUND_COLOR = new Color(0x66, 0x66, 0x66, 0xCC);
+    private static final Color BACKGROUND_COLOR     = Color.LIGHT_GRAY;
 
     private static final int   SPACE                = POG_PADDING + POG_BORDER + POG_MARGIN;
     private static final int   TOTAL_SPACE          = SPACE * 2;
@@ -504,7 +504,7 @@ public class PogPanel extends JPanel
          */
         private Font getMyFont()
         {
-            return Font.decode("system-bold-12");
+            return Font.decode("system-12");
         }
 
         /**
@@ -657,7 +657,6 @@ public class PogPanel extends JPanel
     private void initialize()
     {
         setLayout(new BorderLayout());
-        setBackground(BACKGROUND_COLOR);
         add(getScrollPane(), BorderLayout.CENTER);
     }
 
@@ -797,7 +796,6 @@ public class PogPanel extends JPanel
             scrollPane = new JScrollPane();
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
             scrollPane.setViewportView(getPogTree());
-            scrollPane.setBackground(BACKGROUND_COLOR);
         }
         return scrollPane;
     }
@@ -820,6 +818,7 @@ public class PogPanel extends JPanel
             pogTree.setCellRenderer(new PogTreeCellRenderer());
             pogTree.setRowHeight(0);
             pogTree.addTreeExpansionListener(m_branchTracker);
+            pogTree.setFocusable(false);
 
             pogTree.addMouseListener(new MouseAdapter()
             {
