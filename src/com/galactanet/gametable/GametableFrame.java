@@ -1010,7 +1010,7 @@ public class GametableFrame extends JFrame implements ActionListener
                     postMessage(result);
 
                     // send focus back where it belongs
-                    getGametableCanvas().requestFocus();
+                    // getGametableCanvas().requestFocus();
                 }
             }
         }
