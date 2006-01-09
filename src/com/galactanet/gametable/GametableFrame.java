@@ -130,8 +130,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
     private JPanel                 m_textAndEntryPanel      = new JPanel();
     public JTextField              m_textEntry              = new JTextField();
-    private JScrollPane2           m_textLogScroller        = new JScrollPane2();
-    private JTextPane              m_textLog                = new JTextPane();
+    private ChatLogPane            m_chatLog		        = new ChatLogPane();
     private JSplitPane             m_mapChatSplitPane       = new JSplitPane();
 
     private JPanel                 m_textAreaPanel          = new JPanel();
@@ -306,10 +305,8 @@ public class GametableFrame extends JFrame implements ActionListener
 
         m_textAndEntryPanel.add(m_textEntry, BorderLayout.SOUTH);
 
-        m_textLogScroller.setDoubleBuffered(true);
-        m_textAndEntryPanel.add(m_textLogScroller, BorderLayout.CENTER);
-
-        m_textLog.setDoubleBuffered(true);
+        m_chatLog.setDoubleBuffered(true);
+        m_textAndEntryPanel.add(m_chatLog.getComponentToAdd(), BorderLayout.CENTER);
 
         m_mapChatSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
         m_mapChatSplitPane.setContinuousLayout(true);
@@ -332,7 +329,6 @@ public class GametableFrame extends JFrame implements ActionListener
         initializeTools();
 
         add(m_toolBar, BorderLayout.NORTH);
-        m_textLogScroller.getViewport().add(m_textLog, null);
 
         m_pogLibrary = new PogLibrary();
         getGametableCanvas().init(this);
@@ -359,8 +355,6 @@ public class GametableFrame extends JFrame implements ActionListener
 
         ColorComboCellRenderer renderer = new ColorComboCellRenderer();
         m_colorCombo.setRenderer(renderer);
-
-        m_textLog.setEditable(false);
 
         // load the primary map
         getGametableCanvas().setActiveMap(getGametableCanvas().getPrivateMap());
@@ -1961,17 +1955,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
     public void logMessage(String text)
     {
-        double prevHeight = m_textLog.getPreferredSize().getHeight();
-        String log = m_textLog.getText();
-        log += text;
-        log += "\n";
-        m_textLog.setText(log);
-        double scrollerHeight = m_textLogScroller.getHeight();
-
-        if (prevHeight > scrollerHeight)
-        {
-            m_textLogScroller.disregardNextPaint();
-        }
+    	m_chatLog.addText(text);
     }
 
     public void parseSlashCommand(String text)
