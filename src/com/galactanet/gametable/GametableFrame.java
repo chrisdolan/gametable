@@ -238,14 +238,13 @@ public class GametableFrame extends JFrame implements ActionListener
             });
         }
 
+        setContentPane(new JPanel(new BorderLayout()));
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setTitle(GametableApp.VERSION);
         setJMenuBar(getMainMenuBar());
         m_noGridModeMenuItem.addActionListener(this);
         m_squareGridModeMenuItem.addActionListener(this);
         m_hexGridModeMenuItem.addActionListener(this);
-
-        setLayout(new BorderLayout());
 
         m_chatPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         m_chatPanel.setLayout(new BorderLayout());
@@ -354,7 +353,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
         initializeTools();
 
-        add(m_toolBar, BorderLayout.NORTH);
+        getContentPane().add(m_toolBar, BorderLayout.NORTH);
 
         m_pogLibrary = new PogLibrary();
         getGametableCanvas().init(this);
@@ -378,7 +377,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
         m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.LEFT);
         m_mapPogSplitPane.add(m_mapChatSplitPane, JSplitPane.RIGHT);
-        add(m_mapPogSplitPane, BorderLayout.CENTER);
+        getContentPane().add(m_mapPogSplitPane, BorderLayout.CENTER);
 
         m_disconnectMenuItem.setEnabled(false);
 
