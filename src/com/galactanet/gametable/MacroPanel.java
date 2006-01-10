@@ -204,12 +204,10 @@ public class MacroPanel extends JPanel
         for (Iterator iterator = toDelete.iterator(); iterator.hasNext();)
         {
             DiceMacro macro = (DiceMacro)iterator.next();
-            System.out.println("Removing: " + macro);
             Component component = getMacroComponent(macro);
-            System.out.println("Component: " + component);
             if (component != null)
             {
-                remove(component);
+                macroPanel.remove(component);
             }
             displayedMacros.remove(macro);
         }
@@ -217,11 +215,11 @@ public class MacroPanel extends JPanel
         for (Iterator iterator = toAdd.iterator(); iterator.hasNext();)
         {
             DiceMacro macro = (DiceMacro)iterator.next();
-            System.out.println("Adding: " + macro);
             MacroEntryPanel panel = new MacroEntryPanel(macro);
             macroPanel.add(panel);
             displayedMacros.add(macro);
         }
+        macroPanel.validate();
     }
 
     // --- Private Methods ---
