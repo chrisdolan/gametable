@@ -8,7 +8,6 @@ package com.galactanet.gametable;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.FocusTraversalPolicy;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;

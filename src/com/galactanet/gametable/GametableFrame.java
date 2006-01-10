@@ -141,18 +141,14 @@ public class GametableFrame extends JFrame implements ActionListener
     private JSplitPane             m_mapChatSplitPane       = new JSplitPane();
 
     private JPanel                 m_textAreaPanel          = new JPanel();
-    private JScrollPane            m_macrosScrollPane       = new JScrollPane(
-                                                                ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
-                                                                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-    private JPanel                 m_macroButtonsPanel      = new JPanel();
     private JSplitPane             m_mapPogSplitPane        = new JSplitPane();
     private PogPanel               m_pogPanel               = null;
+    private MacroPanel             m_macroPanel             = null;
     private JToolBar               m_toolBar                = new JToolBar();
     private ButtonGroup            m_toolButtonGroup        = new ButtonGroup();
 
     private List                   m_macros                 = new ArrayList();
     private Map                    m_macroMap               = new HashMap();
-    private List                   m_macroButtons           = new ArrayList();
 
     private int                    m_netStatus              = NETSTATE_NONE;
 
@@ -342,8 +338,6 @@ public class GametableFrame extends JFrame implements ActionListener
         m_mapPogSplitPane.setContinuousLayout(true);
         m_mapPogSplitPane.setBorder(null);
 
-        m_macroButtonsPanel.setLayout(new BoxLayout(m_macroButtonsPanel, BoxLayout.Y_AXIS));
-
         m_colorCombo.setMaximumSize(new Dimension(100, 21));
         m_colorCombo.setFocusable(false);
         m_toolBar.setFloatable(false);
@@ -361,13 +355,11 @@ public class GametableFrame extends JFrame implements ActionListener
         m_pogPanel = new PogPanel(m_pogLibrary, getGametableCanvas());
         m_pogsTabbedPane.add(m_pogPanel, "Pog Library");
         m_pogsTabbedPane.add(new JPanel(), "Active Pogs");
-        m_pogsTabbedPane.add(new JPanel(), "Dice Macros");
+        m_macroPanel = new MacroPanel();
+        m_pogsTabbedPane.add(m_macroPanel, "Dice Macros");
         m_pogsTabbedPane.setFocusable(false);
 
         m_chatPanel.add(m_textAreaPanel, BorderLayout.CENTER);
-        m_textAreaPanel.add(m_macrosScrollPane, BorderLayout.WEST);
-        m_macrosScrollPane.setViewportView(m_macroButtonsPanel);
-        m_macrosScrollPane.setBorder(new CompoundBorder(new EmptyBorder(0, 0, 0, 5), m_macrosScrollPane.getBorder()));
         m_textAreaPanel.add(m_textAndEntryPanel, BorderLayout.CENTER);
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED), new EmptyBorder(1, 1, 1, 1)));
@@ -605,7 +597,7 @@ public class GametableFrame extends JFrame implements ActionListener
     {
         JMenu menu = new JMenu("Help");
         menu.add(getAboutMenuItem());
-        
+
         // TODO: Remove later on
         JMenuItem item = new JMenuItem("testhtml");
         item.addActionListener(new ActionListener()
@@ -1052,7 +1044,7 @@ public class GametableFrame extends JFrame implements ActionListener
             getGametableCanvas().m_gridMode = getGametableCanvas().m_noGridMode;
             send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_NONE));
             updateGridModeMenu();
-            repaint();
+            getGametableCanvas().repaint();
             postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
         }
         else if (e.getSource() == m_squareGridModeMenuItem)
@@ -1060,7 +1052,7 @@ public class GametableFrame extends JFrame implements ActionListener
             getGametableCanvas().m_gridMode = getGametableCanvas().m_squareGridMode;
             send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_SQUARES));
             updateGridModeMenu();
-            repaint();
+            getGametableCanvas().repaint();
             postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
         }
         else if (e.getSource() == m_hexGridModeMenuItem)
@@ -1068,25 +1060,8 @@ public class GametableFrame extends JFrame implements ActionListener
             getGametableCanvas().m_gridMode = getGametableCanvas().m_hexGridMode;
             send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_HEX));
             updateGridModeMenu();
-            repaint();
+            getGametableCanvas().repaint();
             postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
-        }
-        else
-        {
-            // check the macro buttons
-            for (int i = 0; i < m_macroButtons.size(); i++)
-            {
-                if (e.getSource() == m_macroButtons.get(i))
-                {
-                    // found our man
-                    DiceMacro macro = (DiceMacro)m_macros.get(i);
-                    String result = macro.doMacro();
-                    postMessage(result);
-
-                    // send focus back where it belongs
-                    // getGametableCanvas().requestFocus();
-                }
-            }
         }
     }
 
@@ -1932,19 +1907,19 @@ public class GametableFrame extends JFrame implements ActionListener
     public void addMacro(DiceMacro dm)
     {
         addMacroForced(dm);
-        rebuildMacroButtons();
+        m_macroPanel.refreshMacroList();
     }
 
     public void removeMacro(String name)
     {
         removeMacroForced(name);
-        rebuildMacroButtons();
+        m_macroPanel.refreshMacroList();
     }
 
     public void removeMacro(DiceMacro dm)
     {
         removeMacroForced(dm);
-        rebuildMacroButtons();
+        m_macroPanel.refreshMacroList();
     }
 
     private void removeMacroForced(String name)
@@ -1992,31 +1967,12 @@ public class GametableFrame extends JFrame implements ActionListener
         return (DiceMacro)m_macroMap.get(realName);
     }
 
-    public void rebuildMacroButtons()
+    /**
+     * @return Gets the list of macros.
+     */
+    public List getMacros()
     {
-        m_macroButtonsPanel.removeAll();
-        m_macroButtons = new ArrayList();
-
-        for (int i = 0; i < m_macros.size(); i++)
-        {
-            DiceMacro dm = (DiceMacro)m_macros.get(i);
-
-            JButton newButton = new JButton();
-            newButton.setMaximumSize(new Dimension(120, 20));
-            newButton.setMinimumSize(new Dimension(120, 20));
-            newButton.setPreferredSize(new Dimension(120, 20));
-            newButton.setText(dm.getName());
-            newButton.addActionListener(this);
-            newButton.setToolTipText(dm.toString());
-            newButton.setFocusable(false);
-
-            m_macroButtons.add(newButton);
-            m_macroButtonsPanel.add(newButton);
-        }
-
-        m_macrosScrollPane.revalidate();
-
-        repaint();
+        return Collections.unmodifiableList(m_macros);
     }
 
     public void logSystemMessage(String text)

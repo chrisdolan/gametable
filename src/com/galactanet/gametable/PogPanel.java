@@ -24,7 +24,7 @@ import javax.swing.tree.TreePath;
 
 
 /**
- * TODO: comment
+ * Tree-based pog library panel.
  * 
  * @author iffy
  */
