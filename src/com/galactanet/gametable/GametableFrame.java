@@ -605,6 +605,19 @@ public class GametableFrame extends JFrame implements ActionListener
     {
         JMenu menu = new JMenu("Help");
         menu.add(getAboutMenuItem());
+        
+        // TODO: Remove later on
+        JMenuItem item = new JMenuItem("testhtml");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                HtmlTestDialog dialog = new HtmlTestDialog();
+                dialog.setLocationRelativeTo(m_gametableCanvas);
+                dialog.setVisible(true);
+            }
+        });
+        menu.add(item);
 
         return menu;
     }
