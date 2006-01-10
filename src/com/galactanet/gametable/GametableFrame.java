@@ -147,8 +147,7 @@ public class GametableFrame extends JFrame implements ActionListener
     private JToolBar               m_toolBar                = new JToolBar();
     private ButtonGroup            m_toolButtonGroup        = new ButtonGroup();
 
-    private List                   m_macros                 = new ArrayList();
-    private Map                    m_macroMap               = new HashMap();
+    private Map                    m_macroMap               = new TreeMap();
 
     private int                    m_netStatus              = NETSTATE_NONE;
 
@@ -968,30 +967,7 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             public void actionPerformed(ActionEvent e)
             {
-                NewMacroDialog dlg = new NewMacroDialog();
-                dlg.setModal(true);
-                dlg.setVisible(true);
-
-                if (dlg.m_bAccepted)
-                {
-                    // extrace the macro from the controls and add it
-                    String name = dlg.m_nameEntry.getText();
-                    String macro = dlg.m_rollEntry.getText();
-                    if (getMacro(name) != null)
-                    {
-                        int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
-                            "You already have a macro named \"" + name + "\", "
-                                + "are you sure you want to replace it with \"" + macro + "\"?", "Replace Macro?");
-                        if (result == UtilityFunctions.YES)
-                        {
-                            addMacro(name, macro);
-                        }
-                    }
-                    else
-                    {
-                        addMacro(name, macro);
-                    }
-                }
+                addDieMacro();
             }
         });
         return item;
@@ -1004,7 +980,7 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             public void actionPerformed(ActionEvent e)
             {
-                Object[] list = m_macros.toArray();
+                Object[] list = m_macroMap.values().toArray();
                 // give them a list of macros they can delete
                 Object sel = JOptionPane.showInputDialog(GametableFrame.this, "Select Dice Macro to remove:",
                     "Remove Dice Macro", JOptionPane.PLAIN_MESSAGE, null, list, list[0]);
@@ -1064,7 +1040,7 @@ public class GametableFrame extends JFrame implements ActionListener
             postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
         }
     }
-
+    
     /**
      * @return Returns the m_netStatus.
      */
@@ -1935,13 +1911,11 @@ public class GametableFrame extends JFrame implements ActionListener
     {
         String name = UtilityFunctions.normalizeName(macro.getName());
         m_macroMap.remove(name);
-        m_macros.remove(macro);
     }
 
     private void addMacroForced(DiceMacro macro)
     {
         removeMacroForced(macro.getName());
-        m_macros.add(macro);
         m_macroMap.put(UtilityFunctions.normalizeName(macro.getName()), macro);
     }
 
@@ -1970,9 +1944,9 @@ public class GametableFrame extends JFrame implements ActionListener
     /**
      * @return Gets the list of macros.
      */
-    public List getMacros()
+    public Collection getMacros()
     {
-        return Collections.unmodifiableList(m_macros);
+        return Collections.unmodifiableCollection(m_macroMap.values());
     }
 
     public void logSystemMessage(String text)
@@ -2219,10 +2193,11 @@ public class GametableFrame extends JFrame implements ActionListener
             prefDos.writeInt(m_mapChatSplitPane.getDividerLocation());
             prefDos.writeInt(m_mapPogSplitPane.getDividerLocation());
 
-            prefDos.writeInt(m_macros.size());
-            for (int i = 0; i < m_macros.size(); i++)
+            Collection macros = m_macroMap.values();
+            prefDos.writeInt(macros.size());
+            for (Iterator iterator = macros.iterator(); iterator.hasNext();)
             {
-                DiceMacro dm = (DiceMacro)m_macros.get(i);
+                DiceMacro dm = (DiceMacro)iterator.next();
                 dm.writeToStream(prefDos);
             }
 
@@ -2280,7 +2255,7 @@ public class GametableFrame extends JFrame implements ActionListener
             m_mapChatSplitPane.setDividerLocation(prefDis.readInt());
             m_mapPogSplitPane.setDividerLocation(prefDis.readInt());
 
-            m_macros = new ArrayList();
+            m_macroMap.clear();
             int numMacros = prefDis.readInt();
             for (int i = 0; i < numMacros; i++)
             {
@@ -2507,5 +2482,35 @@ public class GametableFrame extends JFrame implements ActionListener
         saveState(getGametableCanvas().getPublicMap(), new File("autosave.grm"));
         saveState(getGametableCanvas().getPrivateMap(), new File("autosavepvt.grm"));
         savePrefs();
+    }
+
+    /**
+     * Invokes the whole addDieMacro dialog process.
+     */
+    public void addDieMacro()
+    {
+        NewMacroDialog dialog = new NewMacroDialog();
+        dialog.setVisible(true);
+
+        if (dialog.isAccepted())
+        {
+            // extrace the macro from the controls and add it
+            String name = dialog.getMacroName();
+            String macro = dialog.getMacroDefinition();
+            if (getMacro(name) != null)
+            {
+                int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
+                    "You already have a macro named \"" + name + "\", "
+                        + "are you sure you want to replace it with \"" + macro + "\"?", "Replace Macro?");
+                if (result == UtilityFunctions.YES)
+                {
+                    addMacro(name, macro);
+                }
+            }
+            else
+            {
+                addMacro(name, macro);
+            }
+        }
     }
 }
