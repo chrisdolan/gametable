@@ -31,6 +31,7 @@ public class GametableApp
     {
         try
         {
+            System.setProperty("swing.aatext","true");
             Log.initializeLog(Log.SYS, SYS_LOG_FILE);
             Log.initializeLog(Log.NET, NET_LOG_FILE);
             Log.log(Log.SYS, VERSION);
