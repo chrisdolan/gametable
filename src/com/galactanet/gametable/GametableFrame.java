@@ -268,7 +268,7 @@ public class GametableFrame extends JFrame implements ActionListener
             public void actionPerformed(ActionEvent e)
             {
                 // they hit return on the text bar
-                String entered = m_textEntry.getText();
+                String entered = m_textEntry.getText().trim();
                 if (entered.length() == 0)
                 {
                     // useless string.
@@ -2175,6 +2175,45 @@ public class GametableFrame extends JFrame implements ActionListener
             }
             postMessage(getMyPlayer().getCharacterName() + " rolls " + rollBuf + ": [" + resultBuf + "] = " + total);
         }
+        else if (words[0].equals("/poglist"))
+        {
+            // macro command. this requires at least 2 parameters
+            if (words.length < 2)
+            {
+                // tell them the usage and bail
+                logSystemMessage("/poglist usage: /poglist <attribute name>");
+                logSystemMessage("Examples:");
+                logSystemMessage("    /poglist HP");
+                logSystemMessage("    /poglist Initiative");
+                logSystemMessage("Note: attribute names are case, whitespace, and punctuation-insensitive.");
+                return;
+            }
+
+            String name = UtilityFunctions.stitchTogetherWords(words, 1);
+            GametableMap map = m_gametableCanvas.getActiveMap();
+            List pogs = map.m_pogs;
+            logSystemMessage("Finding pogs with '" + name + "' attribute...");
+            int tally = 0;
+            for (int i = 0, size = pogs.size(); i < size; ++i)
+            {
+                Pog pog = (Pog)pogs.get(i);
+                String value = pog.getAttribute(name);
+                if (value != null && value.length() > 0)
+                {
+                    String pogText = pog.getText();
+                    if (pogText == null || pogText.length() == 0)
+                    {
+                        pogText = "<unknown>";
+                    }
+
+                    pogText += " - ";
+
+                    logSystemMessage("    " + pogText + name + ": " + value);
+                    ++tally;
+                }
+            }
+            logSystemMessage(tally + " pog" + (tally != 1 ? "s" : "") + " found.");
+        }
         else if (words[0].equals("//") || words[0].equals("/help"))
         {
             // list macro commands
@@ -2182,6 +2221,7 @@ public class GametableFrame extends JFrame implements ActionListener
             logSystemMessage("/macrodelete: deletes an unwanted macro");
             logSystemMessage("/roll: roll dice");
             logSystemMessage("/who: lists connected players");
+            logSystemMessage("/poglist: lists pogs by attribute");
             logSystemMessage("// or /help: list all slash commands");
         }
     }

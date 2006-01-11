@@ -41,7 +41,6 @@ public class UtilityFunctions
     public final static int     YES                 = 1;
     public final static int     CANCEL              = -1;
 
-    
     public static int getRandom(int max)
     {
         return random.nextInt(max);
@@ -619,6 +618,36 @@ public class UtilityFunctions
         }
 
         return ret;
+    }
+
+    public static String stitchTogetherWords(String[] words)
+    {
+        return stitchTogetherWords(words, 0, words.length);
+    }
+
+    public static String stitchTogetherWords(String[] words, int offset)
+    {
+        return stitchTogetherWords(words, offset, words.length - offset);
+    }
+
+    public static String stitchTogetherWords(String[] words, int offset, int length)
+    {
+        StringBuffer retVal = new StringBuffer();
+        if (length > words.length - offset)
+        {
+            length = words.length - offset;
+        }
+
+        for (int i = offset, max = offset + length; i < max; ++i)
+        {
+            retVal.append(words[i]);
+            if (i < (max - 1))
+            {
+                retVal.append(' ');
+            }
+        }
+
+        return retVal.toString();
     }
 
     /**
