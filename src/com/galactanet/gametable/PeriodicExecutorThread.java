@@ -17,7 +17,7 @@ import javax.swing.SwingUtilities;
  */
 public class PeriodicExecutorThread extends Thread
 {
-    private static final int INTERVAL = 150;
+    private static final int INTERVAL = 25;
     
     private Runnable task;
 

@@ -21,154 +21,103 @@ import com.galactanet.gametable.tools.NullTool;
 
 
 /**
- * TODO: comment
+ * The main map view of Gametable.
  * 
  * @author sephalon
  */
 public class GametableCanvas extends JComponent implements MouseListener, MouseMotionListener, MouseWheelListener
 {
-    public final static int   VALUE_X                = 0;
-    public final static int   VALUE_Y                = 1;
-
-    public final static int   SNAP_DISTANCE          = 8;
-
-    // drag modes
-    public final static int   TOOL_MODE_ARROW        = 0;
-    public final static int   TOOL_MODE_POINT        = 1;
-    public final static int   TOOL_MODE_PEN          = 2;
-    public final static int   TOOL_MODE_HAND         = 3;
-    public final static int   TOOL_MODE_ERASER       = 4;
-    public final static int   TOOL_MODE_LINE         = 5;
-
-    public final static int   NUM_POINT_CURSORS      = 8;
-    public final static int   POINT_CURSOR_OFFSET_X  = 5;
-    public final static int   POINT_CURSOR_OFFSET_Y  = 6;
-
     // grid modes
-    public final static int   GRID_MODE_NONE         = 0;
-    public final static int   GRID_MODE_SQUARES      = 1;
-    public final static int   GRID_MODE_HEX          = 2;
+    public final static int    GRID_MODE_NONE         = 0;
+    public final static int    GRID_MODE_SQUARES      = 1;
+    public final static int    GRID_MODE_HEX          = 2;
 
     // the size of a square at max zoom level (0)
-    public final static int   BASE_SQUARE_SIZE       = 64;
+    public final static int    BASE_SQUARE_SIZE       = 64;
 
-    public final static int   NUM_ZOOM_LEVELS        = 5;
+    public final static int    NUM_ZOOM_LEVELS        = 5;
 
-    private static final int  KEYBOARD_SCROLL_AMOUNT = 50;
+    private static final int   KEYBOARD_SCROLL_AMOUNT = 300;
+    private static final int   KEYBOARD_SCROLL_TIME   = 300;
 
-    public Image              m_mapBk;
+    /**
+     * This is the color used to overlay on top of the public layer when the user is on the private layer. It's white
+     * with 50% alpha
+     */
+    private static final Color OVERLAY_COLOR          = new Color(255, 255, 255, 128);
+
+    /**
+     * A singleton instance of the NULL tool.
+     */
+    private static final Tool  NULL_TOOL              = new NullTool();
+
+    private Image              m_mapBackground;
 
     // this is the map (or layer) that all players share
-    private GametableMap      m_publicMap            = new GametableMap(true);
-    private GametableMap      m_privateMap           = new GametableMap(false);
+    private GametableMap       m_publicMap            = new GametableMap(true);
+    private GametableMap       m_privateMap           = new GametableMap(false);
 
     // this points to whichever map is presently active
-    private GametableMap      m_activeMap;
+    private GametableMap       m_activeMap;
 
     // some cursors
-    Cursor                    m_handCursor;
-    Cursor                    m_penCursor;
-    Cursor                    m_emptyCursor;
-    Cursor                    m_eraserCursor;
-    Image[]                   m_pointCursorImages    = new Image[NUM_POINT_CURSORS];
+    private Cursor             m_emptyCursor;
+    private Image              m_pointingImage;
 
     // the frame
-    private GametableFrame    m_gametableFrame;
+    private GametableFrame     m_gametableFrame;
 
-    // zoom and top-left state
-
-    // This is the number of screen pixels that are
-    // used per model pixel. It's never less than 1
-    public int                m_zoom                 = 1;
+    /**
+     * This is the number of screen pixels that are used per model pixel. It's never less than 1
+     */
+    public int                 m_zoom                 = 1;
 
     // the size of a square at the current zoom level
-    public int                m_squareSize           = getSquareSizeForZoom(m_zoom);
-
-    // hand tool
-    int                       m_handToolStartX;
-    int                       m_handToolStartY;
-    int                       m_scrollStartX;
-    int                       m_scrollStartY;
+    public int                 m_squareSize           = getSquareSizeForZoom(m_zoom);
 
     // misc flags
-    boolean                   m_bSpaceKeyDown;
-    boolean                   m_bShiftKeyDown;
-    boolean                   m_bControlKeyDown;
-    boolean                   m_bAltKeyDown;
+    private boolean            m_bSpaceKeyDown;
+    private boolean            m_bShiftKeyDown;
+    private boolean            m_bControlKeyDown;
+    private boolean            m_bAltKeyDown;
 
-    // drag stuff
-    // where they first clicked
-    int                       m_clickX;
-    int                       m_clickY;
+    private boolean            m_newPogIsBeingDragged;
 
-    // where the mouse is now
-    int                       m_dragX;
-    int                       m_dragY;
+    private Point              m_mouseModelFloat;
+    private boolean            m_bMouseOnView;
 
-    // hand tool
-    int                       m_preClickScrollX;
-    int                       m_preClickScrollY;
+    private Pog                m_pogMouseOver;
 
-    // Pen tool
-    PenAsset                  m_penAsset;
+    private Point              m_startScroll;
+    private Point              m_deltaScroll;
+    private long               m_scrollTime;
+    private long               m_scrollTimeTotal;
+    private boolean            m_scrolling;
 
-    boolean                   m_bLDragging;
-    boolean                   m_bRDragging;
-    boolean                   m_bNeedToDrawPointCursor;
-    int                       m_toolMode;
+    SquareGridMode             m_squareGridMode       = new SquareGridMode();
+    HexGridMode                m_hexGridMode          = new HexGridMode();
+    GridMode                   m_noGridMode           = new GridMode();
+    GridMode                   m_gridMode;
 
-    Image                     m_offscreen;
-    int                       m_offscreenX;
-    int                       m_offscreenY;
+    private int                m_activeToolId         = -1;
 
-    boolean                   m_bPogBeingDragged;
-    Pog                       m_pogBeingDragged;
-    int                       m_pogDragInsetX;
-    int                       m_pogDragInsetY;
+    /**
+     * true if the current mouse action was initiated with a right-click
+     */
+    private boolean            m_rightClicking;
 
-    private Point             m_mouseModelAnchor;
-    private Point             m_mouseModelFloat;
-    boolean                   m_bMouseOnView;
+    /**
+     * the id of the tool that we switched out of to go to hand tool for a right-click
+     */
+    private int                m_previousToolId;
 
-    Pog                       m_pogMouseOver;
-
-    SquareGridMode            m_squareGridMode       = new SquareGridMode();
-    HexGridMode               m_hexGridMode          = new HexGridMode();
-    GridMode                  m_noGridMode           = new GridMode();
-    GridMode                  m_gridMode;
-
-    private int               m_activeToolId         = -1;
-    private static final Tool NULL_TOOL              = new NullTool();
-
-    public boolean            m_bRightClicking;                                      // true if
-    // the
-    // current
-    // mouse
-    // action
-    // was
-    // initiated
-    // with a
-    // right-click
-    public int                m_preRightClickToolID;                                 // the id of
-
-    // the tool
-    // that we
-    // switched
-    // out of to
-    // go to
-    // hand tool
-    // for a
-    // right-click
-
-    // this is the color used to overlay on top of the public layer
-    // when the user is on the private layer. It's white with 50% alpha
-    public Color              OVERLAY_COLOR          = new Color(255, 255, 255, 128);
-
+    /**
+     * Constructor.
+     */
     public GametableCanvas()
     {
         setFocusable(true);
         setRequestFocusEnabled(true);
-        requestFocus();
 
         addMouseListener(this);
         addMouseMotionListener(this);
@@ -341,7 +290,10 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
              */
             public void actionPerformed(ActionEvent e)
             {
-                m_bAltKeyDown = false;
+                if (m_bAltKeyDown)
+                {
+                    m_bAltKeyDown = false;
+                }
             }
         });
 
@@ -389,9 +341,14 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                     return;
                 }
 
+                if (m_scrolling)
+                {
+                    return;
+                }
+
                 GametableMap map = getActiveMap();
-                Point p = drawToModel(map.getScrollX(), map.getScrollY());
-                scrollMapTo(p.x, p.y - KEYBOARD_SCROLL_AMOUNT);
+                Point p = drawToModel(map.getScrollX(), map.getScrollY() - KEYBOARD_SCROLL_AMOUNT);
+                smoothScrollTo(p.x, p.y);
             }
         });
 
@@ -407,9 +364,14 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                     return;
                 }
 
+                if (m_scrolling)
+                {
+                    return;
+                }
+
                 GametableMap map = getActiveMap();
-                Point p = drawToModel(map.getScrollX(), map.getScrollY());
-                scrollMapTo(p.x, p.y + KEYBOARD_SCROLL_AMOUNT);
+                Point p = drawToModel(map.getScrollX(), map.getScrollY() + KEYBOARD_SCROLL_AMOUNT);
+                smoothScrollTo(p.x, p.y);
             }
         });
 
@@ -425,9 +387,14 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                     return;
                 }
 
+                if (m_scrolling)
+                {
+                    return;
+                }
+
                 GametableMap map = getActiveMap();
-                Point p = drawToModel(map.getScrollX(), map.getScrollY());
-                scrollMapTo(p.x - KEYBOARD_SCROLL_AMOUNT, p.y);
+                Point p = drawToModel(map.getScrollX() - KEYBOARD_SCROLL_AMOUNT, map.getScrollY());
+                smoothScrollTo(p.x, p.y);
             }
         });
 
@@ -443,9 +410,14 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                     return;
                 }
 
+                if (m_scrolling)
+                {
+                    return;
+                }
+
                 GametableMap map = getActiveMap();
-                Point p = drawToModel(map.getScrollX(), map.getScrollY());
-                scrollMapTo(p.x + KEYBOARD_SCROLL_AMOUNT, p.y);
+                Point p = drawToModel(map.getScrollX() + KEYBOARD_SCROLL_AMOUNT, map.getScrollY());
+                smoothScrollTo(p.x, p.y);
             }
         });
     }
@@ -453,16 +425,9 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     public void init(GametableFrame frame)
     {
         m_gametableFrame = frame;
-        m_mapBk = UtilityFunctions.getImage("assets/mapbk.png");
+        m_mapBackground = UtilityFunctions.getImage("assets/mapbk.png");
 
-        m_pointCursorImages[0] = UtilityFunctions.getImage("assets/whiteHand.png");
-        m_pointCursorImages[1] = UtilityFunctions.getImage("assets/brownHand.png");
-        m_pointCursorImages[2] = UtilityFunctions.getImage("assets/purpleHand.png");
-        m_pointCursorImages[3] = UtilityFunctions.getImage("assets/blueHand.png");
-        m_pointCursorImages[4] = UtilityFunctions.getImage("assets/redHand.png");
-        m_pointCursorImages[5] = UtilityFunctions.getImage("assets/greenHand.png");
-        m_pointCursorImages[6] = UtilityFunctions.getImage("assets/greyHand.png");
-        m_pointCursorImages[7] = UtilityFunctions.getImage("assets/yellowHand.png");
+        m_pointingImage = UtilityFunctions.getImage("assets/whiteHand.png");
 
         setPrimaryScroll(m_publicMap, 0, 0);
 
@@ -766,6 +731,27 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         return (m / BASE_SQUARE_SIZE);
     }
 
+    public void tick(long ms)
+    {
+        if (m_scrolling)
+        {
+            m_scrollTime += ms;
+            float pos = m_scrollTime / (float)m_scrollTimeTotal;
+            if (pos >= 1f)
+            {
+                scrollMapTo(m_startScroll.x + m_deltaScroll.x, m_startScroll.y + m_deltaScroll.y);
+                m_scrolling = false;
+            }
+            else
+            {
+                pos = (float)(Math.sin((pos * Math.PI) - (Math.PI / 2)) + 1) / 2;
+                int x = m_startScroll.x + Math.round(m_deltaScroll.x * pos);
+                int y = m_startScroll.y + Math.round(m_deltaScroll.y * pos);
+                scrollMapTo(x, y);
+            }
+        }
+    }
+
     /** *********************************************************** */
     // MouseListener/MouseMotionListener overrides:
     /** *********************************************************** */
@@ -798,8 +784,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     public void mousePressed(MouseEvent e)
     {
         requestFocus();
-        m_mouseModelAnchor = viewToModel(e.getX(), e.getY());
-        m_mouseModelFloat = m_mouseModelAnchor;
+        m_mouseModelFloat = viewToModel(e.getX(), e.getY());
         if (isPointing())
         {
             return;
@@ -808,21 +793,20 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         // this code deals with making a right click automatically be the hand tool
         if (e.getButton() == MouseEvent.BUTTON3)
         {
-            m_bRightClicking = true;
-            m_preRightClickToolID = m_activeToolId;
+            m_rightClicking = true;
+            m_previousToolId = m_activeToolId;
             setActiveTool(1); // HACK -- To hand tool
-            m_gametableFrame.getToolManager().mouseButtonPressed(m_mouseModelAnchor.x, m_mouseModelAnchor.y,
+            m_gametableFrame.getToolManager().mouseButtonPressed(m_mouseModelFloat.x, m_mouseModelFloat.y,
                 getModifierFlags());
         }
         else
         {
-            m_bRightClicking = false;
-        }
-
-        if (e.getButton() == MouseEvent.BUTTON1)
-        {
-            m_gametableFrame.getToolManager().mouseButtonPressed(m_mouseModelAnchor.x, m_mouseModelAnchor.y,
-                getModifierFlags());
+            m_rightClicking = false;
+            if (e.getButton() == MouseEvent.BUTTON1)
+            {
+                m_gametableFrame.getToolManager().mouseButtonPressed(m_mouseModelFloat.x, m_mouseModelFloat.y,
+                    getModifierFlags());
+            }
         }
 
     }
@@ -830,7 +814,6 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     public void mouseReleased(MouseEvent e)
     {
         m_mouseModelFloat = viewToModel(e.getX(), e.getY());
-        m_mouseModelAnchor = null;
         if (isPointing())
         {
             return;
@@ -838,11 +821,11 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         m_gametableFrame.getToolManager().mouseButtonReleased(m_mouseModelFloat.x, m_mouseModelFloat.y,
             getModifierFlags());
 
-        if (m_bRightClicking)
+        if (m_rightClicking)
         {
             // return to arrow too
-            setActiveTool(m_preRightClickToolID);
-            m_bRightClicking = false;
+            setActiveTool(m_previousToolId);
+            m_rightClicking = false;
         }
     }
 
@@ -966,25 +949,22 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         // So start with the zoom
         setZoom(zoomLevel);
 
-        // find the view coordinate for the model center
-        setPrimaryScroll(m_publicMap, 0, 0);
-
-        // we need to get the coords for the shared map, even if we're not on that at the moment
-        // so we cheezily set to the shared map, then return it to normal after the
-        // call to modelToView
-        GametableMap storedMap = m_activeMap;
-        m_activeMap = m_publicMap;
         Point viewCenter = modelToView(modelCenterX, modelCenterY);
-        m_activeMap = storedMap;
 
         // find where the top left would have to be, based on our size
         int tlX = viewCenter.x - getWidth() / 2;
         int tlY = viewCenter.y - getHeight() / 2;
 
         // that is our new scroll position
-        setPrimaryScroll(m_publicMap, tlX, tlY);
-
-        repaint();
+        Point newModelPoint = viewToModel(tlX, tlY);
+        if (PacketSourceState.isHostDumping())
+        {
+            scrollMapTo(newModelPoint.x, newModelPoint.y);
+        }
+        else
+        {
+            smoothScrollTo(newModelPoint.x, newModelPoint.y);
+        }
     }
 
     public void setPogSize(int id, int size)
@@ -1142,12 +1122,6 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
             getActiveMap().removePog(toRemove);
         }
 
-        // if they were dragging that pog, stop it
-        if (m_bLDragging && m_pogBeingDragged != null && m_pogBeingDragged.getId() == id)
-        {
-            m_pogBeingDragged = null;
-            m_gametableFrame.logSystemMessage("The pog you were holding disappears out of your hands!");
-        }
         repaint();
     }
 
@@ -1290,7 +1264,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     // called by the pogs area when a pog is being dragged
     public void pogDrag()
     {
-        m_bPogBeingDragged = true;
+        m_newPogIsBeingDragged = true;
         updatePogDropLoc();
 
         repaint();
@@ -1306,7 +1280,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     public void pogDrop()
     {
-        m_bPogBeingDragged = false;
+        m_newPogIsBeingDragged = false;
         updatePogDropLoc();
 
         Pog pog = getPogPanel().getGrabbedPog();
@@ -1403,6 +1377,16 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         m_gridMode.snapPogToGrid(pog);
     }
 
+    public void smoothScrollTo(int modelX, int modelY)
+    {
+        GametableMap map = getActiveMap();
+        m_startScroll = drawToModel(map.getScrollX(), map.getScrollY());
+        m_deltaScroll = new Point(modelX - m_startScroll.x, modelY - m_startScroll.y);
+        m_scrollTime = 0;
+        m_scrollTimeTotal = KEYBOARD_SCROLL_TIME;
+        m_scrolling = true;
+    }
+
     public void scrollMapTo(int modelX, int modelY)
     {
         Point target = modelToDraw(modelX, modelY);
@@ -1426,7 +1410,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     public void centerZoom(int delta)
     {
         // can't do this at all if we're dragging
-        if (m_bLDragging || m_bRDragging || m_bPogBeingDragged)
+        if (m_newPogIsBeingDragged)
         {
             return;
         }
@@ -1576,7 +1560,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         {
             // if they're dragging an underlay, draw it here
             // there could be a pog drag in progress
-            if (m_bPogBeingDragged)
+            if (m_newPogIsBeingDragged)
             {
                 if (isPointVisible(getPogDragMousePosition()))
                 {
@@ -1586,16 +1570,6 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                     {
                         pog.drawGhostlyToCanvas(g);
                     }
-                }
-            }
-
-            // there could be an internal pog move being done. we draw it again here to ensure
-            // it's on top of the heap
-            if (m_pogBeingDragged != null)
-            {
-                if (m_pogBeingDragged.isUnderlay())
-                {
-                    m_pogBeingDragged.drawToCanvas(g);
                 }
             }
         }
@@ -1631,7 +1605,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         if (mapToDraw == getActiveMap())
         {
             // there could be a pog drag in progress
-            if (m_bPogBeingDragged)
+            if (m_newPogIsBeingDragged)
             {
                 if (isPointVisible(getPogDragMousePosition()))
                 {
@@ -1656,13 +1630,11 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
             {
                 // draw this player's point cursor
                 Point pointingAt = modelToDraw(plr.getPoint().x, plr.getPoint().y);
-                int idx = i % m_pointCursorImages.length;
-                Image hand = m_pointCursorImages[idx];
 
                 // 5px offset to align with mouse pointer
                 int drawX = pointingAt.x;
                 int drawY = pointingAt.y - 5;
-                g.drawImage(hand, drawX, drawY, null);
+                g.drawImage(m_pointingImage, drawX, drawY, null);
                 FontMetrics fm = g.getFontMetrics();
                 drawY -= fm.getHeight() + 2;
                 Rectangle r = fm.getStringBounds(plr.getCharacterName(), g).getBounds();
@@ -1725,31 +1697,31 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     public void drawMatte(Graphics g, int topLeftX, int topLeftY, int width, int height)
     {
         // background image
-        int qx = Math.abs(topLeftX) / m_mapBk.getWidth(null);
+        int qx = Math.abs(topLeftX) / m_mapBackground.getWidth(null);
         if (topLeftX < 0)
         {
             qx++;
             qx = -qx;
         }
 
-        int qy = Math.abs(topLeftY) / m_mapBk.getHeight(null);
+        int qy = Math.abs(topLeftY) / m_mapBackground.getHeight(null);
         if (topLeftY < 0)
         {
             qy++;
             qy = -qy;
         }
 
-        int linesXOffset = qx * m_mapBk.getWidth(null);
-        int linesYOffset = qy * m_mapBk.getHeight(null);
-        int vLines = width / m_mapBk.getWidth(null) + 2;
-        int hLines = height / m_mapBk.getHeight(null) + 2;
+        int linesXOffset = qx * m_mapBackground.getWidth(null);
+        int linesYOffset = qy * m_mapBackground.getHeight(null);
+        int vLines = width / m_mapBackground.getWidth(null) + 2;
+        int hLines = height / m_mapBackground.getHeight(null) + 2;
 
         for (int i = 0; i < vLines; i++)
         {
             for (int j = 0; j < hLines; j++)
             {
-                g.drawImage(m_mapBk, i * m_mapBk.getWidth(null) + linesXOffset, j * m_mapBk.getHeight(null)
-                    + linesYOffset, null);
+                g.drawImage(m_mapBackground, i * m_mapBackground.getWidth(null) + linesXOffset, j
+                    * m_mapBackground.getHeight(null) + linesYOffset, null);
             }
         }
     }

@@ -73,17 +73,17 @@ public class GametableFrame extends JFrame implements ActionListener
     /**
      * Default password for when there is no prefs file.
      */
-    private static final String DEFAULT_PASSWORD = "";
+    private static final String   DEFAULT_PASSWORD        = "";
 
     /**
      * Default server for when there is no prefs file.
      */
-    private static final String DEFAULT_SERVER = "localhost";
-    
+    private static final String   DEFAULT_SERVER          = "localhost";
+
     /**
-     * Default Character name for when there is no prefs file. 
+     * Default Character name for when there is no prefs file.
      */
-    private static final String DEFAULT_CHARACTER_NAME = "Anonymous";
+    private static final String   DEFAULT_CHARACTER_NAME  = "Anonymous";
 
     /**
      * The version of the communications protocal used by this build. This needs to change whenever an incompatibility
@@ -113,6 +113,7 @@ public class GametableFrame extends JFrame implements ActionListener
                                                           };
 
     private final static boolean  DEBUG_FOCUS             = false;
+    private final static boolean  SEND_PINGS              = false;
 
     /**
      * The global gametable instance.
@@ -170,6 +171,7 @@ public class GametableFrame extends JFrame implements ActionListener
     private PeriodicExecutorThread m_executorThread;
 
     private long                   m_lastPingTime           = 0;
+    private long                   m_lastTickTime           = 0;
 
     public Color                   m_drawColor              = Color.BLACK;
 
@@ -469,7 +471,7 @@ public class GametableFrame extends JFrame implements ActionListener
             }
         });
 
-        m_gametableCanvas.requestFocus();
+        initializeExecutorThread();
     }
 
     /**
@@ -1052,7 +1054,7 @@ public class GametableFrame extends JFrame implements ActionListener
             postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
         }
     }
-    
+
     /**
      * @return Returns the m_netStatus.
      */
@@ -1557,9 +1559,6 @@ public class GametableFrame extends JFrame implements ActionListener
             send(PacketManager.makeAddPogPacket(pog), player);
         }
 
-        // let them know we're done sending them data from the login
-        send(PacketManager.makeLoginCompletePacket(), player);
-
         // finally, have the player recenter on the host's view
         int viewCenterX = getGametableCanvas().getWidth() / 2;
         int viewCenterY = getGametableCanvas().getHeight() / 2;
@@ -1567,6 +1566,9 @@ public class GametableFrame extends JFrame implements ActionListener
         // convert to model coordinates
         Point modelCenter = getGametableCanvas().viewToModel(viewCenterX, viewCenterY);
         send(PacketManager.makeRecenterPacket(modelCenter.x, modelCenter.y, getGametableCanvas().m_zoom), player);
+
+        // let them know we're done sending them data from the login
+        send(PacketManager.makeLoginCompletePacket(), player);
     }
 
     public void sendCastInfo()
@@ -1629,7 +1631,6 @@ public class GametableFrame extends JFrame implements ActionListener
         m_networkThread.start();
         // TODO: fix hosting failure detection
 
-        initializeExecutorThread();
         m_netStatus = NETSTATE_HOST;
         String message = "Hosting on port: " + m_port;
         logSystemMessage(message);
@@ -1704,7 +1705,6 @@ public class GametableFrame extends JFrame implements ActionListener
 
             // and now we're ready to pay attention
             m_netStatus = NETSTATE_JOINED;
-            initializeExecutorThread();
 
             logSystemMessage("Joined game");
 
@@ -1873,6 +1873,35 @@ public class GametableFrame extends JFrame implements ActionListener
         getGametableCanvas().requestFocus();
 
         repaint();
+    }
+
+    /**
+     * Invokes the whole addDieMacro dialog process.
+     */
+    public void addDieMacro()
+    {
+        NewMacroDialog dialog = new NewMacroDialog();
+        dialog.setVisible(true);
+
+        if (dialog.isAccepted())
+        {
+            // extrace the macro from the controls and add it
+            String name = dialog.getMacroName();
+            String macro = dialog.getMacroDefinition();
+            if (getMacro(name) != null)
+            {
+                int result = UtilityFunctions.yesNoDialog(GametableFrame.this, "You already have a macro named \""
+                    + name + "\", " + "are you sure you want to replace it with \"" + macro + "\"?", "Replace Macro?");
+                if (result == UtilityFunctions.YES)
+                {
+                    addMacro(name, macro);
+                }
+            }
+            else
+            {
+                addMacro(name, macro);
+            }
+        }
     }
 
     public ToolManager getToolManager()
@@ -2451,6 +2480,53 @@ public class GametableFrame extends JFrame implements ActionListener
         refreshPogList();
     }
 
+    private void tick()
+    {
+        long now = System.currentTimeMillis();
+        long diff = now - m_lastTickTime;
+        if (m_lastTickTime == 0)
+        {
+            diff = 0;
+        }
+        m_lastTickTime = now;
+        tick(diff);
+    }
+
+    private void tick(long ms)
+    {
+        // System.out.println("tick(" + ms + ")");
+        NetworkThread thread = m_networkThread;
+        if (thread != null)
+        {
+            Set lostConnections = thread.getLostConnections();
+            Iterator iterator = lostConnections.iterator();
+            while (iterator.hasNext())
+            {
+                Connection connection = (Connection)iterator.next();
+                connectionDropped(connection);
+            }
+
+            List packets = thread.getPackets();
+            iterator = packets.iterator();
+            while (iterator.hasNext())
+            {
+                Packet packet = (Packet)iterator.next();
+                packetReceived(packet.getSource(), packet.getData());
+            }
+
+            if (SEND_PINGS)
+            {
+                m_lastPingTime += ms;
+                if (m_lastPingTime >= PING_INTERVAL)
+                {
+                    send(PacketManager.makePingPacket());
+                    m_lastPingTime -= PING_INTERVAL;
+                }
+            }
+        }
+        m_gametableCanvas.tick(ms);
+    }
+
     private void initializeExecutorThread()
     {
         if (m_executorThread != null)
@@ -2464,31 +2540,7 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             public void run()
             {
-                NetworkThread thread = m_networkThread;
-                if (thread != null)
-                {
-                    Set lostConnections = thread.getLostConnections();
-                    Iterator iterator = lostConnections.iterator();
-                    while (iterator.hasNext())
-                    {
-                        Connection connection = (Connection)iterator.next();
-                        connectionDropped(connection);
-                    }
-
-                    List packets = thread.getPackets();
-                    iterator = packets.iterator();
-                    while (iterator.hasNext())
-                    {
-                        Packet packet = (Packet)iterator.next();
-                        packetReceived(packet.getSource(), packet.getData());
-                    }
-
-                    if (System.currentTimeMillis() - m_lastPingTime >= PING_INTERVAL)
-                    {
-                        send(PacketManager.makePingPacket());
-                        m_lastPingTime = System.currentTimeMillis();
-                    }
-                }
+                tick();
             }
         });
         m_executorThread.start();
@@ -2502,35 +2554,5 @@ public class GametableFrame extends JFrame implements ActionListener
         saveState(getGametableCanvas().getPublicMap(), new File("autosave.grm"));
         saveState(getGametableCanvas().getPrivateMap(), new File("autosavepvt.grm"));
         savePrefs();
-    }
-
-    /**
-     * Invokes the whole addDieMacro dialog process.
-     */
-    public void addDieMacro()
-    {
-        NewMacroDialog dialog = new NewMacroDialog();
-        dialog.setVisible(true);
-
-        if (dialog.isAccepted())
-        {
-            // extrace the macro from the controls and add it
-            String name = dialog.getMacroName();
-            String macro = dialog.getMacroDefinition();
-            if (getMacro(name) != null)
-            {
-                int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
-                    "You already have a macro named \"" + name + "\", "
-                        + "are you sure you want to replace it with \"" + macro + "\"?", "Replace Macro?");
-                if (result == UtilityFunctions.YES)
-                {
-                    addMacro(name, macro);
-                }
-            }
-            else
-            {
-                addMacro(name, macro);
-            }
-        }
     }
 }
