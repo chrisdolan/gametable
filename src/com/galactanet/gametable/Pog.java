@@ -6,7 +6,6 @@
 package com.galactanet.gametable;
 
 import java.awt.*;
-import java.awt.image.ImageObserver;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -60,7 +59,7 @@ public class Pog
     {
         public String name;
         public String value;
-        
+
         public Attribute(String n, String v)
         {
             name = n;
@@ -73,49 +72,54 @@ public class Pog
     /**
      * Unique global Id for pogs.
      */
-    public static int          g_nextId                   = 10;
+    public static int       g_nextId               = 10;
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
     /**
      * The PogType of this Pog.
      */
-    private PogType            m_pogType;
+    private PogType         m_pogType;
 
     /**
      * Lame handle to canvas.
      */
-    private GametableCanvas    m_canvas;
+    private GametableCanvas m_canvas;
 
     /**
      * Position of the pog on the map in map coordinates.
      */
-    private Point              m_position                 = new Point(0, 0);
+    private Point           m_position             = new Point(0, 0);
 
     /**
      * The primary label for the Pog.
      */
-    private String             m_text                     = "";
+    private String          m_text                 = "";
 
     /**
      * The unique id of this pog.
      */
-    private int                m_id                       = 0;
+    private int             m_id                   = 0;
+
+    /**
+     * Scale for this pog.
+     */
+    private float           m_scale                = 1f;
 
     /**
      * Is this pog tinted?
      */
-    private boolean            m_bTinted                  = false;
+    private boolean         m_bTinted              = false;
 
     /**
      * True if this pog is notifying the world that it's text had changed.
      */
-    private boolean            m_bTextChangeNotifying     = false;
+    private boolean         m_bTextChangeNotifying = false;
 
     /**
      * Name/value pairs of the attributes assigned to this pog.
      */
-    private Map                m_attributes               = new TreeMap();
+    private Map             m_attributes           = new TreeMap();
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -152,6 +156,7 @@ public class Pog
         m_text = dis.readUTF();
         // boolean underlay =
         dis.readBoolean();
+        m_scale = dis.readFloat();
         int numAttributes = dis.readInt();
         m_attributes.clear();
         for (int i = 0; i < numAttributes; i++)
@@ -175,6 +180,7 @@ public class Pog
         m_position = orig.m_position;
         m_pogType = orig.m_pogType;
         m_canvas = orig.m_canvas;
+        m_scale = orig.m_scale;
         m_text = new String(orig.m_text);
     }
 
@@ -213,12 +219,22 @@ public class Pog
 
     public int getWidth()
     {
-        return m_pogType.getWidth();
+        if (m_scale == 1f)
+        {
+            return m_pogType.getWidth();
+        }
+
+        return Math.round(m_pogType.getWidth() * m_scale);
     }
 
     public int getHeight()
     {
-        return m_pogType.getHeight();
+        if (m_scale == 1f)
+        {
+            return m_pogType.getHeight();
+        }
+
+        return Math.round(m_pogType.getHeight() * m_scale);
     }
 
     public boolean isUnderlay()
@@ -259,7 +275,12 @@ public class Pog
 
     public int getFaceSize()
     {
-        return m_pogType.getFaceSize();
+        if (m_scale == 1f)
+        {
+            return m_pogType.getFaceSize();
+        }
+
+        return Math.round(m_pogType.getFaceSize() * m_scale);
     }
 
     public boolean testHit(Point modelPoint)
@@ -269,7 +290,7 @@ public class Pog
 
     public boolean testHit(int modelX, int modelY)
     {
-        return m_pogType.testHit(modelToPog(modelX, modelY));
+        return testHit(new Point(modelX, modelY));
     }
 
     public Point getPosition()
@@ -341,19 +362,32 @@ public class Pog
         displayPogDataChange();
     }
 
-    // --- Drawing ---
-
-    public void draw(Graphics g, int x, int y, ImageObserver observer)
+    public void setFaceSize(int faceSize)
     {
-        m_pogType.draw(g, x, y);
+        if (faceSize < 0)
+        {
+            m_scale = 1;
+            return;
+        }
+
+        if (faceSize == 0)
+        {
+            m_scale = 1f / (m_pogType.getFaceSize() * 2f);
+            return;
+        }
+
+        m_scale = (float)faceSize / (float)m_pogType.getFaceSize();
+
     }
+
+    // --- Drawing ---
 
     public void drawScaled(Graphics g, int x, int y)
     {
         // we have to work with ratios, cause the pog could be large or huge, gargantuan, etc.
         float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
             / (float)GametableCanvas.BASE_SQUARE_SIZE;
-        m_pogType.drawScaled(g, x, y, scale);
+        m_pogType.drawScaled(g, x, y, scale * m_scale);
     }
 
     public void drawGhostlyToCanvas(Graphics g)
@@ -371,12 +405,12 @@ public class Pog
         float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
             / (float)GametableCanvas.BASE_SQUARE_SIZE;
 
-        m_pogType.drawScaled(g, drawCoords.x, drawCoords.y, scale);
+        m_pogType.drawScaled(g, drawCoords.x, drawCoords.y, scale * m_scale);
 
         // if we're tinted, draw tinted
         if (m_bTinted)
         {
-            m_pogType.drawTint(g, drawCoords.x, drawCoords.y, scale, Color.GREEN);
+            m_pogType.drawTint(g, drawCoords.x, drawCoords.y, scale * m_scale, Color.GREEN);
         }
     }
 
@@ -406,6 +440,7 @@ public class Pog
         dos.writeInt(m_id);
         dos.writeUTF(m_text);
         dos.writeBoolean(isUnderlay());
+        dos.writeFloat(m_scale);
         dos.writeInt(m_attributes.size());
         for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
         {
@@ -451,12 +486,12 @@ public class Pog
 
     private Point modelToPog(Point modelPoint)
     {
-        return new Point(modelPoint.x - m_position.x, modelPoint.y - m_position.y);
-    }
+        int x = modelPoint.x - m_position.x;
+        x = Math.round(x / m_scale);
+        int y = modelPoint.y - m_position.y;
+        y = Math.round(y / m_scale);
 
-    private Point modelToPog(int modelX, int modelY)
-    {
-        return new Point(modelX - m_position.x, modelY - m_position.y);
+        return new Point(x, y);
     }
 
     private void drawStringToCanvas(Graphics gr, boolean bForceTextInBounds, Color backgroundColor)

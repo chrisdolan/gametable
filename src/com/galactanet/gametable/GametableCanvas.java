@@ -987,6 +987,36 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         repaint();
     }
 
+    public void setPogSize(int id, int size)
+    {
+        if (isPublicMap())
+        {
+            m_gametableFrame.send(PacketManager.makePogSizePacket(id, size));
+
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
+            {
+                doSetPogSize(id, size);
+            }
+        }
+        else
+        {
+            doSetPogSize(id, size);
+        }
+    }
+
+    public void doSetPogSize(int id, int size)
+    {
+        Pog pog = getPogByID(id);
+        if (pog == null)
+        {
+            return;
+        }
+
+        pog.setFaceSize(size);
+        snapPogToGrid(pog);
+        repaint();
+    }
+
     public void setPogData(int id, String s, Map toAdd, Set toDelete)
     {
         if (isPublicMap())
@@ -1480,7 +1510,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
             HINTS.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
             HINTS.put(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
             HINTS.put(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
-            HINTS.put(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+            HINTS.put(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
             HINTS.put(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
             HINTS.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
             HINTS.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);

@@ -362,7 +362,7 @@ public class PogType
             return m_image;
         }
         
-        if (m_lastScaledImage == null || Math.round(m_lastScale * 10) != Math.round(scale * 10))
+        if (m_lastScaledImage == null || Math.round(m_lastScale * 100) != Math.round(scale * 100))
         {
             //System.out.println(this + " scale: " + m_lastScale + " -> " + scale);  
             m_lastScale = scale;

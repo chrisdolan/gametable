@@ -80,6 +80,8 @@ public class PacketManager
     // a redo packet
     public static final int PACKET_REDO           = 18;
 
+    // a pog size packet
+    public static final int PACKET_POG_SIZE       = 19;
 
     // --- Static Members --------------------------------------------------------------------------------------------
 
@@ -234,6 +236,12 @@ public class PacketManager
                 }
                 break;
 
+                case PACKET_POG_SIZE:
+                {
+                    readPogSizePacket(dis);
+                }
+                break;
+
                 default:
                 {
                     throw new IllegalArgumentException("Unknown packet");
@@ -303,6 +311,8 @@ public class PacketManager
                 return "PACKET_UNDO";
             case PACKET_REDO:
                 return "PACKET_REDO";
+            case PACKET_POG_SIZE:
+                return "PACKET_POG_SIZE";
             default:
                 return "PACKET_UNKNOWN";
         }
@@ -872,7 +882,6 @@ public class PacketManager
             Log.log(Log.SYS, ex);
         }
     }
-    
 
     /* *********************** RECENTER PACKET *********************************** */
 
@@ -1402,6 +1411,44 @@ public class PacketManager
         // tell the model
         GametableFrame gtFrame = GametableFrame.getGametableFrame();
         gtFrame.pingPacketReceived();
+    }
+
+    /* *********************** POG_SIZE PACKET *********************************** */
+
+    public static byte[] makePogSizePacket(int id, int size)
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_POG_SIZE);
+            dos.writeInt(id);
+            dos.writeInt(size);
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
+    public static void readPogSizePacket(DataInputStream dis)
+    {
+        try
+        {
+            int id = dis.readInt();
+            int size = dis.readInt();
+
+            // tell the model
+            GametableFrame.getGametableFrame().pogSizePacketReceived(id, size);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
     }
 
     // --- Constructors ----------------------------------------------------------------------------------------------

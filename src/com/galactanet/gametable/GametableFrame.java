@@ -1235,6 +1235,16 @@ public class GametableFrame extends JFrame implements ActionListener
         repaint();
     }
 
+    public void pogSizePacketReceived(int id, int size)
+    {
+        getGametableCanvas().doSetPogSize(id, size);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            m_networkThread.send(PacketManager.makePogSizePacket(id, size));
+        }
+    }
+
     public void pointPacketReceived(int plrIdx, int x, int y, boolean bPointing)
     {
         // we're not interested in point packets of our own hand
