@@ -71,7 +71,6 @@ public class ChatLogPane extends JPanel implements Scrollable
 		
 		public void draw(Graphics g)
 		{
-			Font oldFont = g.getFont();
 			g.setFont(getFontForRun());
 			g.setColor(m_fontColor);
 			g.drawString(m_text, m_startX, m_startY);

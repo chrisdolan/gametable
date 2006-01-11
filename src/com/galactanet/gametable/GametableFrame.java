@@ -71,6 +71,21 @@ public class GametableFrame extends JFrame implements ActionListener
     }
 
     /**
+     * Default password for when there is no prefs file.
+     */
+    private static final String DEFAULT_PASSWORD = "";
+
+    /**
+     * Default server for when there is no prefs file.
+     */
+    private static final String DEFAULT_SERVER = "localhost";
+    
+    /**
+     * Default Character name for when there is no prefs file. 
+     */
+    private static final String DEFAULT_CHARACTER_NAME = "Anonymous";
+
+    /**
      * The version of the communications protocal used by this build. This needs to change whenever an incompatibility
      * arises betwen versions.
      */
@@ -130,10 +145,10 @@ public class GametableFrame extends JFrame implements ActionListener
     private int                    m_myPlayerIndex;
 
     public String                  m_playerName             = System.getProperty("user.name");
-    public String                  m_characterName          = "Nochar";
-    public String                  m_ipAddress              = "localhost";
+    public String                  m_characterName          = DEFAULT_CHARACTER_NAME;
+    public String                  m_ipAddress              = DEFAULT_SERVER;
     public int                     m_port                   = DEFAULT_PORT;
-    public String                  m_password               = "";
+    public String                  m_password               = DEFAULT_PASSWORD;
 
     private JPanel                 m_textAndEntryPanel      = new JPanel();
     private JTextField             m_textEntry              = new JTextField();
@@ -163,9 +178,6 @@ public class GametableFrame extends JFrame implements ActionListener
     private Dimension              m_windowSize;
     private boolean                m_bMaximized;
 
-    // a flag to tell the app
-    // not to size or center us.
-    public boolean                 m_bLoadedState;
     private JTabbedPane            m_pogsTabbedPane         = new JTabbedPane();
     private JComboBox              m_colorCombo             = new JComboBox(COLORS);
 
@@ -276,7 +288,7 @@ public class GametableFrame extends JFrame implements ActionListener
                     postMessage(getMyPlayer().getCharacterName() + "> " + entered);
                 }
 
-                m_textEntry.setText("");
+                m_textEntry.setText(DEFAULT_PASSWORD);
             }
         });
 
@@ -311,7 +323,7 @@ public class GametableFrame extends JFrame implements ActionListener
                     {
                         if (m_textSentLoc == m_textSent.size())
                         {
-                            m_textEntry.setText("");
+                            m_textEntry.setText(DEFAULT_PASSWORD);
                         }
                         else
                         {
@@ -491,7 +503,7 @@ public class GametableFrame extends JFrame implements ActionListener
                 m_toolButtonGroup.add(button);
                 m_toolButtons[toolId] = button;
 
-                String keyInfo = "";
+                String keyInfo = DEFAULT_PASSWORD;
                 if (info.getQuickKey() != null)
                 {
                     String actionId = "tool" + toolId + "Action";
@@ -1389,7 +1401,7 @@ public class GametableFrame extends JFrame implements ActionListener
             // remove this player
             m_players.remove(dead);
             sendCastInfo();
-            postSystemMessage("" + dead.getPlayerName() + " has left the session");
+            postSystemMessage(DEFAULT_PASSWORD + dead.getPlayerName() + " has left the session");
         }
         else
         {
@@ -2012,7 +2024,7 @@ public class GametableFrame extends JFrame implements ActionListener
                 Player player = (Player)m_players.get(i);
                 logSystemMessage("   " + player.toString());
             }
-            logSystemMessage(m_players.size() + " player" + (m_players.size() > 1 ? "s" : ""));
+            logSystemMessage(m_players.size() + " player" + (m_players.size() > 1 ? "s" : DEFAULT_PASSWORD));
         }
         else if (words[0].equals("/roll"))
         {
@@ -2266,8 +2278,6 @@ public class GametableFrame extends JFrame implements ActionListener
 
             prefDis.close();
             prefFile.close();
-
-            m_bLoadedState = true;
         }
         catch (FileNotFoundException ex1)
         {
