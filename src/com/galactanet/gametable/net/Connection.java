@@ -95,12 +95,14 @@ public class Connection
      */
     public boolean isConnected()
     {
-        return channel.isConnected() && thread != null;
+        //System.out.println(this + " connected: " + channel.socket().isConnected());  
+        return channel.socket().isConnected() && thread != null;
     }
 
     public boolean isDead()
     {
-        return (!channel.isConnected() && state != State.PENDING_CONNECTION);
+        //System.out.println(this + " connected2: " + channel.socket().isConnected());  
+        return (!channel.socket().isConnected() && state != State.PENDING_CONNECTION);
     }
 
     public void markLoggedIn()
