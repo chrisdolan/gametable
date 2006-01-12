@@ -10,12 +10,13 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 
 import javax.swing.*;
-import javax.swing.text.*;
-import javax.swing.text.html.CSS;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.Caret;
+import javax.swing.text.StyleConstants;
 import javax.swing.text.html.HTMLDocument;
 
 
@@ -256,16 +257,16 @@ public class HtmlTestDialog extends JDialog
         return entryBox;
     }
 
-    private static void dumpAttributes(AttributeSet set)
-    {
-        System.out.println("Set = " + set + " (" + set.getClass() + ")");
-        for (Enumeration e = set.getAttributeNames(); e.hasMoreElements();)
-        {
-            Object name = e.nextElement();
-            Object value = set.getAttribute(name);
-            System.out.println("\t" + name + " (" + name.getClass() + ") => " + value + "(" + value.getClass() + ")");
-        }
-    }
+//    private static void dumpAttributes(AttributeSet set)
+//    {
+//        System.out.println("Set = " + set + " (" + set.getClass() + ")");
+//        for (Enumeration e = set.getAttributeNames(); e.hasMoreElements();)
+//        {
+//            Object name = e.nextElement();
+//            Object value = set.getAttribute(name);
+//            System.out.println("\t" + name + " (" + name.getClass() + ") => " + value + "(" + value.getClass() + ")");
+//        }
+//    }
 
     private static AttributeSet getCleanStyle(HTMLDocument doc, String name)
     {
