@@ -152,7 +152,7 @@ public class GametableFrame extends JFrame implements ActionListener
     public String                  m_password               = DEFAULT_PASSWORD;
 
     private JPanel                 m_textAndEntryPanel      = new JPanel();
-    private JTextField             m_textEntry              = new JTextField();
+    private ChatLogEntryPane       m_textEntry              = new ChatLogEntryPane();
     private ChatLogPane            m_chatLog                = new ChatLogPane();
     private JSplitPane             m_mapChatSplitPane       = new JSplitPane();
 
@@ -260,39 +260,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
         m_textAndEntryPanel.setLayout(new BorderLayout());
 
-        m_textEntry.addActionListener(new ActionListener()
-        {
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(ActionEvent e)
-            {
-                // they hit return on the text bar
-                String entered = m_textEntry.getText().trim();
-                if (entered.length() == 0)
-                {
-                    // useless string.
-                    // return focus to the map
-                    getGametableCanvas().requestFocus();
-                    return;
-                }
 
-                m_textSent.add(entered);
-                m_textSentLoc = m_textSent.size();
-
-                // parse for commands
-                if (entered.charAt(0) == '/')
-                {
-                    parseSlashCommand(entered);
-                }
-                else
-                {
-                    postMessage(getMyPlayer().getCharacterName() + "> " + entered);
-                }
-
-                m_textEntry.setText(DEFAULT_PASSWORD);
-            }
-        });
 
         m_textEntry.addKeyListener(new KeyAdapter()
         {
@@ -332,6 +300,12 @@ public class GametableFrame extends JFrame implements ActionListener
                             m_textEntry.setText((String)m_textSent.get(m_textSentLoc));
                         }
                     }
+                }
+                
+                // HACK for testing
+                if ( code == KeyEvent.VK_SCROLL_LOCK )
+                {
+                	m_textEntry.bold();
                 }
             }
         });
@@ -454,9 +428,19 @@ public class GametableFrame extends JFrame implements ActionListener
                 {
                     return;
                 }
-
-                m_textEntry.setText("/");
-                m_textEntry.requestFocus();
+                
+                // only do this at the start of a line
+                if ( m_textEntry.getText().length() == 0 )
+                {
+                	// furthermore, only do the set text and focusing if we don't have
+                	// focus (otherwise, we end up with two slashes. One from the user typing it, and
+                	// another from us setting the text, cause our settext happens first.)
+                	if ( KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() != m_textEntry )
+                	{
+		                m_textEntry.setText("/");
+		                m_textEntry.requestFocus();
+                	}
+                }
             }
         });
 
@@ -472,6 +456,34 @@ public class GametableFrame extends JFrame implements ActionListener
         });
 
         initializeExecutorThread();
+    }
+    
+    public void textEntryEnterKey()
+    {
+        // they hit return on the text bar
+        String entered = m_textEntry.getUserText().trim();
+        if (entered.length() == 0)
+        {
+            // useless string.
+            // return focus to the map
+            getGametableCanvas().requestFocus();
+            return;
+        }
+
+        m_textSent.add(entered);
+        m_textSentLoc = m_textSent.size();
+
+        // parse for commands
+        if (entered.charAt(0) == '/')
+        {
+            parseSlashCommand(entered);
+        }
+        else
+        {
+            postMessage(getMyPlayer().getCharacterName() + "> " + entered);
+        }
+
+        m_textEntry.clear();
     }
 
     /**
