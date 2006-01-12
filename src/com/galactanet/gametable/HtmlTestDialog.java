@@ -267,12 +267,12 @@ public class HtmlTestDialog extends JDialog
         }
     }
 
-    private AttributeSet getCleanStyle(HTMLDocument doc, String name)
+    private static AttributeSet getCleanStyle(HTMLDocument doc, String name)
     {
         return doc.getStyleSheet().removeAttribute(doc.getStyle(name), StyleConstants.NameAttribute);
     }
 
-    private void applyStyle(HTMLDocument doc, int start, int end, AttributeSet styleOn, AttributeSet styleOff)
+    private static void applyStyle(HTMLDocument doc, int start, int end, AttributeSet styleOn, AttributeSet styleOff)
     {
         boolean allSet = true;
 
