@@ -301,12 +301,6 @@ public class GametableFrame extends JFrame implements ActionListener
                         }
                     }
                 }
-                
-                // HACK for testing
-                if ( code == KeyEvent.VK_SCROLL_LOCK )
-                {
-                	m_textEntry.bold();
-                }
             }
         });
 
