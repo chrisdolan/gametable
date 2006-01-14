@@ -418,10 +418,11 @@ public class GametableFrame extends JFrame implements ActionListener
              */
             public void actionPerformed(ActionEvent e)
             {
-                if (getFocusOwner() instanceof JTextField)
+                if (m_gametableCanvas.isTextFieldFocused())
                 {
                     return;
                 }
+                
                 
                 // only do this at the start of a line
                 if ( m_textEntry.getText().length() == 0 )
@@ -2008,12 +2009,12 @@ public class GametableFrame extends JFrame implements ActionListener
 
     public void logSystemMessage(String text)
     {
-        logMessage(">>> " + text);
+        logMessage("<b><font color=\"#009900\">" + text + "</font></b>");
     }
 
     public void logAlertMessage(String text)
     {
-        logMessage("!!! " + text);
+        logMessage("<b><font color=\"#FF0000\">" + text + "</font></b>");
     }
 
     public void logMessage(String text)

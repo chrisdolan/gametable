@@ -189,11 +189,11 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
              */
             public void actionPerformed(ActionEvent e)
             {
-                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
+                if (isTextFieldFocused())
                 {
                     return;
                 }
-
+                
                 if (!m_bMouseOnView || getActiveTool().isBeingUsed())
                 {
                     // no pointing if the mouse is outside the view area, or the active tool is
@@ -336,11 +336,11 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
              */
             public void actionPerformed(ActionEvent e)
             {
-                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
+                if (isTextFieldFocused())
                 {
                     return;
                 }
-
+                
                 if (m_scrolling)
                 {
                     return;
@@ -359,7 +359,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
              */
             public void actionPerformed(ActionEvent e)
             {
-                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
+                if (isTextFieldFocused())
                 {
                     return;
                 }
@@ -382,11 +382,11 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
              */
             public void actionPerformed(ActionEvent e)
             {
-                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
+                if (isTextFieldFocused())
                 {
                     return;
                 }
-
+                
                 if (m_scrolling)
                 {
                     return;
@@ -405,11 +405,11 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
              */
             public void actionPerformed(ActionEvent e)
             {
-                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
+                if (isTextFieldFocused())
                 {
                     return;
                 }
-
+                
                 if (m_scrolling)
                 {
                     return;
@@ -1724,6 +1724,15 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                     * m_mapBackground.getHeight(null) + linesYOffset, null);
             }
         }
+    }
+
+    /**
+     * @return
+     */
+    public boolean isTextFieldFocused()
+    {
+        Component focused = m_gametableFrame.getFocusOwner();
+        return (focused instanceof JTextField || focused instanceof JTextPane);
     }
 
     public static void drawDottedRect(Graphics g, int x, int y, int width, int height)

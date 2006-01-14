@@ -307,6 +307,10 @@ public class Pog
     {
         String normalizedName = UtilityFunctions.normalizeName(name);
         Attribute a = (Attribute)m_attributes.get(normalizedName);
+        if (a == null)
+        {
+            return null;
+        }
         return a.value;
     }
 
