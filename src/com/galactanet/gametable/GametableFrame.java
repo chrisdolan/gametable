@@ -1174,13 +1174,13 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             case REJECT_INVALID_PASSWORD:
             {
-                logSystemMessage("Invalid Password. Connection refused.");
+                logAlertMessage("Invalid Password. Connection refused.");
             }
             break;
 
             case REJECT_VERSION_MISMATCH:
             {
-                logSystemMessage("The host is using a different version of the Gametable network protocol. Connection aborted.");
+                logAlertMessage("The host is using a different version of the Gametable network protocol. Connection aborted.");
             }
             break;
         }
@@ -1424,7 +1424,7 @@ public class GametableFrame extends JFrame implements ActionListener
         }
         else
         {
-            postSystemMessage("Someone tried to log in, but was rejected.");
+            postAlertMessage("Someone tried to log in, but was rejected.");
         }
     }
 
@@ -2017,6 +2017,38 @@ public class GametableFrame extends JFrame implements ActionListener
         m_chatLog.addText(text);
     }
 
+    public void postSystemMessage(String text)
+    {
+        postMessage("<b><font color=\"#009900\">" + text + "</font></b>");
+    }
+
+    public void postAlertMessage(String text)
+    {
+        postMessage("<b><font color=\"#FF0000\">" + text + "</font></b>");
+    }
+
+    public void postMessage(String text)
+    {
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if you're the host, push to all players
+            send(PacketManager.makeTextPacket(text));
+    
+            // add it to your own text log
+            logMessage(text);
+        }
+        else if (m_netStatus == NETSTATE_JOINED)
+        {
+            // if you're a player, just post it to the GM
+            send(PacketManager.makeTextPacket(text));
+        }
+        else
+        {
+            // if you're offline, just add it to the log
+            logMessage(text);
+        }
+    }
+
     public void parseSlashCommand(String text)
     {
         // get the command
@@ -2225,38 +2257,6 @@ public class GametableFrame extends JFrame implements ActionListener
             logSystemMessage("/who: lists connected players");
             logSystemMessage("/poglist: lists pogs by attribute");
             logSystemMessage("// or /help: list all slash commands");
-        }
-    }
-
-    public void postSystemMessage(String toSay)
-    {
-        postMessage(">>> " + toSay);
-    }
-
-    public void postAlertMessage(String toSay)
-    {
-        postMessage("!!! " + toSay);
-    }
-
-    public void postMessage(String toSay)
-    {
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            // if you're the host, push to all players
-            send(PacketManager.makeTextPacket(toSay));
-
-            // add it to your own text log
-            logMessage(toSay);
-        }
-        else if (m_netStatus == NETSTATE_JOINED)
-        {
-            // if you're a player, just post it to the GM
-            send(PacketManager.makeTextPacket(toSay));
-        }
-        else
-        {
-            // if you're offline, just add it to the log
-            logMessage(toSay);
         }
     }
 
