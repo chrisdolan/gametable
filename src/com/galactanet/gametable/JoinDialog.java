@@ -5,17 +5,22 @@
 
 package com.galactanet.gametable;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 
 import javax.swing.*;
 
 
+
 /**
  * TODO: comment
- *
+ * 
  * @author sephalon
  */
 public class JoinDialog extends JDialog implements FocusListener
@@ -37,15 +42,13 @@ public class JoinDialog extends JDialog implements FocusListener
     CardLayout m_hostPanelLayout = new CardLayout(0, 0);
     JPanel     m_hostPanel       = new JPanel(m_hostPanelLayout);
 
-
-
     public JoinDialog()
     {
         try
         {
-            jbInit();
+            initialize();
         }
-        catch (Exception e)
+        catch (RuntimeException e)
         {
             Log.log(Log.SYS, e);
         }
@@ -53,30 +56,49 @@ public class JoinDialog extends JDialog implements FocusListener
         // pack yourself
         pack();
 
-        // center yourself
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        Dimension frameSize = getSize();
-        if (frameSize.height > screenSize.height)
-            frameSize.height = screenSize.height;
-        if (frameSize.width > screenSize.width)
-            frameSize.width = screenSize.width;
-        setLocation((screenSize.width - frameSize.width) / 2, (screenSize.height - frameSize.height) / 2);
-
         m_ok.requestFocus();
     }
 
-    private void jbInit() throws Exception
+    private void initialize()
     {
+        setModal(true);
         setTitle("Join a Game");
         setResizable(false);
 
         m_ok.setText("OK");
-        m_ok.addActionListener(new JoinDialog_m_ok_actionAdapter(this));
+        m_ok.addActionListener(new ActionListener()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                m_bAccepted = true;
+
+                // update the default names
+                GametableFrame.getGametableFrame().m_characterName = m_charNameEntry.getText();
+                GametableFrame.getGametableFrame().m_playerName = m_plrNameEntry.getText();
+                GametableFrame.getGametableFrame().m_ipAddress = m_textEntry.getText();
+                GametableFrame.getGametableFrame().m_password = m_passwordEntry.getText();
+                getPort();
+
+                dispose();
+            }
+        });
 
         m_cancel.setText("Cancel");
-        m_cancel.addActionListener(new JoinDialog_m_cancel_actionAdapter(this));
+        m_cancel.addActionListener(new ActionListener()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                dispose();
+            }
+        });
 
-        m_enterHostLabel.setText("Enter Host IP");
+        m_enterHostLabel.setText("Enter Host Address");
 
         jLabel2.setText("Player Name:");
         jLabel3.setText("Char Name:");
@@ -139,7 +161,7 @@ public class JoinDialog extends JDialog implements FocusListener
 
         outerBox.add(Box.createVerticalStrut(PADDING * 3));
         outerBox.add(Box.createVerticalGlue());
-        
+
         panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         outerBox.add(panel);
         panel.add(m_ok);
@@ -152,7 +174,7 @@ public class JoinDialog extends JDialog implements FocusListener
         m_charNameEntry.setText(GametableFrame.getGametableFrame().m_characterName);
         m_plrNameEntry.setText(GametableFrame.getGametableFrame().m_playerName);
         m_textEntry.setText(GametableFrame.getGametableFrame().m_ipAddress);
-        m_portEntry.setText("" + GametableFrame.getGametableFrame().m_port);
+        m_portEntry.setText(String.valueOf(GametableFrame.getGametableFrame().m_port));
         m_passwordEntry.setText(GametableFrame.getGametableFrame().m_password);
 
         // we want to know if any of those text entry areas get focus
@@ -180,20 +202,6 @@ public class JoinDialog extends JDialog implements FocusListener
         m_hostPanelLayout.show(m_hostPanel, "join");
     }
 
-    public void m_ok_actionPerformed(ActionEvent e)
-    {
-        m_bAccepted = true;
-
-        // update the default names
-        GametableFrame.getGametableFrame().m_characterName = m_charNameEntry.getText();
-        GametableFrame.getGametableFrame().m_playerName = m_plrNameEntry.getText();
-        GametableFrame.getGametableFrame().m_ipAddress = m_textEntry.getText();
-        GametableFrame.getGametableFrame().m_password = m_passwordEntry.getText();
-        getPort();
-
-        dispose();
-    }
-
     private void getPort()
     {
         try
@@ -204,11 +212,6 @@ public class JoinDialog extends JDialog implements FocusListener
         {
             GametableFrame.getGametableFrame().m_port = GametableFrame.DEFAULT_PORT;
         }
-    }
-
-    void m_cancel_actionPerformed(ActionEvent e)
-    {
-        dispose();
     }
 
     public void focusGained(FocusEvent e)
@@ -226,42 +229,5 @@ public class JoinDialog extends JDialog implements FocusListener
 
     public void focusLost(FocusEvent e)
     {
-    }
-
-}
-
-
-class JoinDialog_m_ok_actionAdapter implements java.awt.event.ActionListener
-{
-    JoinDialog adaptee;
-
-
-
-    JoinDialog_m_ok_actionAdapter(JoinDialog a)
-    {
-        this.adaptee = a;
-    }
-
-    public void actionPerformed(ActionEvent e)
-    {
-        adaptee.m_ok_actionPerformed(e);
-    }
-}
-
-
-class JoinDialog_m_cancel_actionAdapter implements java.awt.event.ActionListener
-{
-    JoinDialog adaptee;
-
-
-
-    JoinDialog_m_cancel_actionAdapter(JoinDialog a)
-    {
-        this.adaptee = a;
-    }
-
-    public void actionPerformed(ActionEvent e)
-    {
-        adaptee.m_cancel_actionPerformed(e);
     }
 }

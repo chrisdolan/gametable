@@ -260,8 +260,6 @@ public class GametableFrame extends JFrame implements ActionListener
 
         m_textAndEntryPanel.setLayout(new BorderLayout());
 
-
-
         m_textEntry.addKeyListener(new KeyAdapter()
         {
             public void keyPressed(KeyEvent e)
@@ -422,19 +420,18 @@ public class GametableFrame extends JFrame implements ActionListener
                 {
                     return;
                 }
-                
-                
+
                 // only do this at the start of a line
-                if ( m_textEntry.getText().length() == 0 )
+                if (m_textEntry.getText().length() == 0)
                 {
-                	// furthermore, only do the set text and focusing if we don't have
-                	// focus (otherwise, we end up with two slashes. One from the user typing it, and
-                	// another from us setting the text, cause our settext happens first.)
-                	if ( KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() != m_textEntry )
-                	{
-		                m_textEntry.setText("/");
-		                m_textEntry.requestFocus();
-                	}
+                    // furthermore, only do the set text and focusing if we don't have
+                    // focus (otherwise, we end up with two slashes. One from the user typing it, and
+                    // another from us setting the text, cause our settext happens first.)
+                    if (KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() != m_textEntry)
+                    {
+                        m_textEntry.setText("/");
+                        m_textEntry.requestFocus();
+                    }
                 }
             }
         });
@@ -452,7 +449,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
         initializeExecutorThread();
     }
-    
+
     public void textEntryEnterKey()
     {
         // they hit return on the text bar
@@ -1406,7 +1403,7 @@ public class GametableFrame extends JFrame implements ActionListener
         if (m_netStatus == NETSTATE_JOINED)
         {
             // we lost our connection to the host
-            logSystemMessage("Your connection to the host was lost.");
+            logAlertMessage("Your connection to the host was lost.");
             disconnect();
 
             m_netStatus = NETSTATE_NONE;
@@ -1444,14 +1441,14 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
-    public boolean hostDlg()
+    public boolean runHostDialog()
     {
-        JoinDialog dlg = new JoinDialog();
-        dlg.setModal(true);
-        dlg.setUpForHostDlg();
-        dlg.setVisible(true);
+        JoinDialog dialog = new JoinDialog();
+        dialog.setUpForHostDlg();
+        dialog.setLocationRelativeTo(m_gametableCanvas);
+        dialog.setVisible(true);
 
-        if (!dlg.m_bAccepted)
+        if (!dialog.m_bAccepted)
         {
             // they cancelled out
             return false;
@@ -1459,13 +1456,13 @@ public class GametableFrame extends JFrame implements ActionListener
         return true;
     }
 
-    public boolean inputConnectionIP()
+    private boolean runJoinDialog()
     {
-        JoinDialog dlg = new JoinDialog();
-        dlg.setModal(true);
-        dlg.setVisible(true);
+        JoinDialog dialog = new JoinDialog();
+        dialog.setLocationRelativeTo(m_gametableCanvas);
+        dialog.setVisible(true);
 
-        if (!dlg.m_bAccepted)
+        if (!dialog.m_bAccepted)
         {
             // they cancelled out
             return false;
@@ -1606,19 +1603,19 @@ public class GametableFrame extends JFrame implements ActionListener
     {
         if (m_netStatus == NETSTATE_HOST)
         {
-            logSystemMessage("You are already hosting.");
+            logAlertMessage("You are already hosting.");
             return;
         }
         if (m_netStatus == NETSTATE_JOINED)
         {
-            logSystemMessage("You can not host until you disconnect from the game you joined.");
+            logAlertMessage("You can not host until you disconnect from the game you joined.");
             return;
         }
 
         if (!force)
         {
             // get relevant infor from the user
-            if (!hostDlg())
+            if (!runHostDialog())
             {
                 return;
             }
@@ -1664,16 +1661,16 @@ public class GametableFrame extends JFrame implements ActionListener
     {
         if (m_netStatus == NETSTATE_HOST)
         {
-            logSystemMessage("You are hosting. If you wish to join a game, disconnect first.");
+            logAlertMessage("You are hosting. If you wish to join a game, disconnect first.");
             return;
         }
         if (m_netStatus == NETSTATE_JOINED)
         {
-            logSystemMessage("You are already in a game. You must disconnect before joining another.");
+            logAlertMessage("You are already in a game. You must disconnect before joining another.");
             return;
         }
 
-        boolean res = inputConnectionIP();
+        boolean res = runJoinDialog();
         if (!res)
         {
             // they cancelled out
@@ -1723,7 +1720,7 @@ public class GametableFrame extends JFrame implements ActionListener
         catch (Exception ex)
         {
             Log.log(Log.SYS, ex);
-            logSystemMessage("Failed to connect.");
+            logAlertMessage("Failed to connect.");
             setTitle(GametableApp.VERSION);
             PacketSourceState.endHostDump();
         }
@@ -1733,7 +1730,7 @@ public class GametableFrame extends JFrame implements ActionListener
     {
         if (m_netStatus == NETSTATE_NONE)
         {
-            logSystemMessage("Nothing to disconnect from.");
+            logAlertMessage("Nothing to disconnect from.");
             return;
         }
 
@@ -1927,7 +1924,7 @@ public class GametableFrame extends JFrame implements ActionListener
         boolean res = newMacro.init(macro, name);
         if (!res)
         {
-            logSystemMessage("Error in macro");
+            logAlertMessage("Error in macro");
             return;
         }
         addMacro(newMacro);
@@ -2033,7 +2030,7 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             // if you're the host, push to all players
             send(PacketManager.makeTextPacket(text));
-    
+
             // add it to your own text log
             logMessage(text);
         }
