@@ -64,6 +64,15 @@ public class UtilityFunctions
         return out.toString();
     }
 
+    public static String getBodyContent(String html)
+    {
+        int end = html.lastIndexOf("</body>");
+        int start = html.indexOf("<body") + "<body".length();
+        start = html.indexOf('>', start) + 1;
+        return html.substring(start, end).trim();
+    }
+
+
     public static byte[] loadFileToArray(String filename)
     {
         File file = new File(filename);

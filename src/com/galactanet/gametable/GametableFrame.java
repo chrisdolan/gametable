@@ -152,7 +152,7 @@ public class GametableFrame extends JFrame implements ActionListener
     public String                  m_password               = DEFAULT_PASSWORD;
 
     private JPanel                 m_textAndEntryPanel      = new JPanel();
-    private ChatLogEntryPane       m_textEntry              = new ChatLogEntryPane();
+    private ChatLogEntryPane       m_textEntry              = new ChatLogEntryPane(this);
     private ChatLogPane            m_chatLog                = new ChatLogPane();
     private JSplitPane             m_mapChatSplitPane       = new JSplitPane();
 
@@ -302,7 +302,7 @@ public class GametableFrame extends JFrame implements ActionListener
             }
         });
 
-        m_textAndEntryPanel.add(m_textEntry, BorderLayout.SOUTH);
+        m_textAndEntryPanel.add(m_textEntry.getComponentToAdd(), BorderLayout.SOUTH);
 
         m_chatLog.setDoubleBuffered(true);
         m_textAndEntryPanel.add(m_chatLog.getComponentToAdd(), BorderLayout.CENTER);
@@ -374,11 +374,17 @@ public class GametableFrame extends JFrame implements ActionListener
 
         addComponentListener(new ComponentAdapter()
         {
+            /*
+             * @see java.awt.event.ComponentListener#componentResized(java.awt.event.ComponentEvent)
+             */
             public void componentResized(ComponentEvent event)
             {
                 updateWindowInfo();
             }
 
+            /*
+             * @see java.awt.event.ComponentListener#componentMoved(java.awt.event.ComponentEvent)
+             */
             public void componentMoved(ComponentEvent e)
             {
                 updateWindowInfo();
@@ -450,7 +456,7 @@ public class GametableFrame extends JFrame implements ActionListener
         initializeExecutorThread();
     }
 
-    public void textEntryEnterKey()
+    public void submitEntryText()
     {
         // they hit return on the text bar
         String entered = m_textEntry.getUserText().trim();
@@ -472,7 +478,7 @@ public class GametableFrame extends JFrame implements ActionListener
         }
         else
         {
-            postMessage(getMyPlayer().getCharacterName() + "> " + entered);
+            postMessage(getMyPlayer().getCharacterName() + "&gt; " + entered);
         }
 
         m_textEntry.clear();
@@ -614,20 +620,6 @@ public class GametableFrame extends JFrame implements ActionListener
     {
         JMenu menu = new JMenu("Help");
         menu.add(getAboutMenuItem());
-
-        // TODO: Remove later on
-        JMenuItem item = new JMenuItem("testhtml");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                HtmlTestDialog dialog = new HtmlTestDialog();
-                dialog.setLocationRelativeTo(m_gametableCanvas);
-                dialog.setVisible(true);
-            }
-        });
-        menu.add(item);
-
         return menu;
     }
 

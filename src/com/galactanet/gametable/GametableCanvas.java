@@ -15,6 +15,7 @@ import javax.swing.border.BevelBorder;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.text.JTextComponent;
 
 import com.galactanet.gametable.tools.NullTool;
 
@@ -314,11 +315,6 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                     return;
                 }
                 
-                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
-                {
-                    return;
-                }
-
                 centerZoom(1);
             }
         });
@@ -331,11 +327,6 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
             public void actionPerformed(ActionEvent e)
             {
                 if (isTextFieldFocused())
-                {
-                    return;
-                }
-                
-                if (m_gametableFrame.getFocusOwner() instanceof JTextField)
                 {
                     return;
                 }
@@ -1747,7 +1738,13 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     public boolean isTextFieldFocused()
     {
         Component focused = m_gametableFrame.getFocusOwner();
-        return (focused instanceof JTextField || focused instanceof JTextPane);
+        if (focused instanceof JTextComponent)
+        {
+            JTextComponent textComponent = (JTextComponent)focused;
+            return textComponent.isEditable();
+        }
+        
+        return false;
     }
 
     public static void drawDottedRect(Graphics g, int x, int y, int width, int height)
