@@ -231,6 +231,11 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
              */
             public void actionPerformed(ActionEvent e)
             {
+                if (isTextFieldFocused())
+                {
+                    return;
+                }
+                
                 m_bShiftKeyDown = true;
                 repaint();
             }
@@ -304,6 +309,11 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
              */
             public void actionPerformed(ActionEvent e)
             {
+                if (isTextFieldFocused())
+                {
+                    return;
+                }
+                
                 if (m_gametableFrame.getFocusOwner() instanceof JTextField)
                 {
                     return;
@@ -320,6 +330,11 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
              */
             public void actionPerformed(ActionEvent e)
             {
+                if (isTextFieldFocused())
+                {
+                    return;
+                }
+                
                 if (m_gametableFrame.getFocusOwner() instanceof JTextField)
                 {
                     return;

@@ -9,14 +9,14 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.*;
-import javax.swing.text.AbstractDocument;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.Caret;
-import javax.swing.text.StyleConstants;
+import javax.swing.text.*;
 import javax.swing.text.html.HTMLDocument;
 
 
@@ -39,6 +39,7 @@ public class HtmlTestDialog extends JDialog
     private JButton             cancelButton        = null;
     private JScrollPane         entryScrollPane     = null;
     private List                entries             = new ArrayList();
+    private MutableAttributeSet currentSet          = null;
 
     private static final String DEFAULT_TEXT_HEADER = "<html><head><style type=\'text/css\'>"
                                                         + "body { font-family: sans-serif; font-size: 12pt; }"
@@ -50,6 +51,7 @@ public class HtmlTestDialog extends JDialog
                                                         + ".no-underline { text-decoration: none; }"
                                                         + ".serif { font-family: serif; }"
                                                         + ".no-serif { font-family: sans-serif; }"
+                                                        + ".big { font-size: 14pt; }" + ".no-big { font-size: 12pt; }"
                                                         + "</style></head><body>";
     private static final String DEFAULT_TEXT_FOOTER = "</body></html>";
     private static final String DEFAULT_TEXT        = DEFAULT_TEXT_HEADER + DEFAULT_TEXT_FOOTER;
@@ -150,6 +152,43 @@ public class HtmlTestDialog extends JDialog
             entryBox.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("control pressed I"), "italicize");
             entryBox.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("control pressed U"), "underline");
             entryBox.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("control pressed S"), "serif");
+            entryBox.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("control pressed G"), "big");
+            entryBox.addKeyListener(new KeyAdapter()
+            {
+                /*
+                 * @see java.awt.event.KeyAdapter#keyTyped(java.awt.event.KeyEvent)
+                 */
+                public void keyTyped(KeyEvent e)
+                {
+                    if ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0)
+                    {
+                        return;
+                    }
+
+                    HTMLDocument doc = (HTMLDocument)entryBox.getDocument();
+                    String charStr = String.valueOf(e.getKeyChar());
+                    System.out.println("pos: " + entryBox.getCaret().getDot() + " end: "
+                        + entryBox.getDocument().getEndPosition().getOffset() + " key: '" + charStr + "' entryBox: '"
+                        + getBodyContent(entryBox.getText()) + "'");
+                    System.out.println("endElement: " + doc.getCharacterElement(doc.getEndPosition().getOffset()));
+                    if (currentSet != null)
+                    {
+                        try
+                        {
+                            int dotPos = entryBox.getCaret().getDot();
+                            String text = String.valueOf(e.getKeyChar());
+                            doc.insertAfterEnd(doc.getCharacterElement(dotPos), text);
+                            doc.setCharacterAttributes(dotPos, text.length() + 1, currentSet, false);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.log(Log.SYS, ex);
+                        }
+                        currentSet = null;
+                        e.consume();
+                    }
+                }
+            });
 
             entryBox.getActionMap().put("bold", new AbstractAction()
             {
@@ -165,6 +204,26 @@ public class HtmlTestDialog extends JDialog
 
                     AttributeSet styleOn = getCleanStyle(doc, ".bold");
                     AttributeSet styleOff = getCleanStyle(doc, ".no-bold");
+
+                    if (start == end && start >= doc.getEndPosition().getOffset() - 1)
+                    {
+                        if (currentSet == null)
+                        {
+                            currentSet = new SimpleAttributeSet(styleOn);
+                        }
+                        else if (currentSet.containsAttributes(styleOn))
+                        {
+                            currentSet.removeAttributes(styleOn);
+                            currentSet.addAttributes(styleOff);
+                        }
+                        else
+                        {
+                            currentSet.addAttributes(styleOn);
+                            currentSet.removeAttributes(styleOff);
+                        }
+                        return;
+                    }
+
                     applyStyle(doc, start, end, styleOn, styleOff);
                     System.out.println("entryBox: " + getBodyContent(entryBox.getText()));
                 }
@@ -227,6 +286,25 @@ public class HtmlTestDialog extends JDialog
                 }
             });
 
+            entryBox.getActionMap().put("big", new AbstractAction()
+            {
+                /*
+                 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+                 */
+                public void actionPerformed(ActionEvent e)
+                {
+                    HTMLDocument doc = (HTMLDocument)entryBox.getDocument();
+                    Caret c = entryBox.getCaret();
+                    int start = Math.min(c.getMark(), c.getDot());
+                    int end = Math.max(c.getMark(), c.getDot());
+
+                    AttributeSet styleOn = getCleanStyle(doc, ".big");
+                    AttributeSet styleOff = getCleanStyle(doc, ".no-big");
+                    applyStyle(doc, start, end, styleOn, styleOff);
+                    System.out.println("entryBox: " + getBodyContent(entryBox.getText()));
+                }
+            });
+
             entryBox.getActionMap().put("enter", new AbstractAction()
             {
                 /*
@@ -234,39 +312,38 @@ public class HtmlTestDialog extends JDialog
                  */
                 public void actionPerformed(ActionEvent e)
                 {
+                    System.out.println("entryBox:\n" + getBodyContent(entryBox.getText()));
                     entries.add(getBodyContent(entryBox.getText()));
                     entryBox.setText(DEFAULT_TEXT);
 
                     StringBuffer text = new StringBuffer();
-                    // text.append("<html><head></head><body
-                    // style=\"font-family:Arial,Helvetica,sans;font-size:12pt;\">");
                     text.append(DEFAULT_TEXT_HEADER);
                     for (int i = 0, size = entries.size(); i < size; ++i)
                     {
                         String entry = (String)entries.get(i);
-                        text.append("<table border=\"0\" cellspaing=\"0\" cellpadding=\"0\"><tr><td valign=\"top\"><b>Iffy&gt;</b></td><td>");
+                        text.append("<b>Iffy&gt;</b> ");
                         text.append(entry);
-                        text.append("</td></tr></table>");
+                        text.append("<br>");
                     }
                     text.append(DEFAULT_TEXT_FOOTER);
                     htmlPane.setText(text.toString());
-                    System.out.println("htmlPane:\n" + htmlPane.getText());
+                    System.out.println("htmlPane: " + getBodyContent(htmlPane.getText()));
                 }
             });
         }
         return entryBox;
     }
 
-//    private static void dumpAttributes(AttributeSet set)
-//    {
-//        System.out.println("Set = " + set + " (" + set.getClass() + ")");
-//        for (Enumeration e = set.getAttributeNames(); e.hasMoreElements();)
-//        {
-//            Object name = e.nextElement();
-//            Object value = set.getAttribute(name);
-//            System.out.println("\t" + name + " (" + name.getClass() + ") => " + value + "(" + value.getClass() + ")");
-//        }
-//    }
+    // private static void dumpAttributes(AttributeSet set)
+    // {
+    // System.out.println("Set = " + set + " (" + set.getClass() + ")");
+    // for (Enumeration e = set.getAttributeNames(); e.hasMoreElements();)
+    // {
+    // Object name = e.nextElement();
+    // Object value = set.getAttribute(name);
+    // System.out.println("\t" + name + " (" + name.getClass() + ") => " + value + "(" + value.getClass() + ")");
+    // }
+    // }
 
     private static AttributeSet getCleanStyle(HTMLDocument doc, String name)
     {
@@ -290,7 +367,10 @@ public class HtmlTestDialog extends JDialog
 
         if (allSet)
         {
-            doc.setCharacterAttributes(start, end - start, styleOff, false);
+            if (styleOff != null)
+            {
+                doc.setCharacterAttributes(start, end - start, styleOff, false);
+            }
             return;
         }
 

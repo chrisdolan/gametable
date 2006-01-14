@@ -293,7 +293,7 @@ public class GametableFrame extends JFrame implements ActionListener
                     {
                         if (m_textSentLoc == m_textSent.size())
                         {
-                            m_textEntry.setText(DEFAULT_PASSWORD);
+                            m_textEntry.setText("");
                         }
                         else
                         {
@@ -512,7 +512,7 @@ public class GametableFrame extends JFrame implements ActionListener
                 m_toolButtonGroup.add(button);
                 m_toolButtons[toolId] = button;
 
-                String keyInfo = DEFAULT_PASSWORD;
+                String keyInfo = "";
                 if (info.getQuickKey() != null)
                 {
                     String actionId = "tool" + toolId + "Action";
@@ -1420,7 +1420,7 @@ public class GametableFrame extends JFrame implements ActionListener
             // remove this player
             m_players.remove(dead);
             sendCastInfo();
-            postSystemMessage(DEFAULT_PASSWORD + dead.getPlayerName() + " has left the session");
+            postSystemMessage(dead.getPlayerName() + " has left the session");
         }
         else
         {
@@ -1737,11 +1737,6 @@ public class GametableFrame extends JFrame implements ActionListener
             return;
         }
 
-        if (m_executorThread != null)
-        {
-            m_executorThread.interrupt();
-            m_executorThread = null;
-        }
         if (m_networkThread != null)
         {
             m_networkThread.interrupt();
@@ -2036,7 +2031,7 @@ public class GametableFrame extends JFrame implements ActionListener
             if (words.length < 3)
             {
                 // tell them the usage and bail
-                logSystemMessage("/macro usage: /macro <macroName> <dice roll in standard format>");
+                logSystemMessage("/macro usage: /macro &lt;macroName&gt; &lt;dice roll in standard format&gt;");
                 logSystemMessage("Examples:");
                 logSystemMessage("    /macro Attack d20+8");
                 logSystemMessage("    /macro SneakDmg d4 + 2 + 4d6");
@@ -2055,7 +2050,7 @@ public class GametableFrame extends JFrame implements ActionListener
             // req. 1 param
             if (words.length < 2)
             {
-                logSystemMessage(words[0] + " usage: " + words[0] + " <macroName>");
+                logSystemMessage(words[0] + " usage: " + words[0] + " &lt;macroName&gt;");
                 return;
             }
 
@@ -2068,21 +2063,21 @@ public class GametableFrame extends JFrame implements ActionListener
             for (int i = 0, size = m_players.size(); i < size; ++i)
             {
                 Player player = (Player)m_players.get(i);
-                logSystemMessage("   " + player.toString());
+                logSystemMessage("<li>" + player.toString() + "</li>");
             }
-            logSystemMessage(m_players.size() + " player" + (m_players.size() > 1 ? "s" : DEFAULT_PASSWORD));
+            logSystemMessage(m_players.size() + " player" + (m_players.size() > 1 ? "s" : ""));
         }
         else if (words[0].equals("/roll"))
         {
             // req. 1 param
             if (words.length < 2)
             {
-                logSystemMessage("/roll usage: /roll <Dice Roll in standard format>");
-                logSystemMessage("or: /roll <Macro Name> [<+/-> <Macro Name or Dice Roll>]...");
+                logSystemMessage("/roll usage: /roll &lt;Dice Roll in standard format&gt;");
+                logSystemMessage("or: /roll &lt;Macro Name&gt; [&lt;+/-&gt; &lt;Macro Name or Dice Roll&gt;]...");
                 logSystemMessage("Examples:");
-                logSystemMessage("Example: /roll 2d6 + 3d4 + 8");
-                logSystemMessage("Example: /roll My Damage + d4");
-                logSystemMessage("Example: /roll d20 + My Damage + My Damage Bonus");
+                logSystemMessage(" /roll 2d6 + 3d4 + 8");
+                logSystemMessage(" /roll My Damage + d4");
+                logSystemMessage(" /roll d20 + My Damage + My Damage Bonus");
                 return;
             }
 
@@ -2188,7 +2183,7 @@ public class GametableFrame extends JFrame implements ActionListener
             if (words.length < 2)
             {
                 // tell them the usage and bail
-                logSystemMessage("/poglist usage: /poglist <attribute name>");
+                logSystemMessage("/poglist usage: /poglist &lt;attribute name&gt;");
                 logSystemMessage("Examples:");
                 logSystemMessage("    /poglist HP");
                 logSystemMessage("    /poglist Initiative");
@@ -2210,12 +2205,12 @@ public class GametableFrame extends JFrame implements ActionListener
                     String pogText = pog.getText();
                     if (pogText == null || pogText.length() == 0)
                     {
-                        pogText = "<unknown>";
+                        pogText = "&lt;unknown&gt;";
                     }
 
                     pogText += " - ";
 
-                    logSystemMessage("    " + pogText + name + ": " + value);
+                    logSystemMessage("<li>" + pogText + name + ": " + value + "</li>");
                     ++tally;
                 }
             }
