@@ -176,6 +176,12 @@ public class DiceMacro
 
         return normalizeMacroString(a).equals(normalizeMacroString(b));
     }
+    
+    public static String generateOutputString(String rollerName, String rollName, String rollItemizedResults, String result)
+    {
+        String ret = rollerName + " rolls " + rollName + ": <b><font color=\"#960018\">"+ result + "</font></b> = [" + rollItemizedResults + "]";
+        return ret;
+    }
 
     /**
      * Regularlizes a string before parsing.
@@ -420,7 +426,8 @@ public class DiceMacro
         String name = me.getCharacterName();
 
         Result result = roll();
-        String ret = name + " rolls " + result.roll + ": [" + result.result + "] = " + result.value;
+
+        String ret = generateOutputString(name, result.roll, result.result, ""+result.value);        
         return ret;
     }
 

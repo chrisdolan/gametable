@@ -74,7 +74,7 @@ public class ChatLogPane extends JEditorPane
 
     public void addText(String text)
     {
-        System.out.println("text: " + text);
+        // System.out.println("text: " + text);
         entries.add(text);
 
         StringBuffer bodyContent = new StringBuffer();

@@ -37,6 +37,18 @@ public class Player
         m_characterName = characterName;
         m_id = id;
     }
+    
+    // returns trus if the player name or character name matches
+    // the sent in name in a case-insensitive comparison
+    public boolean hasName(String name)
+    {
+    	String playerName = getPlayerName().toLowerCase();
+    	String characterName = getCharacterName().toLowerCase();
+    	String comp = name.toLowerCase();
+    	if ( comp.equals(playerName) ) return true;
+    	if ( comp.equals(characterName) ) return true;
+    	return false;
+    }
 
     public String toString()
     {

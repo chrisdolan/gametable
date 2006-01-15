@@ -83,6 +83,9 @@ public class PacketManager
     // a pog size packet
     public static final int PACKET_POG_SIZE       = 19;
 
+    // private text packet
+    public static final int PACKET_PRIVATE_TEXT	  = 20;
+
     // --- Static Members --------------------------------------------------------------------------------------------
 
     /**
@@ -242,6 +245,12 @@ public class PacketManager
                 }
                 break;
 
+                case PACKET_PRIVATE_TEXT:
+                {
+                    readPrivateTextPacket(dis);
+                }
+                break;
+
                 default:
                 {
                     throw new IllegalArgumentException("Unknown packet");
@@ -313,6 +322,8 @@ public class PacketManager
                 return "PACKET_REDO";
             case PACKET_POG_SIZE:
                 return "PACKET_POG_SIZE";
+            case PACKET_PRIVATE_TEXT:
+                return "PACKET_PRIVATE_TEXT";
             default:
                 return "PACKET_UNKNOWN";
         }
@@ -469,6 +480,47 @@ public class PacketManager
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
             gtFrame.textPacketReceived(text);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+    
+    /* *********************** PRIVATE TEXT PACKET *************************** */
+
+    public static byte[] makePrivateTextPacket(String fromName, String toName, String text)
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_PRIVATE_TEXT); // type
+            dos.writeUTF(fromName);
+            dos.writeUTF(toName);
+            dos.writeUTF(text);
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
+    public static void readPrivateTextPacket(DataInputStream dis)
+    {
+        try
+        {
+            String fromName = dis.readUTF();
+            String toName = dis.readUTF();
+            String text = dis.readUTF();
+
+            // tell the model
+            GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.privateTextPacketReceived(fromName, toName, text);
         }
         catch (IOException ex)
         {
