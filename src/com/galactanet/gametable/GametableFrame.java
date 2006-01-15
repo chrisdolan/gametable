@@ -183,10 +183,6 @@ public class GametableFrame extends JFrame implements ActionListener
     private JTabbedPane            m_pogsTabbedPane         = new JTabbedPane();
     private JComboBox              m_colorCombo             = new JComboBox(COLORS);
 
-    // full of Strings
-    private List                   m_textSent               = new ArrayList();
-    private int                    m_textSentLoc            = 0;
-
     // The current file path used by save and open.
     // NULL if unset.
     // one for the public map, one for the private map
@@ -260,49 +256,10 @@ public class GametableFrame extends JFrame implements ActionListener
 
         m_textAndEntryPanel.setLayout(new BorderLayout());
 
-        m_textEntry.addKeyListener(new KeyAdapter()
-        {
-            public void keyPressed(KeyEvent e)
-            {
-                int code = e.getKeyCode();
-
-                if (code == KeyEvent.VK_UP)
-                {
-                    m_textSentLoc--;
-                    if (m_textSentLoc < 0)
-                    {
-                        m_textSentLoc = 0;
-                    }
-                    else
-                    {
-                        m_textEntry.setText((String)m_textSent.get(m_textSentLoc));
-                    }
-                }
-
-                if (code == KeyEvent.VK_DOWN)
-                {
-                    m_textSentLoc++;
-
-                    if (m_textSentLoc > m_textSent.size())
-                    {
-                        m_textSentLoc = m_textSent.size();
-                    }
-                    else
-                    {
-                        if (m_textSentLoc == m_textSent.size())
-                        {
-                            m_textEntry.setText("");
-                        }
-                        else
-                        {
-                            m_textEntry.setText((String)m_textSent.get(m_textSentLoc));
-                        }
-                    }
-                }
-            }
-        });
-
-        m_textAndEntryPanel.add(m_textEntry.getComponentToAdd(), BorderLayout.SOUTH);
+        JPanel entryPanel = new JPanel(new BorderLayout(0, 0));
+        entryPanel.add(new StyledEntryToolbar(m_textEntry), BorderLayout.NORTH);
+        entryPanel.add(m_textEntry.getComponentToAdd(), BorderLayout.SOUTH);
+        m_textAndEntryPanel.add(entryPanel, BorderLayout.SOUTH);
 
         m_chatLog.setDoubleBuffered(true);
         m_textAndEntryPanel.add(m_chatLog.getComponentToAdd(), BorderLayout.CENTER);
@@ -436,9 +393,9 @@ public class GametableFrame extends JFrame implements ActionListener
                     if (KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() != m_textEntry)
                     {
                         m_textEntry.setText("/");
-                        m_textEntry.requestFocus();
                     }
                 }
+                m_textEntry.requestFocus();
             }
         });
 
@@ -454,34 +411,6 @@ public class GametableFrame extends JFrame implements ActionListener
         });
 
         initializeExecutorThread();
-    }
-
-    public void submitEntryText()
-    {
-        // they hit return on the text bar
-        String entered = m_textEntry.getUserText().trim();
-        if (entered.length() == 0)
-        {
-            // useless string.
-            // return focus to the map
-            getGametableCanvas().requestFocus();
-            return;
-        }
-
-        m_textSent.add(entered);
-        m_textSentLoc = m_textSent.size();
-
-        // parse for commands
-        if (entered.charAt(0) == '/')
-        {
-            parseSlashCommand(entered);
-        }
-        else
-        {
-            postMessage(getMyPlayer().getCharacterName() + "&gt; " + entered);
-        }
-
-        m_textEntry.clear();
     }
 
     /**
@@ -2057,7 +1986,7 @@ public class GametableFrame extends JFrame implements ActionListener
             logMessage(text);
         }
     }
-    
+
     public void postPrivateMessage(String fromName, String toName, String text)
     {
         if (m_netStatus == NETSTATE_HOST)
@@ -2094,6 +2023,7 @@ public class GametableFrame extends JFrame implements ActionListener
         	}
         }
     }
+    
     
     public void parseSlashCommand(String text)
     {
@@ -2137,14 +2067,19 @@ public class GametableFrame extends JFrame implements ActionListener
         }
         else if (words[0].equals("/who"))
         {
-            logSystemMessage("Who's connected:");
+            StringBuffer buffer = new StringBuffer();
+            buffer.append("Who's connected:<br>");
             for (int i = 0, size = m_players.size(); i < size; ++i)
             {
                 Player player = (Player)m_players.get(i);
-                // logSystemMessage("<li>" + player.toString() + "</li>");
-                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+player.toString());
+                buffer.append("&nbsp;&nbsp;&nbsp;\u2022&nbsp;");
+                buffer.append(player.toString());
+                buffer.append("<br>");
             }
-            logSystemMessage(m_players.size() + " player" + (m_players.size() > 1 ? "s" : ""));
+            buffer.append(m_players.size());
+            buffer.append(" player");
+            buffer.append((m_players.size() > 1 ? "s" : ""));
+            logSystemMessage(buffer.toString());
         }
         else if (words[0].equals("/roll"))
         {
@@ -2294,7 +2229,7 @@ public class GametableFrame extends JFrame implements ActionListener
                     // Dave's way preserved for reversion if needed 
                     // pogText += " - ";
                     // logSystemMessage("<li>" + pogText + name + ": " + value + "</li>");
-                    
+
                     logSystemMessage("<tr><td>" + pogText + "</td><td>" + value + "</td></tr>");
                     ++tally;
                 }

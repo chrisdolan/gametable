@@ -10,7 +10,10 @@ import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 
-import javax.swing.*;
+import javax.swing.AbstractAction;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.KeyStroke;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -29,88 +32,98 @@ import com.galactanet.gametable.tools.NullTool;
 public class GametableCanvas extends JComponent implements MouseListener, MouseMotionListener, MouseWheelListener
 {
     // grid modes
-    public final static int    GRID_MODE_NONE         = 0;
-    public final static int    GRID_MODE_SQUARES      = 1;
-    public final static int    GRID_MODE_HEX          = 2;
+    public final static int             GRID_MODE_NONE         = 0;
+    public final static int             GRID_MODE_SQUARES      = 1;
+    public final static int             GRID_MODE_HEX          = 2;
 
     // the size of a square at max zoom level (0)
-    public final static int    BASE_SQUARE_SIZE       = 64;
+    public final static int             BASE_SQUARE_SIZE       = 64;
 
-    public final static int    NUM_ZOOM_LEVELS        = 5;
+    public final static int             NUM_ZOOM_LEVELS        = 5;
 
-    private static final int   KEYBOARD_SCROLL_AMOUNT = 300;
-    private static final int   KEYBOARD_SCROLL_TIME   = 300;
+    private static final int            KEYBOARD_SCROLL_AMOUNT = 300;
+    private static final int            KEYBOARD_SCROLL_TIME   = 300;
+
+    private static final Font           MAIN_FONT              = Font.decode("sans-12");
+    private static final RenderingHints RENDER_HINTS           = getRenderHints();
 
     /**
      * This is the color used to overlay on top of the public layer when the user is on the private layer. It's white
      * with 50% alpha
      */
-    private static final Color OVERLAY_COLOR          = new Color(255, 255, 255, 128);
+    private static final Color          OVERLAY_COLOR          = new Color(255, 255, 255, 128);
 
     /**
      * A singleton instance of the NULL tool.
      */
-    private static final Tool  NULL_TOOL              = new NullTool();
+    private static final Tool           NULL_TOOL              = new NullTool();
 
-    private Image              m_mapBackground;
+    private static RenderingHints getRenderHints()
+    {
+        RenderingHints hints = new RenderingHints(null);
+        hints.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        return hints;
+    }
+
+    private Image          m_mapBackground;
 
     // this is the map (or layer) that all players share
-    private GametableMap       m_publicMap            = new GametableMap(true);
-    private GametableMap       m_privateMap           = new GametableMap(false);
+    private GametableMap   m_publicMap      = new GametableMap(true);
+    private GametableMap   m_privateMap     = new GametableMap(false);
 
     // this points to whichever map is presently active
-    private GametableMap       m_activeMap;
+    private GametableMap   m_activeMap;
 
     // some cursors
-    private Cursor             m_emptyCursor;
-    private Image              m_pointingImage;
+    private Cursor         m_emptyCursor;
+    private Image          m_pointingImage;
 
     // the frame
-    private GametableFrame     m_gametableFrame;
+    private GametableFrame m_gametableFrame;
 
     /**
      * This is the number of screen pixels that are used per model pixel. It's never less than 1
      */
-    public int                 m_zoom                 = 1;
+    public int             m_zoom           = 1;
 
     // the size of a square at the current zoom level
-    public int                 m_squareSize           = getSquareSizeForZoom(m_zoom);
+    public int             m_squareSize     = getSquareSizeForZoom(m_zoom);
 
     // misc flags
-    private boolean            m_bSpaceKeyDown;
-    private boolean            m_bShiftKeyDown;
-    private boolean            m_bControlKeyDown;
-    private boolean            m_bAltKeyDown;
+    private boolean        m_bSpaceKeyDown;
+    private boolean        m_bShiftKeyDown;
+    private boolean        m_bControlKeyDown;
+    private boolean        m_bAltKeyDown;
 
-    private boolean            m_newPogIsBeingDragged;
+    private boolean        m_newPogIsBeingDragged;
 
-    private Point              m_mouseModelFloat;
-    private boolean            m_bMouseOnView;
+    private Point          m_mouseModelFloat;
+    private boolean        m_bMouseOnView;
 
-    private Pog                m_pogMouseOver;
+    private Pog            m_pogMouseOver;
 
-    private Point              m_startScroll;
-    private Point              m_deltaScroll;
-    private long               m_scrollTime;
-    private long               m_scrollTimeTotal;
-    private boolean            m_scrolling;
+    private Point          m_startScroll;
+    private Point          m_deltaScroll;
+    private long           m_scrollTime;
+    private long           m_scrollTimeTotal;
+    private boolean        m_scrolling;
 
-    SquareGridMode             m_squareGridMode       = new SquareGridMode();
-    HexGridMode                m_hexGridMode          = new HexGridMode();
-    GridMode                   m_noGridMode           = new GridMode();
-    GridMode                   m_gridMode;
+    SquareGridMode         m_squareGridMode = new SquareGridMode();
+    HexGridMode            m_hexGridMode    = new HexGridMode();
+    GridMode               m_noGridMode     = new GridMode();
+    GridMode               m_gridMode;
 
-    private int                m_activeToolId         = -1;
+    private int            m_activeToolId   = -1;
 
     /**
      * true if the current mouse action was initiated with a right-click
      */
-    private boolean            m_rightClicking;
+    private boolean        m_rightClicking;
 
     /**
      * the id of the tool that we switched out of to go to hand tool for a right-click
      */
-    private int                m_previousToolId;
+    private int            m_previousToolId;
 
     /**
      * Constructor.
@@ -194,7 +207,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                 {
                     return;
                 }
-                
+
                 if (!m_bMouseOnView || getActiveTool().isBeingUsed())
                 {
                     // no pointing if the mouse is outside the view area, or the active tool is
@@ -236,7 +249,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                 {
                     return;
                 }
-                
+
                 m_bShiftKeyDown = true;
                 repaint();
             }
@@ -314,7 +327,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                 {
                     return;
                 }
-                
+
                 centerZoom(1);
             }
         });
@@ -346,7 +359,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                 {
                     return;
                 }
-                
+
                 if (m_scrolling)
                 {
                     return;
@@ -392,7 +405,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                 {
                     return;
                 }
-                
+
                 if (m_scrolling)
                 {
                     return;
@@ -415,7 +428,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                 {
                     return;
                 }
-                
+
                 if (m_scrolling)
                 {
                     return;
@@ -1468,45 +1481,13 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         repaint();
     }
 
-    /** *********************************************************** */
-    // drawing
-    /** *********************************************************** */
-    public void update(Graphics g)
-    {
-        paint(g);
-    }
+    // --- Drawing ---
 
-    public void paint(Graphics g)
+    public void paintComponent(Graphics graphics)
     {
-        g.setFont(Font.decode("sans-12"));
-        if (false)
-        {
-            final Map HINTS = new HashMap();
-            HINTS.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
-            HINTS.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            HINTS.put(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
-            HINTS.put(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
-            HINTS.put(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-            HINTS.put(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-            HINTS.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-            HINTS.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
-            HINTS.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            ((Graphics2D)g).addRenderingHints(HINTS);
-        }
-        else
-        {
-            final Map HINTS = new HashMap();
-            HINTS.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
-            HINTS.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-            HINTS.put(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
-            HINTS.put(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
-            HINTS.put(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
-            HINTS.put(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-            HINTS.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
-            HINTS.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-            HINTS.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            ((Graphics2D)g).addRenderingHints(HINTS);
-        }
+        Graphics2D g = (Graphics2D)graphics.create();
+        g.addRenderingHints(RENDER_HINTS);
+        g.setFont(MAIN_FONT);
 
         // if they're on the public layer, we draw it first, then the private layer
         // on top of it at half alpha.
@@ -1538,6 +1519,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
             // now draw the private layer
             paintMap(g, m_privateMap);
         }
+        g.dispose();
     }
 
     public void paintMap(Graphics g, GametableMap mapToDraw)
@@ -1627,7 +1609,6 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         }
 
         // draw the cursor overlays
-        g.setFont(Font.decode("system-bold-12"));
         List players = m_gametableFrame.getPlayers();
         for (int i = 0; i < players.size(); i++)
         {
@@ -1743,7 +1724,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
             JTextComponent textComponent = (JTextComponent)focused;
             return textComponent.isEditable();
         }
-        
+
         return false;
     }
 

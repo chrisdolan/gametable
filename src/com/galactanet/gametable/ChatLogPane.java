@@ -32,9 +32,6 @@ public class ChatLogPane extends JEditorPane
                                                        + ".no-italics { font-style: normal; }"
                                                        + ".underline { text-decoration: underline; }"
                                                        + ".no-underline { text-decoration: none; }"
-                                                       + ".serif { font-family: serif; }"
-                                                       + ".no-serif { font-family: sans-serif; }"
-                                                       + ".big { font-size: 14pt; }" + ".no-big { font-size: 12pt; }"
                                                        + "</style></head><body id=\"bodycontent\">";
     public static final String DEFAULT_TEXT_FOOTER = "</body></html>";
     public static final String DEFAULT_TEXT        = DEFAULT_TEXT_HEADER + DEFAULT_TEXT_FOOTER;
@@ -75,7 +72,7 @@ public class ChatLogPane extends JEditorPane
     public void addText(String text)
     {
         // System.out.println("text: " + text);
-        entries.add(text);
+        entries.add(highlightUrls(text));
 
         StringBuffer bodyContent = new StringBuffer();
         bodyContent.append(DEFAULT_TEXT_HEADER);
@@ -87,5 +84,74 @@ public class ChatLogPane extends JEditorPane
         }
         bodyContent.append(DEFAULT_TEXT_FOOTER);
         setText(bodyContent.toString());
+    }
+
+    private static String highlightUrls(String in)
+    {
+        final String HTTP_INTRO = "http://";
+
+        StringBuffer out = new StringBuffer();
+        int position = 0;
+        int length = in.length();
+        while (true)
+        {
+            int nextPosition = in.indexOf(HTTP_INTRO, position);
+            if (nextPosition == -1)
+            {
+                out.append(in.substring(position));
+                break;
+            }
+
+            out.append(in.substring(position, nextPosition));
+            position = nextPosition;
+            for (nextPosition = position + HTTP_INTRO.length(); nextPosition < length; ++nextPosition)
+            {
+                char c = in.charAt(nextPosition);
+                if (Character.isJavaIdentifierPart(c))
+                {
+                    continue;
+                }
+
+                if (Character.isWhitespace(c))
+                {
+                    break;
+                }
+
+                boolean foundEnd = false;
+                switch (c)
+                {
+                    case '.':
+                    case '%':
+                    case '/':
+                    case '#':
+                    case '?':
+                    case '+':
+                    case '-':
+                    case '=':
+                        break;
+                    default:
+                        foundEnd = true;
+                        break;
+                }
+                
+                if (foundEnd)
+                {
+                    break;
+                }
+            }
+            
+            String url = in.substring(position, nextPosition);
+            out.append("<a href=\"");
+            out.append(url);
+            out.append("\">");
+            out.append(url);
+            out.append("</a>");
+            position = nextPosition;
+        }
+        System.out.println("in: " + in);
+        System.out.println("out: " + out.toString());
+        
+
+        return out.toString();
     }
 }

@@ -19,6 +19,8 @@ import javax.swing.JComponent;
 import javax.swing.JEditorPane;
 import javax.swing.KeyStroke;
 import javax.swing.border.BevelBorder;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
 import javax.swing.text.*;
 import javax.swing.text.html.HTMLDocument;
 
@@ -42,51 +44,19 @@ public class ChatLogEntryPane extends JEditorPane
          */
         public void actionPerformed(ActionEvent e)
         {
-            HTMLDocument doc = (HTMLDocument)getDocument();
-            Caret c = getCaret();
-            int start = Math.min(c.getMark(), c.getDot());
-            int end = Math.max(c.getMark(), c.getDot());
-
-            AttributeSet styleOn = getCleanStyle(doc, "." + style);
-            AttributeSet styleOff = getCleanStyle(doc, ".no-" + style);
-
-            if (start == end)
-            {
-                AttributeSet current = getCurrentStyle();
-//                System.out.println("styleOn: " + getAttributeString(styleOn));
-//                System.out.println("current: " + getAttributeString(current));
-
-                if (currentStyle == null)
-                {
-                    currentStyle = new SimpleAttributeSet(current);
-                }
-
-                if (current.containsAttributes(styleOn))
-                {
-//                    System.out.println("contains");
-                    currentStyle.removeAttributes(styleOn);
-                    currentStyle.addAttributes(styleOff);
-                }
-                else
-                {
-//                    System.out.println("does not contain");
-                    currentStyle.addAttributes(styleOn);
-                    currentStyle.removeAttributes(styleOff);
-                }
-
-                getAttributeString(currentStyle);
-                //                System.out.println("currentStyle: " + getAttributeString(currentStyle));
-                return;
-            }
-
-            applyStyle(doc, start, end, styleOn, styleOff);
-            //System.out.println("entryBox: " + UtilityFunctions.getBodyContent(getText()));
+            toggleStyle(style);
         }
     }
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
-    private MutableAttributeSet currentStyle = null;
+    /**
+     * List of sent items.
+     */
+    private List                history         = new ArrayList();
+    private int                 historyPosition = 0;
+    private StyledEntryToolbar  toolbar         = null;
+    private MutableAttributeSet styleOverride   = null;
     private GametableFrame      frame;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
@@ -97,6 +67,11 @@ public class ChatLogEntryPane extends JEditorPane
         frame = parentFrame;
         initialize();
         clear();
+    }
+
+    public void setToolbar(StyledEntryToolbar bar)
+    {
+        toolbar = bar;
     }
 
     /**
@@ -112,15 +87,90 @@ public class ChatLogEntryPane extends JEditorPane
      */
     public void clear()
     {
-        setText(ChatLogPane.DEFAULT_TEXT);
+        setText("");
     }
 
     /**
      * @return the useful part of the text of this component.
      */
-    public String getUserText()
+    public String getText()
     {
-        return UtilityFunctions.getBodyContent(getText());
+        return UtilityFunctions.getBodyContent(super.getText());
+    }
+
+    public String getPlainText()
+    {
+        HTMLDocument doc = (HTMLDocument)getDocument();
+        try
+        {
+            return doc.getText(doc.getStartPosition().getOffset(), doc.getLength());
+        }
+        catch (Exception e)
+        {
+            Log.log(Log.SYS, e);
+            return "";
+        }
+    }
+
+    public void setText(String text)
+    {
+        super.setText(ChatLogPane.DEFAULT_TEXT_HEADER + text + ChatLogPane.DEFAULT_TEXT_FOOTER);
+    }
+
+    public void toggleStyle(String style)
+    {
+        HTMLDocument doc = (HTMLDocument)getDocument();
+        Caret c = getCaret();
+        int start = Math.min(c.getMark(), c.getDot());
+        int end = Math.max(c.getMark(), c.getDot());
+
+        if (start == end)
+        {
+            setCurrentStyle(style, !isCurrentStyle(style));
+
+            getAttributeString(styleOverride);
+            toolbar.updateStyles();
+            return;
+        }
+
+        AttributeSet styleOn = getCleanStyle(doc, "." + style);
+        AttributeSet styleOff = getCleanStyle(doc, ".no-" + style);
+        applyStyle(doc, start, end, styleOn, styleOff);
+
+        toolbar.updateStyles();
+    }
+
+    public boolean isCurrentStyle(String style)
+    {
+        AttributeSet current = getCurrentStyle();
+        HTMLDocument doc = (HTMLDocument)getDocument();
+        AttributeSet styleOn = getCleanStyle(doc, "." + style);
+
+        return current.containsAttributes(styleOn);
+    }
+
+    public void setCurrentStyle(String style, boolean status)
+    {
+        HTMLDocument doc = (HTMLDocument)getDocument();
+        AttributeSet styleOn = getCleanStyle(doc, "." + style);
+        AttributeSet styleOff = getCleanStyle(doc, ".no-" + style);
+
+        AttributeSet current = getCurrentStyle();
+        if (styleOverride == null)
+        {
+            styleOverride = new SimpleAttributeSet(current);
+        }
+
+        if (current.containsAttributes(styleOn))
+        {
+            styleOverride.removeAttributes(styleOn);
+            styleOverride.addAttributes(styleOff);
+        }
+        else
+        {
+            styleOverride.addAttributes(styleOn);
+            styleOverride.removeAttributes(styleOff);
+        }
     }
 
     /**
@@ -131,6 +181,9 @@ public class ChatLogEntryPane extends JEditorPane
         setEditable(true);
         setFocusable(true);
         setBorder(new BevelBorder(BevelBorder.LOWERED));
+
+        getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed UP"), "historyBack");
+        getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed DOWN"), "historyForward");
         getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed ENTER"), "enter");
         getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("control pressed B"), "bold");
         getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("control pressed I"), "italics");
@@ -147,15 +200,21 @@ public class ChatLogEntryPane extends JEditorPane
                     return;
                 }
 
+                if (e.getKeyChar() == '\n')
+                {
+                    return;
+                }
+
                 HTMLDocument doc = (HTMLDocument)getDocument();
                 String charStr = String.valueOf(e.getKeyChar());
-                if (currentStyle != null)
+                if (styleOverride != null)
                 {
                     try
                     {
                         int dotPos = getCaret().getDot();
                         doc.insertAfterEnd(doc.getCharacterElement(dotPos), charStr);
-                        doc.setCharacterAttributes(dotPos, charStr.length(), currentStyle, false);
+                        doc.setCharacterAttributes(dotPos, charStr.length(), styleOverride, false);
+                        // Hack to force the carat style to be what we just typed
                         setCaretPosition(dotPos);
                         setCaretPosition(dotPos + charStr.length());
                     }
@@ -163,15 +222,79 @@ public class ChatLogEntryPane extends JEditorPane
                     {
                         Log.log(Log.SYS, ex);
                     }
-                    currentStyle = null;
+
+                    // Hack to get around weird first-character bug in edit pane
+                    if (doc.getLength() > 2)
+                    {
+                        styleOverride = null;
+                    }
                     e.consume();
                 }
+            }
+        });
+
+        addCaretListener(new CaretListener()
+        {
+            /*
+             * @see javax.swing.event.CaretListener#caretUpdate(javax.swing.event.CaretEvent)
+             */
+            public void caretUpdate(CaretEvent e)
+            {
+                toolbar.updateStyles();
             }
         });
 
         getActionMap().put("bold", new StyleAction("bold"));
         getActionMap().put("italics", new StyleAction("italics"));
         getActionMap().put("underline", new StyleAction("underline"));
+
+        getActionMap().put("historyBack", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                historyPosition--;
+                if (historyPosition < 0)
+                {
+                    historyPosition = 0;
+                }
+                else
+                {
+                    setText((String)history.get(historyPosition));
+                }
+                toolbar.updateStyles();
+            }
+        });
+
+        getActionMap().put("historyForward", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                historyPosition++;
+
+                if (historyPosition > history.size())
+                {
+                    historyPosition = history.size();
+                }
+                else
+                {
+                    if (historyPosition == history.size())
+                    {
+                        clear();
+                    }
+                    else
+                    {
+                        setText((String)history.get(historyPosition));
+                    }
+                }
+                toolbar.updateStyles();
+            }
+        });
 
         getActionMap().put("enter", new AbstractAction()
         {
@@ -180,16 +303,47 @@ public class ChatLogEntryPane extends JEditorPane
              */
             public void actionPerformed(ActionEvent e)
             {
-                frame.submitEntryText();
+                // they hit return on the text bar
+                String entered = getText().trim();
+                if (entered.length() == 0)
+                {
+                    // useless string.
+                    // return focus to the map
+                    frame.getGametableCanvas().requestFocus();
+                    return;
+                }
+
+                history.add(entered);
+                historyPosition = history.size();
+
+               
+                // parse for commands
+                String plain = getPlainText().trim();
+                if (plain.length() > 0 && plain.charAt(0) == '/')
+                {
+                    frame.parseSlashCommand(plain);
+                }
+                else
+                {
+                    frame.postMessage("<b>" + frame.getMyPlayer().getCharacterName() + "&gt;</b> " + entered);
+                }
+
+                if (styleOverride == null)
+                {
+                    styleOverride = new SimpleAttributeSet(getCurrentStyle());
+                }
+
+                clear();
+                toolbar.updateStyles();
             }
         });
     }
 
     private AttributeSet getCurrentStyle()
     {
-        if (currentStyle != null)
+        if (styleOverride != null)
         {
-            return currentStyle;
+            return styleOverride;
         }
 
         HTMLDocument doc = (HTMLDocument)getDocument();
@@ -266,7 +420,7 @@ public class ChatLogEntryPane extends JEditorPane
         for (Enumeration e = clean.getAttributeNames(); e.hasMoreElements();)
         {
             Object key = e.nextElement();
-            buffer.append(' '); 
+            buffer.append(' ');
             buffer.append(key.toString());
             if (!(key instanceof String))
             {
