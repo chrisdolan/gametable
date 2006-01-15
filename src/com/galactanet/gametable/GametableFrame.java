@@ -114,6 +114,19 @@ public class GametableFrame extends JFrame implements ActionListener
 
     private final static boolean  DEBUG_FOCUS             = false;
     private final static boolean  SEND_PINGS              = false;
+    
+    // font colors
+    public final static String SYSTEM_MESSAGE_FONT = "<b><font color=\"#009900\">";
+    public final static String ALERT_MESSAGE_FONT = "<b><font color=\"#FF0000\">";
+    public final static String PRIVATE_MESSAGE_FONT = "<b><font color=\"#00B2EB\">";
+    public final static String EMOTE_MESSAGE_FONT = "<b><font color=\"#004477\">";
+    public final static String DIEROLL_MESSAGE_FONT = "<b><font color=\"#960018\">";
+    
+    public final static String END_SYSTEM_MESSAGE_FONT = "</b></font>";
+    public final static String END_ALERT_MESSAGE_FONT = "</b></font>";
+    public final static String END_PRIVATE_MESSAGE_FONT = "</b></font>";
+    public final static String END_EMOTE_MESSAGE_FONT = "</b></font>";
+    public final static String END_DIEROLL_MESSAGE_FONT = "</b></font>";
 
     /**
      * The global gametable instance.
@@ -1949,12 +1962,12 @@ public class GametableFrame extends JFrame implements ActionListener
 
     public void logSystemMessage(String text)
     {
-        logMessage("<b><font color=\"#009900\">" + text + "</font></b>");
+        logMessage(SYSTEM_MESSAGE_FONT + text + END_SYSTEM_MESSAGE_FONT);
     }
 
     public void logAlertMessage(String text)
     {
-        logMessage("<b><font color=\"#FF0000\">" + text + "</font></b>");
+        logMessage(ALERT_MESSAGE_FONT + text + END_ALERT_MESSAGE_FONT);
     }
 
     public void logMessage(String text)
@@ -1965,17 +1978,17 @@ public class GametableFrame extends JFrame implements ActionListener
     public void logPrivateMessage(String fromName, String toName, String text)
     {
         // when they get a private message, we format it for the chat log
-        m_chatLog.addText("<b><font color=\"#00B2EB\">" + fromName + " sends \"" + text + "\"" + "</font></b>");
+        m_chatLog.addText(PRIVATE_MESSAGE_FONT + fromName + " sends \"" + text + "\"" + END_PRIVATE_MESSAGE_FONT);
     }
 
     public void postSystemMessage(String text)
     {
-        postMessage("<b><font color=\"#009900\">" + text + "</font></b>");
+        postMessage(SYSTEM_MESSAGE_FONT + text + END_SYSTEM_MESSAGE_FONT);
     }
 
     public void postAlertMessage(String text)
     {
-        postMessage("<b><font color=\"#FF0000\">" + text + "</font></b>");
+        postMessage(ALERT_MESSAGE_FONT + text + END_ALERT_MESSAGE_FONT);
     }
 
     public void postMessage(String text)
@@ -2299,8 +2312,8 @@ public class GametableFrame extends JFrame implements ActionListener
 
             // and when you post a private message, you get told about it in your
             // own chat log
-            m_chatLog.addText("<b><font color=\"#00B2EB\">You send \"" + toSend + "\" to " + properToName
-                + "</font></b>");
+            m_chatLog.addText(PRIVATE_MESSAGE_FONT + "You send \"" + toSend + "\" to " + properToName
+                + END_PRIVATE_MESSAGE_FONT);
         }
         else if (words[0].equals("/em") || words[0].equals("/emote"))
         {
@@ -2318,7 +2331,7 @@ public class GametableFrame extends JFrame implements ActionListener
             String emote = text.substring(start).trim(); 
             
             // simply post text that's an emote instead of a character action
-            String toPost = "<b><font color=\"#004477\">" + getMyPlayer().getCharacterName() + " " + emote + "</b></font>";
+            String toPost = EMOTE_MESSAGE_FONT + getMyPlayer().getCharacterName() + " " + emote + END_EMOTE_MESSAGE_FONT;
             postMessage(toPost);
         }
         else if (words[0].equals("/as"))
@@ -2348,7 +2361,7 @@ public class GametableFrame extends JFrame implements ActionListener
             String toSay = text.substring(start).trim(); 
             
             // simply post text that's an emote instead of a character action
-            String toPost = "<b><font color=\"#004477\">" + speakerName + " says " + "\"" + toSay + "\"</b></font>";
+            String toPost = EMOTE_MESSAGE_FONT + speakerName + " says " + "\"" + toSay + "\"" + END_EMOTE_MESSAGE_FONT;
             postMessage(toPost);
         }
         else if (words[0].equals("//") || words[0].equals("/help"))

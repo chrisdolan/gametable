@@ -39,6 +39,7 @@ public class ChatLogPane extends JEditorPane
 
     private JScrollPane        m_scrollPane;
     private List               entries             = new ArrayList();
+    
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
