@@ -6,10 +6,7 @@
 package com.galactanet.gametable;
 
 import java.awt.Component;
-import java.awt.event.ActionEvent;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -195,6 +192,14 @@ public class ChatLogEntryPane extends JEditorPane
         addKeyListener(new KeyAdapter()
         {
             /*
+             * @see java.awt.event.KeyAdapter#keyPressed(java.awt.event.KeyEvent)
+             */
+            public void keyPressed(KeyEvent e)
+            {
+                spaceTyped = false;
+            }
+
+            /*
              * @see java.awt.event.KeyAdapter#keyTyped(java.awt.event.KeyEvent)
              */
             public void keyTyped(KeyEvent e)
@@ -204,17 +209,17 @@ public class ChatLogEntryPane extends JEditorPane
                     return;
                 }
 
-                if (e.getKeyChar() == '\n' || e.getKeyChar() == (char)8)
-                {
-                    return;
-                }
-
                 if (e.getKeyChar() == ' ')
                 {
                     spaceTyped = true;
                     return;
                 }
-                
+
+                if (e.getKeyChar() == '\n' || e.getKeyChar() == (char)8)
+                {
+                    return;
+                }
+
                 String charStr = String.valueOf(e.getKeyChar());
                 HTMLDocument doc = (HTMLDocument)getDocument();
                 int dotPos = getCaret().getDot();
@@ -249,6 +254,17 @@ public class ChatLogEntryPane extends JEditorPane
             }
         });
 
+        addMouseListener(new MouseAdapter()
+        {
+            /*
+             * @see java.awt.event.MouseAdapter#mousePressed(java.awt.event.MouseEvent)
+             */
+            public void mousePressed(MouseEvent e)
+            {
+                spaceTyped = false;
+            }
+        });
+
         addCaretListener(new CaretListener()
         {
             /*
@@ -256,6 +272,7 @@ public class ChatLogEntryPane extends JEditorPane
              */
             public void caretUpdate(CaretEvent e)
             {
+                System.out.println("caretUpdate(" + e + ")");
                 if (!ignoreCaret && !spaceTyped)
                 {
                     styleOverride = null;
