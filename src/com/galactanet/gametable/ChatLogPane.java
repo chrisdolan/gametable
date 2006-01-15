@@ -38,6 +38,7 @@ public class ChatLogPane extends JEditorPane
                                                        + ".no-italics { font-style: normal; }"
                                                        + ".underline { text-decoration: underline; }"
                                                        + ".no-underline { text-decoration: none; }"
+                                                       + "a.user { color:black; font-weight:bold; text-decoration: none; }"
                                                        + "</style></head><body id=\"bodycontent\">";
     public static final String DEFAULT_TEXT_FOOTER = "</body></html>";
     public static final String DEFAULT_TEXT        = DEFAULT_TEXT_HEADER + DEFAULT_TEXT_FOOTER;
@@ -79,7 +80,8 @@ public class ChatLogPane extends JEditorPane
                 }
                 else if (e.getEventType().equals(HyperlinkEvent.EventType.ENTERED))
                 {
-                    setRolloverText(e.getURL().toExternalForm(), new Point(mousePosition)); 
+                    System.out.println("getUrl: " + e.getURL());
+                    setRolloverText(e.getURL().toString(), new Point(mousePosition));
                 }
                 else if (e.getEventType().equals(HyperlinkEvent.EventType.EXITED))
                 {
@@ -208,9 +210,14 @@ public class ChatLogPane extends JEditorPane
             }
 
             String url = in.substring(position, nextPosition);
-            out.append("<a href=\"");
+            out.append("<a ");
+            if (UtilityFunctions.getRandom(2) > 0)
+            {
+                out.append("class=\"test\" ");
+            }
+            out.append(" href=\"");
             out.append(url);
-            out.append("\" title=\"test\">");
+            out.append("\">");
             out.append(url);
             out.append("</a>");
             position = nextPosition;
@@ -251,7 +258,7 @@ public class ChatLogPane extends JEditorPane
         rolloverPosition = location;
         repaint();
     }
-    
+
     /**
      * Clears any rollover text on the panel.
      */

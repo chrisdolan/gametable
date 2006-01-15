@@ -73,35 +73,35 @@ public class GametableFrame extends JFrame implements ActionListener
     /**
      * Default password for when there is no prefs file.
      */
-    private static final String   DEFAULT_PASSWORD        = "";
+    private static final String   DEFAULT_PASSWORD         = "";
 
     /**
      * Default server for when there is no prefs file.
      */
-    private static final String   DEFAULT_SERVER          = "localhost";
+    private static final String   DEFAULT_SERVER           = "localhost";
 
     /**
      * Default Character name for when there is no prefs file.
      */
-    private static final String   DEFAULT_CHARACTER_NAME  = "Anonymous";
+    private static final String   DEFAULT_CHARACTER_NAME   = "Anonymous";
 
     /**
      * The version of the communications protocal used by this build. This needs to change whenever an incompatibility
      * arises betwen versions.
      */
-    public final static int       COMM_VERSION            = 11;
-    public final static int       PING_INTERVAL           = 2500;
+    public final static int       COMM_VERSION             = 11;
+    public final static int       PING_INTERVAL            = 2500;
 
-    public final static int       NETSTATE_NONE           = 0;
-    public final static int       NETSTATE_HOST           = 1;
-    public final static int       NETSTATE_JOINED         = 2;
+    public final static int       NETSTATE_NONE            = 0;
+    public final static int       NETSTATE_HOST            = 1;
+    public final static int       NETSTATE_JOINED          = 2;
 
-    public final static int       REJECT_INVALID_PASSWORD = 0;
-    public final static int       REJECT_VERSION_MISMATCH = 1;
+    public final static int       REJECT_INVALID_PASSWORD  = 0;
+    public final static int       REJECT_VERSION_MISMATCH  = 1;
 
-    public final static int       DEFAULT_PORT            = 6812;
+    public final static int       DEFAULT_PORT             = 6812;
 
-    public final static Integer[] COLORS                  = {
+    public final static Integer[] COLORS                   = {
         new Integer(new Color(0, 0, 0).getRGB()), new Integer(new Color(198, 198, 198).getRGB()),
         new Integer(new Color(0, 0, 255).getRGB()), new Integer(new Color(0, 255, 0).getRGB()),
         new Integer(new Color(0, 255, 255).getRGB()), new Integer(new Color(255, 0, 0).getRGB()),
@@ -110,23 +110,23 @@ public class GametableFrame extends JFrame implements ActionListener
         new Integer(new Color(0, 132, 0).getRGB()), new Integer(new Color(0, 132, 132).getRGB()),
         new Integer(new Color(132, 0, 0).getRGB()), new Integer(new Color(132, 0, 132).getRGB()),
         new Integer(new Color(132, 132, 0).getRGB()), new Integer(new Color(132, 132, 132).getRGB())
-                                                          };
+                                                           };
 
-    private final static boolean  DEBUG_FOCUS             = false;
-    private final static boolean  SEND_PINGS              = false;
-    
+    private final static boolean  DEBUG_FOCUS              = false;
+    private final static boolean  SEND_PINGS               = false;
+
     // font colors
-    public final static String SYSTEM_MESSAGE_FONT = "<b><font color=\"#009900\">";
-    public final static String ALERT_MESSAGE_FONT = "<b><font color=\"#FF0000\">";
-    public final static String PRIVATE_MESSAGE_FONT = "<b><font color=\"#00B2EB\">";
-    public final static String EMOTE_MESSAGE_FONT = "<b><font color=\"#004477\">";
-    public final static String DIEROLL_MESSAGE_FONT = "<b><font color=\"#960018\">";
-    
-    public final static String END_SYSTEM_MESSAGE_FONT = "</b></font>";
-    public final static String END_ALERT_MESSAGE_FONT = "</b></font>";
-    public final static String END_PRIVATE_MESSAGE_FONT = "</b></font>";
-    public final static String END_EMOTE_MESSAGE_FONT = "</b></font>";
-    public final static String END_DIEROLL_MESSAGE_FONT = "</b></font>";
+    public final static String    SYSTEM_MESSAGE_FONT      = "<b><font color=\"#009900\">";
+    public final static String    ALERT_MESSAGE_FONT       = "<b><font color=\"#FF0000\">";
+    public final static String    PRIVATE_MESSAGE_FONT     = "<b><font color=\"#00B2EB\">";
+    public final static String    EMOTE_MESSAGE_FONT       = "<b><font color=\"#004477\">";
+    public final static String    DIEROLL_MESSAGE_FONT     = "<b><font color=\"#960018\">";
+
+    public final static String    END_SYSTEM_MESSAGE_FONT  = "</b></font>";
+    public final static String    END_ALERT_MESSAGE_FONT   = "</b></font>";
+    public final static String    END_PRIVATE_MESSAGE_FONT = "</b></font>";
+    public final static String    END_EMOTE_MESSAGE_FONT   = "</b></font>";
+    public final static String    END_DIEROLL_MESSAGE_FONT = "</b></font>";
 
     /**
      * The global gametable instance.
@@ -1978,7 +1978,8 @@ public class GametableFrame extends JFrame implements ActionListener
     public void logPrivateMessage(String fromName, String toName, String text)
     {
         // when they get a private message, we format it for the chat log
-        m_chatLog.addText(PRIVATE_MESSAGE_FONT + fromName + " sends \"" + text + "\"" + END_PRIVATE_MESSAGE_FONT);
+        logMessage(PRIVATE_MESSAGE_FONT + UtilityFunctions.emitUsernameLink(fromName) + " sends \"" + text + "\""
+            + END_PRIVATE_MESSAGE_FONT);
     }
 
     public void postSystemMessage(String text)
@@ -2266,7 +2267,8 @@ public class GametableFrame extends JFrame implements ActionListener
                 // tell them the usage and bail
                 logSystemMessage(words[0] + " usage: " + words[0] + " &lt;player name&gt; &lt;message&gt;");
                 logSystemMessage("Examples:");
-                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + words[0] + " Dave I am the most awesome programmer on Gametable!");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + words[0]
+                    + " Dave I am the most awesome programmer on Gametable!");
                 logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + words[0] + " Andy No you're not, you suck!");
                 return;
             }
@@ -2325,13 +2327,14 @@ public class GametableFrame extends JFrame implements ActionListener
                 logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/emote gets a beer.");
                 return;
             }
-            
+
             // get the portion of the text after the emote command
             int start = text.indexOf(words[0]) + words[0].length();
-            String emote = text.substring(start).trim(); 
-            
+            String emote = text.substring(start).trim();
+
             // simply post text that's an emote instead of a character action
-            String toPost = EMOTE_MESSAGE_FONT + getMyPlayer().getCharacterName() + " " + emote + END_EMOTE_MESSAGE_FONT;
+            String toPost = EMOTE_MESSAGE_FONT + UtilityFunctions.emitUsernameLink(getMyPlayer().getCharacterName()) + " " + emote
+                + END_EMOTE_MESSAGE_FONT;
             postMessage(toPost);
         }
         else if (words[0].equals("/as"))
@@ -2347,19 +2350,19 @@ public class GametableFrame extends JFrame implements ActionListener
                 return;
             }
             StringBuffer speakerName = new StringBuffer(words[1]);
-            
-            for ( int i=0 ; i<speakerName.length() ; i++ )
+
+            for (int i = 0; i < speakerName.length(); i++)
             {
-            	if ( speakerName.charAt(i) == '_' )
-            	{
-            		speakerName.setCharAt(i, ' ');
-            	}
+                if (speakerName.charAt(i) == '_')
+                {
+                    speakerName.setCharAt(i, ' ');
+                }
             }
-            
+
             // get the portion of the text after the emote command
             int start = text.indexOf(words[1]) + words[1].length();
-            String toSay = text.substring(start).trim(); 
-            
+            String toSay = text.substring(start).trim();
+
             // simply post text that's an emote instead of a character action
             String toPost = EMOTE_MESSAGE_FONT + speakerName + " says " + "\"" + toSay + "\"" + END_EMOTE_MESSAGE_FONT;
             postMessage(toPost);

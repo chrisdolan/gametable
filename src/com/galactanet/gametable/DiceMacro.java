@@ -179,7 +179,7 @@ public class DiceMacro
     
     public static String generateOutputString(String rollerName, String rollName, String rollItemizedResults, String result)
     {
-        String ret = "<b>" + rollerName + "</b> rolls " + rollName + ": [" + rollItemizedResults + "] = "+ GametableFrame.DIEROLL_MESSAGE_FONT + result + GametableFrame.END_DIEROLL_MESSAGE_FONT;
+        String ret = UtilityFunctions.emitUsernameLink(rollerName) + " rolls " + rollName + ": [" + rollItemizedResults + "] = "+ GametableFrame.DIEROLL_MESSAGE_FONT + result + GametableFrame.END_DIEROLL_MESSAGE_FONT;
         return ret;
     }
 

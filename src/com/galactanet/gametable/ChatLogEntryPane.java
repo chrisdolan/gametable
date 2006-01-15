@@ -362,7 +362,7 @@ public class ChatLogEntryPane extends JEditorPane
                 }
                 else
                 {
-                    frame.postMessage("<b>" + frame.getMyPlayer().getCharacterName() + "&gt;</b> " + entered);
+                    frame.postMessage(UtilityFunctions.emitUsernameLink(frame.getMyPlayer().getCharacterName()) + "&gt; " + entered);
                 }
 
                 if (styleOverride == null)
