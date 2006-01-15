@@ -2252,12 +2252,10 @@ public class GametableFrame extends JFrame implements ActionListener
             if (words.length < 3)
             {
                 // tell them the usage and bail
-                logSystemMessage(words[0] + "usage: " + words[0] + " &lt;player name&gt; &lt;message&gt;");
+                logSystemMessage(words[0] + " usage: " + words[0] + " &lt;player name&gt; &lt;message&gt;");
                 logSystemMessage("Examples:");
-                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+words[0]+" Dave I am the most awesome programmer on Gametable!");
-                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+words[0]+" Andy No you're not, you suck!");
-                logSystemMessage("    " + words[0] + " Dave I am the most awesome programmer on Gametable!");
-                logSystemMessage("    " + words[0] + " Andy No you're not, you suck!");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + words[0] + " Dave I am the most awesome programmer on Gametable!");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + words[0] + " Andy No you're not, you suck!");
                 return;
             }
 
@@ -2310,7 +2308,7 @@ public class GametableFrame extends JFrame implements ActionListener
             if (words.length < 2)
             {
                 // tell them the usage and bail
-                logSystemMessage("/emote usage: /emote <action>");
+                logSystemMessage("/emote usage: /emote &lt;action&gt;");
                 logSystemMessage("Examples:");
                 logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/emote gets a beer.");
                 return;
@@ -2321,20 +2319,53 @@ public class GametableFrame extends JFrame implements ActionListener
             String emote = text.substring(start).trim(); 
             
             // simply post text that's an emote instead of a character action
-            String toPost = "<b><font color=\"#004477\">" + getMyPlayer().getCharacterName() + " " + emote;
+            String toPost = "<b><font color=\"#004477\">" + getMyPlayer().getCharacterName() + " " + emote + "</b></font>";
+            postMessage(toPost);
+        }
+        else if (words[0].equals("/as"))
+        {
+            if (words.length < 3)
+            {
+                // tell them the usage and bail
+                logSystemMessage("/as usage: /as &lt;name&gt; &lt;text&gt;");
+                logSystemMessage("Examples:");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/as Balthazar Prepare to meet your doom!.");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/as Lord_Doom Prepare to meet um... me!");
+                logSystemMessage("Note: Underscore characters in the name you specify will be turned into spaces");
+                return;
+            }
+            StringBuffer speakerName = new StringBuffer(words[1]);
+            
+            for ( int i=0 ; i<speakerName.length() ; i++ )
+            {
+            	if ( speakerName.charAt(i) == '_' )
+            	{
+            		speakerName.setCharAt(i, ' ');
+            	}
+            }
+            
+            // get the portion of the text after the emote command
+            int start = text.indexOf(words[1]) + words[1].length();
+            String toSay = text.substring(start).trim(); 
+            
+            // simply post text that's an emote instead of a character action
+            String toPost = "<b><font color=\"#004477\">" + speakerName + " says " + "\"" + toSay + "\"</b></font>";
             postMessage(toPost);
         }
         else if (words[0].equals("//") || words[0].equals("/help"))
         {
             // list macro commands
-            logSystemMessage("/macro: macro a die roll");
-            logSystemMessage("/macrodelete: deletes an unwanted macro");
-            logSystemMessage("/roll: roll dice");
-            logSystemMessage("/who: lists connected players");
-            logSystemMessage("/poglist: lists pogs by attribute");
-            logSystemMessage("/tell: send a private message to another player");
-            logSystemMessage("/send: send a private message to another player");
-            logSystemMessage("// or /help: list all slash commands");
+            logSystemMessage("/as:</b> Display a narrative of a character saying something<b>");
+            logSystemMessage("/emote:</b> Display an emote<b>");
+            logSystemMessage("/help:</b> list all slash commands<b>");
+            logSystemMessage("/macro:</b> macro a die roll<b>");
+            logSystemMessage("/macrodelete:</b> deletes an unwanted macro<b>");
+            logSystemMessage("/poglist:</b> lists pogs by attribute<b>");
+            logSystemMessage("/roll:</b> roll dice<b>");
+            logSystemMessage("/send:</b> send a private message to another player<b>");
+            logSystemMessage("/tell:</b> send a private message to another player<b>");
+            logSystemMessage("/who:</b> lists connected players<b>");
+            logSystemMessage("//:</b> list all slash commands<b>");
         }
     }
 
