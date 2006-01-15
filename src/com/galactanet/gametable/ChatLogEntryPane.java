@@ -208,9 +208,6 @@ public class ChatLogEntryPane extends JEditorPane
                 }
 
                 HTMLDocument doc = (HTMLDocument)getDocument();
-                System.out.println("1 dotPos: " + getCaret().getDot() + " [" + doc.getStartPosition() + ", "
-                    + doc.getEndPosition() + "] " + "keyChar: " + (int)e.getKeyChar());
-
                 String charStr = String.valueOf(e.getKeyChar());
                 if (styleOverride != null)
                 {
@@ -220,8 +217,6 @@ public class ChatLogEntryPane extends JEditorPane
                         int dotPos = getCaret().getDot();
                         doc.insertAfterEnd(doc.getCharacterElement(dotPos), charStr);
                         doc.setCharacterAttributes(dotPos, charStr.length(), styleOverride, false);
-                        System.out.println("2 dotPos: " + getCaret().getDot() + " [" + doc.getStartPosition() + ", "
-                            + doc.getEndPosition() + "] " + "keyChar: " + (int)e.getKeyChar());
                         // Hack to force the carat style to be what we just typed
                         setCaretPosition(dotPos);
                         setCaretPosition(dotPos + charStr.length());
