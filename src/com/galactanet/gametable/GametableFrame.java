@@ -2054,8 +2054,8 @@ public class GametableFrame extends JFrame implements ActionListener
                 // tell them the usage and bail
                 logSystemMessage("/macro usage: /macro &lt;macroName&gt; &lt;dice roll in standard format&gt;");
                 logSystemMessage("Examples:");
-                logSystemMessage("    /macro Attack d20+8");
-                logSystemMessage("    /macro SneakDmg d4 + 2 + 4d6");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/macro Attack d20+8");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/macro SneakDmg d4 + 2 + 4d6");
                 logSystemMessage("Note: Macros will replace existing macros with the same name.");
                 return;
             }
@@ -2102,9 +2102,9 @@ public class GametableFrame extends JFrame implements ActionListener
                 logSystemMessage("/roll usage: /roll &lt;Dice Roll in standard format&gt;");
                 logSystemMessage("or: /roll &lt;Macro Name&gt; [&lt;+/-&gt; &lt;Macro Name or Dice Roll&gt;]...");
                 logSystemMessage("Examples:");
-                logSystemMessage(" /roll 2d6 + 3d4 + 8");
-                logSystemMessage(" /roll My Damage + d4");
-                logSystemMessage(" /roll d20 + My Damage + My Damage Bonus");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/roll 2d6 + 3d4 + 8");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/roll My Damage + d4");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/roll d20 + My Damage + My Damage Bonus");
                 return;
             }
 
@@ -2214,8 +2214,8 @@ public class GametableFrame extends JFrame implements ActionListener
                 // tell them the usage and bail
                 logSystemMessage("/poglist usage: /poglist &lt;attribute name&gt;");
                 logSystemMessage("Examples:");
-                logSystemMessage("    /poglist HP");
-                logSystemMessage("    /poglist Initiative");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/poglist HP");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/poglist Initiative");
                 logSystemMessage("Note: attribute names are case, whitespace, and punctuation-insensitive.");
                 return;
             }
@@ -2254,6 +2254,8 @@ public class GametableFrame extends JFrame implements ActionListener
                 // tell them the usage and bail
                 logSystemMessage(words[0] + "usage: " + words[0] + " &lt;player name&gt; &lt;message&gt;");
                 logSystemMessage("Examples:");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+words[0]+" Dave I am the most awesome programmer on Gametable!");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+words[0]+" Andy No you're not, you suck!");
                 logSystemMessage("    " + words[0] + " Dave I am the most awesome programmer on Gametable!");
                 logSystemMessage("    " + words[0] + " Andy No you're not, you suck!");
                 return;
@@ -2302,6 +2304,25 @@ public class GametableFrame extends JFrame implements ActionListener
             // own chat log
             m_chatLog.addText("<b><font color=\"#00B2EB\">You send \"" + toSend + "\" to " + properToName
                 + "</font></b>");
+        }
+        else if (words[0].equals("/em") || words[0].equals("/emote"))
+        {
+            if (words.length < 2)
+            {
+                // tell them the usage and bail
+                logSystemMessage("/emote usage: /emote <action>");
+                logSystemMessage("Examples:");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/emote gets a beer.");
+                return;
+            }
+            
+            // get the portion of the text after the emote command
+            int start = text.indexOf(words[0]) + words[0].length();
+            String emote = text.substring(start).trim(); 
+            
+            // simply post text that's an emote instead of a character action
+            String toPost = "<b><font color=\"#004477\">" + getMyPlayer().getCharacterName() + " " + emote;
+            postMessage(toPost);
         }
         else if (words[0].equals("//") || words[0].equals("/help"))
         {
