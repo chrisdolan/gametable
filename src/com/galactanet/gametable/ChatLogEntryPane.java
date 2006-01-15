@@ -182,6 +182,7 @@ public class ChatLogEntryPane extends JEditorPane
     {
         setEditable(true);
         setFocusable(true);
+        setRequestFocusEnabled(true);
         setBorder(new BevelBorder(BevelBorder.LOWERED));
 
         getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed UP"), "historyBack");

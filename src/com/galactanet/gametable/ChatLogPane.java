@@ -9,9 +9,7 @@ import java.awt.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JEditorPane;
-import javax.swing.JScrollPane;
-import javax.swing.ScrollPaneConstants;
+import javax.swing.*;
 
 
 
@@ -51,6 +49,10 @@ public class ChatLogPane extends JEditorPane
         super("text/html", DEFAULT_TEXT);
         setEditable(false);
         setFocusable(true);
+
+        // clear all default keystrokes
+        InputMap map = new InputMap();
+        setInputMap(WHEN_FOCUSED, map);
     }
 
     // --- Methods ---------------------------------------------------------------------------------------------------
@@ -71,8 +73,8 @@ public class ChatLogPane extends JEditorPane
 
     public void addText(String text)
     {
-        // System.out.println("text: " + text);
         entries.add(highlightUrls(text));
+        System.out.println("text: " + text);
 
         StringBuffer bodyContent = new StringBuffer();
         bodyContent.append(DEFAULT_TEXT_HEADER);
@@ -128,18 +130,18 @@ public class ChatLogPane extends JEditorPane
                     case '+':
                     case '-':
                     case '=':
-                        break;
+                    break;
                     default:
                         foundEnd = true;
-                        break;
+                    break;
                 }
-                
+
                 if (foundEnd)
                 {
                     break;
                 }
             }
-            
+
             String url = in.substring(position, nextPosition);
             out.append("<a href=\"");
             out.append(url);
@@ -148,9 +150,6 @@ public class ChatLogPane extends JEditorPane
             out.append("</a>");
             position = nextPosition;
         }
-        System.out.println("in: " + in);
-        System.out.println("out: " + out.toString());
-        
 
         return out.toString();
     }

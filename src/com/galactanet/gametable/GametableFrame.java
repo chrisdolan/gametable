@@ -234,10 +234,9 @@ public class GametableFrame extends JFrame implements ActionListener
                 /*
                  * @see java.beans.PropertyChangeListener#propertyChange(java.beans.PropertyChangeEvent)
                  */
-                public void propertyChange(PropertyChangeEvent evt)
+                public void propertyChange(PropertyChangeEvent e)
                 {
-                    System.out.println("propertyChange(" + evt.getPropertyName() + ": " + evt.getOldValue() + " -> "
-                        + evt.getNewValue() + ")");
+                    System.out.println(e.getPropertyName() + ":\n    " + e.getOldValue() + "\n -> " + e.getNewValue());
                 }
 
             });
@@ -406,6 +405,21 @@ public class GametableFrame extends JFrame implements ActionListener
              */
             public void actionPerformed(ActionEvent e)
             {
+                if (m_gametableCanvas.isTextFieldFocused())
+                {
+                    return;
+                }
+
+                if (m_textEntry.getText().length() == 0)
+                {
+                    // furthermore, only do the set text and focusing if we don't have
+                    // focus (otherwise, we end up with two slashes. One from the user typing it, and
+                    // another from us setting the text, cause our settext happens first.)
+                    if (KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() != m_textEntry)
+                    {
+                        m_textEntry.setText("");
+                    }
+                }
                 m_textEntry.requestFocus();
             }
         });
@@ -1951,8 +1965,8 @@ public class GametableFrame extends JFrame implements ActionListener
 
     public void logPrivateMessage(String fromName, String toName, String text)
     {
-    	// when they get a private message, we format it for the chat log
-        m_chatLog.addText("<b><font color=\"#00B2EB\">" + fromName + " sends \""+ text + "\""+"</font></b>");
+        // when they get a private message, we format it for the chat log
+        m_chatLog.addText("<b><font color=\"#00B2EB\">" + fromName + " sends \"" + text + "\"" + "</font></b>");
     }
 
     public void postSystemMessage(String text)
@@ -1992,21 +2006,21 @@ public class GametableFrame extends JFrame implements ActionListener
         if (m_netStatus == NETSTATE_HOST)
         {
             // if you're the host, push to the appropriate player(s)
-        	for ( int i=0 ; i<m_players.size() ; i++ )
-        	{
-            	Player player = (Player)m_players.get(i);
-            	if ( player.hasName(toName) )
-            	{
-            		// send the message to this player
+            for (int i = 0; i < m_players.size(); i++)
+            {
+                Player player = (Player)m_players.get(i);
+                if (player.hasName(toName))
+                {
+                    // send the message to this player
                     send(PacketManager.makePrivateTextPacket(fromName, toName, text), player);
-            	}
-        	}
+                }
+            }
 
             // add it to your own text log if we're the right player
-        	if ( getMyPlayer().hasName(toName) )
-        	{
+            if (getMyPlayer().hasName(toName))
+            {
                 logPrivateMessage(fromName, toName, text);
-        	}
+            }
         }
         else if (m_netStatus == NETSTATE_JOINED)
         {
@@ -2016,15 +2030,14 @@ public class GametableFrame extends JFrame implements ActionListener
         else
         {
             // if you're offline, post it to yourself if you're the
-        	// person you sent it to.
-        	if ( getMyPlayer().hasName(toName) )
-        	{
+            // person you sent it to.
+            if (getMyPlayer().hasName(toName))
+            {
                 logPrivateMessage(fromName, toName, text);
-        	}
+            }
         }
     }
-    
-    
+
     public void parseSlashCommand(String text)
     {
         // get the command
@@ -2189,7 +2202,8 @@ public class GametableFrame extends JFrame implements ActionListener
 
                 first = false;
             }
-            String toPost = DiceMacro.generateOutputString(getMyPlayer().getCharacterName(), rollBuf.toString(), resultBuf.toString(), ""+total);
+            String toPost = DiceMacro.generateOutputString(getMyPlayer().getCharacterName(), rollBuf.toString(),
+                resultBuf.toString(), "" + total);
             postMessage(toPost);
         }
         else if (words[0].equals("/poglist"))
@@ -2226,7 +2240,7 @@ public class GametableFrame extends JFrame implements ActionListener
                         pogText = "&lt;unknown&gt;";
                     }
 
-                    // Dave's way preserved for reversion if needed 
+                    // Dave's way preserved for reversion if needed
                     // pogText += " - ";
                     // logSystemMessage("<li>" + pogText + name + ": " + value + "</li>");
 
@@ -2237,19 +2251,19 @@ public class GametableFrame extends JFrame implements ActionListener
             logSystemMessage("</table>");
             logSystemMessage(tally + " pog" + (tally != 1 ? "s" : "") + " found.");
         }
-        else if (words[0].equals("/tell") || words[0].equals("/send") )
+        else if (words[0].equals("/tell") || words[0].equals("/send"))
         {
-        	 // send a private message to another player
+            // send a private message to another player
             if (words.length < 3)
             {
                 // tell them the usage and bail
-                logSystemMessage(words[0]+"usage: "+words[0]+" &lt;player name&gt; &lt;message&gt;");
+                logSystemMessage(words[0] + "usage: " + words[0] + " &lt;player name&gt; &lt;message&gt;");
                 logSystemMessage("Examples:");
-                logSystemMessage("    "+words[0]+" Dave I am the most awesome programmer on Gametable!");
-                logSystemMessage("    "+words[0]+" Andy No you're not, you suck!");
+                logSystemMessage("    " + words[0] + " Dave I am the most awesome programmer on Gametable!");
+                logSystemMessage("    " + words[0] + " Andy No you're not, you suck!");
                 return;
             }
-            
+
             // they have a legitimate /tell or /send
             String toName = words[1];
 
@@ -2257,28 +2271,28 @@ public class GametableFrame extends JFrame implements ActionListener
             // and note the "proper" name for them (which is their player name)
             boolean bFound = false;
             String properToName = "";
-            for ( int i=0 ; i<m_players.size() ; i++ )
+            for (int i = 0; i < m_players.size(); i++)
             {
-            	Player player = (Player)m_players.get(i);
-            	if ( player.hasName(toName) )
-            	{
-            		bFound = true;
-            		properToName = player.getPlayerName();
-            		break;
-            	}
+                Player player = (Player)m_players.get(i);
+                if (player.hasName(toName))
+                {
+                    bFound = true;
+                    properToName = player.getPlayerName();
+                    break;
+                }
             }
-            
-            if ( !bFound )
+
+            if (!bFound)
             {
-            	// nobody by that name is in the session
-            	logSystemMessage("There is no player or character named \""+toName+"\" in the session.");
-            	return;
+                // nobody by that name is in the session
+                logSystemMessage("There is no player or character named \"" + toName + "\" in the session.");
+                return;
             }
-            
+
             // if we're here then the player exists
             // get our own name
             String fromName = getMyPlayer().getPlayerName();
-            
+
             // now get the message portion
             // we have to do this with the original text, cause the words[] array
             // will have stripped a lot of whitespace if they had multiple spaces, etc.
@@ -2286,12 +2300,13 @@ public class GametableFrame extends JFrame implements ActionListener
             // we then add the length of the name to get past that
             int start = text.indexOf(toName) + toName.length();
             String toSend = text.substring(start).trim();
-            
+
             postPrivateMessage(fromName, properToName, toSend);
-            
+
             // and when you post a private message, you get told about it in your
             // own chat log
-            m_chatLog.addText("<b><font color=\"#00B2EB\">You send \""+toSend+"\" to "+properToName+"</font></b>");
+            m_chatLog.addText("<b><font color=\"#00B2EB\">You send \"" + toSend + "\" to " + properToName
+                + "</font></b>");
         }
         else if (words[0].equals("//") || words[0].equals("/help"))
         {
