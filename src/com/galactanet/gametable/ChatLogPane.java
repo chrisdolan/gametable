@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.event.*;
 
 
 
@@ -53,6 +54,16 @@ public class ChatLogPane extends JEditorPane
         // clear all default keystrokes
         InputMap map = new InputMap();
         setInputMap(WHEN_FOCUSED, map);
+        
+        this.addHyperlinkListener( 
+        	new HyperlinkListener()
+			{
+	    		public void hyperlinkUpdate(HyperlinkEvent e)
+	    		{
+	    			GametableApp.launchBrowser(e.getURL().toString());
+				}
+			}
+        );
     }
 
     // --- Methods ---------------------------------------------------------------------------------------------------
