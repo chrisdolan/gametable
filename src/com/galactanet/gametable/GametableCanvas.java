@@ -31,32 +31,33 @@ import com.galactanet.gametable.tools.NullTool;
  */
 public class GametableCanvas extends JComponent implements MouseListener, MouseMotionListener, MouseWheelListener
 {
+    public static final RenderingHints RENDER_HINTS           = getRenderHints();
+
     // grid modes
-    public final static int             GRID_MODE_NONE         = 0;
-    public final static int             GRID_MODE_SQUARES      = 1;
-    public final static int             GRID_MODE_HEX          = 2;
+    public final static int            GRID_MODE_NONE         = 0;
+    public final static int            GRID_MODE_SQUARES      = 1;
+    public final static int            GRID_MODE_HEX          = 2;
 
     // the size of a square at max zoom level (0)
-    public final static int             BASE_SQUARE_SIZE       = 64;
+    public final static int            BASE_SQUARE_SIZE       = 64;
 
-    public final static int             NUM_ZOOM_LEVELS        = 5;
+    public final static int            NUM_ZOOM_LEVELS        = 5;
 
-    private static final int            KEYBOARD_SCROLL_AMOUNT = 300;
-    private static final int            KEYBOARD_SCROLL_TIME   = 300;
+    private static final int           KEYBOARD_SCROLL_AMOUNT = 300;
+    private static final int           KEYBOARD_SCROLL_TIME   = 300;
 
-    private static final Font           MAIN_FONT              = Font.decode("sans-12");
-    private static final RenderingHints RENDER_HINTS           = getRenderHints();
+    private static final Font          MAIN_FONT              = Font.decode("sans-12");
 
     /**
      * This is the color used to overlay on top of the public layer when the user is on the private layer. It's white
      * with 50% alpha
      */
-    private static final Color          OVERLAY_COLOR          = new Color(255, 255, 255, 128);
+    private static final Color         OVERLAY_COLOR          = new Color(255, 255, 255, 128);
 
     /**
      * A singleton instance of the NULL tool.
      */
-    private static final Tool           NULL_TOOL              = new NullTool();
+    private static final Tool          NULL_TOOL              = new NullTool();
 
     private static RenderingHints getRenderHints()
     {

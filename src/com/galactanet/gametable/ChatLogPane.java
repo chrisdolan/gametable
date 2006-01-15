@@ -5,12 +5,19 @@
 
 package com.galactanet.gametable;
 
-import java.awt.Component;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.*;
-import javax.swing.event.*;
+import javax.swing.InputMap;
+import javax.swing.JEditorPane;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
 
 
 
@@ -35,11 +42,16 @@ public class ChatLogPane extends JEditorPane
     public static final String DEFAULT_TEXT_FOOTER = "</body></html>";
     public static final String DEFAULT_TEXT        = DEFAULT_TEXT_HEADER + DEFAULT_TEXT_FOOTER;
 
+    private static final Font  FONT_ROLLOVER       = Font.decode("sans-12");
+    private static final Color COLOR_ROLLOVER      = new Color(0xFF, 0xFF, 0x7F, 0xAF);
+
     // --- Members ---------------------------------------------------------------------------------------------------
 
-    private JScrollPane        m_scrollPane;
+    private JScrollPane        scrollPane;
     private List               entries             = new ArrayList();
-    
+    private String             rolloverText        = null;
+    private Point              rolloverPosition    = null;
+    private Point              mousePosition       = new Point();
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -51,6 +63,7 @@ public class ChatLogPane extends JEditorPane
         super("text/html", DEFAULT_TEXT);
         setEditable(false);
         setFocusable(true);
+        setLayout(null);
 
         // clear all default keystrokes
         InputMap map = new InputMap();
@@ -64,6 +77,45 @@ public class ChatLogPane extends JEditorPane
                 {
                     UtilityFunctions.launchBrowser(e.getURL().toString());
                 }
+                else if (e.getEventType().equals(HyperlinkEvent.EventType.ENTERED))
+                {
+                    setRolloverText(e.getURL().toExternalForm(), new Point(mousePosition)); 
+                }
+                else if (e.getEventType().equals(HyperlinkEvent.EventType.EXITED))
+                {
+                    clearRollover();
+                }
+            }
+        });
+
+        addMouseMotionListener(new MouseMotionListener()
+        {
+            /*
+             * @see java.awt.event.MouseMotionListener#mouseDragged(java.awt.event.MouseEvent)
+             */
+            public void mouseDragged(MouseEvent e)
+            {
+                mouseMoved(e);
+            }
+
+            /*
+             * @see java.awt.event.MouseMotionListener#mouseMoved(java.awt.event.MouseEvent)
+             */
+            public void mouseMoved(MouseEvent e)
+            {
+                mousePosition.x = e.getX();
+                mousePosition.y = e.getY();
+            }
+        });
+
+        addMouseListener(new MouseAdapter()
+        {
+            /*
+             * @see java.awt.event.MouseAdapter#mouseExited(java.awt.event.MouseEvent)
+             */
+            public void mouseExited(MouseEvent e)
+            {
+                clearRollover();
             }
         });
     }
@@ -75,13 +127,13 @@ public class ChatLogPane extends JEditorPane
      */
     public Component getComponentToAdd()
     {
-        if (m_scrollPane == null)
+        if (scrollPane == null)
         {
-            m_scrollPane = new JScrollPane(this, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+            scrollPane = new JScrollPane(this, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         }
 
-        return m_scrollPane;
+        return scrollPane;
     }
 
     public void addText(String text)
@@ -158,12 +210,58 @@ public class ChatLogPane extends JEditorPane
             String url = in.substring(position, nextPosition);
             out.append("<a href=\"");
             out.append(url);
-            out.append("\">");
+            out.append("\" title=\"test\">");
             out.append(url);
             out.append("</a>");
             position = nextPosition;
         }
 
         return out.toString();
+    }
+
+    /*
+     * @see javax.swing.JComponent#paintComponent(java.awt.Graphics)
+     */
+    protected void paintComponent(Graphics g)
+    {
+        super.paintComponent(g);
+        if (rolloverText != null && rolloverPosition != null)
+        {
+            Graphics2D g2 = (Graphics2D)g.create();
+            g2.addRenderingHints(GametableCanvas.RENDER_HINTS);
+            g2.setFont(FONT_ROLLOVER);
+            Rectangle rect = g2.getFontMetrics().getStringBounds(rolloverText, g2).getBounds();
+            int drawX = rolloverPosition.x;
+            int drawY = rolloverPosition.y - rect.y + 24;
+            rect.x += drawX;
+            rect.y += drawY;
+            rect.grow(2, 2);
+            g2.setColor(COLOR_ROLLOVER);
+            g2.fill(rect);
+            g2.setColor(Color.BLACK);
+            g2.draw(rect);
+            g2.drawString(rolloverText, drawX, drawY);
+            g2.dispose();
+        }
+    }
+
+    private void setRolloverText(String text, Point location)
+    {
+        rolloverText = text;
+        rolloverPosition = location;
+        repaint();
+    }
+    
+    /**
+     * Clears any rollover text on the panel.
+     */
+    private void clearRollover()
+    {
+        if (rolloverText != null)
+        {
+            rolloverText = null;
+            rolloverPosition = null;
+            repaint();
+        }
     }
 }
