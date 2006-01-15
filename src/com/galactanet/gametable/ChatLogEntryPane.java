@@ -59,6 +59,8 @@ public class ChatLogEntryPane extends JEditorPane
     private MutableAttributeSet styleOverride   = null;
     private GametableFrame      frame;
 
+    private boolean             ignoreCaret     = false;
+
     // --- Constructors ----------------------------------------------------------------------------------------------
 
     public ChatLogEntryPane(GametableFrame parentFrame)
@@ -200,20 +202,26 @@ public class ChatLogEntryPane extends JEditorPane
                     return;
                 }
 
-                if (e.getKeyChar() == '\n')
+                if (e.getKeyChar() == '\n' || e.getKeyChar() == (char)8)
                 {
                     return;
                 }
 
                 HTMLDocument doc = (HTMLDocument)getDocument();
+                System.out.println("1 dotPos: " + getCaret().getDot() + " [" + doc.getStartPosition() + ", "
+                    + doc.getEndPosition() + "] " + "keyChar: " + (int)e.getKeyChar());
+
                 String charStr = String.valueOf(e.getKeyChar());
                 if (styleOverride != null)
                 {
                     try
                     {
+                        ignoreCaret = true;
                         int dotPos = getCaret().getDot();
                         doc.insertAfterEnd(doc.getCharacterElement(dotPos), charStr);
                         doc.setCharacterAttributes(dotPos, charStr.length(), styleOverride, false);
+                        System.out.println("2 dotPos: " + getCaret().getDot() + " [" + doc.getStartPosition() + ", "
+                            + doc.getEndPosition() + "] " + "keyChar: " + (int)e.getKeyChar());
                         // Hack to force the carat style to be what we just typed
                         setCaretPosition(dotPos);
                         setCaretPosition(dotPos + charStr.length());
@@ -221,6 +229,10 @@ public class ChatLogEntryPane extends JEditorPane
                     catch (Exception ex)
                     {
                         Log.log(Log.SYS, ex);
+                    }
+                    finally
+                    {
+                        ignoreCaret = false;
                     }
 
                     // Hack to get around weird first-character bug in edit pane
@@ -240,7 +252,11 @@ public class ChatLogEntryPane extends JEditorPane
              */
             public void caretUpdate(CaretEvent e)
             {
-                toolbar.updateStyles();
+                if (!ignoreCaret)
+                {
+                    styleOverride = null;
+                    toolbar.updateStyles();
+                }
             }
         });
 
@@ -316,7 +332,6 @@ public class ChatLogEntryPane extends JEditorPane
                 history.add(entered);
                 historyPosition = history.size();
 
-               
                 // parse for commands
                 String plain = getPlainText().trim();
                 if (plain.length() > 0 && plain.charAt(0) == '/')
