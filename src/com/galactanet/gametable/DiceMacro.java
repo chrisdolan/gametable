@@ -179,7 +179,7 @@ public class DiceMacro
     
     public static String generateOutputString(String rollerName, String rollName, String rollItemizedResults, String result)
     {
-        String ret = rollerName + " rolls " + rollName + ": <b><font color=\"#960018\">"+ result + "</font></b> = [" + rollItemizedResults + "]";
+        String ret = "<b>" + rollerName + "</b> rolls " + rollName + ": [" + rollItemizedResults + "] = <b><font color=\"#960018\">"+ result + "</font></b>";
         return ret;
     }
 
@@ -630,11 +630,7 @@ public class DiceMacro
             return "";
         }
 
-        if (!isSameMacroString(getName(), getMacro()) && getName() != null && getName().length() > 0)
-        {
-            return getName() + " (" + getMacro() + ")";
-        }
-        return getMacro();
+        return toFormattedString();
     }
 
     /**
@@ -706,4 +702,18 @@ public class DiceMacro
 
         return getName() + " (" + getMacro() + ")";
     }
+
+    /*
+     * @see java.lang.Object#toString()
+     */
+    public String toFormattedString()
+    {
+        if (getName() == null || isSameMacroString(getName(), getMacro()))
+        {
+            return "<b><font color=\"#006600\">" + getMacro() + "</font></b>";
+        }
+
+        return "<b><font color=\"#006600\">" + getName() + "</font></b>" + " (" + getMacro() + ")";
+    }
+
 }

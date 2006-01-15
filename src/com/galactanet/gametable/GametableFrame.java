@@ -2224,7 +2224,6 @@ public class GametableFrame extends JFrame implements ActionListener
             GametableMap map = m_gametableCanvas.getActiveMap();
             List pogs = map.m_pogs;
             logSystemMessage("Finding pogs with '" + name + "' attribute...");
-            // logSystemMessage("<table>");
             logSystemMessage("<table border=1>");
             logSystemMessage("<tr><td><b>Name</b></td><td><b>" + name + "</b></td></tr>");
             int tally = 0;
@@ -2239,10 +2238,6 @@ public class GametableFrame extends JFrame implements ActionListener
                     {
                         pogText = "&lt;unknown&gt;";
                     }
-
-                    // Dave's way preserved for reversion if needed
-                    // pogText += " - ";
-                    // logSystemMessage("<li>" + pogText + name + ": " + value + "</li>");
 
                     logSystemMessage("<tr><td>" + pogText + "</td><td>" + value + "</td></tr>");
                     ++tally;
