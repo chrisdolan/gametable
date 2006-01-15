@@ -39,6 +39,7 @@ public class ChatLogPane extends JEditorPane
                                                        + ".underline { text-decoration: underline; }"
                                                        + ".no-underline { text-decoration: none; }"
                                                        + "a.user { color:black; font-weight:bold; text-decoration: none; }"
+                                                       + "a.dice { color:black; text-decoration: none; }"
                                                        + "</style></head><body id=\"bodycontent\">";
     public static final String DEFAULT_TEXT_FOOTER = "</body></html>";
     public static final String DEFAULT_TEXT        = DEFAULT_TEXT_HEADER + DEFAULT_TEXT_FOOTER;
@@ -132,6 +133,8 @@ public class ChatLogPane extends JEditorPane
                 clearRollover();
             }
         });
+
+        addText("Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>");
     }
 
     // --- Methods ---------------------------------------------------------------------------------------------------
@@ -173,66 +176,93 @@ public class ChatLogPane extends JEditorPane
 
         StringBuffer out = new StringBuffer();
         int position = 0;
+        int nextPosition = position;
         int length = in.length();
+        boolean inTag = false;
         while (true)
         {
-            int nextPosition = in.indexOf(HTTP_INTRO, position);
-            if (nextPosition == -1)
+            if (nextPosition == length)
             {
-                out.append(in.substring(position));
                 break;
             }
-
-            out.append(in.substring(position, nextPosition));
-            position = nextPosition;
-            for (nextPosition = position + HTTP_INTRO.length(); nextPosition < length; ++nextPosition)
+            
+            char c = in.charAt(nextPosition);
+            //System.out.println("char " + c + " at " + nextPosition + (inTag ? " inTag" : ""));
+            if (inTag)
             {
-                char c = in.charAt(nextPosition);
-                if (Character.isJavaIdentifierPart(c))
+                out.append(c);
+                if (c == '>')
                 {
-                    continue;
+                    inTag = false;
                 }
-
-                if (Character.isWhitespace(c))
-                {
-                    break;
-                }
-
-                boolean foundEnd = false;
-                switch (c)
-                {
-                    case '.':
-                    case '%':
-                    case '/':
-                    case '#':
-                    case '?':
-                    case '+':
-                    case '-':
-                    case '=':
-                    break;
-                    default:
-                        foundEnd = true;
-                    break;
-                }
-
-                if (foundEnd)
-                {
-                    break;
-                }
+                ++nextPosition;
+                continue;
             }
 
-            String url = in.substring(position, nextPosition);
-            out.append("<a ");
-            if (UtilityFunctions.getRandom(2) > 0)
+            if (c == '<')
             {
-                out.append("class=\"test\" ");
+                out.append(c);
+                inTag = true;
+                ++nextPosition;
+                continue;
             }
-            out.append(" href=\"");
-            out.append(url);
-            out.append("\">");
-            out.append(url);
-            out.append("</a>");
-            position = nextPosition;
+            
+            if (in.indexOf(HTTP_INTRO, nextPosition) == 0)
+            {
+                out.append(in.substring(position, nextPosition));
+                position = nextPosition;
+                for (nextPosition = position + HTTP_INTRO.length(); nextPosition < length; ++nextPosition)
+                {
+                    char c2 = in.charAt(nextPosition);
+                    if (Character.isJavaIdentifierPart(c2))
+                    {
+                        continue;
+                    }
+
+                    if (Character.isWhitespace(c2))
+                    {
+                        break;
+                    }
+
+                    boolean foundEnd = false;
+                    switch (c2)
+                    {
+                        case '.':
+                        case '%':
+                        case '/':
+                        case '#':
+                        case '?':
+                        case '+':
+                        case '-':
+                        case '=':
+                        break;
+                        default:
+                            foundEnd = true;
+                        break;
+                    }
+
+                    if (foundEnd)
+                    {
+                        break;
+                    }
+                }
+
+                String url = in.substring(position, nextPosition);
+                out.append("<a ");
+                if (UtilityFunctions.getRandom(2) > 0)
+                {
+                    out.append("class=\"test\" ");
+                }
+                out.append(" href=\"");
+                out.append(url);
+                out.append("\">");
+                out.append(url);
+                out.append("</a>");
+                position = nextPosition;
+            } else {
+                out.append(c);
+                ++nextPosition;
+            }
         }
 
         return out.toString();
