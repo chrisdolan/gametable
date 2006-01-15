@@ -60,6 +60,7 @@ public class ChatLogEntryPane extends JEditorPane
     private GametableFrame      frame;
 
     private boolean             ignoreCaret     = false;
+    private boolean             spaceTyped      = false;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -208,16 +209,23 @@ public class ChatLogEntryPane extends JEditorPane
                     return;
                 }
 
-                HTMLDocument doc = (HTMLDocument)getDocument();
+                if (e.getKeyChar() == ' ')
+                {
+                    spaceTyped = true;
+                    return;
+                }
+                
                 String charStr = String.valueOf(e.getKeyChar());
+                HTMLDocument doc = (HTMLDocument)getDocument();
+                int dotPos = getCaret().getDot();
                 if (styleOverride != null)
                 {
                     try
                     {
                         ignoreCaret = true;
-                        int dotPos = getCaret().getDot();
                         doc.insertAfterEnd(doc.getCharacterElement(dotPos), charStr);
                         doc.setCharacterAttributes(dotPos, charStr.length(), styleOverride, false);
+
                         // Hack to force the carat style to be what we just typed
                         setCaretPosition(dotPos);
                         setCaretPosition(dotPos + charStr.length());
@@ -248,11 +256,12 @@ public class ChatLogEntryPane extends JEditorPane
              */
             public void caretUpdate(CaretEvent e)
             {
-                if (!ignoreCaret)
+                if (!ignoreCaret && !spaceTyped)
                 {
                     styleOverride = null;
                     toolbar.updateStyles();
                 }
+                spaceTyped = false;
             }
         });
 
