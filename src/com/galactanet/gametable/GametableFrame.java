@@ -260,7 +260,6 @@ public class GametableFrame extends JFrame implements ActionListener
         entryPanel.add(m_textEntry.getComponentToAdd(), BorderLayout.SOUTH);
         m_textAndEntryPanel.add(entryPanel, BorderLayout.SOUTH);
 
-        m_chatLog.setDoubleBuffered(true);
         m_textAndEntryPanel.add(m_chatLog.getComponentToAdd(), BorderLayout.CENTER);
 
         m_mapChatSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);

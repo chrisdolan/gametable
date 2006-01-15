@@ -272,7 +272,7 @@ public class ChatLogEntryPane extends JEditorPane
              */
             public void caretUpdate(CaretEvent e)
             {
-                System.out.println("caretUpdate(" + e + ")");
+                //System.out.println("caretUpdate(" + e + ")");
                 if (!ignoreCaret && !spaceTyped)
                 {
                     styleOverride = null;

@@ -54,16 +54,17 @@ public class ChatLogPane extends JEditorPane
         // clear all default keystrokes
         InputMap map = new InputMap();
         setInputMap(WHEN_FOCUSED, map);
-        
-        this.addHyperlinkListener( 
-        	new HyperlinkListener()
-			{
-	    		public void hyperlinkUpdate(HyperlinkEvent e)
-	    		{
-	    			GametableApp.launchBrowser(e.getURL().toString());
-				}
-			}
-        );
+
+        addHyperlinkListener(new HyperlinkListener()
+        {
+            public void hyperlinkUpdate(HyperlinkEvent e)
+            {
+                if (e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED))
+                {
+                    UtilityFunctions.launchBrowser(e.getURL().toString());
+                }
+            }
+        });
     }
 
     // --- Methods ---------------------------------------------------------------------------------------------------
