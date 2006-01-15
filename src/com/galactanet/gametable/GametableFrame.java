@@ -2050,6 +2050,12 @@ public class GametableFrame extends JFrame implements ActionListener
             }
         }
     }
+    
+    public void startTellTo(String name)
+    {
+        m_textEntry.setText("/tell " + name + " ");
+        m_textEntry.requestFocus();
+    }
 
     public void parseSlashCommand(String text)
     {

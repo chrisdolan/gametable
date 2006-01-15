@@ -76,11 +76,23 @@ public class ChatLogPane extends JEditorPane
             {
                 if (e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED))
                 {
+                    if (e.getURL().getProtocol().equals("gtuser"))
+                    {
+                        GametableFrame.getGametableFrame().startTellTo(e.getURL().getHost());
+                        return;
+                    }
+
                     UtilityFunctions.launchBrowser(e.getURL().toString());
                 }
                 else if (e.getEventType().equals(HyperlinkEvent.EventType.ENTERED))
                 {
-                    System.out.println("getUrl: " + e.getURL());
+                    if (e.getURL().getProtocol().equals("gtuser"))
+                    {
+                        String username = e.getURL().getHost();
+                        setRolloverText("Send a tell to " + username + ".", new Point(mousePosition));
+                        return;
+                    }
+
                     setRolloverText(e.getURL().toString(), new Point(mousePosition));
                 }
                 else if (e.getEventType().equals(HyperlinkEvent.EventType.EXITED))
