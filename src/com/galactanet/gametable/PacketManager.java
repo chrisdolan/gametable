@@ -1198,10 +1198,6 @@ public class PacketManager
     {
         try
         {
-            // fire up the spinner
-            GametableFrame gtFrame = GametableFrame.getGametableFrame();
-            gtFrame.m_progressSpinner.activate(gtFrame);
-
             // the file name
             String filename = UtilityFunctions.getLocalPath(dis.readUTF());
 
@@ -1257,9 +1253,6 @@ public class PacketManager
 
             PogType pogType = GametableFrame.getGametableFrame().getPogLibrary().getPog(filename);
             pogType.load();
-
-            // if we're done with imageless pogs, shut off the progress spinner
-            gtFrame.m_progressSpinner.deactivate();
 
             // tell the pog panels to check for the new image
             GametableFrame.getGametableFrame().refreshPogList();

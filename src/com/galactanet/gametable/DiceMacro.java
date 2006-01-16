@@ -176,10 +176,12 @@ public class DiceMacro
 
         return normalizeMacroString(a).equals(normalizeMacroString(b));
     }
-    
-    public static String generateOutputString(String rollerName, String rollName, String rollItemizedResults, String result)
+
+    public static String generateOutputString(String rollerName, String rollName, String rollItemizedResults,
+        String result)
     {
-        String ret = UtilityFunctions.emitUserLink(rollerName) + " rolls " + rollName + ": [" + rollItemizedResults + "] = "+ GametableFrame.DIEROLL_MESSAGE_FONT + result + GametableFrame.END_DIEROLL_MESSAGE_FONT;
+        String ret = UtilityFunctions.emitUserLink(rollerName) + " rolls " + rollName + ": [" + rollItemizedResults
+            + "] = " + GametableFrame.DIEROLL_MESSAGE_FONT + result + GametableFrame.END_DIEROLL_MESSAGE_FONT;
         return ret;
     }
 
@@ -220,7 +222,7 @@ public class DiceMacro
     /**
      * List of parsed terms in this macro.
      */
-    private List  m_terms = new ArrayList();
+    private List   m_terms = new ArrayList();
 
     /**
      * The name of this macro. Null means an "anonymous" macro.
@@ -427,7 +429,7 @@ public class DiceMacro
 
         Result result = roll();
 
-        String ret = generateOutputString(name, result.roll, result.result, ""+result.value);        
+        String ret = generateOutputString(name, result.roll, result.result, "" + result.value);
         return ret;
     }
 
@@ -621,7 +623,7 @@ public class DiceMacro
     }
 
     /**
-     * @return The string used to describe this macro when formatting a roll. 
+     * @return The string used to describe this macro when formatting a roll.
      */
     private String getRollString()
     {
@@ -703,9 +705,6 @@ public class DiceMacro
         return getName() + " (" + getMacro() + ")";
     }
 
-    /*
-     * @see java.lang.Object#toString()
-     */
     public String toFormattedString()
     {
         if (getName() == null || isSameMacroString(getName(), getMacro()))
@@ -714,6 +713,14 @@ public class DiceMacro
         }
 
         return "<b><font color=\"#006600\">" + getName() + "</font></b>" + " (" + getMacro() + ")";
+    }
+
+    public void serialize(XmlSerializer out) throws IOException
+    {
+        out.startElement(DiceMacroSaxHandler.ELEMENT_DICE_MACRO);
+        out.addAttribute(DiceMacroSaxHandler.ATTRIBUTE_NAME, getName());
+        out.addAttribute(DiceMacroSaxHandler.ATTRIBUTE_DEFINITION, getMacro());
+        out.endElement();
     }
 
 }

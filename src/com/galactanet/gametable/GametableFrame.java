@@ -17,6 +17,11 @@ import javax.swing.*;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
+import org.xml.sax.SAXException;
 
 import com.galactanet.gametable.net.Connection;
 import com.galactanet.gametable.net.NetworkThread;
@@ -203,13 +208,12 @@ public class GametableFrame extends JFrame implements ActionListener
     // one for the public map, one for the private map
     public File                    m_actingFilePublic;
     public File                    m_actingFilePrivate;
+    public File                    m_actingFileMacros;
 
     private ToolManager            m_toolManager            = new ToolManager();
     private JToggleButton          m_toolButtons[]          = null;
     private Preferences            m_preferences            = new Preferences();
     private PogLibrary             m_pogLibrary             = null;
-
-    public ProgressSpinner         m_progressSpinner        = new ProgressSpinner();
 
     // the id that will be assigned to the next player to join
     public int                     m_nextPlayerId;
@@ -517,7 +521,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
         menu.add(getOpenMapMenuItem());
         menu.add(getSaveMapMenuItem());
-        menu.add(getSaveMapAsMenuItem());
+        menu.add(getSaveAsMapMenuItem());
         menu.add(getScanForPogsMenuItem());
         menu.add(getQuitMenuItem());
 
@@ -570,6 +574,9 @@ public class GametableFrame extends JFrame implements ActionListener
         JMenu menu = new JMenu("Dice");
         menu.add(getAddDiceMenuItem());
         menu.add(getDeleteDiceMenuItem());
+        menu.add(getLoadDiceMenuItem());
+        menu.add(getSaveDiceMenuItem());
+        menu.add(getSaveAsDiceMenuItem());
         return menu;
     }
 
@@ -703,7 +710,7 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
-    public JMenuItem getSaveMapAsMenuItem()
+    public JMenuItem getSaveAsMapMenuItem()
     {
         JMenuItem item = new JMenuItem("Save Map As...");
         item.setAccelerator(KeyStroke.getKeyStroke("ctrl shift pressed S"));
@@ -929,7 +936,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
     private JMenuItem getAddDiceMenuItem()
     {
-        JMenuItem item = new JMenuItem("Add...");
+        JMenuItem item = new JMenuItem("Add macro...");
         item.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -942,7 +949,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
     private JMenuItem getDeleteDiceMenuItem()
     {
-        JMenuItem item = new JMenuItem("Delete...");
+        JMenuItem item = new JMenuItem("Delete macro...");
         item.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -955,6 +962,52 @@ public class GametableFrame extends JFrame implements ActionListener
                 {
                     removeMacro((DiceMacro)sel);
                 }
+            }
+        });
+        return item;
+    }
+
+    private JMenuItem getLoadDiceMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Load macros...");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                loadMacros();
+            }
+        });
+        return item;
+    }
+
+    private JMenuItem getSaveDiceMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Save macros...");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                try
+                {
+                    saveMacros(m_actingFilePrivate);
+                }
+                catch (IOException ioe)
+                {
+                    Log.log(Log.SYS, ioe);
+                }
+            }
+        });
+        return item;
+    }
+
+    private JMenuItem getSaveAsDiceMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Save macros as...");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                saveMacros();
             }
         });
         return item;
@@ -1016,6 +1069,11 @@ public class GametableFrame extends JFrame implements ActionListener
         return m_netStatus;
     }
 
+    /**
+     * TODO: comment
+     * 
+     * @return
+     */
     public int getNewStateId()
     {
         return m_nextStateId++;
@@ -1053,6 +1111,9 @@ public class GametableFrame extends JFrame implements ActionListener
         return m_gametableCanvas;
     }
 
+    /**
+     * Records the current state of the window.
+     */
     public void updateWindowInfo()
     {
         // we only update our internal size and
@@ -2017,6 +2078,112 @@ public class GametableFrame extends JFrame implements ActionListener
     }
 
     /**
+     * Pops up a dialog to load macros from a file.
+     */
+    public void loadMacros()
+    {
+        File openFile = UtilityFunctions.doFileOpenDialog("Open", "xml", true);
+
+        if (openFile == null)
+        {
+            // they cancelled out of the open
+            return;
+        }
+
+        int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
+            "This will load a macro file, replacing all your existing macros. Are you sure you want to do this?",
+            "Confirm Load Macros");
+        if (result != UtilityFunctions.YES)
+        {
+            return;
+        }
+
+        m_actingFileMacros = openFile;
+        if (m_actingFileMacros != null)
+        {
+            // actually do the load if we're the host or offline
+            try
+            {
+                loadMacros(m_actingFileMacros);
+                logSystemMessage("Loaded macros from " + m_actingFileMacros + ".");
+            }
+            catch (SAXException saxe)
+            {
+                Log.log(Log.SYS, saxe);
+            }
+        }
+    }
+
+    /**
+     * Loads macros from the given file, if possible.
+     * 
+     * @param file File to load macros from.
+     * @throws SAXException If an error occurs.
+     */
+    public void loadMacros(File file) throws SAXException
+    {
+        try
+        {
+            SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
+            DiceMacroSaxHandler handler = new DiceMacroSaxHandler();
+            parser.parse(file, handler);
+
+            // clear the state
+            m_macroMap.clear();
+            for (Iterator iterator = handler.getMacros().iterator(); iterator.hasNext();)
+            {
+                DiceMacro macro = (DiceMacro)iterator.next();
+                m_macroMap.put(macro.getName(), macro);
+            }
+        }
+        catch (IOException ioe)
+        {
+            throw new SAXException(ioe);
+        }
+        catch (ParserConfigurationException pce)
+        {
+            throw new SAXException(pce);
+        }
+
+        m_macroPanel.refreshMacroList();
+    }
+
+    public void saveMacros()
+    {
+        File oldFile = m_actingFileMacros;
+        m_actingFileMacros = UtilityFunctions.doFileSaveDialog("Save As", "xml", true);
+        if (m_actingFileMacros == null)
+        {
+            m_actingFileMacros = oldFile;
+            return;
+        }
+
+        try
+        {
+            saveMacros(m_actingFileMacros);
+            logSystemMessage("Wrote macros to " + m_actingFileMacros.getPath());
+        }
+        catch (IOException ioe)
+        {
+            Log.log(Log.SYS, ioe);
+        }
+    }
+
+    public void saveMacros(File file) throws IOException
+    {
+        XmlSerializer out = new XmlSerializer();
+        out.startDocument(new BufferedWriter(new FileWriter(file)));
+        out.startElement(DiceMacroSaxHandler.ELEMENT_DICE_MACROS);
+        for (Iterator iterator = m_macroMap.values().iterator(); iterator.hasNext();)
+        {
+            DiceMacro macro = (DiceMacro)iterator.next();
+            macro.serialize(out);
+        }
+        out.endElement();
+        out.endDocument();
+    }
+
+    /**
      * Sends a public message to all players.
      * 
      * @param text Message to send.
@@ -2404,16 +2571,17 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             // list macro commands
             logMessage(SYSTEM_MESSAGE_FONT + "<u>Slash Commands</u>" + END_SYSTEM_MESSAGE_FONT + "<br>"
-                + SYSTEM_MESSAGE_FONT + "/as:" + END_SYSTEM_MESSAGE_FONT + " Display a narrative of a character saying something<br>"
-                + SYSTEM_MESSAGE_FONT + "/emote:" + END_SYSTEM_MESSAGE_FONT + " Display an emote<br>" 
-                + SYSTEM_MESSAGE_FONT + "/help:" + END_SYSTEM_MESSAGE_FONT + " list all slash commands<br>"
-                + SYSTEM_MESSAGE_FONT + "/macro:" + END_SYSTEM_MESSAGE_FONT + " macro a die roll<br>" 
-                + SYSTEM_MESSAGE_FONT + "/macrodelete:" + END_SYSTEM_MESSAGE_FONT + " deletes an unwanted macro<br>"
-                + SYSTEM_MESSAGE_FONT + "/poglist:" + END_SYSTEM_MESSAGE_FONT + " lists pogs by attribute<br>" 
-                + SYSTEM_MESSAGE_FONT + "/roll:" + END_SYSTEM_MESSAGE_FONT + " roll dice<br>"
-                + SYSTEM_MESSAGE_FONT + "/tell:" + END_SYSTEM_MESSAGE_FONT + " send a private message to another player<br>" 
-                + SYSTEM_MESSAGE_FONT + "/who:" + END_SYSTEM_MESSAGE_FONT + " lists connected players<br>"
-                + SYSTEM_MESSAGE_FONT + "/help:" + END_SYSTEM_MESSAGE_FONT + " list all slash commands");
+                + SYSTEM_MESSAGE_FONT + "/as:" + END_SYSTEM_MESSAGE_FONT
+                + " Display a narrative of a character saying something<br>" + SYSTEM_MESSAGE_FONT + "/emote:"
+                + END_SYSTEM_MESSAGE_FONT + " Display an emote<br>" + SYSTEM_MESSAGE_FONT + "/help:"
+                + END_SYSTEM_MESSAGE_FONT + " list all slash commands<br>" + SYSTEM_MESSAGE_FONT + "/macro:"
+                + END_SYSTEM_MESSAGE_FONT + " macro a die roll<br>" + SYSTEM_MESSAGE_FONT + "/macrodelete:"
+                + END_SYSTEM_MESSAGE_FONT + " deletes an unwanted macro<br>" + SYSTEM_MESSAGE_FONT + "/poglist:"
+                + END_SYSTEM_MESSAGE_FONT + " lists pogs by attribute<br>" + SYSTEM_MESSAGE_FONT + "/roll:"
+                + END_SYSTEM_MESSAGE_FONT + " roll dice<br>" + SYSTEM_MESSAGE_FONT + "/tell:" + END_SYSTEM_MESSAGE_FONT
+                + " send a private message to another player<br>" + SYSTEM_MESSAGE_FONT + "/who:"
+                + END_SYSTEM_MESSAGE_FONT + " lists connected players<br>" + SYSTEM_MESSAGE_FONT + "/help:"
+                + END_SYSTEM_MESSAGE_FONT + " list all slash commands");
         }
     }
 
@@ -2443,16 +2611,12 @@ public class GametableFrame extends JFrame implements ActionListener
             prefDos.writeInt(m_mapChatSplitPane.getDividerLocation());
             prefDos.writeInt(m_mapPogSplitPane.getDividerLocation());
 
-            Collection macros = m_macroMap.values();
-            prefDos.writeInt(macros.size());
-            for (Iterator iterator = macros.iterator(); iterator.hasNext();)
-            {
-                DiceMacro dm = (DiceMacro)iterator.next();
-                dm.writeToStream(prefDos);
-            }
+            prefDos.writeUTF(m_actingFileMacros.getAbsolutePath());
 
             prefDos.close();
             prefFile.close();
+
+            saveMacros(m_actingFileMacros);
         }
         catch (FileNotFoundException ex1)
         {
@@ -2479,6 +2643,15 @@ public class GametableFrame extends JFrame implements ActionListener
             m_bMaximized = false;
             applyWindowInfo();
             addMacro("d20", "d20");
+            m_actingFileMacros = new File("macros.xml");
+            try
+            {
+                loadMacros(m_actingFileMacros);
+            }
+            catch (SAXException se)
+            {
+                Log.log(Log.SYS, se);
+            }
             return;
         }
 
@@ -2505,14 +2678,7 @@ public class GametableFrame extends JFrame implements ActionListener
             m_mapChatSplitPane.setDividerLocation(prefDis.readInt());
             m_mapPogSplitPane.setDividerLocation(prefDis.readInt());
 
-            m_macroMap.clear();
-            int numMacros = prefDis.readInt();
-            for (int i = 0; i < numMacros; i++)
-            {
-                DiceMacro dm = new DiceMacro();
-                dm.initFromStream(prefDis);
-                addMacro(dm);
-            }
+            m_actingFileMacros = new File(prefDis.readUTF());
 
             prefDis.close();
             prefFile.close();
@@ -2524,6 +2690,15 @@ public class GametableFrame extends JFrame implements ActionListener
         catch (IOException ex1)
         {
             Log.log(Log.SYS, ex1);
+        }
+
+        try
+        {
+            loadMacros(m_actingFileMacros);
+        }
+        catch (SAXException se)
+        {
+            Log.log(Log.SYS, se);
         }
     }
 

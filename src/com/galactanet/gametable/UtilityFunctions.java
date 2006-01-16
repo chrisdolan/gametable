@@ -19,6 +19,8 @@ import java.util.List;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.filechooser.FileFilter;
+
 
 
 
@@ -44,6 +46,8 @@ public class UtilityFunctions
     public final static int     NO                  = 0;
     public final static int     YES                 = 1;
     public final static int     CANCEL              = -1;
+
+    private static final Map ENTITY_NAME_MAP = UtilityFunctions.getEncodingMap();
 
     public static int getRandom(int max)
     {
@@ -158,7 +162,7 @@ public class UtilityFunctions
 
         if (filter)
         {
-            chooser.setFileFilter(new javax.swing.filechooser.FileFilter()
+            chooser.setFileFilter(new FileFilter()
             {
                 public boolean accept(File file)
                 {
@@ -701,6 +705,19 @@ public class UtilityFunctions
         return new Point(screenPoint.x - screenPos.x, screenPoint.y - screenPos.y);
     }
 
+
+    private static Map getEncodingMap()
+    {
+        Map retVal = new HashMap();
+        retVal.put(new Character('\''), "apos");
+        retVal.put(new Character('\"'), "quot");
+        retVal.put(new Character('<'), "lt");
+        retVal.put(new Character('>'), "gt");
+        retVal.put(new Character('&'), "amp");
+    
+        return Collections.unmodifiableMap(retVal);
+    }
+
     /**
      * @return An instance of Random to use for all RNG.
      */
@@ -843,6 +860,49 @@ public class UtilityFunctions
         }
     }
 
+    public static String xmlEncode(String str)
+    {
+        StringWriter out = new StringWriter();
+        StringReader in = new StringReader(str);
+    
+        try
+        {
+            UtilityFunctions.xmlEncode(out, in);
+        }
+        catch (IOException ioe)
+        {
+            Log.log(Log.SYS, ioe);
+            return null;
+        }
+    
+        return out.toString();
+    }
+
+    public static void xmlEncode(Writer out, Reader in) throws IOException
+    {
+        while (true)
+        {
+            int i = in.read();
+            if (i < 0)
+            {
+                break;
+            }
+    
+            char c = (char)i;
+            String entity = (String)ENTITY_NAME_MAP.get(new Character(c));
+            if (entity != null)
+            {
+                out.write('&');
+                out.write(entity);
+                out.write(';');
+            }
+            else
+            {
+                out.write(c);
+            }
+        }
+    }
+
     /**
      * Private constructor so no one can instantiate this.
      */
@@ -850,5 +910,4 @@ public class UtilityFunctions
     {
         throw new RuntimeException("Do not do this.");
     }
-
 }

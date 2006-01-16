@@ -27,7 +27,7 @@ public class MacroPanel extends JPanel
     // --- Types -----------------------------------------------------------------------------------------------------
 
     /**
-     * TODO: comment
+     * A component representing a macro.
      * 
      * @author Iffy
      */
@@ -117,8 +117,6 @@ public class MacroPanel extends JPanel
             layout.putConstraint(SpringLayout.EAST, deleteButton, -2, SpringLayout.WEST, editButton);
             layout.putConstraint(SpringLayout.NORTH, deleteButton, 2, SpringLayout.NORTH, this);
             layout.putConstraint(SpringLayout.SOUTH, deleteButton, -2, SpringLayout.SOUTH, this);
-
-
 
             setBorder(new CompoundBorder(new MatteBorder(2, 2, 2, 2, Color.WHITE), new MatteBorder(1, 1, 1, 1,
                 Color.BLACK)));
