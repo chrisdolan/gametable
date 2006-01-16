@@ -79,7 +79,8 @@ public class ChatLogPane extends JEditorPane
                 {
                     if (e.getURL().getProtocol().equals("gtuser"))
                     {
-                        GametableFrame.getGametableFrame().startTellTo(e.getURL().getHost());
+                        String username = UtilityFunctions.urlDecode(e.getURL().getHost());
+                        GametableFrame.getGametableFrame().startTellTo(username);
                         return;
                     }
 
@@ -89,7 +90,7 @@ public class ChatLogPane extends JEditorPane
                 {
                     if (e.getURL().getProtocol().equals("gtuser"))
                     {
-                        String username = e.getURL().getHost();
+                        String username = UtilityFunctions.urlDecode(e.getURL().getHost());
                         setRolloverText("Send a tell to " + username + ".", new Point(mousePosition));
                         return;
                     }

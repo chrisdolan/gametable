@@ -10,6 +10,8 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
@@ -771,6 +773,56 @@ public class UtilityFunctions
         }
     }
 
+    /**
+     * Encodes the given string using the URL encoding method.
+     *  
+     * @param in String to encode. 
+     * @return Encoded string.
+     */
+    public static String urlEncode(String in)
+    {
+        try
+        {
+            return URLEncoder.encode(in, "UTF-8");
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            try
+            {
+                return URLEncoder.encode(in, "ASCII");
+            }
+            catch (UnsupportedEncodingException e2)
+            {
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Decodes the given string using the URL decoding method.
+     *  
+     * @param in String to decode. 
+     * @return Decoded string.
+     */
+    public static String urlDecode(String in)
+    {
+        try
+        {
+            return URLDecoder.decode(in, "UTF-8");
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            try
+            {
+                return URLDecoder.decode(in, "ASCII");
+            }
+            catch (UnsupportedEncodingException e2)
+            {
+                return null;
+            }
+        }
+    }
+
     public static String emitUserLink(String name)
     {
         return emitUserLink(name, name);
@@ -780,7 +832,7 @@ public class UtilityFunctions
     {
         try
         {
-            URL url = new URL("gtuser", name, "/");
+            URL url = new URL("gtuser", urlEncode(name), "/");
 
             return "<a class=\"user\" href=\"" + url + "\">" + text + "</a>";
         }
