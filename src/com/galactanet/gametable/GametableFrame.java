@@ -116,16 +116,18 @@ public class GametableFrame extends JFrame implements ActionListener
     private final static boolean  SEND_PINGS               = false;
 
     // font colors
-    public final static String    SYSTEM_MESSAGE_FONT      = "<b><font color=\"#009900\">";
+    public final static String    SYSTEM_MESSAGE_FONT      = "<b><font color=\"#999900\">";
     public final static String    ALERT_MESSAGE_FONT       = "<b><font color=\"#FF0000\">";
-    public final static String    PRIVATE_MESSAGE_FONT     = "<b><font color=\"#00B2EB\">";
-    public final static String    EMOTE_MESSAGE_FONT       = "<b><font color=\"#004477\">";
-    public final static String    DIEROLL_MESSAGE_FONT     = "<b><font color=\"#960018\">";
+    public final static String    PRIVATE_MESSAGE_FONT     = "<font color=\"#009900\">";
+    public final static String    EMOTE_MESSAGE_FONT       = "<font color=\"#004477\">";
+    public final static String    SAY_MESSAGE_FONT         = "<font color=\"#007744\">";
+    public final static String    DIEROLL_MESSAGE_FONT     = "<b><font color=\"#990022\">";
 
     public final static String    END_SYSTEM_MESSAGE_FONT  = "</b></font>";
     public final static String    END_ALERT_MESSAGE_FONT   = "</b></font>";
-    public final static String    END_PRIVATE_MESSAGE_FONT = "</b></font>";
-    public final static String    END_EMOTE_MESSAGE_FONT   = "</b></font>";
+    public final static String    END_PRIVATE_MESSAGE_FONT = "</font>";
+    public final static String    END_EMOTE_MESSAGE_FONT   = "</font>";
+    public final static String    END_SAY_MESSAGE_FONT     = "</font>";
     public final static String    END_DIEROLL_MESSAGE_FONT = "</b></font>";
 
     /**
@@ -1978,8 +1980,8 @@ public class GametableFrame extends JFrame implements ActionListener
     public void logPrivateMessage(String fromName, String toName, String text)
     {
         // when they get a private message, we format it for the chat log
-        logMessage(PRIVATE_MESSAGE_FONT + UtilityFunctions.emitUsernameLink(fromName) + " sends \"" + text + "\""
-            + END_PRIVATE_MESSAGE_FONT);
+        logMessage(PRIVATE_MESSAGE_FONT + UtilityFunctions.emitUserLink(fromName) + " tells you: "
+            + END_PRIVATE_MESSAGE_FONT + text);
     }
 
     public void postSystemMessage(String text)
@@ -2012,6 +2014,42 @@ public class GametableFrame extends JFrame implements ActionListener
             // if you're offline, just add it to the log
             logMessage(text);
         }
+    }
+
+    /**
+     * Sends a public message to all players.
+     * 
+     * @param text Message to send.
+     */
+    public void say(String text)
+    {
+        postMessage(SAY_MESSAGE_FONT + UtilityFunctions.emitUserLink(getMyPlayer().getCharacterName()) + " says: "
+            + END_SAY_MESSAGE_FONT + text);
+    }
+
+    /**
+     * Sends a private message to the target player.
+     * 
+     * @param target Player to address message to.
+     * @param text Message to send.
+     */
+    public void tell(Player target, String text)
+    {
+        if (target.getId() == getMyPlayer().getId())
+        {
+            m_chatLog.addText(PRIVATE_MESSAGE_FONT + "You tell yourself: " + END_PRIVATE_MESSAGE_FONT + text);
+            return;
+        }
+
+        String fromName = getMyPlayer().getCharacterName();
+        String toName = target.getCharacterName();
+
+        postPrivateMessage(fromName, toName, text);
+
+        // and when you post a private message, you get told about it in your
+        // own chat log
+        m_chatLog.addText(PRIVATE_MESSAGE_FONT + "You tell " + UtilityFunctions.emitUserLink(toName) + ": "
+            + END_PRIVATE_MESSAGE_FONT + text);
     }
 
     public void postPrivateMessage(String fromName, String toName, String text)
@@ -2050,7 +2088,7 @@ public class GametableFrame extends JFrame implements ActionListener
             }
         }
     }
-    
+
     public void startTellTo(String name)
     {
         m_textEntry.setText("/tell " + name + " ");
@@ -2100,12 +2138,12 @@ public class GametableFrame extends JFrame implements ActionListener
         else if (words[0].equals("/who"))
         {
             StringBuffer buffer = new StringBuffer();
-            buffer.append("Who's connected:<br>");
+            buffer.append("<u>Who's connected</u><br>");
             for (int i = 0, size = m_players.size(); i < size; ++i)
             {
                 Player player = (Player)m_players.get(i);
                 buffer.append("&nbsp;&nbsp;&nbsp;\u2022&nbsp;");
-                buffer.append(player.toString());
+                buffer.append(UtilityFunctions.emitUserLink(player.getCharacterName(), player.toString()));
                 buffer.append("<br>");
             }
             buffer.append(m_players.size());
@@ -2284,29 +2322,23 @@ public class GametableFrame extends JFrame implements ActionListener
 
             // see if there is a player or character with that name
             // and note the "proper" name for them (which is their player name)
-            boolean bFound = false;
-            String properToName = "";
+            Player toPlayer = null;
             for (int i = 0; i < m_players.size(); i++)
             {
                 Player player = (Player)m_players.get(i);
                 if (player.hasName(toName))
                 {
-                    bFound = true;
-                    properToName = player.getPlayerName();
+                    toPlayer = player;
                     break;
                 }
             }
 
-            if (!bFound)
+            if (toPlayer == null)
             {
                 // nobody by that name is in the session
-                logSystemMessage("There is no player or character named \"" + toName + "\" in the session.");
+                logAlertMessage("There is no player or character named \"" + toName + "\" in the session.");
                 return;
             }
-
-            // if we're here then the player exists
-            // get our own name
-            String fromName = getMyPlayer().getPlayerName();
 
             // now get the message portion
             // we have to do this with the original text, cause the words[] array
@@ -2316,12 +2348,7 @@ public class GametableFrame extends JFrame implements ActionListener
             int start = text.indexOf(toName) + toName.length();
             String toSend = text.substring(start).trim();
 
-            postPrivateMessage(fromName, properToName, toSend);
-
-            // and when you post a private message, you get told about it in your
-            // own chat log
-            m_chatLog.addText(PRIVATE_MESSAGE_FONT + "You send \"" + toSend + "\" to " + properToName
-                + END_PRIVATE_MESSAGE_FONT);
+            tell(toPlayer, toSend);
         }
         else if (words[0].equals("/em") || words[0].equals("/emote"))
         {
@@ -2339,8 +2366,8 @@ public class GametableFrame extends JFrame implements ActionListener
             String emote = text.substring(start).trim();
 
             // simply post text that's an emote instead of a character action
-            String toPost = EMOTE_MESSAGE_FONT + UtilityFunctions.emitUsernameLink(getMyPlayer().getCharacterName()) + " " + emote
-                + END_EMOTE_MESSAGE_FONT;
+            String toPost = EMOTE_MESSAGE_FONT + UtilityFunctions.emitUserLink(getMyPlayer().getCharacterName()) + " "
+                + emote + END_EMOTE_MESSAGE_FONT;
             postMessage(toPost);
         }
         else if (words[0].equals("/as"))
@@ -2376,17 +2403,17 @@ public class GametableFrame extends JFrame implements ActionListener
         else if (words[0].equals("//") || words[0].equals("/help"))
         {
             // list macro commands
-            logSystemMessage("/as:</b> Display a narrative of a character saying something<b>");
-            logSystemMessage("/emote:</b> Display an emote<b>");
-            logSystemMessage("/help:</b> list all slash commands<b>");
-            logSystemMessage("/macro:</b> macro a die roll<b>");
-            logSystemMessage("/macrodelete:</b> deletes an unwanted macro<b>");
-            logSystemMessage("/poglist:</b> lists pogs by attribute<b>");
-            logSystemMessage("/roll:</b> roll dice<b>");
-            logSystemMessage("/send:</b> send a private message to another player<b>");
-            logSystemMessage("/tell:</b> send a private message to another player<b>");
-            logSystemMessage("/who:</b> lists connected players<b>");
-            logSystemMessage("//:</b> list all slash commands<b>");
+            logMessage(SYSTEM_MESSAGE_FONT + "<u>Slash Commands</u>" + END_SYSTEM_MESSAGE_FONT + "<br>"
+                + SYSTEM_MESSAGE_FONT + "/as:" + END_SYSTEM_MESSAGE_FONT + " Display a narrative of a character saying something<br>"
+                + SYSTEM_MESSAGE_FONT + "/emote:" + END_SYSTEM_MESSAGE_FONT + " Display an emote<br>" 
+                + SYSTEM_MESSAGE_FONT + "/help:" + END_SYSTEM_MESSAGE_FONT + " list all slash commands<br>"
+                + SYSTEM_MESSAGE_FONT + "/macro:" + END_SYSTEM_MESSAGE_FONT + " macro a die roll<br>" 
+                + SYSTEM_MESSAGE_FONT + "/macrodelete:" + END_SYSTEM_MESSAGE_FONT + " deletes an unwanted macro<br>"
+                + SYSTEM_MESSAGE_FONT + "/poglist:" + END_SYSTEM_MESSAGE_FONT + " lists pogs by attribute<br>" 
+                + SYSTEM_MESSAGE_FONT + "/roll:" + END_SYSTEM_MESSAGE_FONT + " roll dice<br>"
+                + SYSTEM_MESSAGE_FONT + "/tell:" + END_SYSTEM_MESSAGE_FONT + " send a private message to another player<br>" 
+                + SYSTEM_MESSAGE_FONT + "/who:" + END_SYSTEM_MESSAGE_FONT + " lists connected players<br>"
+                + SYSTEM_MESSAGE_FONT + "/help:" + END_SYSTEM_MESSAGE_FONT + " list all slash commands");
         }
     }
 

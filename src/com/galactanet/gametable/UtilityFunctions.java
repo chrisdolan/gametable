@@ -10,8 +10,6 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLStreamHandler;
-import java.net.URLStreamHandlerFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
@@ -773,18 +771,23 @@ public class UtilityFunctions
         }
     }
 
-    public static String emitUsernameLink(String name)
+    public static String emitUserLink(String name)
+    {
+        return emitUserLink(name, name);
+    }
+
+    public static String emitUserLink(String name, String text)
     {
         try
         {
             URL url = new URL("gtuser", name, "/");
 
-            return "<a class=\"user\" href=\"" + url + "\">" + name + "</a>";
+            return "<a class=\"user\" href=\"" + url + "\">" + text + "</a>";
         }
         catch (MalformedURLException e)
         {
             Log.log(Log.SYS, e);
-            return "<a class=\"user\">" + name + "</a>";
+            return "<a class=\"user\">" + text + "</a>";
         }
     }
 

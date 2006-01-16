@@ -185,7 +185,7 @@ public class ChatLogPane extends JEditorPane
             {
                 break;
             }
-            
+
             char c = in.charAt(nextPosition);
             //System.out.println("char " + c + " at " + nextPosition + (inTag ? " inTag" : ""));
             if (inTag)
@@ -206,10 +206,9 @@ public class ChatLogPane extends JEditorPane
                 ++nextPosition;
                 continue;
             }
-            
-            if (in.indexOf(HTTP_INTRO, nextPosition) == 0)
+
+            if (in.substring(nextPosition).startsWith(HTTP_INTRO))
             {
-                out.append(in.substring(position, nextPosition));
                 position = nextPosition;
                 for (nextPosition = position + HTTP_INTRO.length(); nextPosition < length; ++nextPosition)
                 {
@@ -259,7 +258,9 @@ public class ChatLogPane extends JEditorPane
                 out.append(url);
                 out.append("</a>");
                 position = nextPosition;
-            } else {
+            }
+            else
+            {
                 out.append(c);
                 ++nextPosition;
             }

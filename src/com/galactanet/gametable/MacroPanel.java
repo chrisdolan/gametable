@@ -76,14 +76,13 @@ public class MacroPanel extends JPanel
             panel.add(nameLabel);
             add(panel);
 
-            Image rollImage = UtilityFunctions.getCachedImage("assets/roll.png");
+            Image deleteImage = UtilityFunctions.getCachedImage("assets/delete.png");
 
-            rollButton = new JButton(new ImageIcon(rollImage));
-            rollButton.setMargin(new Insets(0, 0, 0, 0));
-            rollButton.setFocusable(false);
-
-            rollButton.addActionListener(new MacroActionListener(macro));
-            add(rollButton);
+            deleteButton = new JButton(new ImageIcon(deleteImage));
+            deleteButton.setMargin(new Insets(0, 0, 0, 0));
+            deleteButton.setFocusable(false);
+            deleteButton.addActionListener(new DeleteMacroActionListener(macro));
+            add(deleteButton);
 
             Image editImage = UtilityFunctions.getCachedImage("assets/edit.png");
 
@@ -93,30 +92,33 @@ public class MacroPanel extends JPanel
             editButton.addActionListener(new EditMacroActionListener(macro));
             add(editButton);
 
-            Image deleteImage = UtilityFunctions.getCachedImage("assets/delete.png");
+            Image rollImage = UtilityFunctions.getCachedImage("assets/roll.png");
 
-            deleteButton = new JButton(new ImageIcon(deleteImage));
-            deleteButton.setMargin(new Insets(0, 0, 0, 0));
-            deleteButton.setFocusable(false);
-            deleteButton.addActionListener(new DeleteMacroActionListener(macro));
-            add(deleteButton);
+            rollButton = new JButton(new ImageIcon(rollImage));
+            rollButton.setMargin(new Insets(0, 0, 0, 0));
+            rollButton.setFocusable(false);
+
+            rollButton.addActionListener(new MacroActionListener(macro));
+            add(rollButton);
 
             layout.getConstraints(panel).setX(Spring.constant(2));
             layout.getConstraints(panel).setY(Spring.constant(2));
             layout.putConstraint(SpringLayout.NORTH, panel, 2, SpringLayout.NORTH, this);
             layout.putConstraint(SpringLayout.SOUTH, panel, -2, SpringLayout.SOUTH, this);
 
-            layout.putConstraint(SpringLayout.EAST, deleteButton, -2, SpringLayout.EAST, this);
-            layout.putConstraint(SpringLayout.NORTH, deleteButton, 2, SpringLayout.NORTH, this);
-            layout.putConstraint(SpringLayout.SOUTH, deleteButton, -2, SpringLayout.SOUTH, this);
+            layout.putConstraint(SpringLayout.EAST, rollButton, -2, SpringLayout.EAST, this);
+            layout.putConstraint(SpringLayout.NORTH, rollButton, 2, SpringLayout.NORTH, this);
+            layout.putConstraint(SpringLayout.SOUTH, rollButton, -2, SpringLayout.SOUTH, this);
 
-            layout.putConstraint(SpringLayout.EAST, editButton, -2, SpringLayout.WEST, deleteButton);
+            layout.putConstraint(SpringLayout.EAST, editButton, -2, SpringLayout.WEST, rollButton);
             layout.putConstraint(SpringLayout.NORTH, editButton, 2, SpringLayout.NORTH, this);
             layout.putConstraint(SpringLayout.SOUTH, editButton, -2, SpringLayout.SOUTH, this);
 
-            layout.putConstraint(SpringLayout.EAST, rollButton, -2, SpringLayout.WEST, editButton);
-            layout.putConstraint(SpringLayout.NORTH, rollButton, 2, SpringLayout.NORTH, this);
-            layout.putConstraint(SpringLayout.SOUTH, rollButton, -2, SpringLayout.SOUTH, this);
+            layout.putConstraint(SpringLayout.EAST, deleteButton, -2, SpringLayout.WEST, editButton);
+            layout.putConstraint(SpringLayout.NORTH, deleteButton, 2, SpringLayout.NORTH, this);
+            layout.putConstraint(SpringLayout.SOUTH, deleteButton, -2, SpringLayout.SOUTH, this);
+
+
 
             setBorder(new CompoundBorder(new MatteBorder(2, 2, 2, 2, Color.WHITE), new MatteBorder(1, 1, 1, 1,
                 Color.BLACK)));
