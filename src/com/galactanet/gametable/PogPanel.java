@@ -68,6 +68,7 @@ public class PogPanel extends JPanel
         public void reset()
         {
             expandedNodes.clear();
+            collapsedNodes.clear();
         }
 
         public void restoreTree(JTree tree)

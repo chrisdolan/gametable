@@ -32,90 +32,90 @@ import com.galactanet.gametable.tools.NullTool;
 public class GametableCanvas extends JComponent implements MouseListener, MouseMotionListener, MouseWheelListener
 {
     // grid modes
-    public final static int            GRID_MODE_NONE         = 0;
-    public final static int            GRID_MODE_SQUARES      = 1;
-    public final static int            GRID_MODE_HEX          = 2;
+    public final static int    GRID_MODE_NONE         = 0;
+    public final static int    GRID_MODE_SQUARES      = 1;
+    public final static int    GRID_MODE_HEX          = 2;
 
     // the size of a square at max zoom level (0)
-    public final static int            BASE_SQUARE_SIZE       = 64;
+    public final static int    BASE_SQUARE_SIZE       = 64;
 
-    public final static int            NUM_ZOOM_LEVELS        = 5;
+    public final static int    NUM_ZOOM_LEVELS        = 5;
 
-    private static final int           KEYBOARD_SCROLL_AMOUNT = 300;
-    private static final int           KEYBOARD_SCROLL_TIME   = 300;
+    private static final int   KEYBOARD_SCROLL_AMOUNT = 300;
+    private static final int   KEYBOARD_SCROLL_TIME   = 300;
 
-    private static final Font          MAIN_FONT              = Font.decode("sans-12");
+    private static final Font  MAIN_FONT              = Font.decode("sans-12");
 
     /**
      * This is the color used to overlay on top of the public layer when the user is on the private layer. It's white
      * with 50% alpha
      */
-    private static final Color         OVERLAY_COLOR          = new Color(255, 255, 255, 128);
+    private static final Color OVERLAY_COLOR          = new Color(255, 255, 255, 128);
 
     /**
      * A singleton instance of the NULL tool.
      */
-    private static final Tool          NULL_TOOL              = new NullTool();
+    private static final Tool  NULL_TOOL              = new NullTool();
 
-    private Image          m_mapBackground;
+    private Image              m_mapBackground;
 
     // this is the map (or layer) that all players share
-    private GametableMap   m_publicMap      = new GametableMap(true);
-    private GametableMap   m_privateMap     = new GametableMap(false);
+    private GametableMap       m_publicMap            = new GametableMap(true);
+    private GametableMap       m_privateMap           = new GametableMap(false);
 
     // this points to whichever map is presently active
-    private GametableMap   m_activeMap;
+    private GametableMap       m_activeMap;
 
     // some cursors
-    private Cursor         m_emptyCursor;
-    private Image          m_pointingImage;
+    private Cursor             m_emptyCursor;
+    private Image              m_pointingImage;
 
     // the frame
-    private GametableFrame m_gametableFrame;
+    private GametableFrame     m_gametableFrame;
 
     /**
      * This is the number of screen pixels that are used per model pixel. It's never less than 1
      */
-    public int             m_zoom           = 1;
+    public int                 m_zoom                 = 1;
 
     // the size of a square at the current zoom level
-    public int             m_squareSize     = getSquareSizeForZoom(m_zoom);
+    public int                 m_squareSize           = getSquareSizeForZoom(m_zoom);
 
     // misc flags
-    private boolean        m_bSpaceKeyDown;
-    private boolean        m_bShiftKeyDown;
-    private boolean        m_bControlKeyDown;
-    private boolean        m_bAltKeyDown;
+    private boolean            m_bSpaceKeyDown;
+    private boolean            m_bShiftKeyDown;
+    private boolean            m_bControlKeyDown;
+    private boolean            m_bAltKeyDown;
 
-    private boolean        m_newPogIsBeingDragged;
+    private boolean            m_newPogIsBeingDragged;
 
-    private Point          m_mouseModelFloat;
-    private boolean        m_bMouseOnView;
+    private Point              m_mouseModelFloat;
+    private boolean            m_bMouseOnView;
 
-    private Pog            m_pogMouseOver;
+    private Pog                m_pogMouseOver;
 
-    private Point          m_startScroll;
-    private Point          m_deltaScroll;
-    private long           m_scrollTime;
-    private long           m_scrollTimeTotal;
-    private boolean        m_scrolling;
+    private Point              m_startScroll;
+    private Point              m_deltaScroll;
+    private long               m_scrollTime;
+    private long               m_scrollTimeTotal;
+    private boolean            m_scrolling;
 
-    SquareGridMode         m_squareGridMode = new SquareGridMode();
-    HexGridMode            m_hexGridMode    = new HexGridMode();
-    GridMode               m_noGridMode     = new GridMode();
-    GridMode               m_gridMode;
+    SquareGridMode             m_squareGridMode       = new SquareGridMode();
+    HexGridMode                m_hexGridMode          = new HexGridMode();
+    GridMode                   m_noGridMode           = new GridMode();
+    GridMode                   m_gridMode;
 
-    private int            m_activeToolId   = -1;
+    private int                m_activeToolId         = -1;
 
     /**
      * true if the current mouse action was initiated with a right-click
      */
-    private boolean        m_rightClicking;
+    private boolean            m_rightClicking;
 
     /**
      * the id of the tool that we switched out of to go to hand tool for a right-click
      */
-    private int            m_previousToolId;
+    private int                m_previousToolId;
 
     /**
      * Constructor.
@@ -865,19 +865,6 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         repaint();
     }
 
-    public Pog getPogByID(int id)
-    {
-        for (int i = 0; i < getActiveMap().getNumPogs(); i++)
-        {
-            Pog pog = getActiveMap().getPogAt(i);
-            if (pog.getId() == id)
-            {
-                return pog;
-            }
-        }
-        return null;
-    }
-
     public void clearUndoStacks()
     {
         // we only clear the public stack. No need to mess with the private one.
@@ -997,7 +984,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     public void doSetPogSize(int id, int size)
     {
-        Pog pog = getPogByID(id);
+        Pog pog = getActiveMap().getPogByID(id);
         if (pog == null)
         {
             return;
@@ -1006,6 +993,28 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         pog.setFaceSize(size);
         snapPogToGrid(pog);
         repaint();
+    }
+
+    public void reorderPogs(Map changes)
+    {
+        if (isPublicMap())
+        {
+            m_gametableFrame.send(PacketManager.makePogReorderPacket(changes));
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
+            {
+                doPogReorder(changes);
+            }
+        }
+        else
+        {
+            doPogReorder(changes);
+        }
+    }
+
+    public void doPogReorder(Map changes)
+    {
+        getActiveMap().reorderPogs(changes);
+        m_gametableFrame.refreshActivePogList();
     }
 
     public void setPogData(int id, String s, Map toAdd, Set toDelete)
@@ -1027,7 +1036,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     public void doSetPogData(int id, String s, Map toAdd, Set toDelete)
     {
-        Pog pog = getPogByID(id);
+        Pog pog = getActiveMap().getPogByID(id);
         if (pog == null)
         {
             return;
@@ -1079,7 +1088,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     public void doMovePog(int id, int newX, int newY)
     {
-        Pog toMove = getPogByID(id);
+        Pog toMove = getActiveMap().getPogByID(id);
         if (toMove == null)
         {
             return;
@@ -1128,7 +1137,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     public void doRemovePog(int id)
     {
-        Pog toRemove = getPogByID(id);
+        Pog toRemove = getActiveMap().getPogByID(id);
         if (toRemove != null)
         {
             getActiveMap().removePog(toRemove);

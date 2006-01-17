@@ -368,6 +368,11 @@ public class Pog implements Comparable
         String normalizedName = UtilityFunctions.normalizeName(name);
         m_attributes.remove(normalizedName);
     }
+    
+    public void setSortOrder(long order)
+    {
+        m_sortOrder = order;
+    }
 
     public void setTinted(boolean b)
     {
@@ -534,7 +539,7 @@ public class Pog implements Comparable
      */
     public String toString()
     {
-        return "[Pog name: " + getFilename() + " pos: " + getPosition() + " size: " + getFaceSize() + "]";
+        return "[Pog name: " + getFilename() + " (" + getId() + " - " + getSortOrder() + ") pos: " + getPosition() + " size: " + getFaceSize() + "]";
     }
 
     // --- Private Helpers ---

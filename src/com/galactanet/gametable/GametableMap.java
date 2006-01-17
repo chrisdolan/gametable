@@ -17,10 +17,12 @@ import java.util.*;
  */
 public class GametableMap
 {
-    /** ******************* CONSTANTS ************************ */
+    /* ******************* CONSTANTS ************************ */
+
     public final static int MAX_UNDO_LEVELS = 20;
 
-    /** ******************* CONSTRUCTION ************************ */
+    /* ******************* CONSTRUCTION ************************ */
+
     private GametableMap()
     {
         // no default construction allowed
@@ -37,7 +39,8 @@ public class GametableMap
         endUndoableAction(-1, -1);
     }
 
-    /** ***************** LINES MANAGEMENT********************* */
+    /* ***************** LINES MANAGEMENT********************* */
+
     public int getNumLines()
     {
         return m_lines.size();
@@ -63,7 +66,7 @@ public class GametableMap
         m_lines = new ArrayList();
     }
 
-    /** ***************** POGS MANAGEMENT********************* */
+    /* ***************** POGS MANAGEMENT********************* */
 
     public List getPogs()
     {
@@ -106,6 +109,20 @@ public class GametableMap
         m_orderedPogs.clear();
     }
 
+    public Pog getPogByID(int id)
+    {
+        for (int i = 0, size = getNumPogs(); i < size; ++i)
+        {
+            Pog pog = getPogAt(i);
+            if (pog.getId() == id)
+            {
+                return pog;
+            }
+        }
+
+        return null;
+    }
+
     public Pog getPogAt(Point modelPosition)
     {
         if (modelPosition == null)
@@ -143,7 +160,38 @@ public class GametableMap
         return underlayHit;
     }
 
-    /** ***************** SCROLL MANAGEMENT********************* */
+    public void reorderPogs(Map changes)
+    {
+        if (changes == null)
+        {
+            return;
+        }
+        
+        for (Iterator iterator = changes.entrySet().iterator(); iterator.hasNext();)
+        {
+            Map.Entry entry = (Map.Entry)iterator.next();
+            Integer id = (Integer)entry.getKey();
+            Long order = (Long)entry.getValue();
+
+            setSortOrder(id.intValue(), order.longValue());
+        }
+    }
+
+    public void setSortOrder(int id, long order)
+    {
+        Pog pog = getPogByID(id);
+        if (pog == null)
+        {
+            return;
+        }
+
+        m_orderedPogs.remove(pog);
+        pog.setSortOrder(order);
+        m_orderedPogs.add(pog);
+    }
+
+    /* ***************** SCROLL MANAGEMENT********************* */
+
     public void setScroll(int x, int y)
     {
         m_scrollX = x;

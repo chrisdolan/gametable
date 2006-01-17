@@ -6,8 +6,12 @@
 package com.galactanet.gametable;
 
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.awt.font.FontRenderContext;
 import java.util.*;
+import java.util.List;
 
 import javax.swing.*;
 import javax.swing.event.TreeExpansionEvent;
@@ -437,8 +441,34 @@ public class ActivePogsPanel extends JPanel
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
-    private JTree pogTree;
-    private Map   trackers = new HashMap();
+    /**
+     * The main component for this damn thing.
+     */
+    private JTree                     pogTree;
+
+    /**
+     * A map of GametableMaps to BranchTrackers for thier pog lists.
+     */
+    private Map                       trackers       = new HashMap();
+
+    // --- Pog Dragging Members ---
+
+    private ActivePogTreeCellRenderer pogRenderer    = new ActivePogTreeCellRenderer();
+
+    /**
+     * The currently grabbed pog.
+     */
+    private PogNode                   m_grabbedNode  = null;
+
+    /**
+     * The position of the currently grabbed pog.
+     */
+    private Point                     m_grabPosition = null;
+
+    /**
+     * The offset at which the pog was grabbed.
+     */
+    private Point                     m_grabOffset   = null;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -485,6 +515,157 @@ public class ActivePogsPanel extends JPanel
         return tracker;
     }
 
+    // --- Dragging methods ---
+
+    private void grabPog(PogNode p, Point pos, Point offset)
+    {
+        m_grabbedNode = p;
+        m_grabOffset = offset;
+        moveGrabPosition(pos);
+    }
+
+    private void releasePog()
+    {
+        if (m_grabbedNode != null)
+        {
+            Point localPos = UtilityFunctions.getComponentCoordinates(this, m_grabPosition);
+            PogNode node = getClosestPogNode(localPos.x, localPos.y);
+            if (node != null)
+            {
+                boolean after = false;
+                int row = getRowForNode(node);
+                if (row > -1)
+                {
+                    Rectangle bounds = pogTree.getRowBounds(row);
+                    if (localPos.y > bounds.y + bounds.height)
+                    {
+                        after = true;
+                    }
+                }
+
+                Pog sourcePog = m_grabbedNode.getPog();
+                Pog targetPog = node.getPog();
+                if (!sourcePog.equals(targetPog))
+                {
+                    List pogs = new ArrayList(GametableFrame.getGametableFrame().getGametableCanvas().getActiveMap()
+                        .getOrderedPogs());
+                    int sourceIndex = pogs.indexOf(sourcePog);
+                    int targetIndex = pogs.indexOf(targetPog);
+                    Map changes = new HashMap();
+                    if (sourceIndex < targetIndex)
+                    {
+                        // Moving a pog down in the list
+                        if (!after)
+                        {
+                            --targetIndex;
+                            targetPog = (Pog)pogs.get(targetIndex);
+                        }
+                        changes.put(new Integer(sourcePog.getId()), new Long(targetPog.getSortOrder()));
+                        for (int i = sourceIndex + 1; i <= targetIndex; ++i)
+                        {
+                            Pog a = (Pog)pogs.get(i);
+                            Pog b = (Pog)pogs.get(i - 1);
+                            
+                            changes.put(new Integer(a.getId()), new Long(b.getSortOrder()));
+                        }
+                    } else {
+                        // Moving a pog up in the list
+                        changes.put(new Integer(sourcePog.getId()), new Long(targetPog.getSortOrder()));
+                        for (int i = targetIndex; i < sourceIndex; ++i)
+                        {
+                            Pog a = (Pog)pogs.get(i);
+                            Pog b = (Pog)pogs.get(i+1);
+                            
+                            changes.put(new Integer(a.getId()), new Long(b.getSortOrder()));
+                        }
+                    }
+                    GametableFrame.getGametableFrame().getGametableCanvas().reorderPogs(changes);
+                }
+            }
+
+            m_grabbedNode = null;
+            m_grabPosition = null;
+            m_grabOffset = null;
+            repaint();
+        }
+    }
+
+    private void moveGrabPosition(Point pos)
+    {
+        if (m_grabbedNode != null)
+        {
+            m_grabPosition = pos;
+            repaint();
+        }
+    }
+
+    private PogNode getClosestPogNode(int x, int y)
+    {
+        TreePath path = pogTree.getClosestPathForLocation(x, y);
+        if (path == null)
+        {
+            return null;
+        }
+
+        for (int i = path.getPathCount(); i-- > 0;)
+        {
+            Object val = path.getPathComponent(i);
+            if (val instanceof PogNode)
+            {
+                return (PogNode)val;
+            }
+        }
+
+        return null;
+    }
+
+    private int getRowForNode(PogNode node)
+    {
+        DefaultTreeModel model = (DefaultTreeModel)pogTree.getModel();
+        TreePath path = new TreePath(model.getPathToRoot(node));
+        return pogTree.getRowForPath(path);
+    }
+
+    // --- Component Implementation ---
+
+    /*
+     * @see java.awt.Component#paint(java.awt.Graphics)
+     */
+    public void paint(Graphics g)
+    {
+        super.paint(g);
+        if (m_grabbedNode != null)
+        {
+            Graphics2D g2 = (Graphics2D)g;
+            Point localPos = UtilityFunctions.getComponentCoordinates(this, m_grabPosition);
+
+            PogNode node = getClosestPogNode(localPos.x, localPos.y);
+            if (node != null)
+            {
+                int row = getRowForNode(node);
+                if (row > -1)
+                {
+                    Rectangle bounds = pogTree.getRowBounds(row);
+                    int drawY = bounds.y + 2;
+                    if (localPos.y > bounds.y + bounds.height)
+                    {
+                        drawY += bounds.height;
+                    }
+                    final int PADDING = 5;
+                    int drawX = PADDING;
+                    g2.setColor(Color.DARK_GRAY);
+                    g2.drawLine(drawX, drawY, drawX + pogTree.getWidth() - (PADDING * 2), drawY);
+                }
+            }
+
+            g2.translate(localPos.x - m_grabOffset.x, localPos.y - m_grabOffset.y);
+            JComponent comp = (JComponent)pogRenderer.getTreeCellRendererComponent(pogTree, m_grabbedNode, false,
+                false, true, 0, false);
+            comp.paint(g2);
+            g2.dispose();
+        }
+    }
+
     // --- Initialization methods ---
 
     private JScrollPane getScrollPane()
@@ -504,9 +685,69 @@ public class ActivePogsPanel extends JPanel
             pogTree.setShowsRootHandles(true);
             pogTree.setToggleClickCount(3);
             pogTree.setSelectionModel(null);
-            pogTree.setCellRenderer(new ActivePogTreeCellRenderer());
+            pogTree.setCellRenderer(pogRenderer);
             pogTree.setRowHeight(0);
             pogTree.setFocusable(false);
+            pogTree.addMouseListener(new MouseAdapter()
+            {
+                /*
+                 * @see java.awt.event.MouseAdapter#mousePressed(java.awt.event.MouseEvent)
+                 */
+                public void mousePressed(MouseEvent e)
+                {
+                    TreePath path = pogTree.getPathForLocation(e.getX(), e.getY());
+                    if (path == null)
+                    {
+                        return;
+                    }
+                    Object val = path.getLastPathComponent();
+                    if (val instanceof PogNode)
+                    {
+                        PogNode node = (PogNode)val;
+                        Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e
+                            .getY()));
+                        Point localCoords = new Point(node.getPog().getPogType().getListIconWidth() / 2, node.getPog()
+                            .getPogType().getListIconHeight() / 2);
+                        grabPog(node, screenCoords, localCoords);
+                    }
+                }
+
+                /*
+                 * @see java.awt.event.MouseAdapter#mouseReleased(java.awt.event.MouseEvent)
+                 */
+                public void mouseReleased(MouseEvent e)
+                {
+                    releasePog();
+                }
+
+                /*
+                 * @see java.awt.event.MouseListener#mouseReleased(java.awt.event.MouseEvent)
+                 */
+                public void mouseExited(MouseEvent e)
+                {
+                }
+
+            });
+
+            pogTree.addMouseMotionListener(new MouseMotionAdapter()
+            {
+                /*
+                 * @see java.awt.event.MouseMotionAdapter#mouseDragged(java.awt.event.MouseEvent)
+                 */
+                public void mouseDragged(MouseEvent e)
+                {
+                    mouseMoved(e);
+                }
+
+                /*
+                 * @see java.awt.event.MouseMotionAdapter#mouseMoved(java.awt.event.MouseEvent)
+                 */
+                public void mouseMoved(MouseEvent e)
+                {
+                    Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e.getY()));
+                    moveGrabPosition(screenCoords);
+                }
+            });
             refresh();
         }
         return pogTree;

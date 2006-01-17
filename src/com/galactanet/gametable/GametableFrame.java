@@ -1263,6 +1263,15 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    public void pogReorderPacketReceived(Map changes)
+    {
+        getGametableCanvas().doPogReorder(changes);
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            m_networkThread.send(PacketManager.makePogReorderPacket(changes));
+        }
+    }
+    
     public void pointPacketReceived(int plrIdx, int x, int y, boolean bPointing)
     {
         // we're not interested in point packets of our own hand

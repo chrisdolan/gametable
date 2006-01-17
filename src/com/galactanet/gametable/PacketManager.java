@@ -84,7 +84,10 @@ public class PacketManager
     public static final int PACKET_POG_SIZE       = 19;
 
     // private text packet
-    public static final int PACKET_PRIVATE_TEXT	  = 20;
+    public static final int PACKET_PRIVATE_TEXT   = 20;
+
+    // pog reorder packet
+    public static final int PACKET_POG_REORDER    = 21;
 
     // --- Static Members --------------------------------------------------------------------------------------------
 
@@ -251,6 +254,12 @@ public class PacketManager
                 }
                 break;
 
+                case PACKET_POG_REORDER:
+                {
+                    readPogReorderPacket(dis);
+                }
+                break;
+
                 default:
                 {
                     throw new IllegalArgumentException("Unknown packet");
@@ -324,6 +333,8 @@ public class PacketManager
                 return "PACKET_POG_SIZE";
             case PACKET_PRIVATE_TEXT:
                 return "PACKET_PRIVATE_TEXT";
+            case PACKET_POG_REORDER:
+                return "PACKET_POG_REORDER";
             default:
                 return "PACKET_UNKNOWN";
         }
@@ -486,7 +497,7 @@ public class PacketManager
             Log.log(Log.SYS, ex);
         }
     }
-    
+
     /* *********************** PRIVATE TEXT PACKET *************************** */
 
     public static byte[] makePrivateTextPacket(String fromName, String toName, String text)
@@ -1489,6 +1500,57 @@ public class PacketManager
 
             // tell the model
             GametableFrame.getGametableFrame().pogSizePacketReceived(id, size);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+
+    /* *********************** POG_SIZE PACKET *********************************** */
+
+    public static byte[] makePogReorderPacket(Map changes)
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_POG_REORDER);
+            dos.writeInt(changes.size());
+            for (Iterator iterator = changes.entrySet().iterator(); iterator.hasNext();)
+            {
+                Map.Entry entry = (Map.Entry)iterator.next();
+                Integer id = (Integer)entry.getKey();
+                Long order = (Long)entry.getValue();
+                dos.writeInt(id.intValue());
+                dos.writeLong(order.longValue());
+            }
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
+    public static void readPogReorderPacket(DataInputStream dis)
+    {
+        try
+        {
+            int numChanges = dis.readInt();
+            Map changes = new HashMap();
+            for (int i = 0; i < numChanges; ++i)
+            {
+                int id = dis.readInt();
+                long order = dis.readLong();
+                changes.put(new Integer(id), new Long(order));
+            }
+
+            // tell the model
+            GametableFrame.getGametableFrame().pogReorderPacketReceived(changes);
         }
         catch (IOException ex)
         {
