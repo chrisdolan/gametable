@@ -279,7 +279,7 @@ public class ChatLogPane extends JEditorPane
         if (rolloverText != null && rolloverPosition != null)
         {
             Graphics2D g2 = (Graphics2D)g.create();
-            g2.addRenderingHints(GametableCanvas.RENDER_HINTS);
+            g2.addRenderingHints(UtilityFunctions.STANDARD_RENDERING_HINTS);
             g2.setFont(FONT_ROLLOVER);
             Rectangle rect = g2.getFontMetrics().getStringBounds(rolloverText, g2).getBounds();
             int drawX = rolloverPosition.x;

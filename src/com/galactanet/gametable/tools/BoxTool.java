@@ -10,6 +10,7 @@ import java.awt.*;
 import com.galactanet.gametable.GametableCanvas;
 import com.galactanet.gametable.GametableFrame;
 import com.galactanet.gametable.LineSegment;
+import com.galactanet.gametable.UtilityFunctions;
 
 
 /**
@@ -124,6 +125,7 @@ public class BoxTool extends NullTool
         {
             Graphics2D g2 = (Graphics2D)g.create();
 
+            g2.addRenderingHints(UtilityFunctions.STANDARD_RENDERING_HINTS);
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             int dx = m_mouseFloat.x - m_mouseAnchor.x;

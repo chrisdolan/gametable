@@ -180,6 +180,7 @@ public class GametableFrame extends JFrame implements ActionListener
     private JSplitPane             m_mapPogSplitPane        = new JSplitPane();
     private PogPanel               m_pogPanel               = null;
     private MacroPanel             m_macroPanel             = null;
+    private ActivePogsPanel        m_activePogsPanel        = null;
     private JToolBar               m_toolBar                = new JToolBar();
     private ButtonGroup            m_toolButtonGroup        = new ButtonGroup();
 
@@ -307,7 +308,8 @@ public class GametableFrame extends JFrame implements ActionListener
 
         m_pogPanel = new PogPanel(m_pogLibrary, getGametableCanvas());
         m_pogsTabbedPane.add(m_pogPanel, "Pog Library");
-        m_pogsTabbedPane.add(new JPanel(), "Active Pogs");
+        m_activePogsPanel = new ActivePogsPanel();
+        m_pogsTabbedPane.add(m_activePogsPanel, "Active Pogs");
         m_macroPanel = new MacroPanel();
         m_pogsTabbedPane.add(m_macroPanel, "Dice Macros");
         m_pogsTabbedPane.setFocusable(false);
@@ -1311,6 +1313,12 @@ public class GametableFrame extends JFrame implements ActionListener
             Pog.g_nextId = pog.getId() + 5;
         }
 
+        // update the next pog id if necessary
+        if (pog.getSortOrder() >= Pog.g_nextSortId)
+        {
+            Pog.g_nextSortId = pog.getSortOrder() + 1;
+        }
+
         if (m_netStatus == NETSTATE_HOST)
         {
             // if we're the host, send it to the clients
@@ -1866,12 +1874,20 @@ public class GametableFrame extends JFrame implements ActionListener
     }
 
     /**
-     * Reacquires pogs and then refreshes the pog list.
+     * Refreshes the pog list.
      */
     public void refreshPogList()
     {
         m_pogPanel.populateChildren();
         getGametableCanvas().repaint();
+    }
+
+    /**
+     * Reacquires pogs and then refreshes the pog list.
+     */
+    public void refreshActivePogList()
+    {
+        m_activePogsPanel.refresh();
     }
 
     /**

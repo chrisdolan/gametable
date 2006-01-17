@@ -43,30 +43,11 @@ public class PogPanel extends JPanel
 
     private static final Color POG_BORDER_COLOR     = Color.BLACK;
     private static final Color POG_BACKGROUND_COLOR = new Color(0x66, 0x66, 0x66, 0xCC);
-    private static final Color BACKGROUND_COLOR     = new Color(0xFF, 0xFF, 0xFE);
+    private static final Color BACKGROUND_COLOR     = Color.WHITE;
     private static final Font  FONT_NODE            = Font.decode("sansserif-12");
 
     private static final int   SPACE                = POG_PADDING + POG_BORDER + POG_MARGIN;
     private static final int   TOTAL_SPACE          = SPACE * 2;
-
-    private static final Map   RENDERING_HINTS      = getRenderingHints();
-
-    private static Map getRenderingHints()
-    {
-        Map retVal = new HashMap();
-
-        retVal.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
-        retVal.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        retVal.put(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
-        retVal.put(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
-        retVal.put(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-        retVal.put(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-        retVal.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        retVal.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
-        retVal.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-
-        return retVal;
-    }
 
     // --- Types -----------------------------------------------------------------------------------------------------
 
@@ -557,7 +538,7 @@ public class PogPanel extends JPanel
         protected void paintComponent(Graphics g)
         {
             Graphics2D g2 = (Graphics2D)g;
-            g2.addRenderingHints(RENDERING_HINTS);
+            g2.addRenderingHints(UtilityFunctions.STANDARD_RENDERING_HINTS);
             g2.setColor(Color.BLACK);
             if (pogType != null)
             {

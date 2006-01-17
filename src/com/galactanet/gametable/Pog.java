@@ -19,7 +19,7 @@ import java.util.*;
  * 
  * @author sephalon
  */
-public class Pog
+public class Pog implements Comparable
 {
     // --- Constants -------------------------------------------------------------------------------------------------
 
@@ -57,8 +57,9 @@ public class Pog
 
     private static class Attribute
     {
-        public String name;
-        public String value;
+        public String  name;
+        public String  value;
+        public boolean changed = true;
 
         public Attribute(String n, String v)
         {
@@ -73,6 +74,11 @@ public class Pog
      * Unique global Id for pogs.
      */
     public static int       g_nextId               = 10;
+
+    /**
+     * Global min sort id for pogs.
+     */
+    public static long     g_nextSortId           = 0;
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
@@ -100,6 +106,11 @@ public class Pog
      * The unique id of this pog.
      */
     private int             m_id                   = 0;
+
+    /**
+     * The sort order for this pog.
+     */
+    private long            m_sortOrder            = 0;
 
     /**
      * Scale for this pog.
@@ -153,6 +164,7 @@ public class Pog
         m_position = new Point(x, y);
         int size = dis.readInt();
         m_id = dis.readInt();
+        m_sortOrder = dis.readLong();
         m_text = dis.readUTF();
         // boolean underlay =
         dis.readBoolean();
@@ -175,7 +187,7 @@ public class Pog
         init(GametableFrame.getGametableFrame().getGametableCanvas(), type);
     }
 
-    public void init(Pog orig)
+    private void init(Pog orig)
     {
         m_position = orig.m_position;
         m_pogType = orig.m_pogType;
@@ -184,7 +196,7 @@ public class Pog
         m_text = new String(orig.m_text);
     }
 
-    public void init(GametableCanvas canvas, PogType type)
+    private void init(GametableCanvas canvas, PogType type)
     {
         m_pogType = type;
         m_canvas = canvas;
@@ -193,6 +205,7 @@ public class Pog
     public void assignUniqueId()
     {
         m_id = g_nextId++;
+        m_sortOrder = g_nextSortId++;
     }
 
     // --- Accessors ---
@@ -200,6 +213,11 @@ public class Pog
     public int getId()
     {
         return m_id;
+    }
+
+    public long getSortOrder()
+    {
+        return m_sortOrder;
     }
 
     public boolean isTinted()
@@ -381,7 +399,6 @@ public class Pog
         }
 
         m_scale = (float)faceSize / (float)m_pogType.getFaceSize();
-
     }
 
     // --- Drawing ---
@@ -420,7 +437,12 @@ public class Pog
 
     public void drawTextToCanvas(Graphics gr, boolean bForceTextInBounds)
     {
-        drawStringToCanvas(gr, bForceTextInBounds, COLOR_BACKGROUND);
+        drawTextToCanvas(gr, bForceTextInBounds, false);
+    }
+
+    public void drawTextToCanvas(Graphics gr, boolean bForceTextInBounds, boolean drawAttributes)
+    {
+        drawStringToCanvas(gr, bForceTextInBounds, COLOR_BACKGROUND, drawAttributes);
         stopDisplayPogDataChange();
     }
 
@@ -442,6 +464,7 @@ public class Pog
         dos.writeInt(getY());
         dos.writeInt(getFaceSize());
         dos.writeInt(m_id);
+        dos.writeLong(m_sortOrder);
         dos.writeUTF(m_text);
         dos.writeBoolean(isUnderlay());
         dos.writeFloat(m_scale);
@@ -454,7 +477,51 @@ public class Pog
         }
     }
 
+    // --- Comparable Implementation ---
+
+    /*
+     * @see java.lang.Comparable#compareTo(java.lang.Object)
+     */
+    public int compareTo(Object o)
+    {
+        if (this.equals(o))
+        {
+            return 0;
+        }
+
+        Pog pog = (Pog)o;
+        long diff = m_sortOrder - pog.getSortOrder();
+        if (diff == 0)
+        {
+            diff = m_id - pog.getId();
+        }
+
+        return (diff < 0 ? -1 : (diff > 0 ? 1 : 0));
+    }
+
     // --- Object Implementation ---
+
+    /*
+     * @see java.lang.Object#hashCode()
+     */
+    public int hashCode()
+    {
+        return m_id;
+    }
+
+    /*
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+
+        Pog pog = (Pog)obj;
+        return (pog.getId() == m_id);
+    }
 
     /*
      * @see java.lang.Object#toString()
@@ -486,6 +553,11 @@ public class Pog
     private void stopDisplayPogDataChange()
     {
         m_bTextChangeNotifying = false;
+        for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
+        {
+            Attribute attribute = (Attribute)iterator.next();
+            attribute.changed = false;
+        }
     }
 
     private Point modelToPog(Point modelPoint)
@@ -499,6 +571,12 @@ public class Pog
     }
 
     private void drawStringToCanvas(Graphics gr, boolean bForceTextInBounds, Color backgroundColor)
+    {
+        drawStringToCanvas(gr, bForceTextInBounds, backgroundColor, false);
+    }
+
+    private void drawStringToCanvas(Graphics gr, boolean bForceTextInBounds, Color backgroundColor,
+        boolean drawAttributes)
     {
         if (m_text == null)
         {
@@ -557,13 +635,31 @@ public class Pog
 
             g.drawRect(backgroundRect.x, backgroundRect.y, backgroundRect.width - 1, backgroundRect.height - 1);
         }
-        drawAttributes(g, backgroundRect.x + (backgroundRect.width / 2), backgroundRect.y + backgroundRect.height);
+
+        drawAttributes(g, backgroundRect.x + (backgroundRect.width / 2), backgroundRect.y + backgroundRect.height,
+            !drawAttributes);
         g.dispose();
     }
 
-    private void drawAttributes(Graphics g, int x, int y)
+    private void drawAttributes(Graphics g, int x, int y, boolean onlyChanged)
     {
-        int numAttributes = m_attributes.size();
+        int numAttributes = 0;
+        if (onlyChanged)
+        {
+            for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
+            {
+                Attribute attribute = (Attribute)iterator.next();
+                if (attribute.changed)
+                {
+                    numAttributes++;
+                }
+            }
+        }
+        else
+        {
+            numAttributes = m_attributes.size();
+        }
+
         if (numAttributes < 1)
         {
             return;
@@ -572,22 +668,29 @@ public class Pog
         Graphics2D g2 = (Graphics2D)g.create();
         FontMetrics nameMetrics = g2.getFontMetrics(FONT_ATTRIBUTE_NAME);
         FontMetrics valueMetrics = g2.getFontMetrics(FONT_ATTRIBUTE_VALUE);
-        int maxLineHeight = Math.max(nameMetrics.getHeight(), valueMetrics.getHeight());
-        int height = maxLineHeight * numAttributes;
-        final int PADDING = 3;
-        final int SPACE = PADDING * 2;
+        int height = 0;
         int width = 0;
-        for (Iterator iterator = m_attributes.keySet().iterator(); iterator.hasNext();)
+        for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
         {
-            String name = (String)iterator.next();
-            String value = getAttribute(name);
-            int attrWidth = nameMetrics.stringWidth(name + ": ") + valueMetrics.stringWidth(value);
+            Attribute attribute = (Attribute)iterator.next();
+            if (onlyChanged && !attribute.changed)
+            {
+                continue;
+            }
+            
+            Rectangle nameBounds = nameMetrics.getStringBounds(attribute.name + ": ", g2).getBounds();
+            Rectangle valueBounds = valueMetrics.getStringBounds(attribute.value, g2).getBounds();
+            int attrWidth = nameBounds.width + valueBounds.width;
             if (attrWidth > width)
             {
                 width = attrWidth;
             }
+            int attrHeight = Math.max(nameBounds.height, valueBounds.height);
+            height += attrHeight;
         }
 
+        final int PADDING = 3;
+        final int SPACE = PADDING * 2;
         height += SPACE;
         width += SPACE;
 
@@ -599,18 +702,25 @@ public class Pog
         g2.drawRect(drawX, drawY, width - 1, height - 1);
 
         drawX += PADDING;
-        drawY += PADDING + nameMetrics.getAscent();
+        drawY += PADDING;
         for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
         {
             Attribute attribute = (Attribute)iterator.next();
-            String drawString = attribute.name + ": ";
+            if (onlyChanged && !attribute.changed)
+            {
+                continue;
+            }
+
+            String nameString = attribute.name + ": ";
+            String valueString = attribute.value;
+            Rectangle nameBounds = nameMetrics.getStringBounds(nameString, g2).getBounds();
+            Rectangle valueBounds = valueMetrics.getStringBounds(valueString, g2).getBounds();
+            int baseline = Math.max(-nameBounds.y, -valueBounds.y);
             g2.setFont(FONT_ATTRIBUTE_NAME);
-            g2.drawString(drawString, drawX, drawY);
-            int nameWidth = nameMetrics.stringWidth(drawString);
+            g2.drawString(nameString, drawX, drawY + baseline);
             g2.setFont(FONT_ATTRIBUTE_VALUE);
-            drawString = attribute.value;
-            g2.drawString(attribute.value, drawX + nameWidth, drawY);
-            drawY += maxLineHeight;
+            g2.drawString(attribute.value, drawX + nameBounds.width, drawY + baseline);
+            drawY += Math.max(nameBounds.height, valueBounds.height);
         }
 
         g2.dispose();

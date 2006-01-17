@@ -23,7 +23,6 @@ import javax.swing.filechooser.FileFilter;
 
 
 
-
 /**
  * A class full of various and sundry static utility functions.
  * 
@@ -31,27 +30,29 @@ import javax.swing.filechooser.FileFilter;
  */
 public class UtilityFunctions
 {
-    private static final Random random              = getRandomInstance();
+    public static final char           UNIVERSAL_SEPARATOR      = '/';
+    public static final char           LOCAL_SEPARATOR          = File.separatorChar;
+
+    public final static int            NO                       = 0;
+    public final static int            YES                      = 1;
+    public final static int            CANCEL                   = -1;
 
     /**
      * The PNG signature to verify PNG data with.
      */
-    private static final byte[] PNG_SIGNATURE       = {
+    private static final byte[]        PNG_SIGNATURE            = {
         (byte)(137 & 0xFF), 80, 78, 71, 13, 10, 26, 10
-                                                    };
+                                                                };
 
-    public static final char    UNIVERSAL_SEPARATOR = '/';
-    public static final char    LOCAL_SEPARATOR     = File.separatorChar;
+    public static final RenderingHints STANDARD_RENDERING_HINTS = getRenderingHints();
 
-    public final static int     NO                  = 0;
-    public final static int     YES                 = 1;
-    public final static int     CANCEL              = -1;
+    private static final Random        RANDOM                   = getRandomInstance();
 
-    private static final Map ENTITY_NAME_MAP = UtilityFunctions.getEncodingMap();
+    private static final Map           ENTITY_NAME_MAP          = getEncodingMap();
 
     public static int getRandom(int max)
     {
-        return random.nextInt(max);
+        return RANDOM.nextInt(max);
     }
 
     public static String normalizeName(String in)
@@ -705,7 +706,6 @@ public class UtilityFunctions
         return new Point(screenPoint.x - screenPos.x, screenPoint.y - screenPos.y);
     }
 
-
     private static Map getEncodingMap()
     {
         Map retVal = new HashMap();
@@ -714,8 +714,27 @@ public class UtilityFunctions
         retVal.put(new Character('<'), "lt");
         retVal.put(new Character('>'), "gt");
         retVal.put(new Character('&'), "amp");
-    
+
         return Collections.unmodifiableMap(retVal);
+    }
+
+    /**
+     * @return The standard set of rendering hits for the app.
+     */
+    private static RenderingHints getRenderingHints()
+    {
+        RenderingHints retVal = new RenderingHints(null);
+
+        retVal.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
+        retVal.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+        retVal.put(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
+        retVal.put(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+        retVal.put(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+        retVal.put(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        retVal.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        retVal.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        return retVal;
     }
 
     /**
@@ -792,8 +811,8 @@ public class UtilityFunctions
 
     /**
      * Encodes the given string using the URL encoding method.
-     *  
-     * @param in String to encode. 
+     * 
+     * @param in String to encode.
      * @return Encoded string.
      */
     public static String urlEncode(String in)
@@ -817,8 +836,8 @@ public class UtilityFunctions
 
     /**
      * Decodes the given string using the URL decoding method.
-     *  
-     * @param in String to decode. 
+     * 
+     * @param in String to decode.
      * @return Decoded string.
      */
     public static String urlDecode(String in)
@@ -864,7 +883,7 @@ public class UtilityFunctions
     {
         StringWriter out = new StringWriter();
         StringReader in = new StringReader(str);
-    
+
         try
         {
             UtilityFunctions.xmlEncode(out, in);
@@ -874,7 +893,7 @@ public class UtilityFunctions
             Log.log(Log.SYS, ioe);
             return null;
         }
-    
+
         return out.toString();
     }
 
@@ -887,7 +906,7 @@ public class UtilityFunctions
             {
                 break;
             }
-    
+
             char c = (char)i;
             String entity = (String)ENTITY_NAME_MAP.get(new Character(c));
             if (entity != null)

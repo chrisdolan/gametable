@@ -31,8 +31,6 @@ import com.galactanet.gametable.tools.NullTool;
  */
 public class GametableCanvas extends JComponent implements MouseListener, MouseMotionListener, MouseWheelListener
 {
-    public static final RenderingHints RENDER_HINTS           = getRenderHints();
-
     // grid modes
     public final static int            GRID_MODE_NONE         = 0;
     public final static int            GRID_MODE_SQUARES      = 1;
@@ -58,13 +56,6 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
      * A singleton instance of the NULL tool.
      */
     private static final Tool          NULL_TOOL              = new NullTool();
-
-    private static RenderingHints getRenderHints()
-    {
-        RenderingHints hints = new RenderingHints(null);
-        hints.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        return hints;
-    }
 
     private Image          m_mapBackground;
 
@@ -1065,6 +1056,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
             }
         }
 
+        m_gametableFrame.refreshActivePogList();
         repaint();
     }
 
@@ -1141,7 +1133,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         {
             getActiveMap().removePog(toRemove);
         }
-
+        m_gametableFrame.refreshActivePogList();
         repaint();
     }
 
@@ -1166,6 +1158,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     public void doAddPog(Pog toAdd)
     {
         getActiveMap().addPog(toAdd);
+        m_gametableFrame.refreshActivePogList();
         repaint();
     }
 
@@ -1487,7 +1480,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     public void paintComponent(Graphics graphics)
     {
         Graphics2D g = (Graphics2D)graphics.create();
-        g.addRenderingHints(RENDER_HINTS);
+        g.addRenderingHints(UtilityFunctions.STANDARD_RENDERING_HINTS);
         g.setFont(MAIN_FONT);
 
         // if they're on the public layer, we draw it first, then the private layer
@@ -1651,14 +1644,14 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                     Pog pog = mapToDraw.getPogAt(i);
                     if (pog != mouseOverPog)
                     {
-                        pog.drawTextToCanvas(g, false);
+                        pog.drawTextToCanvas(g, false, false);
                     }
                 }
             }
 
             if (mouseOverPog != null)
             {
-                mouseOverPog.drawTextToCanvas(g, true);
+                mouseOverPog.drawTextToCanvas(g, true, true);
             }
         }
 
