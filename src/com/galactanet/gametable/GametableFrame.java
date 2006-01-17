@@ -1910,7 +1910,7 @@ public class GametableFrame extends JFrame implements ActionListener
         // if they toggled the layer, whatever tool they're using is cancelled
         getToolManager().cancelToolAction();
         getGametableCanvas().requestFocus();
-
+        refreshActivePogList();
         repaint();
     }
 

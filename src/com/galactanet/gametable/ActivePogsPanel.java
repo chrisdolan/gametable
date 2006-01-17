@@ -7,16 +7,15 @@ package com.galactanet.gametable;
 
 import java.awt.*;
 import java.awt.font.FontRenderContext;
-import java.util.Iterator;
+import java.util.*;
 
 import javax.swing.*;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTree;
+import javax.swing.event.TreeExpansionEvent;
+import javax.swing.event.TreeExpansionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeCellRenderer;
+import javax.swing.tree.TreePath;
 
 
 
@@ -29,21 +28,115 @@ public class ActivePogsPanel extends JPanel
 {
     // --- Constants -------------------------------------------------------------------------------------------------
 
-    private static final int           POG_TEXT_PADDING         = 4;
-    private static final int           POG_PADDING              = 1;
-    private static final int           POG_BORDER               = 0;
-    private static final int           POG_MARGIN               = 0;
+    private static final int   POG_TEXT_PADDING = 4;
+    private static final int   POG_PADDING      = 1;
+    private static final int   POG_BORDER       = 0;
+    private static final int   POG_MARGIN       = 0;
 
-    private static final Color         BACKGROUND_COLOR         = Color.WHITE;
-    private static final Font          FONT_NODE                = Font.decode("sansserif-12");
-    private static final Font          FONT_VALUE               = FONT_NODE;
-    private static final Font          FONT_KEY                 = FONT_VALUE.deriveFont(Font.BOLD);
+    private static final Color BACKGROUND_COLOR = Color.WHITE;
+    private static final Font  FONT_NODE        = Font.decode("sansserif-12");
+    private static final Font  FONT_VALUE       = FONT_NODE;
+    private static final Font  FONT_KEY         = FONT_VALUE.deriveFont(Font.BOLD);
 
-    private static final int           SPACE                    = POG_PADDING + POG_BORDER + POG_MARGIN;
-    private static final int           TOTAL_SPACE              = SPACE * 2;
+    private static final int   SPACE            = POG_PADDING + POG_BORDER + POG_MARGIN;
+    private static final int   TOTAL_SPACE      = SPACE * 2;
 
     // --- Types -----------------------------------------------------------------------------------------------------
 
+    /**
+     * Class to track the status of branches in the pog tree.
+     * 
+     * @author Iffy
+     */
+    private class BranchTracker implements TreeExpansionListener
+    {
+        private Set expandedNodes  = new HashSet();
+        private Set collapsedNodes = new HashSet();
+
+        public BranchTracker()
+        {
+        }
+
+        public void reset()
+        {
+            expandedNodes.clear();
+            collapsedNodes.clear();
+        }
+
+        public void restoreTree(JTree tree)
+        {
+            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            RootNode root = (RootNode)model.getRoot();
+
+            tree.removeTreeExpansionListener(this);
+            try
+            {
+                Iterator iterator = new HashSet(expandedNodes).iterator();
+                while (iterator.hasNext())
+                {
+                    Pog pog = (Pog)iterator.next();
+                    PogNode node = root.findNodeFor(pog);
+                    if (node != null)
+                    {
+                        TreePath path = new TreePath(model.getPathToRoot(node));
+                        tree.expandPath(path);
+                    }
+                    else
+                    {
+                        expandedNodes.remove(pog);
+                    }
+                }
+
+                iterator = new HashSet(collapsedNodes).iterator();
+                while (iterator.hasNext())
+                {
+                    Pog pog = (Pog)iterator.next();
+                    PogNode node = root.findNodeFor(pog);
+                    if (node != null)
+                    {
+                        TreePath path = new TreePath(model.getPathToRoot(node));
+                        tree.collapseRow(tree.getRowForPath(path));
+                    }
+                    else
+                    {
+                        collapsedNodes.remove(pog);
+                    }
+                }
+            }
+            finally
+            {
+                tree.addTreeExpansionListener(this);
+            }
+        }
+
+        // --- TreeExpansionListener Implementation ---
+
+        /*
+         * @see javax.swing.event.TreeExpansionListener#treeExpanded(javax.swing.event.TreeExpansionEvent)
+         */
+        public void treeExpanded(TreeExpansionEvent event)
+        {
+            PogNode node = (PogNode)event.getPath().getLastPathComponent();
+            expandedNodes.add(node.getPog());
+            collapsedNodes.remove(node.getPog());
+        }
+
+        /*
+         * @see javax.swing.event.TreeExpansionListener#treeCollapsed(javax.swing.event.TreeExpansionEvent)
+         */
+        public void treeCollapsed(TreeExpansionEvent event)
+        {
+            PogNode node = (PogNode)event.getPath().getLastPathComponent();
+            expandedNodes.remove(node.getPog());
+            collapsedNodes.add(node.getPog());
+        }
+    }
+
+    /**
+     * Root node class for the tree.
+     * 
+     * @author iffy
+     */
     private static class RootNode extends DefaultMutableTreeNode
     {
         public RootNode(GametableMap map)
@@ -53,6 +146,20 @@ public class ActivePogsPanel extends JPanel
             {
                 add(new PogNode((Pog)iterator.next()));
             }
+        }
+
+        public PogNode findNodeFor(Pog pog)
+        {
+            for (int i = 0, size = getChildCount(); i < size; ++i)
+            {
+                PogNode node = (PogNode)getChildAt(i);
+                if (pog.equals(node.getPog()))
+                {
+                    return node;
+                }
+            }
+
+            return null;
         }
 
         public GametableMap getMap()
@@ -330,7 +437,8 @@ public class ActivePogsPanel extends JPanel
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
-    private JTree tree;
+    private JTree pogTree;
+    private Map   trackers = new HashMap();
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -347,35 +455,60 @@ public class ActivePogsPanel extends JPanel
 
     public void refresh()
     {
-        tree.setModel(new DefaultTreeModel(new RootNode(GametableFrame.getGametableFrame().getGametableCanvas()
-            .getActiveMap())));
+        removeTrackers();
+        GametableMap map = GametableFrame.getGametableFrame().getGametableCanvas().getActiveMap();
+        pogTree.setModel(new DefaultTreeModel(new RootNode(map)));
+        BranchTracker tracker = getTrackerFor(map);
+        pogTree.addTreeExpansionListener(tracker);
+        tracker.restoreTree(pogTree);
+    }
+
+    // --- Accessor methods ---
+
+    private void removeTrackers()
+    {
+        for (Iterator iterator = trackers.values().iterator(); iterator.hasNext();)
+        {
+            pogTree.removeTreeExpansionListener((TreeExpansionListener)iterator.next());
+        }
+    }
+
+    private BranchTracker getTrackerFor(GametableMap map)
+    {
+        BranchTracker tracker = (BranchTracker)trackers.get(map);
+        if (tracker == null)
+        {
+            tracker = new BranchTracker();
+            trackers.put(map, tracker);
+        }
+
+        return tracker;
     }
 
     // --- Initialization methods ---
 
     private JScrollPane getScrollPane()
     {
-        JScrollPane scrollPane = new JScrollPane(getTree());
+        JScrollPane scrollPane = new JScrollPane(getPogTree());
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         return scrollPane;
     }
 
-    private JTree getTree()
+    private JTree getPogTree()
     {
-        if (tree == null)
+        if (pogTree == null)
         {
-            tree = new JTree();
-            tree.setBackground(BACKGROUND_COLOR);
-            tree.setRootVisible(false);
-            tree.setShowsRootHandles(true);
-            tree.setToggleClickCount(3);
-            tree.setSelectionModel(null);
-            tree.setCellRenderer(new ActivePogTreeCellRenderer());
-            tree.setRowHeight(0);
-            // TODO: tree.addTreeExpansionListener(null);
-            tree.setFocusable(false);
+            pogTree = new JTree();
+            pogTree.setBackground(BACKGROUND_COLOR);
+            pogTree.setRootVisible(false);
+            pogTree.setShowsRootHandles(true);
+            pogTree.setToggleClickCount(3);
+            pogTree.setSelectionModel(null);
+            pogTree.setCellRenderer(new ActivePogTreeCellRenderer());
+            pogTree.setRowHeight(0);
+            pogTree.setFocusable(false);
             refresh();
         }
-        return tree;
+        return pogTree;
     }
 }

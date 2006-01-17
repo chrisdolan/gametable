@@ -193,7 +193,13 @@ public class Pog implements Comparable
         m_pogType = orig.m_pogType;
         m_canvas = orig.m_canvas;
         m_scale = orig.m_scale;
-        m_text = new String(orig.m_text);
+        m_text = orig.m_text;
+        for (Iterator iterator = orig.m_attributes.values().iterator(); iterator.hasNext();)
+        {
+            Attribute attribute = (Attribute)iterator.next();
+            setAttribute(attribute.name, attribute.value);
+        }
+        stopDisplayPogDataChange();
     }
 
     private void init(GametableCanvas canvas, PogType type)
