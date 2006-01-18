@@ -128,8 +128,8 @@ public class BoxTool extends NullTool
             g2.addRenderingHints(UtilityFunctions.STANDARD_RENDERING_HINTS);
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            int dx = m_mouseFloat.x - m_mouseAnchor.x;
-            int dy = m_mouseFloat.y - m_mouseAnchor.y;
+//            int dx = m_mouseFloat.x - m_mouseAnchor.x;
+//            int dy = m_mouseFloat.y - m_mouseAnchor.y;
             double dist = m_canvas.getGridMode().getDistance(m_mouseFloat.x, m_mouseFloat.y, m_mouseAnchor.x, m_mouseAnchor.y);
             double squaresDistance = m_canvas.modelToSquares(dist);
             squaresDistance = Math.round(squaresDistance * 100) / 100.0;
