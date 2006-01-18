@@ -41,7 +41,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     public final static int    NUM_ZOOM_LEVELS        = 5;
 
-    private static final int   KEYBOARD_SCROLL_AMOUNT = 300;
+    private static final float KEYBOARD_SCROLL_FACTOR = 0.5f;
     private static final int   KEYBOARD_SCROLL_TIME   = 300;
 
     private static final Font  MAIN_FONT              = Font.decode("sans-12");
@@ -358,7 +358,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                 }
 
                 GametableMap map = getActiveMap();
-                Point p = drawToModel(map.getScrollX(), map.getScrollY() - KEYBOARD_SCROLL_AMOUNT);
+                Point p = drawToModel(map.getScrollX(), map.getScrollY() - Math.round(getHeight() * KEYBOARD_SCROLL_FACTOR));
                 smoothScrollTo(p.x, p.y);
             }
         });
@@ -381,7 +381,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                 }
 
                 GametableMap map = getActiveMap();
-                Point p = drawToModel(map.getScrollX(), map.getScrollY() + KEYBOARD_SCROLL_AMOUNT);
+                Point p = drawToModel(map.getScrollX(), map.getScrollY() + Math.round(getHeight() * KEYBOARD_SCROLL_FACTOR));
                 smoothScrollTo(p.x, p.y);
             }
         });
@@ -404,7 +404,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                 }
 
                 GametableMap map = getActiveMap();
-                Point p = drawToModel(map.getScrollX() - KEYBOARD_SCROLL_AMOUNT, map.getScrollY());
+                Point p = drawToModel(map.getScrollX() - Math.round(getWidth() * KEYBOARD_SCROLL_FACTOR), map.getScrollY());
                 smoothScrollTo(p.x, p.y);
             }
         });
@@ -427,7 +427,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                 }
 
                 GametableMap map = getActiveMap();
-                Point p = drawToModel(map.getScrollX() + KEYBOARD_SCROLL_AMOUNT, map.getScrollY());
+                Point p = drawToModel(map.getScrollX() + Math.round(getWidth() * KEYBOARD_SCROLL_FACTOR), map.getScrollY());
                 smoothScrollTo(p.x, p.y);
             }
         });
@@ -562,9 +562,9 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     public GridMode getGridMode()
     {
-    	return m_gridMode;
+        return m_gridMode;
     }
-    
+
     public int getGridModeId()
     {
         if (m_gridMode == m_squareGridMode)
@@ -1404,7 +1404,6 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         m_gridMode.snapPogToGrid(pog);
     }
 
-
     public void scrollToPog(Pog pog)
     {
         Point pogModel = new Point(pog.getX() + (pog.getWidth() / 2), pog.getY() + (pog.getHeight() / 2));
@@ -1414,7 +1413,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         pogModel = viewToModel(pogView);
         smoothScrollTo(pogModel.x, pogModel.y);
     }
-    
+
     public void smoothScrollTo(int modelX, int modelY)
     {
         GametableMap map = getActiveMap();
