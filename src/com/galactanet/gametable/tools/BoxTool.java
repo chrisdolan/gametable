@@ -130,7 +130,7 @@ public class BoxTool extends NullTool
 
             int dx = m_mouseFloat.x - m_mouseAnchor.x;
             int dy = m_mouseFloat.y - m_mouseAnchor.y;
-            double dist = Math.sqrt(dx * dx + dy * dy);
+            double dist = m_canvas.getGridMode().getDistance(m_mouseFloat.x, m_mouseFloat.y, m_mouseAnchor.x, m_mouseAnchor.y);
             double squaresDistance = m_canvas.modelToSquares(dist);
             squaresDistance = Math.round(squaresDistance * 100) / 100.0;
 

@@ -79,6 +79,37 @@ public class GridMode
     {
         // default behavior is to not draw anything
     }
+    
+    // some grids might not have the same scale in the x direction as they do in the y
+    public double getDistanceMultplierX()
+    {
+    	return 1.0;
+    }
+
+    public double getDistanceMultplierY()
+    {
+    	return 1.0;
+    }
+    
+    public double getDistance(int x1, int y1, int x2, int y2)
+    {
+    	int dx = x2-x1;
+    	int dy = y2-y1;
+    	
+        double dxSquared = dx*dx;
+        double dySquared = dy*dy;
+        
+        double multX = m_canvas.getGridMode().getDistanceMultplierX();
+        double multY = m_canvas.getGridMode().getDistanceMultplierY();
+        
+        // we've squared the dx and dy already, so we need to apply the multX and multY squared
+        dxSquared = dxSquared * multX * multX;
+        dySquared = dySquared * multY * multY;
+        
+        double dist = Math.sqrt(dxSquared + dySquared);
+        
+        return dist;
+    }
 
     protected GametableCanvas m_canvas;
 }

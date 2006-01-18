@@ -14,7 +14,14 @@ public class HexGridMode extends GridMode
 	public HexGridMode()
 	{
 	}
-	
+
+	// overrides. We don't have the same scale in x as we do in y
+	// the y is still 1.0, so we don't override it. But the X is a different story
+    public double getDistanceMultplierX()
+    {
+    	return 0.866;
+    }
+
 	public void init(GametableCanvas canvas)
 	{
 		super.init(canvas);

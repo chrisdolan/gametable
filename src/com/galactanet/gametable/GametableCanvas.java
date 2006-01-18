@@ -560,6 +560,11 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         }
     }
 
+    public GridMode getGridMode()
+    {
+    	return m_gridMode;
+    }
+    
     public int getGridModeID()
     {
         if (m_gridMode == m_squareGridMode)
