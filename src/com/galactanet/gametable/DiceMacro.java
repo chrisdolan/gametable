@@ -178,12 +178,21 @@ public class DiceMacro
     }
 
     public static String generateOutputString(String rollerName, String rollName, String rollItemizedResults,
-        String result)
-    {
-        String ret = UtilityFunctions.emitUserLink(rollerName) + " rolls " + rollName + ": [" + rollItemizedResults
-            + "] = " + GametableFrame.DIEROLL_MESSAGE_FONT + result + GametableFrame.END_DIEROLL_MESSAGE_FONT;
-        return ret;
-    }
+            String result)
+        {
+            String ret = UtilityFunctions.emitUserLink(rollerName) + " rolls " + rollName + ": [" + rollItemizedResults
+                + "] = " + GametableFrame.DIEROLL_MESSAGE_FONT + result + GametableFrame.END_DIEROLL_MESSAGE_FONT;
+            return ret;
+        }
+
+    // use this to generate a "You privately roll..." messages
+    public static String generatePrivateOutputString(String rollName, String rollItemizedResults,
+            String result)
+        {
+            String ret = "You privately roll " + rollName + ": [" + rollItemizedResults
+                + "] = " + GametableFrame.DIEROLL_MESSAGE_FONT + result + GametableFrame.END_DIEROLL_MESSAGE_FONT;
+            return ret;
+        }
 
     /**
      * Regularlizes a string before parsing.

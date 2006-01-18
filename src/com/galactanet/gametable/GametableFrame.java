@@ -2343,17 +2343,17 @@ public class GametableFrame extends JFrame implements ActionListener
             buffer.append((m_players.size() > 1 ? "s" : ""));
             logSystemMessage(buffer.toString());
         }
-        else if (words[0].equals("/roll"))
+        else if (words[0].equals("/roll") || words[0].equals("/proll"))
         {
             // req. 1 param
             if (words.length < 2)
             {
-                logSystemMessage("/roll usage: /roll &lt;Dice Roll in standard format&gt;");
-                logSystemMessage("or: /roll &lt;Macro Name&gt; [&lt;+/-&gt; &lt;Macro Name or Dice Roll&gt;]...");
+                logSystemMessage(""+words[0]+" usage: "+words[0]+" &lt;Dice Roll in standard format&gt;");
+                logSystemMessage("or: "+words[0]+" &lt;Macro Name&gt; [&lt;+/-&gt; &lt;Macro Name or Dice Roll&gt;]...");
                 logSystemMessage("Examples:");
-                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/roll 2d6 + 3d4 + 8");
-                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/roll My Damage + d4");
-                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/roll d20 + My Damage + My Damage Bonus");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+words[0]+" 2d6 + 3d4 + 8");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+words[0]+" My Damage + d4");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+words[0]+" d20 + My Damage + My Damage Bonus");
                 return;
             }
 
@@ -2362,7 +2362,7 @@ public class GametableFrame extends JFrame implements ActionListener
             // First we split the roll into terms
             ArrayList rolls = new ArrayList();
             ArrayList ops = new ArrayList();
-            String remaining = text.substring("/roll ".length());
+            String remaining = text.substring((words[0]+" ").length());
             int length = remaining.length();
             int termStart = 0;
             for (int index = 0; index < length; ++index)
@@ -2451,9 +2451,20 @@ public class GametableFrame extends JFrame implements ActionListener
 
                 first = false;
             }
-            String toPost = DiceMacro.generateOutputString(getMyPlayer().getCharacterName(), rollBuf.toString(),
-                resultBuf.toString(), "" + total);
-            postMessage(toPost);
+            
+            if ( words[0].equals("/roll") )
+            {
+            	// this was a public roll
+                String toPost = DiceMacro.generateOutputString(getMyPlayer().getCharacterName(), rollBuf.toString(),
+                        resultBuf.toString(), "" + total);
+            	postMessage(toPost);
+            }
+            else
+            {
+            	// this was a private roll. Don't propigate it to other players
+                String toPost = DiceMacro.generatePrivateOutputString(rollBuf.toString(), resultBuf.toString(), "" + total);
+            	m_chatLog.addText(toPost);
+            }
         }
         else if (words[0].equals("/poglist"))
         {
@@ -2613,18 +2624,19 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             // list macro commands
             logMessage(SYSTEM_MESSAGE_FONT + "<u>Slash Commands</u>" + END_SYSTEM_MESSAGE_FONT + "<br>"
-                + SYSTEM_MESSAGE_FONT + "/as:" + END_SYSTEM_MESSAGE_FONT
-                + " Display a narrative of a character saying something<br>" + SYSTEM_MESSAGE_FONT + "/emote:"
-                + END_SYSTEM_MESSAGE_FONT + " Display an emote<br>" + SYSTEM_MESSAGE_FONT + "/goto:"
-                + END_SYSTEM_MESSAGE_FONT + " Centers a pog in the map view.<br>" + SYSTEM_MESSAGE_FONT + "/help:"
-                + END_SYSTEM_MESSAGE_FONT + " list all slash commands<br>" + SYSTEM_MESSAGE_FONT + "/macro:"
-                + END_SYSTEM_MESSAGE_FONT + " macro a die roll<br>" + SYSTEM_MESSAGE_FONT + "/macrodelete:"
-                + END_SYSTEM_MESSAGE_FONT + " deletes an unwanted macro<br>" + SYSTEM_MESSAGE_FONT + "/poglist:"
-                + END_SYSTEM_MESSAGE_FONT + " lists pogs by attribute<br>" + SYSTEM_MESSAGE_FONT + "/roll:"
-                + END_SYSTEM_MESSAGE_FONT + " roll dice<br>" + SYSTEM_MESSAGE_FONT + "/tell:" + END_SYSTEM_MESSAGE_FONT
-                + " send a private message to another player<br>" + SYSTEM_MESSAGE_FONT + "/who:"
-                + END_SYSTEM_MESSAGE_FONT + " lists connected players<br>" + SYSTEM_MESSAGE_FONT + "/help:"
-                + END_SYSTEM_MESSAGE_FONT + " list all slash commands");
+                + SYSTEM_MESSAGE_FONT + 
+				"/as:" + END_SYSTEM_MESSAGE_FONT + " Display a narrative of a character saying something<br>" + SYSTEM_MESSAGE_FONT + 
+				"/emote:" + END_SYSTEM_MESSAGE_FONT + " Display an emote<br>" + SYSTEM_MESSAGE_FONT + 
+				"/goto:" + END_SYSTEM_MESSAGE_FONT + " Centers a pog in the map view.<br>" + SYSTEM_MESSAGE_FONT + 
+				"/help:" + END_SYSTEM_MESSAGE_FONT + " list all slash commands<br>" + SYSTEM_MESSAGE_FONT + 
+				"/macro:" + END_SYSTEM_MESSAGE_FONT + " macro a die roll<br>" + SYSTEM_MESSAGE_FONT + 
+				"/macrodelete:" + END_SYSTEM_MESSAGE_FONT + " deletes an unwanted macro<br>" + SYSTEM_MESSAGE_FONT + 
+				"/poglist:" + END_SYSTEM_MESSAGE_FONT + " lists pogs by attribute<br>" + SYSTEM_MESSAGE_FONT + 
+				"/proll:" + END_SYSTEM_MESSAGE_FONT + " roll dice privately<br>" + SYSTEM_MESSAGE_FONT + 
+				"/roll:" + END_SYSTEM_MESSAGE_FONT + " roll dice<br>" + SYSTEM_MESSAGE_FONT + 
+				"/tell:" + END_SYSTEM_MESSAGE_FONT + " send a private message to another player<br>" + SYSTEM_MESSAGE_FONT + 
+				"/who:" + END_SYSTEM_MESSAGE_FONT + " lists connected players<br>" + SYSTEM_MESSAGE_FONT + 
+				"//:" + END_SYSTEM_MESSAGE_FONT + " list all slash commands");
         }
     }
 
