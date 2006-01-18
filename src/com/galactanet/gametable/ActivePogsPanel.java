@@ -32,6 +32,8 @@ public class ActivePogsPanel extends JPanel
 {
     // --- Constants -------------------------------------------------------------------------------------------------
 
+    private static final float CLICK_THRESHHOLD = 2f;
+    
     private static final int   POG_TEXT_PADDING = 4;
     private static final int   POG_PADDING      = 1;
     private static final int   POG_BORDER       = 0;
@@ -449,26 +451,29 @@ public class ActivePogsPanel extends JPanel
     /**
      * A map of GametableMaps to BranchTrackers for thier pog lists.
      */
-    private Map                       trackers       = new HashMap();
+    private Map                       trackers            = new HashMap();
 
     // --- Pog Dragging Members ---
 
-    private ActivePogTreeCellRenderer pogRenderer    = new ActivePogTreeCellRenderer();
+    private ActivePogTreeCellRenderer pogRenderer         = new ActivePogTreeCellRenderer();
 
     /**
      * The currently grabbed pog.
      */
-    private PogNode                   m_grabbedNode  = null;
+    private PogNode                   m_grabbedNode       = null;
 
     /**
      * The position of the currently grabbed pog.
      */
-    private Point                     m_grabPosition = null;
+    private Point                     m_grabPosition      = null;
 
     /**
      * The offset at which the pog was grabbed.
      */
-    private Point                     m_grabOffset   = null;
+    private Point                     m_grabOffset        = null;
+
+    private int                       m_numClicks         = 0;
+    private Point                     m_lastPressPosition = null;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -521,7 +526,7 @@ public class ActivePogsPanel extends JPanel
     {
         m_grabbedNode = p;
         m_grabOffset = offset;
-        moveGrabPosition(pos);
+        m_grabPosition = pos;
     }
 
     private void releasePog()
@@ -565,17 +570,19 @@ public class ActivePogsPanel extends JPanel
                         {
                             Pog a = (Pog)pogs.get(i);
                             Pog b = (Pog)pogs.get(i - 1);
-                            
+
                             changes.put(new Integer(a.getId()), new Long(b.getSortOrder()));
                         }
-                    } else {
+                    }
+                    else
+                    {
                         // Moving a pog up in the list
                         changes.put(new Integer(sourcePog.getId()), new Long(targetPog.getSortOrder()));
                         for (int i = targetIndex; i < sourceIndex; ++i)
                         {
                             Pog a = (Pog)pogs.get(i);
-                            Pog b = (Pog)pogs.get(i+1);
-                            
+                            Pog b = (Pog)pogs.get(i + 1);
+
                             changes.put(new Integer(a.getId()), new Long(b.getSortOrder()));
                         }
                     }
@@ -597,6 +604,26 @@ public class ActivePogsPanel extends JPanel
             m_grabPosition = pos;
             repaint();
         }
+    }
+
+    private PogNode getPogNode(int x, int y)
+    {
+        TreePath path = pogTree.getPathForLocation(x, y);
+        if (path == null)
+        {
+            return null;
+        }
+
+        for (int i = path.getPathCount(); i-- > 0;)
+        {
+            Object val = path.getPathComponent(i);
+            if (val instanceof PogNode)
+            {
+                return (PogNode)val;
+            }
+        }
+
+        return null;
     }
 
     private PogNode getClosestPogNode(int x, int y)
@@ -695,17 +722,18 @@ public class ActivePogsPanel extends JPanel
                  */
                 public void mousePressed(MouseEvent e)
                 {
+                    m_lastPressPosition = new Point(e.getX(), e.getY());
                     TreePath path = pogTree.getPathForLocation(e.getX(), e.getY());
                     if (path == null)
                     {
                         return;
                     }
+
                     Object val = path.getLastPathComponent();
                     if (val instanceof PogNode)
                     {
                         PogNode node = (PogNode)val;
-                        Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e
-                            .getY()));
+                        Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, m_lastPressPosition);
                         Point localCoords = new Point(node.getPog().getPogType().getListIconWidth() / 2, node.getPog()
                             .getPogType().getListIconHeight() / 2);
                         grabPog(node, screenCoords, localCoords);
@@ -718,6 +746,21 @@ public class ActivePogsPanel extends JPanel
                 public void mouseReleased(MouseEvent e)
                 {
                     releasePog();
+                    Point p = new Point(e.getX(), e.getY());
+                    
+                    if (p.distance(m_lastPressPosition) <= CLICK_THRESHHOLD)
+                    {
+                        m_numClicks++;
+                    }
+
+                    if (m_numClicks == 2)
+                    {
+                        PogNode node = getPogNode(e.getX(), e.getY());
+                        if (node != null)
+                        {
+                            GametableFrame.getGametableFrame().getGametableCanvas().scrollToPog(node.getPog());
+                        }
+                    }
                 }
 
                 /*
@@ -746,6 +789,7 @@ public class ActivePogsPanel extends JPanel
                 {
                     Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e.getY()));
                     moveGrabPosition(screenCoords);
+                    m_numClicks = 0;
                 }
             });
             refresh();

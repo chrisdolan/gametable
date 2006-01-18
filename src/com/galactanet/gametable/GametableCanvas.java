@@ -565,7 +565,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     	return m_gridMode;
     }
     
-    public int getGridModeID()
+    public int getGridModeId()
     {
         if (m_gridMode == m_squareGridMode)
         {
@@ -578,7 +578,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         return GRID_MODE_NONE;
     }
 
-    public PogPanel getPogPanel()
+    private PogPanel getPogPanel()
     {
         return m_gametableFrame.getPogPanel();
     }
@@ -1404,6 +1404,17 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         m_gridMode.snapPogToGrid(pog);
     }
 
+
+    public void scrollToPog(Pog pog)
+    {
+        Point pogModel = new Point(pog.getX() + (pog.getWidth() / 2), pog.getY() + (pog.getHeight() / 2));
+        Point pogView = modelToView(pogModel);
+        pogView.x -= (getWidth() / 2);
+        pogView.y -= (getHeight() / 2);
+        pogModel = viewToModel(pogView);
+        smoothScrollTo(pogModel.x, pogModel.y);
+    }
+    
     public void smoothScrollTo(int modelX, int modelY)
     {
         GametableMap map = getActiveMap();
@@ -1543,7 +1554,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         // draw all the underlays here
         for (int i = 0; i < mapToDraw.getNumPogs(); i++)
         {
-            Pog pog = mapToDraw.getPogAt(i);
+            Pog pog = mapToDraw.getPog(i);
             if (pog.isUnderlay())
             {
                 pog.drawToCanvas(g);
@@ -1589,7 +1600,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         // pogs
         for (int i = 0; i < mapToDraw.getNumPogs(); i++)
         {
-            Pog pog = mapToDraw.getPogAt(i);
+            Pog pog = mapToDraw.getPog(i);
             if (!pog.isUnderlay())
             {
                 pog.drawToCanvas(g);
@@ -1655,7 +1666,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                 // this shift key is down. Show all pog data
                 for (int i = 0; i < mapToDraw.getNumPogs(); i++)
                 {
-                    Pog pog = mapToDraw.getPogAt(i);
+                    Pog pog = mapToDraw.getPog(i);
                     if (pog != mouseOverPog)
                     {
                         pog.drawTextToCanvas(g, false, false);
@@ -1672,7 +1683,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         // most prevalent of the pog text is any recently changed pog text
         for (int i = 0; i < mapToDraw.getNumPogs(); i++)
         {
-            Pog pog = mapToDraw.getPogAt(i);
+            Pog pog = mapToDraw.getPog(i);
             if (pog != mouseOverPog)
             {
                 pog.drawChangedTextToCanvas(g);

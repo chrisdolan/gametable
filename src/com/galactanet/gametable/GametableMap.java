@@ -78,12 +78,39 @@ public class GametableMap
         return Collections.unmodifiableSortedSet(m_orderedPogs);
     }
 
+    public Pog getPogNamed(String pogName)
+    {
+        List pogs = getPogsNamed(pogName);
+        if (pogs.isEmpty())
+        {
+            return null;
+        }
+        
+        return (Pog)pogs.get(0);
+    }
+
+    public List getPogsNamed(String pogName)
+    {
+        String normalizedName = UtilityFunctions.normalizeName(pogName);
+        List retVal = new ArrayList();
+        for (int i = 0, size = getNumPogs(); i < size; ++i)
+        {
+            Pog pog = getPog(i);
+            if (UtilityFunctions.normalizeName(pog.getText()).equals(normalizedName))
+            {
+                retVal.add(pog);
+            }
+        }
+
+        return retVal;
+    }
+
     public int getNumPogs()
     {
         return m_pogs.size();
     }
 
-    public Pog getPogAt(int idx)
+    public Pog getPog(int idx)
     {
         return (Pog)m_pogs.get(idx);
     }
@@ -113,7 +140,7 @@ public class GametableMap
     {
         for (int i = 0, size = getNumPogs(); i < size; ++i)
         {
-            Pog pog = getPogAt(i);
+            Pog pog = getPog(i);
             if (pog.getId() == id)
             {
                 return pog;
@@ -135,7 +162,7 @@ public class GametableMap
 
         for (int i = 0; i < getNumPogs(); i++)
         {
-            Pog pog = getPogAt(i);
+            Pog pog = getPog(i);
 
             if (pog.testHit(modelPosition))
             {
@@ -166,7 +193,7 @@ public class GametableMap
         {
             return;
         }
-        
+
         for (Iterator iterator = changes.entrySet().iterator(); iterator.hasNext();)
         {
             Map.Entry entry = (Map.Entry)iterator.next();

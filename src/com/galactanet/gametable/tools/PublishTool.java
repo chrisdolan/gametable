@@ -88,7 +88,7 @@ public class PublishTool extends NullTool
     {
         for (int i = 0; i < m_canvas.getActiveMap().getNumPogs(); i++)
         {
-            m_canvas.getActiveMap().getPogAt(i).setTinted(false);
+            m_canvas.getActiveMap().getPog(i).setTinted(false);
         }
     }
 
@@ -99,7 +99,7 @@ public class PublishTool extends NullTool
 
         for (int i = 0; i < m_canvas.getActiveMap().getNumPogs(); i++)
         {
-            Pog pog = m_canvas.getActiveMap().getPogAt(i);
+            Pog pog = m_canvas.getActiveMap().getPog(i);
 
             int size = pog.getFaceSize() * GametableCanvas.BASE_SQUARE_SIZE;
             Point tl = new Point(pog.getPosition());
@@ -132,7 +132,7 @@ public class PublishTool extends NullTool
             // first off, copy all the pogs/underlays over to the public layer
             for (int i = 0; i < m_canvas.getPrivateMap().getNumPogs(); i++)
             {
-                Pog pog = m_canvas.getActiveMap().getPogAt(i);
+                Pog pog = m_canvas.getActiveMap().getPog(i);
                 if (pog.isTinted())
                 {
                     // this pog gets copied
@@ -187,7 +187,7 @@ public class PublishTool extends NullTool
                 // remove the pogs that we moved
                 for (int i = 0; i < m_canvas.getPrivateMap().getNumPogs(); i++)
                 {
-                    Pog pog = m_canvas.getActiveMap().getPogAt(i);
+                    Pog pog = m_canvas.getActiveMap().getPog(i);
                     if (pog.isTinted())
                     {
                         m_canvas.removePog(pog.getId());

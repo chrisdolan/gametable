@@ -894,5 +894,4 @@ public class PogPanel extends JPanel
         }
         return pogTree;
     }
-
-} // @jve:decl-index=0:visual-constraint="101,42"
+}

@@ -1271,7 +1271,7 @@ public class GametableFrame extends JFrame implements ActionListener
             m_networkThread.send(PacketManager.makePogReorderPacket(changes));
         }
     }
-    
+
     public void pointPacketReceived(int plrIdx, int x, int y, boolean bPointing)
     {
         // we're not interested in point packets of our own hand
@@ -1600,7 +1600,7 @@ public class GametableFrame extends JFrame implements ActionListener
         // pogs
         for (int i = 0; i < getGametableCanvas().getPublicMap().getNumPogs(); i++)
         {
-            Pog pog = getGametableCanvas().getPublicMap().getPogAt(i);
+            Pog pog = getGametableCanvas().getPublicMap().getPog(i);
             send(PacketManager.makeAddPogPacket(pog), player);
         }
 
@@ -1821,7 +1821,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
         for (int i = 0; i < getGametableCanvas().getActiveMap().getNumPogs(); i++)
         {
-            Pog pog = getGametableCanvas().getActiveMap().getPogAt(i);
+            Pog pog = getGametableCanvas().getActiveMap().getPog(i);
             removeArray[i] = pog.getId();
         }
 
@@ -2592,13 +2592,31 @@ public class GametableFrame extends JFrame implements ActionListener
             String toPost = EMOTE_MESSAGE_FONT + speakerName + " says " + "\"" + toSay + "\"" + END_EMOTE_MESSAGE_FONT;
             postMessage(toPost);
         }
+        else if (words[0].equals("/goto"))
+        {
+            if (words.length < 2)
+            {
+                logSystemMessage(words[0] + " usage: " + words[0] + " &lt;pog name&gt;");
+                return;
+            }
+            
+            String name = UtilityFunctions.stitchTogetherWords(words, 1);
+            Pog pog = m_gametableCanvas.getActiveMap().getPogNamed(name);
+            if (pog == null)
+            {
+                logAlertMessage("Unable to find pog named \"" + name + "\".");
+                return;
+            }
+            m_gametableCanvas.scrollToPog(pog);
+        }
         else if (words[0].equals("//") || words[0].equals("/help"))
         {
             // list macro commands
             logMessage(SYSTEM_MESSAGE_FONT + "<u>Slash Commands</u>" + END_SYSTEM_MESSAGE_FONT + "<br>"
                 + SYSTEM_MESSAGE_FONT + "/as:" + END_SYSTEM_MESSAGE_FONT
                 + " Display a narrative of a character saying something<br>" + SYSTEM_MESSAGE_FONT + "/emote:"
-                + END_SYSTEM_MESSAGE_FONT + " Display an emote<br>" + SYSTEM_MESSAGE_FONT + "/help:"
+                + END_SYSTEM_MESSAGE_FONT + " Display an emote<br>" + SYSTEM_MESSAGE_FONT + "/goto:"
+                + END_SYSTEM_MESSAGE_FONT + " Centers a pog in the map view.<br>" + SYSTEM_MESSAGE_FONT + "/help:"
                 + END_SYSTEM_MESSAGE_FONT + " list all slash commands<br>" + SYSTEM_MESSAGE_FONT + "/macro:"
                 + END_SYSTEM_MESSAGE_FONT + " macro a die roll<br>" + SYSTEM_MESSAGE_FONT + "/macrodelete:"
                 + END_SYSTEM_MESSAGE_FONT + " deletes an unwanted macro<br>" + SYSTEM_MESSAGE_FONT + "/poglist:"
@@ -2767,14 +2785,14 @@ public class GametableFrame extends JFrame implements ActionListener
             // pogs
             for (int i = 0; i < mapToSave.getNumPogs(); i++)
             {
-                Pog pog = mapToSave.getPogAt(i);
+                Pog pog = mapToSave.getPog(i);
                 byte[] pogsPacket = PacketManager.makeAddPogPacket(pog);
                 dos.writeInt(pogsPacket.length);
                 dos.write(pogsPacket);
             }
 
             // grid state
-            byte gridModePacket[] = PacketManager.makeGridModePacket(getGametableCanvas().getGridModeID());
+            byte gridModePacket[] = PacketManager.makeGridModePacket(getGametableCanvas().getGridModeId());
             dos.writeInt(gridModePacket.length);
             dos.write(gridModePacket);
 
