@@ -135,7 +135,7 @@ public class ChatLogPane extends JEditorPane
             }
         });
 
-        addText("Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>");
+        addText("Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>.");
     }
 
     // --- Methods ---------------------------------------------------------------------------------------------------
