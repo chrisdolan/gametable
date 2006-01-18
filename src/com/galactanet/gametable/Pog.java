@@ -177,7 +177,7 @@ public class Pog implements Comparable
             String value = dis.readUTF();
             setAttribute(key, value);
         }
-        m_bTextChangeNotifying = false;
+        stopDisplayPogDataChange();
 
         PogType type = lib.getPog(filename);
         if (type == null)
