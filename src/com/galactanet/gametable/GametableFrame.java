@@ -2215,7 +2215,7 @@ public class GametableFrame extends JFrame implements ActionListener
      */
     public void say(String text)
     {
-        postMessage(SAY_MESSAGE_FONT + UtilityFunctions.emitUserLink(getMyPlayer().getCharacterName()) + " says: "
+        postMessage(SAY_MESSAGE_FONT + UtilityFunctions.emitUserLink(getMyPlayer().getCharacterName()) + ": "
             + END_SAY_MESSAGE_FONT + text);
     }
 
