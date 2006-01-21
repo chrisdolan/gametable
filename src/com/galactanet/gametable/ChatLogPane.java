@@ -170,6 +170,13 @@ public class ChatLogPane extends JEditorPane
         bodyContent.append(DEFAULT_TEXT_FOOTER);
         setText(bodyContent.toString());
     }
+    
+    public void clearText()
+    {
+    	setText(DEFAULT_TEXT);
+    	entries = new ArrayList();
+        addText("Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>.");
+    }
 
     private static String highlightUrls(String in)
     {

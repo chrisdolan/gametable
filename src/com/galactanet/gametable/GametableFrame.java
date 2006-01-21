@@ -2553,7 +2553,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
             tell(toPlayer, toSend);
         }
-        else if (words[0].equals("/em") || words[0].equals("/emote"))
+        else if (words[0].equals("/em") || words[0].equals("/me") || words[0].equals("/emote"))
         {
             if (words.length < 2)
             {
@@ -2619,6 +2619,10 @@ public class GametableFrame extends JFrame implements ActionListener
                 return;
             }
             m_gametableCanvas.scrollToPog(pog);
+        }
+        else if (words[0].equals("/clearlog"))
+        {
+        	m_chatLog.clearText();
         }
         else if (words[0].equals("//") || words[0].equals("/help"))
         {
