@@ -970,7 +970,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         }
     }
 
-    public void setPogSize(int id, int size)
+    public void setPogSize(int id, float size)
     {
         if (isPublicMap())
         {
@@ -987,7 +987,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         }
     }
 
-    public void doSetPogSize(int id, int size)
+    public void doSetPogSize(int id, float size)
     {
         Pog pog = getActiveMap().getPogByID(id);
         if (pog == null)

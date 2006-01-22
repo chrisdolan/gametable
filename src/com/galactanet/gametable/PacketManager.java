@@ -1478,7 +1478,7 @@ public class PacketManager
 
     /* *********************** POG_SIZE PACKET *********************************** */
 
-    public static byte[] makePogSizePacket(int id, int size)
+    public static byte[] makePogSizePacket(int id, float size)
     {
         try
         {
@@ -1487,7 +1487,7 @@ public class PacketManager
 
             dos.writeInt(PACKET_POG_SIZE);
             dos.writeInt(id);
-            dos.writeInt(size);
+            dos.writeFloat(size);
 
             return baos.toByteArray();
         }
@@ -1503,7 +1503,7 @@ public class PacketManager
         try
         {
             int id = dis.readInt();
-            int size = dis.readInt();
+            float size = dis.readFloat();
 
             // tell the model
             GametableFrame.getGametableFrame().pogSizePacketReceived(id, size);

@@ -78,7 +78,7 @@ public class Pog implements Comparable
     /**
      * Global min sort id for pogs.
      */
-    public static long     g_nextSortId           = 0;
+    public static long      g_nextSortId           = 0;
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
@@ -131,7 +131,7 @@ public class Pog implements Comparable
      * Name/value pairs of the attributes assigned to this pog.
      */
     private Map             m_attributes           = new TreeMap();
-    
+
     // a special kind of hack-ish value that will cause a pog
     // to set itself to not be loaded if the values for it are
     // too out of whack to be correct. This is to prevent bad saves caused
@@ -321,7 +321,8 @@ public class Pog implements Comparable
             return m_pogType.getFaceSize();
         }
 
-        return Math.round(m_pogType.getFaceSize() * m_scale);
+        return Math.max(Math.round(Math.max(m_pogType.getWidth(), m_pogType.getHeight()) * m_scale
+            / GametableCanvas.BASE_SQUARE_SIZE), 1);
     }
 
     public boolean testHit(Point modelPoint)
@@ -385,7 +386,7 @@ public class Pog implements Comparable
         String normalizedName = UtilityFunctions.normalizeName(name);
         m_attributes.remove(normalizedName);
     }
-    
+
     public void setSortOrder(long order)
     {
         m_sortOrder = order;
@@ -412,33 +413,21 @@ public class Pog implements Comparable
         displayPogDataChange();
     }
 
-    public void setFaceSize(int faceSize)
+    public void setFaceSize(float faceSize)
     {
-        if (faceSize < 0)
+        if (faceSize <= 0)
         {
             m_scale = 1;
             return;
         }
 
-        // if the graphic is smaller than 64x64, it will return a face size of 0.
-        // to avoid the problems that arise from this, we treat anything smaller 
-        // than size 1 as size 1.
-        // Suprisingly (to me, anyway) when you divide a float by 0, you 
-        // DON'T get an ArithmaticException for the divide by 0. You instead get
-        // the value "infinity" for the result float. That threw me.
-        float naturalFaceSize = (float)m_pogType.getFaceSize();
-        if ( naturalFaceSize == 0 )
+        float targetDimension = GametableCanvas.BASE_SQUARE_SIZE * faceSize;
+        float maxDimension = Math.max(getPogType().getWidth(), getPogType().getHeight());
+        if (maxDimension == 0)
         {
-        	naturalFaceSize = (float)1.0;
+            throw new ArithmeticException("Zero sized pog dimension: " + this);
         }
-
-        if (faceSize == 0)
-        {
-            m_scale = 1f / (naturalFaceSize * 2f);
-            return;
-        }
-
-        m_scale = (float)faceSize / naturalFaceSize;
+        m_scale = targetDimension / maxDimension;
     }
 
     // --- Drawing ---
@@ -502,7 +491,7 @@ public class Pog implements Comparable
         dos.writeUTF(getFilename());
         dos.writeInt(getX());
         dos.writeInt(getY());
-        dos.writeInt(getFaceSize());
+        dos.writeInt(getPogType().getFaceSize());
         dos.writeInt(m_id);
         dos.writeLong(m_sortOrder);
         dos.writeUTF(m_text);
@@ -717,7 +706,7 @@ public class Pog implements Comparable
             {
                 continue;
             }
-            
+
             Rectangle nameBounds = nameMetrics.getStringBounds(attribute.name + ": ", g2).getBounds();
             Rectangle valueBounds = valueMetrics.getStringBounds(attribute.value, g2).getBounds();
             int attrWidth = nameBounds.width + valueBounds.width;

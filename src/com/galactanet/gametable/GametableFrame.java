@@ -1253,7 +1253,7 @@ public class GametableFrame extends JFrame implements ActionListener
         repaint();
     }
 
-    public void pogSizePacketReceived(int id, int size)
+    public void pogSizePacketReceived(int id, float size)
     {
         getGametableCanvas().doSetPogSize(id, size);
 
@@ -2158,7 +2158,7 @@ public class GametableFrame extends JFrame implements ActionListener
             for (Iterator iterator = handler.getMacros().iterator(); iterator.hasNext();)
             {
                 DiceMacro macro = (DiceMacro)iterator.next();
-                m_macroMap.put(macro.getName(), macro);
+                addMacro(macro);
             }
         }
         catch (IOException ioe)
@@ -2693,7 +2693,7 @@ public class GametableFrame extends JFrame implements ActionListener
         if (!file.exists())
         {
             // DEFAULTS
-            m_mapChatSplitPane.setDividerLocation(0.75);
+            m_mapChatSplitPane.setDividerLocation(0.7);
             m_mapPogSplitPane.setDividerLocation(150);
             m_windowSize = new Dimension(800, 600);
             Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();

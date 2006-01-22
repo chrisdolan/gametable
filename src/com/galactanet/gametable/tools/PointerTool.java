@@ -304,7 +304,7 @@ public class PointerTool extends NullTool
             {
                 public void actionPerformed(ActionEvent e)
                 {
-                    m_canvas.setPogSize(m_menuPog.getId(), 0);
+                    m_canvas.setPogSize(m_menuPog.getId(), 0.5f);
                 }
             });
         sizeMenu.add(item);

@@ -20,20 +20,20 @@ import java.util.BitSet;
 public class PogType
 {
     // --- Options ---------------------------------------------------------------------------------------------------
-    public final static boolean 	   FAST_SCALING = true;
+    public final static boolean FAST_SCALING = true;
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
-    private Image   m_image;
-    private Image   m_listIcon;
-    private Image   m_lastScaledImage;
-    private float   m_lastScale;
-    
-    private BitSet  m_hitMap;
-    private int     m_faceSize;
-    private String  m_filename;
-    private boolean m_bUnderlay;
-    private boolean m_bUnknown;
+    private Image               m_image;
+    private Image               m_listIcon;
+    private Image               m_lastScaledImage;
+    private float               m_lastScale;
+
+    private BitSet              m_hitMap;
+    private int                 m_faceSize;
+    private String              m_filename;
+    private boolean             m_bUnderlay;
+    private boolean             m_bUnknown;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -95,12 +95,18 @@ public class PogType
         }
         else
         {
+            // File loaded okay, calculate facing
             m_bUnknown = false;
-            m_faceSize = Math.max(getWidth(), getHeight()) / GametableCanvas.BASE_SQUARE_SIZE;
-            // Log.log(Log.SYS, "loaded: " + this);
+            float realFaceSize = Math.max(m_image.getWidth(null), m_image.getHeight(null))
+                / (float)GametableCanvas.BASE_SQUARE_SIZE;
+            m_faceSize = (int)realFaceSize;
+            if ((realFaceSize - (int)realFaceSize) > 0)
+            {
+                ++m_faceSize;
+            }
         }
 
-        if (m_faceSize < 0)
+        if (m_faceSize < 1)
         {
             m_faceSize = 1;
         }
@@ -273,16 +279,16 @@ public class PogType
      */
     public void drawScaled(Graphics g, int x, int y, float scale)
     {
-    	if ( FAST_SCALING )
-    	{
-    		int drawWidth = (int)((float)m_image.getWidth(null)*scale);
-    		int drawHeight = (int)((float)m_image.getHeight(null)*scale);
-    		g.drawImage(m_image, x, y, drawWidth, drawHeight, null);
-    	}
-    	else
-    	{
-    		g.drawImage(getScaledImage(scale), x, y, null);
-    	}
+        if (FAST_SCALING)
+        {
+            int drawWidth = Math.round(getWidth() * scale);
+            int drawHeight = Math.round(getHeight() * scale);
+            g.drawImage(m_image, x, y, drawWidth, drawHeight, null);
+        }
+        else
+        {
+            g.drawImage(getScaledImage(scale), x, y, null);
+        }
     }
 
     /**
@@ -373,10 +379,10 @@ public class PogType
         {
             return m_image;
         }
-        
+
         if (m_lastScaledImage == null || Math.round(m_lastScale * 100) != Math.round(scale * 100))
         {
-            //System.out.println(this + " scale: " + m_lastScale + " -> " + scale);  
+            // System.out.println(this + " scale: " + m_lastScale + " -> " + scale);
             m_lastScale = scale;
             m_lastScaledImage = UtilityFunctions.getScaledInstance(m_image, m_lastScale);
         }
