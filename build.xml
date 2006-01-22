@@ -5,7 +5,7 @@
 
     <!-- project specific properties -->
     <property name="projectdisplayname" value="GameTable" />
-    <property name="version" value="1.1" />
+    <property name="version" value="1.2" />
     <property name="projectname" value="gametable" />
     <property name="entrypoint" value="com.galactanet.gametable.GametableApp" />
     <property name="icon" value="icon.png" />
