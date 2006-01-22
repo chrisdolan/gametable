@@ -420,13 +420,25 @@ public class Pog implements Comparable
             return;
         }
 
+        // if the graphic is smaller than 64x64, it will return a face size of 0.
+        // to avoid the problems that arise from this, we treat anything smaller 
+        // than size 1 as size 1.
+        // Suprisingly (to me, anyway) when you divide a float by 0, you 
+        // DON'T get an ArithmaticException for the divide by 0. You instead get
+        // the value "infinity" for the result float. That threw me.
+        float naturalFaceSize = (float)m_pogType.getFaceSize();
+        if ( naturalFaceSize == 0 )
+        {
+        	naturalFaceSize = (float)1.0;
+        }
+
         if (faceSize == 0)
         {
-            m_scale = 1f / (m_pogType.getFaceSize() * 2f);
+            m_scale = 1f / (naturalFaceSize * 2f);
             return;
         }
 
-        m_scale = (float)faceSize / (float)m_pogType.getFaceSize();
+        m_scale = (float)faceSize / naturalFaceSize;
     }
 
     // --- Drawing ---
