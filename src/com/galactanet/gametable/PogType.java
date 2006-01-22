@@ -19,6 +19,9 @@ import java.util.BitSet;
  */
 public class PogType
 {
+    // --- Options ---------------------------------------------------------------------------------------------------
+    public final static boolean 	   FAST_SCALING = true;
+
     // --- Members ---------------------------------------------------------------------------------------------------
 
     private Image   m_image;
@@ -270,7 +273,16 @@ public class PogType
      */
     public void drawScaled(Graphics g, int x, int y, float scale)
     {
-        g.drawImage(getScaledImage(scale), x, y, null);
+    	if ( FAST_SCALING )
+    	{
+    		int drawWidth = (int)((float)m_image.getWidth(null)*scale);
+    		int drawHeight = (int)((float)m_image.getHeight(null)*scale);
+    		g.drawImage(m_image, x, y, drawWidth, drawHeight, null);
+    	}
+    	else
+    	{
+    		g.drawImage(getScaledImage(scale), x, y, null);
+    	}
     }
 
     /**

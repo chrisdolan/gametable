@@ -2887,6 +2887,7 @@ public class GametableFrame extends JFrame implements ActionListener
             // now we have to pick out the packets and send them in for processing one at a time
             DataInputStream walker = new DataInputStream(new ByteArrayInputStream(saveFileData));
             int read = 0;
+            int packetNum = 0;
             while (read < saveFileData.length)
             {
                 int packetLen = walker.readInt();
@@ -2898,6 +2899,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
                 // dispatch the packet
                 PacketManager.readPacket(null, packet);
+                packetNum++;
             }
         }
         catch (FileNotFoundException ex)

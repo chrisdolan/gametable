@@ -30,7 +30,8 @@ import javax.swing.filechooser.FileFilter;
  */
 public class UtilityFunctions
 {
-    public static final char           UNIVERSAL_SEPARATOR      = '/';
+    // constants
+	public static final char           UNIVERSAL_SEPARATOR      = '/';
     public static final char           LOCAL_SEPARATOR          = File.separatorChar;
 
     public final static int            NO                       = 0;
@@ -507,7 +508,8 @@ public class UtilityFunctions
         }
 
         // TODO: Option for SMOOTH vs FAST?
-        Image scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        Image scaledImage;
+       	scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
         if (scaledImage == null)
         {
             return null;

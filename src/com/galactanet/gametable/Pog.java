@@ -131,6 +131,12 @@ public class Pog implements Comparable
      * Name/value pairs of the attributes assigned to this pog.
      */
     private Map             m_attributes           = new TreeMap();
+    
+    // a special kind of hack-ish value that will cause a pog
+    // to set itself to not be loaded if the values for it are
+    // too out of whack to be correct. This is to prevent bad saves caused
+    // by other bugs from permanantly destroying a map.
+    public boolean m_bStillborn = false;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -177,6 +183,17 @@ public class Pog implements Comparable
             String value = dis.readUTF();
             setAttribute(key, value);
         }
+        
+        // special case psuedo-hack check
+        // through reasons unclear to me, sometimes a pog will get
+        // a size of around 2 billion. A more typical size would
+        // be around 1. 
+        if ( size > 100 || m_scale > 100.0)
+        {
+        	m_bStillborn = true;
+        	return;
+        }
+        
         stopDisplayPogDataChange();
 
         PogType type = lib.getPog(filename);

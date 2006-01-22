@@ -670,6 +670,13 @@ public class PacketManager
         try
         {
             Pog pog = new Pog(dis);
+            if ( pog.m_bStillborn )
+            {
+            	// for one reason or another, this pog is corrupt and should
+            	// be ignored
+            	return;
+            }
+            
             if (pog.isUnknown())
             {
                 // we need this image
