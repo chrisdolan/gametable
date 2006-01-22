@@ -283,7 +283,14 @@ public class PogType
         {
             int drawWidth = Math.round(getWidth() * scale);
             int drawHeight = Math.round(getHeight() * scale);
-            g.drawImage(m_image, x, y, drawWidth, drawHeight, null);
+            if (m_listIcon != null && drawWidth == m_listIcon.getWidth(null) && drawHeight == m_listIcon.getHeight(null))
+            {
+                drawListIcon(g, x, y);
+            }
+            else
+            {
+                g.drawImage(m_image, x, y, drawWidth, drawHeight, null);
+            }
         }
         else
         {
