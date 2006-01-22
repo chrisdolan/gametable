@@ -136,7 +136,7 @@ public class Pog implements Comparable
     // to set itself to not be loaded if the values for it are
     // too out of whack to be correct. This is to prevent bad saves caused
     // by other bugs from permanantly destroying a map.
-    public boolean m_bStillborn = false;
+    public boolean          m_bStillborn           = false;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -183,17 +183,17 @@ public class Pog implements Comparable
             String value = dis.readUTF();
             setAttribute(key, value);
         }
-        
+
         // special case psuedo-hack check
         // through reasons unclear to me, sometimes a pog will get
         // a size of around 2 billion. A more typical size would
-        // be around 1. 
-        if ( size > 100 || m_scale > 100.0)
+        // be around 1.
+        if (size > 100 || m_scale > 100.0)
         {
-        	m_bStillborn = true;
-        	return;
+            m_bStillborn = true;
+            return;
         }
-        
+
         stopDisplayPogDataChange();
 
         PogType type = lib.getPog(filename);
@@ -430,6 +430,27 @@ public class Pog implements Comparable
         m_scale = targetDimension / maxDimension;
     }
 
+    /**
+     * @return A vector to adjust the drag position when snapping for odd-sized pogs.
+     */
+    public Point getSnapDragAdjustment()
+    {
+        Point adjustment = new Point();
+        int width = getWidth();
+        int height = getHeight();
+
+        if (width < height)
+        {
+            adjustment.x = -(height - width) / 2;
+        }
+        else if (width > height)
+        {
+            adjustment.y = -(width - height) / 2;
+        }
+
+        return adjustment;
+    }
+
     // --- Drawing ---
 
     public void drawScaled(Graphics g, int x, int y)
@@ -557,7 +578,8 @@ public class Pog implements Comparable
      */
     public String toString()
     {
-        return "[Pog name: " + getFilename() + " (" + getId() + " - " + getSortOrder() + ") pos: " + getPosition() + " size: " + getFaceSize() + "]";
+        return "[Pog name: " + getFilename() + " (" + getId() + " - " + getSortOrder() + ") pos: " + getPosition()
+            + " size: " + getFaceSize() + "]";
     }
 
     // --- Private Helpers ---

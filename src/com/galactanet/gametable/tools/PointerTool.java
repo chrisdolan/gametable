@@ -169,7 +169,9 @@ public class PointerTool extends NullTool
             m_clicked = false;
             if (m_snapping)
             {
-                m_ghostPog.setPosition(m_mousePosition.x + m_grabOffset.x, m_mousePosition.y + m_grabOffset.y);
+                Point adjustment = m_ghostPog.getSnapDragAdjustment();
+                m_ghostPog.setPosition(m_mousePosition.x + m_grabOffset.x + adjustment.x, m_mousePosition.y
+                    + m_grabOffset.y + adjustment.y);
                 m_canvas.snapPogToGrid(m_ghostPog);
             }
             else
@@ -287,80 +289,80 @@ public class PointerTool extends NullTool
             menu.add(editMenu);
             menu.add(removeMenu);
         }
-        
+
         JMenu sizeMenu = new JMenu("Face Size");
         item = new JMenuItem("Reset");
         item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
             {
-                public void actionPerformed(ActionEvent e)
-                {
-                    m_canvas.setPogSize(m_menuPog.getId(), -1);
-                }
-            });
+                m_canvas.setPogSize(m_menuPog.getId(), -1);
+            }
+        });
         sizeMenu.add(item);
 
         item = new JMenuItem("0.5 squares");
         item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
             {
-                public void actionPerformed(ActionEvent e)
-                {
-                    m_canvas.setPogSize(m_menuPog.getId(), 0.5f);
-                }
-            });
+                m_canvas.setPogSize(m_menuPog.getId(), 0.5f);
+            }
+        });
         sizeMenu.add(item);
 
         item = new JMenuItem("1 squares");
         item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
             {
-                public void actionPerformed(ActionEvent e)
-                {
-                    m_canvas.setPogSize(m_menuPog.getId(), 1);
-                }
-            });
+                m_canvas.setPogSize(m_menuPog.getId(), 1);
+            }
+        });
         sizeMenu.add(item);
 
         item = new JMenuItem("2 squares");
         item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
             {
-                public void actionPerformed(ActionEvent e)
-                {
-                    m_canvas.setPogSize(m_menuPog.getId(), 2);
-                }
-            });
+                m_canvas.setPogSize(m_menuPog.getId(), 2);
+            }
+        });
         sizeMenu.add(item);
 
         item = new JMenuItem("3 squares");
         item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
             {
-                public void actionPerformed(ActionEvent e)
-                {
-                    m_canvas.setPogSize(m_menuPog.getId(), 3);
-                }
-            });
+                m_canvas.setPogSize(m_menuPog.getId(), 3);
+            }
+        });
         sizeMenu.add(item);
 
         item = new JMenuItem("4 squares");
         item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
             {
-                public void actionPerformed(ActionEvent e)
-                {
-                    m_canvas.setPogSize(m_menuPog.getId(), 4);
-                }
-            });
+                m_canvas.setPogSize(m_menuPog.getId(), 4);
+            }
+        });
         sizeMenu.add(item);
 
         item = new JMenuItem("6 squares");
         item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
             {
-                public void actionPerformed(ActionEvent e)
-                {
-                    m_canvas.setPogSize(m_menuPog.getId(), 6);
-                }
-            });
+                m_canvas.setPogSize(m_menuPog.getId(), 6);
+            }
+        });
         sizeMenu.add(item);
 
         menu.add(sizeMenu);
-        
+
         Point mousePosition = m_canvas.modelToView(x, y);
         menu.show(m_canvas, mousePosition.x, mousePosition.y);
     }
