@@ -6,18 +6,16 @@
 package com.galactanet.gametable;
 
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.InputMap;
-import javax.swing.JEditorPane;
-import javax.swing.JScrollPane;
-import javax.swing.ScrollPaneConstants;
+import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
+import javax.swing.text.AbstractDocument.AbstractElement;
+import javax.swing.text.AbstractDocument.BranchElement;
+import javax.swing.text.html.HTMLDocument;
 
 
 
@@ -54,6 +52,7 @@ public class ChatLogPane extends JEditorPane
     private String             rolloverText        = null;
     private Point              rolloverPosition    = null;
     private Point              mousePosition       = new Point();
+    private boolean            jumpToBottom        = false;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -135,6 +134,22 @@ public class ChatLogPane extends JEditorPane
             }
         });
 
+        addComponentListener(new ComponentAdapter()
+        {
+            /*
+             * @see java.awt.event.ComponentAdapter#componentResized(java.awt.event.ComponentEvent)
+             */
+            public void componentResized(ComponentEvent e)
+            {
+                if (jumpToBottom)
+                {
+                    Rectangle viewRect = getScrollPane().getViewport().getViewRect();
+                    getScrollPane().getVerticalScrollBar().setValue(getHeight() - viewRect.height);
+                    jumpToBottom = false;
+                }
+            }
+        });
+
         addText("Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>.");
     }
 
@@ -144,6 +159,11 @@ public class ChatLogPane extends JEditorPane
      * @return the pane to add to UIs
      */
     public Component getComponentToAdd()
+    {
+        return getScrollPane();
+    }
+
+    private JScrollPane getScrollPane()
     {
         if (scrollPane == null)
         {
@@ -157,24 +177,48 @@ public class ChatLogPane extends JEditorPane
     public void addText(String text)
     {
         entries.add(highlightUrls(text));
+        HTMLDocument doc = (HTMLDocument)getDocument();
         System.out.println("text: " + text);
 
-        StringBuffer bodyContent = new StringBuffer();
-        bodyContent.append(DEFAULT_TEXT_HEADER);
-        for (int i = 0, size = entries.size(); i < size; ++i)
+        JViewport viewport = getScrollPane().getViewport();
+        Rectangle viewBounds = viewport.getViewRect();
+        if (viewBounds.y + viewBounds.height >= getHeight())
         {
-            String entry = (String)entries.get(i);
-            bodyContent.append(entry);
-            bodyContent.append("<br>\n");
+            jumpToBottom = true;
         }
-        bodyContent.append(DEFAULT_TEXT_FOOTER);
-        setText(bodyContent.toString());
+
+        if (entries.size() < 2)
+        {
+            StringBuffer bodyContent = new StringBuffer();
+            bodyContent.append(DEFAULT_TEXT_HEADER);
+            for (int i = 0, size = entries.size(); i < size; ++i)
+            {
+                String entry = (String)entries.get(i);
+                bodyContent.append(entry);
+                bodyContent.append("<br>\n");
+            }
+            bodyContent.append(DEFAULT_TEXT_FOOTER);
+            setText(bodyContent.toString());
+        }
+        else
+        {
+            BranchElement body = (BranchElement)doc.getElement("bodycontent");
+            AbstractElement elem = (AbstractElement)body.getChildAt(body.getChildCount() - 1);
+            try
+            {
+                doc.insertBeforeEnd(elem, text + "<br>");
+            }
+            catch (Exception e)
+            {
+                Log.log(Log.SYS, e);
+            }
+        }
     }
-    
+
     public void clearText()
     {
-    	setText(DEFAULT_TEXT);
-    	entries = new ArrayList();
+        setText(DEFAULT_TEXT);
+        entries = new ArrayList();
         addText("Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>.");
     }
 
@@ -195,7 +239,7 @@ public class ChatLogPane extends JEditorPane
             }
 
             char c = in.charAt(nextPosition);
-            //System.out.println("char " + c + " at " + nextPosition + (inTag ? " inTag" : ""));
+            // System.out.println("char " + c + " at " + nextPosition + (inTag ? " inTag" : ""));
             if (inTag)
             {
                 out.append(c);
@@ -289,11 +333,56 @@ public class ChatLogPane extends JEditorPane
             g2.addRenderingHints(UtilityFunctions.STANDARD_RENDERING_HINTS);
             g2.setFont(FONT_ROLLOVER);
             Rectangle rect = g2.getFontMetrics().getStringBounds(rolloverText, g2).getBounds();
+
+            final int CURSOR_WIDTH = 16;
+            final int CURSOR_HEIGHT = 24;
+
+            int fontAscent = -rect.y;
+            int fontDescent = rect.height - fontAscent;
+
             int drawX = rolloverPosition.x;
-            int drawY = rolloverPosition.y - rect.y + 24;
+            int drawY = rolloverPosition.y + fontAscent + CURSOR_HEIGHT;
             rect.x += drawX;
             rect.y += drawY;
             rect.grow(2, 2);
+
+            Rectangle bounds = getBounds();
+            bounds.x = 0;
+            bounds.y = 0;
+            bounds.grow(-5, -5);
+
+            if (rect.x < bounds.x)
+            {
+                int dx = bounds.x - rect.x;
+                drawX += dx;
+                rect.x += dx;
+            }
+
+            if (rect.y < bounds.y)
+            {
+                int dy = bounds.y - rect.y;
+                int dx = CURSOR_WIDTH;
+                drawY += dy;
+                rect.y += dy;
+                drawX += dx;
+                rect.x += dx;
+            }
+
+            if (rect.x + rect.width > bounds.x + bounds.width)
+            {
+                int dx = (bounds.x + bounds.width) - (rect.x + rect.width);
+                drawX += dx;
+                rect.x += dx;
+            }
+
+            if (rect.y + rect.height > (bounds.y + bounds.height))
+            {
+                int targetY = rolloverPosition.y - fontDescent - 2;
+                int dy = targetY - drawY;
+                drawY += dy;
+                rect.y += dy;
+            }
+
             g2.setColor(COLOR_ROLLOVER);
             g2.fill(rect);
             g2.setColor(Color.BLACK);
