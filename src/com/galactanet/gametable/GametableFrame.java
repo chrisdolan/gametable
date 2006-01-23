@@ -390,6 +390,24 @@ public class GametableFrame extends JFrame implements ActionListener
             }
         });
 
+        /*
+        // change the default component traverse settings
+        // we do this cause we don't really care about those
+        // settings, but we want to be able to use the tab key
+        KeyboardFocusManager focusMgr = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+        Set set = new HashSet(focusMgr.getDefaultFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS));        
+        set.clear();
+        // set.add(KeyStroke.getKeyStroke('\t', 0, false));
+        focusMgr.setDefaultFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, set);        
+
+        
+        set = new HashSet(focusMgr.getDefaultFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS));        
+        set.clear();
+        // set.add(KeyStroke.getKeyStroke('\t', 0, false));
+        focusMgr.setDefaultFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, set);        
+        */
+        
+        
         m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed SLASH"),
             "startSlash");
         m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed ENTER"),
