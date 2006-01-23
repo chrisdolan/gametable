@@ -221,6 +221,9 @@ public class GametableFrame extends JFrame implements ActionListener
 
     // the id that will be assigned to the change made
     public int                     m_nextStateId;
+    
+    // the name of the last person who sent a private message
+    public String 				   m_lastPrivateMessageSender;
 
     /**
      * Construct the frame
@@ -391,6 +394,8 @@ public class GametableFrame extends JFrame implements ActionListener
             "startSlash");
         m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed ENTER"),
             "startText");
+        m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("control pressed R"), "reply");
+
         m_gametableCanvas.getActionMap().put("startSlash", new AbstractAction()
         {
             /*
@@ -419,30 +424,55 @@ public class GametableFrame extends JFrame implements ActionListener
         });
 
         m_gametableCanvas.getActionMap().put("startText", new AbstractAction()
-        {
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(ActionEvent e)
-            {
-                if (m_gametableCanvas.isTextFieldFocused())
                 {
-                    return;
-                }
-
-                if (m_textEntry.getText().length() == 0)
-                {
-                    // furthermore, only do the set text and focusing if we don't have
-                    // focus (otherwise, we end up with two slashes. One from the user typing it, and
-                    // another from us setting the text, cause our settext happens first.)
-                    if (KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() != m_textEntry)
+                    /*
+                     * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+                     */
+                    public void actionPerformed(ActionEvent e)
                     {
-                        m_textEntry.setText("");
+                        if (m_gametableCanvas.isTextFieldFocused())
+                        {
+                            return;
+                        }
+
+                        if (m_textEntry.getText().length() == 0)
+                        {
+                            // furthermore, only do the set text and focusing if we don't have
+                            // focus (otherwise, we end up with two slashes. One from the user typing it, and
+                            // another from us setting the text, cause our settext happens first.)
+                            if (KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() != m_textEntry)
+                            {
+                                m_textEntry.setText("");
+                            }
+                        }
+                        m_textEntry.requestFocus();
                     }
-                }
-                m_textEntry.requestFocus();
-            }
-        });
+                });
+
+        m_gametableCanvas.getActionMap().put("reply", new AbstractAction()
+                {
+                    /*
+                     * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+                     */
+                    public void actionPerformed(ActionEvent e)
+                    {
+                    	// we don't do this if there's already text in the entry field
+                        if (m_textEntry.getText().length() == 0)
+                        {
+                        	// if they've never received a tell, just tell them that
+                        	if ( m_lastPrivateMessageSender == null )
+                        	{
+                        		// they've received no tells yet
+                                logAlertMessage("You cannot reply until you receive a /tell from another player.");
+                        	}
+                        	else
+                        	{
+                        		startTellTo(m_lastPrivateMessageSender);
+                        	}
+                        }
+                        m_textEntry.requestFocus();
+                    }
+                });
 
         initializeExecutorThread();
     }
@@ -2068,6 +2098,10 @@ public class GametableFrame extends JFrame implements ActionListener
         // when they get a private message, we format it for the chat log
         logMessage(PRIVATE_MESSAGE_FONT + UtilityFunctions.emitUserLink(fromName) + " tells you: "
             + END_PRIVATE_MESSAGE_FONT + text);
+        
+        // we track who the last private message sender was, for
+        // reply purposes
+        m_lastPrivateMessageSender = fromName;
     }
 
     public void postSystemMessage(String text)
@@ -2283,8 +2317,10 @@ public class GametableFrame extends JFrame implements ActionListener
 
     public void startTellTo(String name)
     {
-        m_textEntry.setText("/tell " + name + " ");
+        m_textEntry.setText("/tell " + name + "<b> </b>");
         m_textEntry.requestFocus();
+        m_textEntry.toggleStyle("bold");
+        m_textEntry.toggleStyle("bold");
     }
 
     public void parseSlashCommand(String text)
