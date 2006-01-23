@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.text.AbstractDocument.AbstractElement;
@@ -45,14 +47,72 @@ public class ChatLogPane extends JEditorPane
     private static final Font  FONT_ROLLOVER       = Font.decode("sans-12");
     private static final Color COLOR_ROLLOVER      = new Color(0xFF, 0xFF, 0x7F, 0xAF);
 
+    // --- Types -----------------------------------------------------------------------------------------------------
+
+    /**
+     * My own viewport layout.
+     * 
+     * @author iffy
+     */
+    public class Layout extends ViewportLayout
+    {
+        /*
+         * @see java.awt.LayoutManager#layoutContainer(java.awt.Container)
+         */
+        public void layoutContainer(Container parent)
+        {
+            JViewport viewport = (JViewport)parent;
+            Component view = viewport.getView();
+
+            Dimension viewSize = new Dimension(view.getPreferredSize());
+            Dimension viewportSize = viewport.getSize();
+            Point viewPosition = viewport.getViewPosition();
+
+            System.out.println("-------------");
+            System.out.println("viewSize     : (" + viewSize.width + "x" + viewSize.height + ")");
+            System.out.println("viewportSize : (" + viewportSize.width + "x" + viewportSize.height + ")");
+            System.out.println("viewPosition : (" + viewPosition.x + ", " + viewPosition.y + ")");
+
+            if (viewSize.width <= viewportSize.width)
+            {
+                viewPosition.x = 0;
+            }
+
+            if (viewSize.height <= viewportSize.height)
+            {
+                viewPosition.y = 0;
+                jumpToBottom = true;
+            }
+            else if (jumpToBottom)
+            {
+                viewPosition.y = viewSize.height - viewportSize.height;
+            }
+
+            if ((viewPosition.x == 0) && (viewportSize.width > viewSize.width))
+            {
+                viewSize.width = viewportSize.width;
+            }
+
+            if ((viewPosition.y == 0) && (viewportSize.height > viewSize.height))
+            {
+                viewSize.height = viewportSize.height;
+            }
+
+            System.out.println("viewSize2    : (" + viewSize.width + "x" + viewSize.height + ")");
+            System.out.println("viewPosition2: (" + viewPosition.x + ", " + viewPosition.y + ")");
+            viewport.setViewPosition(viewPosition);
+            viewport.setViewSize(viewSize);
+        }
+    }
+
     // --- Members ---------------------------------------------------------------------------------------------------
 
-    private JScrollPane        scrollPane;
-    private List               entries             = new ArrayList();
-    private String             rolloverText        = null;
-    private Point              rolloverPosition    = null;
-    private Point              mousePosition       = new Point();
-    private boolean            jumpToBottom        = false;
+    private JScrollPane scrollPane;
+    private List        entries          = new ArrayList();
+    private String      rolloverText     = null;
+    private Point       rolloverPosition = null;
+    private Point       mousePosition    = new Point();
+    private boolean     jumpToBottom     = true;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -134,22 +194,6 @@ public class ChatLogPane extends JEditorPane
             }
         });
 
-        addComponentListener(new ComponentAdapter()
-        {
-            /*
-             * @see java.awt.event.ComponentAdapter#componentResized(java.awt.event.ComponentEvent)
-             */
-            public void componentResized(ComponentEvent e)
-            {
-                if (jumpToBottom)
-                {
-                    Rectangle viewRect = getScrollPane().getViewport().getViewRect();
-                    getScrollPane().getVerticalScrollBar().setValue(getHeight() - viewRect.height);
-                    jumpToBottom = false;
-                }
-            }
-        });
-
         addText("Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>.");
     }
 
@@ -169,6 +213,23 @@ public class ChatLogPane extends JEditorPane
         {
             scrollPane = new JScrollPane(this, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.getViewport().setLayout(new Layout());
+            scrollPane.getViewport().addChangeListener(new ChangeListener()
+            {
+                /*
+                 * @see javax.swing.event.ChangeListener#stateChanged(javax.swing.event.ChangeEvent)
+                 */
+                public void stateChanged(ChangeEvent e)
+                {
+                    Rectangle viewRect = scrollPane.getViewport().getViewRect();
+                    if (viewRect.y + viewRect.height < getHeight() - 10)
+                    {
+                        jumpToBottom = false;
+                    } else {
+                        jumpToBottom = true;
+                    }
+                }
+            });
         }
 
         return scrollPane;
@@ -179,13 +240,6 @@ public class ChatLogPane extends JEditorPane
         entries.add(highlightUrls(text));
         HTMLDocument doc = (HTMLDocument)getDocument();
         System.out.println("text: " + text);
-
-        JViewport viewport = getScrollPane().getViewport();
-        Rectangle viewBounds = viewport.getViewRect();
-        if (viewBounds.y + viewBounds.height >= getHeight())
-        {
-            jumpToBottom = true;
-        }
 
         if (entries.size() < 2)
         {
