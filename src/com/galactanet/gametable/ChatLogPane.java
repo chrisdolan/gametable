@@ -68,11 +68,6 @@ public class ChatLogPane extends JEditorPane
             Dimension viewportSize = viewport.getSize();
             Point viewPosition = viewport.getViewPosition();
 
-            System.out.println("-------------");
-            System.out.println("viewSize     : (" + viewSize.width + "x" + viewSize.height + ")");
-            System.out.println("viewportSize : (" + viewportSize.width + "x" + viewportSize.height + ")");
-            System.out.println("viewPosition : (" + viewPosition.x + ", " + viewPosition.y + ")");
-
             if (viewSize.width <= viewportSize.width)
             {
                 viewPosition.x = 0;
@@ -98,8 +93,6 @@ public class ChatLogPane extends JEditorPane
                 viewSize.height = viewportSize.height;
             }
 
-            System.out.println("viewSize2    : (" + viewSize.width + "x" + viewSize.height + ")");
-            System.out.println("viewPosition2: (" + viewPosition.x + ", " + viewPosition.y + ")");
             viewport.setViewPosition(viewPosition);
             viewport.setViewSize(viewSize);
         }
