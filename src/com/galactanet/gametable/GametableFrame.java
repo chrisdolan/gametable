@@ -969,7 +969,7 @@ public class GametableFrame extends JFrame implements ActionListener
         if (m_togglePrivateMapMenuItem == null)
         {
             JCheckBoxMenuItem item = new JCheckBoxMenuItem("Edit Private Map");
-            item.setAccelerator(KeyStroke.getKeyStroke("ctrl T"));
+            item.setAccelerator(KeyStroke.getKeyStroke("ctrl F"));
             item.addActionListener(new ActionListener()
             {
                 public void actionPerformed(ActionEvent e)
