@@ -49,6 +49,8 @@ public class ChatLogPane extends JEditorPane
     private static final Font  FONT_ROLLOVER       = Font.decode("sans-12");
     private static final Color COLOR_ROLLOVER      = new Color(0xFF, 0xFF, 0x7F, 0xAF);
 
+    private static final int   MAX_ENTRIES         = 500;
+
     // --- Types -----------------------------------------------------------------------------------------------------
 
     /**
@@ -107,6 +109,7 @@ public class ChatLogPane extends JEditorPane
     private String      rolloverText     = null;
     private Point       rolloverPosition = null;
     private Point       mousePosition    = new Point();
+    private int         endIndex         = 0;
     private boolean     jumpToBottom     = true;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
@@ -237,12 +240,18 @@ public class ChatLogPane extends JEditorPane
         String entryStr = highlightUrls(text);
         entries.add(entryStr);
         HTMLDocument doc = (HTMLDocument)getDocument();
+        boolean set = false;
+        if (entries.size() - endIndex > MAX_ENTRIES)
+        {
+            endIndex = (entries.size() - endIndex) / 2;
+            set = true;
+        }
 
-        if (entries.size() < 2)
+        if (set || entries.size() < 2)
         {
             StringBuffer bodyContent = new StringBuffer();
             bodyContent.append(DEFAULT_TEXT_HEADER);
-            for (int i = 0, size = entries.size(); i < size; ++i)
+            for (int i = endIndex, size = entries.size(); i < size; ++i)
             {
                 String entry = (String)entries.get(i);
                 bodyContent.append(entry);
