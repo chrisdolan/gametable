@@ -49,7 +49,7 @@ public class ChatLogPane extends JEditorPane
     private static final Font  FONT_ROLLOVER       = Font.decode("sans-12");
     private static final Color COLOR_ROLLOVER      = new Color(0xFF, 0xFF, 0x7F, 0xAF);
 
-    private static final int   MAX_ENTRIES         = 500;
+    private static final int   MAX_ENTRIES         = 2000;
 
     // --- Types -----------------------------------------------------------------------------------------------------
 
@@ -238,15 +238,24 @@ public class ChatLogPane extends JEditorPane
     public void addText(String text)
     {
         String entryStr = highlightUrls(text);
-        entries.add(entryStr);
-        HTMLDocument doc = (HTMLDocument)getDocument();
-        boolean set = false;
-        if (entries.size() - endIndex > MAX_ENTRIES)
+        String entryArray[] = entryStr.split("<br[\\s]?>");
+        for (int i = 0, size = entryArray.length; i < size; ++i)
         {
-            endIndex = (entries.size() - endIndex) / 2;
+            entries.add(entryArray[i]);
+        }
+
+        boolean set = false;
+        int visibleLines = (entries.size() - endIndex); 
+        if (visibleLines > MAX_ENTRIES)
+        {
+            //System.out.println("shrinking from: " + visibleLines + " ( " + endIndex + " )");
+            endIndex += visibleLines / 2;
+            visibleLines = (entries.size() - endIndex); 
+            //System.out.println("            to: " + visibleLines + " ( " + endIndex + " )");
             set = true;
         }
 
+        HTMLDocument doc = (HTMLDocument)getDocument();
         if (set || entries.size() < 2)
         {
             StringBuffer bodyContent = new StringBuffer();
