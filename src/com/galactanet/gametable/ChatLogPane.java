@@ -6,13 +6,15 @@
 package com.galactanet.gametable;
 
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.MatteBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.HyperlinkEvent;
@@ -204,6 +206,27 @@ public class ChatLogPane extends JEditorPane
             }
         });
 
+        addFocusListener(new FocusAdapter()
+        {
+            /*
+             * @see java.awt.event.FocusAdapter#focusGained(java.awt.event.FocusEvent)
+             */
+            public void focusGained(FocusEvent e)
+            {
+                getScrollPane().setBorder(
+                    new CompoundBorder(new BevelBorder(BevelBorder.LOWERED), new MatteBorder(1, 1, 1, 1, Color.BLACK)));
+            }
+
+            /*
+             * @see java.awt.event.FocusAdapter#focusLost(java.awt.event.FocusEvent)
+             */
+            public void focusLost(FocusEvent e)
+            {
+                getScrollPane().setBorder(
+                    new CompoundBorder(new BevelBorder(BevelBorder.LOWERED), new EmptyBorder(1, 1, 1, 1)));
+            }
+        });
+
         addText("Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>.");
     }
 
@@ -242,6 +265,8 @@ public class ChatLogPane extends JEditorPane
                     }
                 }
             });
+
+            scrollPane.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED), new EmptyBorder(1, 1, 1, 1)));
         }
 
         return scrollPane;
