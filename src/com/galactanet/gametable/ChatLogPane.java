@@ -245,13 +245,13 @@ public class ChatLogPane extends JEditorPane
         }
 
         boolean set = false;
-        int visibleLines = (entries.size() - endIndex); 
+        int visibleLines = (entries.size() - endIndex);
         if (visibleLines > MAX_ENTRIES)
         {
-            //System.out.println("shrinking from: " + visibleLines + " ( " + endIndex + " )");
+            // System.out.println("shrinking from: " + visibleLines + " ( " + endIndex + " )");
             endIndex += visibleLines / 2;
-            visibleLines = (entries.size() - endIndex); 
-            //System.out.println("            to: " + visibleLines + " ( " + endIndex + " )");
+            visibleLines = (entries.size() - endIndex);
+            // System.out.println(" to: " + visibleLines + " ( " + endIndex + " )");
             set = true;
         }
 
@@ -347,6 +347,25 @@ public class ChatLogPane extends JEditorPane
                     boolean foundEnd = false;
                     switch (c2)
                     {
+                        case '&':
+                        {
+                            StringBuffer accum = new StringBuffer();
+                            while (true)
+                            {
+                                char c3 = in.charAt(++nextPosition);
+                                if (c3 == ';')
+                                {
+                                    break;
+                                }
+                                accum.append(c3);
+                            }
+                            String entity = accum.toString();
+                            if (!entity.equals("amp"))
+                            {
+                                foundEnd = true;
+                            }
+                        }
+                        break;
                         case '.':
                         case '%':
                         case '/':
