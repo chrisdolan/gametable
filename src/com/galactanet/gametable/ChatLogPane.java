@@ -126,6 +126,18 @@ public class ChatLogPane extends JEditorPane
 
         // clear all default keystrokes
         InputMap map = new InputMap();
+        InputMap oldMap = getInputMap(WHEN_FOCUSED);
+        String action = "copy-to-clipboard";
+        KeyStroke keys[] = oldMap.allKeys();
+        for (int i = 0, size = keys.length; i < size; ++i)
+        {
+            Object a = oldMap.get(keys[i]);
+            if (action.equals(a))
+            {
+                map.put(keys[i], action);
+            }
+        }
+
         setInputMap(WHEN_FOCUSED, map);
 
         addHyperlinkListener(new HyperlinkListener()
