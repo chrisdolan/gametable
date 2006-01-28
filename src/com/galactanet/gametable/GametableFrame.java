@@ -121,14 +121,14 @@ public class GametableFrame extends JFrame implements ActionListener
     private final static boolean  SEND_PINGS               = false;
 
     // font colors
-    public final static String    SYSTEM_MESSAGE_FONT      = "<b><font color=\"#999900\">";
+    public final static String    SYSTEM_MESSAGE_FONT      = "<font color=\"#666600\">";
     public final static String    ALERT_MESSAGE_FONT       = "<b><font color=\"#FF0000\">";
     public final static String    PRIVATE_MESSAGE_FONT     = "<font color=\"#009900\">";
     public final static String    EMOTE_MESSAGE_FONT       = "<font color=\"#004477\">";
     public final static String    SAY_MESSAGE_FONT         = "<font color=\"#007744\">";
     public final static String    DIEROLL_MESSAGE_FONT     = "<b><font color=\"#990022\">";
 
-    public final static String    END_SYSTEM_MESSAGE_FONT  = "</b></font>";
+    public final static String    END_SYSTEM_MESSAGE_FONT  = "</font>";
     public final static String    END_ALERT_MESSAGE_FONT   = "</b></font>";
     public final static String    END_PRIVATE_MESSAGE_FONT = "</font>";
     public final static String    END_EMOTE_MESSAGE_FONT   = "</font>";
@@ -2384,17 +2384,19 @@ public class GametableFrame extends JFrame implements ActionListener
         else if (words[0].equals("/who"))
         {
             StringBuffer buffer = new StringBuffer();
-            buffer.append("<u>Who's connected</u><br>");
+            buffer.append("<b><u>Who's connected</u></b><br>");
             for (int i = 0, size = m_players.size(); i < size; ++i)
             {
                 Player player = (Player)m_players.get(i);
-                buffer.append("&nbsp;&nbsp;&nbsp;\u2022&nbsp;");
+                buffer.append("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
                 buffer.append(UtilityFunctions.emitUserLink(player.getCharacterName(), player.toString()));
                 buffer.append("<br>");
             }
+            buffer.append("<b>");
             buffer.append(m_players.size());
             buffer.append(" player");
             buffer.append((m_players.size() > 1 ? "s" : ""));
+            buffer.append("</b>");
             logSystemMessage(buffer.toString());
         }
         else if (words[0].equals("/roll") || words[0].equals("/proll"))
@@ -2537,9 +2539,8 @@ public class GametableFrame extends JFrame implements ActionListener
             String name = UtilityFunctions.stitchTogetherWords(words, 1);
             GametableMap map = m_gametableCanvas.getActiveMap();
             List pogs = map.m_pogs;
-            logSystemMessage("Finding pogs with '" + name + "' attribute...");
-            logSystemMessage("<table border=1>");
-            logSystemMessage("<tr><td><b>Name</b></td><td><b>" + name + "</b></td></tr>");
+            StringBuffer buffer = new StringBuffer();
+            buffer.append("<b><u>Pogs with \'" + name + "\' attribute</u></b><br>");
             int tally = 0;
             for (int i = 0, size = pogs.size(); i < size; ++i)
             {
@@ -2553,12 +2554,16 @@ public class GametableFrame extends JFrame implements ActionListener
                         pogText = "&lt;unknown&gt;";
                     }
 
-                    logSystemMessage("<tr><td>" + pogText + "</td><td>" + value + "</td></tr>");
+                    buffer.append("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>");
+                    buffer.append(pogText);
+                    buffer.append(":</b> ");
+                    buffer.append(value);
+                    buffer.append("<br>");
                     ++tally;
                 }
             }
-            logSystemMessage("</table>");
-            logSystemMessage(tally + " pog" + (tally != 1 ? "s" : "") + " found.");
+            buffer.append("<b>" + tally + " pog" + (tally != 1 ? "s" : "") + " found.</b>");
+            logSystemMessage(buffer.toString());
         }
         else if (words[0].equals("/tell") || words[0].equals("/send"))
         {
@@ -2681,20 +2686,19 @@ public class GametableFrame extends JFrame implements ActionListener
         else if (words[0].equals("//") || words[0].equals("/help"))
         {
             // list macro commands
-            logMessage(SYSTEM_MESSAGE_FONT + "<u>Slash Commands</u>" + END_SYSTEM_MESSAGE_FONT + "<br>"
-                + SYSTEM_MESSAGE_FONT + 
-				"/as:" + END_SYSTEM_MESSAGE_FONT + " Display a narrative of a character saying something<br>" + SYSTEM_MESSAGE_FONT + 
-				"/emote:" + END_SYSTEM_MESSAGE_FONT + " Display an emote<br>" + SYSTEM_MESSAGE_FONT + 
-				"/goto:" + END_SYSTEM_MESSAGE_FONT + " Centers a pog in the map view.<br>" + SYSTEM_MESSAGE_FONT + 
-				"/help:" + END_SYSTEM_MESSAGE_FONT + " list all slash commands<br>" + SYSTEM_MESSAGE_FONT + 
-				"/macro:" + END_SYSTEM_MESSAGE_FONT + " macro a die roll<br>" + SYSTEM_MESSAGE_FONT + 
-				"/macrodelete:" + END_SYSTEM_MESSAGE_FONT + " deletes an unwanted macro<br>" + SYSTEM_MESSAGE_FONT + 
-				"/poglist:" + END_SYSTEM_MESSAGE_FONT + " lists pogs by attribute<br>" + SYSTEM_MESSAGE_FONT + 
-				"/proll:" + END_SYSTEM_MESSAGE_FONT + " roll dice privately<br>" + SYSTEM_MESSAGE_FONT + 
-				"/roll:" + END_SYSTEM_MESSAGE_FONT + " roll dice<br>" + SYSTEM_MESSAGE_FONT + 
-				"/tell:" + END_SYSTEM_MESSAGE_FONT + " send a private message to another player<br>" + SYSTEM_MESSAGE_FONT + 
-				"/who:" + END_SYSTEM_MESSAGE_FONT + " lists connected players<br>" + SYSTEM_MESSAGE_FONT + 
-				"//:" + END_SYSTEM_MESSAGE_FONT + " list all slash commands");
+            logSystemMessage("<b><u>Slash Commands</u></b><br>" +
+				"<b>/as:</b> Display a narrative of a character saying something<br>" + 
+				"<b>/emote:</b> Display an emote<br>" +  
+				"<b>/goto:</b> Centers a pog in the map view.<br>" +  
+				"<b>/help:</b> list all slash commands<br>" +  
+				"<b>/macro:</b> macro a die roll<br>" +  
+				"<b>/macrodelete:</b> deletes an unwanted macro<br>" +  
+				"<b>/poglist:</b> lists pogs by attribute<br>" +  
+				"<b>/proll:</b> roll dice privately<br>" +  
+				"<b>/roll:</b> roll dice<br>" + 
+				"<b>/tell:</b> send a private message to another player<br>" +  
+				"<b>/who:</b> lists connected players<br>" +  
+				"<b>//:</b> list all slash commands");
         }
     }
 
