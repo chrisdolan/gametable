@@ -6,7 +6,9 @@
 package com.galactanet.gametable;
 
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -218,7 +220,9 @@ public class ChatLogPane extends JEditorPane
                     if (viewRect.y + viewRect.height < getHeight() - 10)
                     {
                         jumpToBottom = false;
-                    } else {
+                    }
+                    else
+                    {
                         jumpToBottom = true;
                     }
                 }
@@ -230,9 +234,9 @@ public class ChatLogPane extends JEditorPane
 
     public void addText(String text)
     {
-        entries.add(highlightUrls(text));
+        String entryStr = highlightUrls(text);
+        entries.add(entryStr);
         HTMLDocument doc = (HTMLDocument)getDocument();
-        System.out.println("text: " + text);
 
         if (entries.size() < 2)
         {
@@ -253,7 +257,7 @@ public class ChatLogPane extends JEditorPane
             AbstractElement elem = (AbstractElement)body.getChildAt(body.getChildCount() - 1);
             try
             {
-                doc.insertBeforeEnd(elem, text + "<br>");
+                doc.insertBeforeEnd(elem, entryStr + "<br>");
             }
             catch (Exception e)
             {
