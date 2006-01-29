@@ -6,9 +6,7 @@
 package com.galactanet.gametable;
 
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
+import java.awt.event.*;
 import java.awt.font.FontRenderContext;
 import java.util.*;
 import java.util.List;
@@ -58,8 +56,9 @@ public class PogPanel extends JPanel
      */
     private class BranchTracker implements TreeExpansionListener
     {
-        private Set expandedNodes  = new HashSet();
-        private Set collapsedNodes = new HashSet();
+        private Set     expandedNodes  = new HashSet();
+        private Set     collapsedNodes = new HashSet();
+        private boolean allExpanded    = false;
 
         public BranchTracker()
         {
@@ -69,10 +68,17 @@ public class PogPanel extends JPanel
         {
             expandedNodes.clear();
             collapsedNodes.clear();
+            allExpanded = false;
         }
 
         public void restoreTree(JTree tree)
         {
+            if (allExpanded)
+            {
+                expandAll(tree);
+                return;
+            }
+
             DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
             LibraryNode root = (LibraryNode)model.getRoot();
 
@@ -117,6 +123,50 @@ public class PogPanel extends JPanel
             }
         }
 
+        public void expandAll(JTree tree)
+        {
+            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            expandAll(tree, (TreeNode)model.getRoot());
+            allExpanded = true;
+        }
+
+        private void expandAll(JTree tree, TreeNode node)
+        {
+            if (node.isLeaf() || !node.getAllowsChildren() || node.getChildCount() == 0)
+            {
+                return;
+            }
+
+            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            tree.expandPath(new TreePath(model.getPathToRoot(node)));
+            for (int i = 0, size = node.getChildCount(); i < size; ++i)
+            {
+                expandAll(tree, node.getChildAt(i));
+            }
+        }
+
+        public void collapseAll(JTree tree)
+        {
+            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            collapseAll(tree, (TreeNode)model.getRoot());
+            allExpanded = false;
+        }
+
+        private void collapseAll(JTree tree, TreeNode node)
+        {
+            if (node.isLeaf() || !node.getAllowsChildren() || node.getChildCount() == 0)
+            {
+                return;
+            }
+
+            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            tree.collapsePath(new TreePath(model.getPathToRoot(node)));
+            for (int i = 0, size = node.getChildCount(); i < size; ++i)
+            {
+                collapseAll(tree, node.getChildAt(i));
+            }
+        }
+
         // --- TreeExpansionListener Implementation ---
 
         /*
@@ -137,6 +187,7 @@ public class PogPanel extends JPanel
             LibraryNode node = (LibraryNode)event.getPath().getLastPathComponent();
             expandedNodes.remove(node.getLibrary());
             collapsedNodes.add(node.getLibrary());
+            allExpanded = false;
         }
     }
 
@@ -641,6 +692,7 @@ public class PogPanel extends JPanel
     {
         setLayout(new BorderLayout());
         add(getScrollPane(), BorderLayout.CENTER);
+        add(getToolbar(), BorderLayout.NORTH);
     }
 
     /**
@@ -681,17 +733,12 @@ public class PogPanel extends JPanel
         m_grabbedPog = new Pog(p);
         m_grabbedPogPosition = pos;
         m_grabbedPogOffset = offset;
-        // System.out.println("grabPog(" + (m_grabbedPog != null ? m_grabbedPog.m_fileName : null) + ", "
-        // + m_grabbedPogPosition + ")");
-
         m_canvas.pogDrag();
         repaint();
     }
 
     private void releasePog()
     {
-        // System.out.println("releasePog(" + (m_grabbedPog != null ? m_grabbedPog.m_fileName : null) + ", "
-        // + m_grabbedPogPosition + ")");
         if (m_grabbedPog != null)
         {
             m_canvas.pogDrop();
@@ -707,8 +754,6 @@ public class PogPanel extends JPanel
         if (m_grabbedPog != null)
         {
             m_grabbedPogPosition = pos;
-            // System.out.println("moveGrabPosition(" + (m_grabbedPog != null ? m_grabbedPog.m_fileName : null) + ", "
-            // + m_grabbedPogPosition + ")");
             m_canvas.pogDrag();
             repaint();
         }
@@ -766,6 +811,49 @@ public class PogPanel extends JPanel
     }
 
     // --- Private Methods ----
+
+    private JToolBar getToolbar()
+    {
+        JToolBar toolbar = new JToolBar();
+        toolbar.setFloatable(false);
+        toolbar.setMargin(new Insets(2, 2, 2, 2));
+        toolbar.setRollover(true);
+
+        Insets margin = new Insets(2, 2, 2, 2);
+        Image collapseImage = UtilityFunctions.getImage("assets/collapse.png");
+        JButton collapseButton = new JButton("Collapse All", new ImageIcon(collapseImage));
+        collapseButton.setFocusable(false);
+        collapseButton.setMargin(margin);
+        collapseButton.addActionListener(new ActionListener()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                m_branchTracker.collapseAll(getPogTree());
+            }
+        });
+        toolbar.add(collapseButton);
+
+        Image expandImage = UtilityFunctions.getImage("assets/expand.png");
+        JButton expandButton = new JButton("Expand All", new ImageIcon(expandImage));
+        expandButton.setMargin(margin);
+        expandButton.setFocusable(false);
+        expandButton.addActionListener(new ActionListener()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                m_branchTracker.expandAll(getPogTree());
+            }
+        });
+        toolbar.add(expandButton);
+
+        return toolbar;
+    }
 
     /**
      * This method initializes scrollPane

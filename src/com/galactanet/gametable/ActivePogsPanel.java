@@ -121,13 +121,17 @@ public class ActivePogsPanel extends JPanel
         public void expandAll(JTree tree)
         {
             DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
-            RootNode root = (RootNode)model.getRoot();
-            expandAll(tree, root);
+            expandAll(tree, (TreeNode)model.getRoot());
             allExpanded = true;
         }
 
         private void expandAll(JTree tree, TreeNode node)
         {
+            if (node.isLeaf() || !node.getAllowsChildren() || node.getChildCount() == 0)
+            {
+                return;
+            }
+
             DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
             tree.expandPath(new TreePath(model.getPathToRoot(node)));
             for (int i = 0, size = node.getChildCount(); i < size; ++i)
@@ -139,13 +143,17 @@ public class ActivePogsPanel extends JPanel
         public void collapseAll(JTree tree)
         {
             DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
-            RootNode root = (RootNode)model.getRoot();
-            collapseAll(tree, root);
+            collapseAll(tree, (TreeNode)model.getRoot());
             allExpanded = false;
         }
 
         private void collapseAll(JTree tree, TreeNode node)
         {
+            if (node.isLeaf() || !node.getAllowsChildren() || node.getChildCount() == 0)
+            {
+                return;
+            }
+
             DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
             tree.collapsePath(new TreePath(model.getPathToRoot(node)));
             for (int i = 0, size = node.getChildCount(); i < size; ++i)
@@ -161,9 +169,16 @@ public class ActivePogsPanel extends JPanel
          */
         public void treeExpanded(TreeExpansionEvent event)
         {
-            PogNode node = (PogNode)event.getPath().getLastPathComponent();
-            expandedNodes.add(node.getPog());
-            collapsedNodes.remove(node.getPog());
+            try
+            {
+                PogNode node = (PogNode)event.getPath().getLastPathComponent();
+                expandedNodes.add(node.getPog());
+                collapsedNodes.remove(node.getPog());
+            }
+            catch (ClassCastException cce)
+            {
+                // ignore non-pog nodes
+            }
         }
 
         /*
@@ -171,10 +186,17 @@ public class ActivePogsPanel extends JPanel
          */
         public void treeCollapsed(TreeExpansionEvent event)
         {
-            PogNode node = (PogNode)event.getPath().getLastPathComponent();
-            expandedNodes.remove(node.getPog());
-            collapsedNodes.add(node.getPog());
-            allExpanded = false;
+            try
+            {
+                PogNode node = (PogNode)event.getPath().getLastPathComponent();
+                expandedNodes.remove(node.getPog());
+                collapsedNodes.add(node.getPog());
+                allExpanded = false;
+            }
+            catch (ClassCastException cce)
+            {
+                // ignore non-pog nodes
+            }
         }
     }
 
@@ -758,7 +780,7 @@ public class ActivePogsPanel extends JPanel
                         Point thisPos = UtilityFunctions.convertCoordinates(getPogTree(), this, new Point(bounds.x,
                             bounds.y));
                         int drawY = thisPos.y;
-                        
+
                         // go to next node if in attributes area
                         if (localPos.y > thisPos.y + bounds.height)
                         {
@@ -777,7 +799,7 @@ public class ActivePogsPanel extends JPanel
                                 drawY = thisPos.y;
                             }
                         }
-                        
+
                         final int PADDING = 5;
                         int drawX = PADDING;
                         g2.setColor(Color.DARK_GRAY);
