@@ -6,9 +6,7 @@
 package com.galactanet.gametable;
 
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
+import java.awt.event.*;
 import java.awt.font.FontRenderContext;
 import java.util.*;
 import java.util.List;
@@ -16,10 +14,7 @@ import java.util.List;
 import javax.swing.*;
 import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeExpansionListener;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeCellRenderer;
-import javax.swing.tree.TreePath;
+import javax.swing.tree.*;
 
 
 
@@ -56,8 +51,9 @@ public class ActivePogsPanel extends JPanel
      */
     private class BranchTracker implements TreeExpansionListener
     {
-        private Set expandedNodes  = new HashSet();
-        private Set collapsedNodes = new HashSet();
+        private Set     expandedNodes  = new HashSet();
+        private Set     collapsedNodes = new HashSet();
+        private boolean allExpanded    = false;
 
         public BranchTracker()
         {
@@ -67,10 +63,17 @@ public class ActivePogsPanel extends JPanel
         {
             expandedNodes.clear();
             collapsedNodes.clear();
+            allExpanded = false;
         }
 
         public void restoreTree(JTree tree)
         {
+            if (allExpanded)
+            {
+                expandAll(tree);
+                return;
+            }
+
             DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
             RootNode root = (RootNode)model.getRoot();
 
@@ -115,6 +118,42 @@ public class ActivePogsPanel extends JPanel
             }
         }
 
+        public void expandAll(JTree tree)
+        {
+            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            RootNode root = (RootNode)model.getRoot();
+            expandAll(tree, root);
+            allExpanded = true;
+        }
+
+        private void expandAll(JTree tree, TreeNode node)
+        {
+            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            tree.expandPath(new TreePath(model.getPathToRoot(node)));
+            for (int i = 0, size = node.getChildCount(); i < size; ++i)
+            {
+                expandAll(tree, node.getChildAt(i));
+            }
+        }
+
+        public void collapseAll(JTree tree)
+        {
+            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            RootNode root = (RootNode)model.getRoot();
+            collapseAll(tree, root);
+            allExpanded = false;
+        }
+
+        private void collapseAll(JTree tree, TreeNode node)
+        {
+            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            tree.collapsePath(new TreePath(model.getPathToRoot(node)));
+            for (int i = 0, size = node.getChildCount(); i < size; ++i)
+            {
+                collapseAll(tree, node.getChildAt(i));
+            }
+        }
+
         // --- TreeExpansionListener Implementation ---
 
         /*
@@ -135,6 +174,7 @@ public class ActivePogsPanel extends JPanel
             PogNode node = (PogNode)event.getPath().getLastPathComponent();
             expandedNodes.remove(node.getPog());
             collapsedNodes.add(node.getPog());
+            allExpanded = false;
         }
     }
 
@@ -449,6 +489,11 @@ public class ActivePogsPanel extends JPanel
     private JTree                     pogTree;
 
     /**
+     * The scroll pane for the tree.
+     */
+    private JScrollPane               scrollPane;
+
+    /**
      * A map of GametableMaps to BranchTrackers for thier pog lists.
      */
     private Map                       trackers            = new HashMap();
@@ -484,6 +529,7 @@ public class ActivePogsPanel extends JPanel
     {
         super(new BorderLayout());
         add(getScrollPane(), BorderLayout.CENTER);
+        add(getToolbar(), BorderLayout.NORTH);
     }
 
     // --- Methods ---------------------------------------------------------------------------------------------------
@@ -518,6 +564,19 @@ public class ActivePogsPanel extends JPanel
         }
 
         return tracker;
+    }
+
+    private GametableMap getMap()
+    {
+        DefaultTreeModel model = (DefaultTreeModel)getPogTree().getModel();
+        RootNode root = (RootNode)model.getRoot();
+
+        return root.getMap();
+    }
+
+    private BranchTracker getTracker()
+    {
+        return getTrackerFor(getMap());
     }
 
     // --- Dragging methods ---
@@ -646,6 +705,26 @@ public class ActivePogsPanel extends JPanel
         return null;
     }
 
+    private PogNode getNextPogNode(PogNode node)
+    {
+        int row = getRowForNode(node);
+        while (true)
+        {
+            ++row;
+            TreePath path = pogTree.getPathForRow(row);
+            if (path == null)
+            {
+                return null;
+            }
+
+            Object val = path.getLastPathComponent();
+            if (val instanceof PogNode)
+            {
+                return (PogNode)val;
+            }
+        }
+    }
+
     private int getRowForNode(PogNode node)
     {
         DefaultTreeModel model = (DefaultTreeModel)pogTree.getModel();
@@ -679,10 +758,26 @@ public class ActivePogsPanel extends JPanel
                         Point thisPos = UtilityFunctions.convertCoordinates(getPogTree(), this, new Point(bounds.x,
                             bounds.y));
                         int drawY = thisPos.y;
+                        
+                        // go to next node if in attributes area
                         if (localPos.y > thisPos.y + bounds.height)
                         {
-                            drawY += bounds.height;
+                            PogNode nextNode = getNextPogNode(node);
+                            if (nextNode == null)
+                            {
+                                drawY += bounds.height;
+                            }
+                            else
+                            {
+                                node = nextNode;
+                                row = getRowForNode(node);
+                                bounds = pogTree.getRowBounds(row);
+                                thisPos = UtilityFunctions.convertCoordinates(getPogTree(), this, new Point(bounds.x,
+                                    bounds.y));
+                                drawY = thisPos.y;
+                            }
                         }
+                        
                         final int PADDING = 5;
                         int drawX = PADDING;
                         g2.setColor(Color.DARK_GRAY);
@@ -705,10 +800,56 @@ public class ActivePogsPanel extends JPanel
 
     // --- Initialization methods ---
 
+    private JToolBar getToolbar()
+    {
+        JToolBar toolbar = new JToolBar();
+        toolbar.setFloatable(false);
+        toolbar.setMargin(new Insets(2, 2, 2, 2));
+        toolbar.setRollover(true);
+
+        Insets margin = new Insets(2, 2, 2, 2);
+        Image collapseImage = UtilityFunctions.getImage("assets/collapse.png");
+        JButton collapseButton = new JButton("Collapse All", new ImageIcon(collapseImage));
+        collapseButton.setFocusable(false);
+        collapseButton.setMargin(margin);
+        collapseButton.addActionListener(new ActionListener()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                getTracker().collapseAll(getPogTree());
+            }
+        });
+        toolbar.add(collapseButton);
+
+        Image expandImage = UtilityFunctions.getImage("assets/expand.png");
+        JButton expandButton = new JButton("Expand All", new ImageIcon(expandImage));
+        expandButton.setMargin(margin);
+        expandButton.setFocusable(false);
+        expandButton.addActionListener(new ActionListener()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                getTracker().expandAll(getPogTree());
+            }
+        });
+        toolbar.add(expandButton);
+
+        return toolbar;
+    }
+
     private JScrollPane getScrollPane()
     {
-        JScrollPane scrollPane = new JScrollPane(getPogTree());
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        if (scrollPane == null)
+        {
+            scrollPane = new JScrollPane(getPogTree());
+            scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        }
         return scrollPane;
     }
 
