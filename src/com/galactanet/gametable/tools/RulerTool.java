@@ -12,6 +12,7 @@ import com.galactanet.gametable.GametableFrame;
 import com.galactanet.gametable.UtilityFunctions;
 
 
+
 /**
  * Tool for measuring distances on the map.
  * 
@@ -22,8 +23,7 @@ public class RulerTool extends NullTool
     private GametableCanvas m_canvas;
     private Point           m_mouseAnchor;
     private Point           m_mouseFloat;
-
-
+    private Point           m_mousePosition;
 
     /**
      * Default Constructor.
@@ -55,7 +55,8 @@ public class RulerTool extends NullTool
      */
     public void mouseButtonPressed(int x, int y, int modifierMask)
     {
-        m_mouseAnchor = new Point(x, y);
+        m_mousePosition = new Point(x, y);
+        m_mouseAnchor = m_mousePosition;
         if ((modifierMask & MODIFIER_CTRL) == 0)
         {
             m_mouseAnchor = m_canvas.snapPoint(m_mouseAnchor);
@@ -70,7 +71,8 @@ public class RulerTool extends NullTool
     {
         if (m_mouseAnchor != null)
         {
-            m_mouseFloat = new Point(x, y);
+            m_mousePosition = new Point(x, y);
+            m_mouseFloat = m_mousePosition;
             if ((modifierMask & MODIFIER_CTRL) == 0)
             {
                 m_mouseFloat = m_canvas.snapPoint(m_mouseFloat);
@@ -84,7 +86,7 @@ public class RulerTool extends NullTool
      */
     public void mouseButtonReleased(int x, int y, int modifierMask)
     {
-    	endAction();
+        endAction();
     }
 
     public void endAction()
@@ -106,10 +108,8 @@ public class RulerTool extends NullTool
             g2.addRenderingHints(UtilityFunctions.STANDARD_RENDERING_HINTS);
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            int dx = m_mouseFloat.x - m_mouseAnchor.x;
-            int dy = m_mouseFloat.y - m_mouseAnchor.y;
-            
-            double dist = m_canvas.getGridMode().getDistance(m_mouseFloat.x, m_mouseFloat.y, m_mouseAnchor.x, m_mouseAnchor.y);
+            double dist = m_canvas.getGridMode().getDistance(m_mouseFloat.x, m_mouseFloat.y, m_mouseAnchor.x,
+                m_mouseAnchor.y);
             double squaresDistance = m_canvas.modelToSquares(dist);
             squaresDistance = Math.round(squaresDistance * 100) / 100.0;
 
@@ -124,16 +124,27 @@ public class RulerTool extends NullTool
             {
                 Graphics2D g3 = (Graphics2D)g.create();
                 g3.setFont(Font.decode("sans-12"));
-                Point midPoint = new Point(m_mouseAnchor.x + dx / 2, m_mouseAnchor.y + dy / 2);
-                Point drawMidPoint = m_canvas.modelToDraw(midPoint);
-                
+
                 String s = squaresDistance + "u";
                 FontMetrics fm = g3.getFontMetrics();
                 Rectangle rect = fm.getStringBounds(s, g3).getBounds();
 
                 rect.grow(3, 1);
 
-                g3.translate(drawMidPoint.x, drawMidPoint.y);
+                Point drawPoint = m_canvas.modelToDraw(m_mousePosition);
+                drawPoint.y -= rect.height + rect.y + 10;
+                Point viewPoint = m_canvas.modelToView(m_canvas.drawToModel(drawPoint));
+                if (viewPoint.y - rect.height < 0)
+                {
+                    drawPoint = m_canvas.modelToDraw(m_mousePosition);
+                    drawPoint.y -= rect.y - 24;
+                }
+
+                if (viewPoint.x + rect.width >= m_canvas.getWidth())
+                {
+                    drawPoint.x -= rect.width + 10;
+                }
+                                g3.translate(drawPoint.x, drawPoint.y);
                 g3.setColor(new Color(0x00, 0x99, 0x00, 0xAA));
                 g3.fill(rect);
                 g3.setColor(new Color(0x00, 0x66, 0x00));

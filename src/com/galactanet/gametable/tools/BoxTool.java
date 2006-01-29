@@ -13,6 +13,7 @@ import com.galactanet.gametable.LineSegment;
 import com.galactanet.gametable.UtilityFunctions;
 
 
+
 /**
  * Map tool for erasing lines.
  * 
@@ -23,6 +24,7 @@ public class BoxTool extends NullTool
     private GametableCanvas m_canvas;
     private Point           m_mouseAnchor;
     private Point           m_mouseFloat;
+    private Point           m_mousePosition;
 
     /**
      * Default Constructor.
@@ -54,7 +56,8 @@ public class BoxTool extends NullTool
      */
     public void mouseButtonPressed(int x, int y, int modifierMask)
     {
-        m_mouseAnchor = new Point(x, y);
+        m_mousePosition = new Point(x, y);
+        m_mouseAnchor = m_mousePosition;
         if ((modifierMask & MODIFIER_CTRL) == 0)
         {
             m_mouseAnchor = m_canvas.snapPoint(m_mouseAnchor);
@@ -69,7 +72,8 @@ public class BoxTool extends NullTool
     {
         if (m_mouseAnchor != null)
         {
-            m_mouseFloat = new Point(x, y);
+            m_mousePosition = new Point(x, y);
+            m_mouseFloat = m_mousePosition;
             if ((modifierMask & MODIFIER_CTRL) == 0)
             {
                 m_mouseFloat = m_canvas.snapPoint(m_mouseFloat);
@@ -85,35 +89,32 @@ public class BoxTool extends NullTool
     {
         if (m_mouseAnchor != null && !m_mouseAnchor.equals(m_mouseFloat))
         {
-        	// we're going to add 4 lines
+            // we're going to add 4 lines
             Color drawColor = GametableFrame.getGametableFrame().m_drawColor;
-        	Point topLeft = new Point(m_mouseAnchor);
-        	Point bottomRight = new Point(m_mouseFloat);
-        	Point topRight = new Point(bottomRight.x, topLeft.y);
-        	Point bottomLeft = new Point(topLeft.x, bottomRight.y);
-        	
-        	LineSegment top = new LineSegment(topLeft, topRight, drawColor);
-        	LineSegment left = new LineSegment(topLeft, bottomLeft, drawColor);
-        	LineSegment right = new LineSegment(topRight, bottomRight, drawColor);
-        	LineSegment bottom = new LineSegment(bottomLeft, bottomRight, drawColor);
-        	
-        	LineSegment[] toAdd = new LineSegment[] {
-        			top,
-					left,
-					right,
-					bottom
-        	};
-				
-        	m_canvas.addLineSegments(toAdd);
+            Point topLeft = new Point(m_mouseAnchor);
+            Point bottomRight = new Point(m_mouseFloat);
+            Point topRight = new Point(bottomRight.x, topLeft.y);
+            Point bottomLeft = new Point(topLeft.x, bottomRight.y);
+
+            LineSegment top = new LineSegment(topLeft, topRight, drawColor);
+            LineSegment left = new LineSegment(topLeft, bottomLeft, drawColor);
+            LineSegment right = new LineSegment(topRight, bottomRight, drawColor);
+            LineSegment bottom = new LineSegment(bottomLeft, bottomRight, drawColor);
+
+            LineSegment[] toAdd = new LineSegment[] {
+                top, left, right, bottom
+            };
+
+            m_canvas.addLineSegments(toAdd);
         }
         endAction();
     }
-    
+
     public void endAction()
     {
         m_mouseAnchor = null;
         m_mouseFloat = null;
-    	m_canvas.repaint();
+        m_canvas.repaint();
     }
 
     /*
@@ -128,18 +129,55 @@ public class BoxTool extends NullTool
             g2.addRenderingHints(UtilityFunctions.STANDARD_RENDERING_HINTS);
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-//            int dx = m_mouseFloat.x - m_mouseAnchor.x;
-//            int dy = m_mouseFloat.y - m_mouseAnchor.y;
-            double dist = m_canvas.getGridMode().getDistance(m_mouseFloat.x, m_mouseFloat.y, m_mouseAnchor.x, m_mouseAnchor.y);
-            double squaresDistance = m_canvas.modelToSquares(dist);
-            squaresDistance = Math.round(squaresDistance * 100) / 100.0;
-
             Color drawColor = GametableFrame.getGametableFrame().m_drawColor;
             g2.setColor(new Color(drawColor.getRed(), drawColor.getGreen(), drawColor.getBlue(), 102));
             g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            Rectangle rect = createRectangle(m_canvas.modelToDraw(m_mouseAnchor), m_canvas.modelToDraw(m_mouseFloat));
-            g2.draw(rect);
+            Rectangle drawRect = createRectangle(m_canvas.modelToDraw(m_mouseAnchor), m_canvas
+                .modelToDraw(m_mouseFloat));
+            g2.draw(drawRect);
             g2.dispose();
+
+            Rectangle modelRect = createRectangle(m_mouseAnchor, m_mouseFloat);
+            --modelRect.width;
+            --modelRect.height;
+            double squaresWidth = m_canvas.modelToSquares(modelRect.width);
+            double squaresHeight = m_canvas.modelToSquares(modelRect.height);
+            if (squaresWidth > 0.75 && squaresHeight > 0.75)
+            {
+                squaresWidth = Math.round(squaresWidth * 100) / 100.0;
+                squaresHeight = Math.round(squaresHeight * 100) / 100.0;
+                Graphics2D g3 = (Graphics2D)g.create();
+                g3.setFont(Font.decode("sans-12"));
+
+                String s = squaresWidth + " x " + squaresHeight + "u";
+                FontMetrics fm = g3.getFontMetrics();
+                Rectangle rect = fm.getStringBounds(s, g3).getBounds();
+
+                rect.grow(3, 1);
+
+                Point drawPoint = m_canvas.modelToDraw(m_mousePosition);
+                drawPoint.y -= rect.height + rect.y + 10;
+                Point viewPoint = m_canvas.modelToView(m_canvas.drawToModel(drawPoint));
+                if (viewPoint.y - rect.height < 0)
+                {
+                    drawPoint = m_canvas.modelToDraw(m_mousePosition);
+                    drawPoint.y -= rect.y - 24;
+                }
+
+                if (viewPoint.x + rect.width >= m_canvas.getWidth())
+                {
+                    drawPoint.x -= rect.width + 10;
+                }
+                
+                g3.translate(drawPoint.x, drawPoint.y);
+                g3.setColor(new Color(0x00, 0x99, 0x00, 0xAA));
+                g3.fill(rect);
+                g3.setColor(new Color(0x00, 0x66, 0x00));
+                g3.draw(rect);
+                g3.setColor(new Color(0xFF, 0xFF, 0xFF, 0xCC));
+                g3.drawString(s, 0, 0);
+                g3.dispose();
+            }
         }
     }
 
