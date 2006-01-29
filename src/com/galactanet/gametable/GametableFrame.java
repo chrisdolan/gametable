@@ -1727,6 +1727,9 @@ public class GametableFrame extends JFrame implements ActionListener
         m_netStatus = NETSTATE_HOST;
         String message = "Hosting on port: " + m_port;
         logSystemMessage(message);
+        
+        logMessage("<a href=\"http://gametable.galactanet.com/echoip.php\">Click here to see the IP address you're hosting on.</a> (Making you click it ensures you have control over your privacy)");         
+        
         Log.log(Log.NET, message);
 
         m_hostMenuItem.setEnabled(false);
