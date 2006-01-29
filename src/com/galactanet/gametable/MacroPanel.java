@@ -317,6 +317,7 @@ public class MacroPanel extends JPanel
             topPanel = new JPanel();
             topPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
             JButton addButton = new JButton("Add...");
+            addButton.setFocusable(false);
             addButton.addActionListener(new ActionListener()
             {
                 /*

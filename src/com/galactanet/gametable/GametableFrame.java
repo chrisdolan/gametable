@@ -184,6 +184,8 @@ public class GametableFrame extends JFrame implements ActionListener
     private JToolBar               m_toolBar                = new JToolBar();
     private ButtonGroup            m_toolButtonGroup        = new ButtonGroup();
 
+    private JCheckBox              m_showNamesCheckbox      = new JCheckBox("Show pog names");
+
     private Map                    m_macroMap               = new TreeMap();
 
     private int                    m_netStatus              = NETSTATE_NONE;
@@ -221,9 +223,9 @@ public class GametableFrame extends JFrame implements ActionListener
 
     // the id that will be assigned to the change made
     public int                     m_nextStateId;
-    
+
     // the name of the last person who sent a private message
-    public String 				   m_lastPrivateMessageSender;
+    public String                  m_lastPrivateMessageSender;
 
     /**
      * Construct the frame
@@ -298,11 +300,26 @@ public class GametableFrame extends JFrame implements ActionListener
         m_colorCombo.setMaximumSize(new Dimension(100, 21));
         m_colorCombo.setFocusable(false);
         m_toolBar.setFloatable(false);
+        m_toolBar.setRollover(true);
         m_toolBar.setBorder(new EmptyBorder(2, 5, 2, 5));
         m_toolBar.add(m_colorCombo, null);
         m_toolBar.add(Box.createHorizontalStrut(5));
 
         initializeTools();
+
+        m_toolBar.add(Box.createHorizontalStrut(5));
+        m_showNamesCheckbox.setFocusable(false);
+        m_showNamesCheckbox.addActionListener(new ActionListener()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                m_gametableCanvas.repaint();
+            }
+        });
+        m_toolBar.add(m_showNamesCheckbox);
 
         getContentPane().add(m_toolBar, BorderLayout.NORTH);
 
@@ -391,28 +408,23 @@ public class GametableFrame extends JFrame implements ActionListener
         });
 
         /*
-        // change the default component traverse settings
-        // we do this cause we don't really care about those
-        // settings, but we want to be able to use the tab key
-        KeyboardFocusManager focusMgr = KeyboardFocusManager.getCurrentKeyboardFocusManager();
-        Set set = new HashSet(focusMgr.getDefaultFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS));        
-        set.clear();
-        // set.add(KeyStroke.getKeyStroke('\t', 0, false));
-        focusMgr.setDefaultFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, set);        
+         * // change the default component traverse settings // we do this cause we don't really care about those //
+         * settings, but we want to be able to use the tab key KeyboardFocusManager focusMgr =
+         * KeyboardFocusManager.getCurrentKeyboardFocusManager(); Set set = new
+         * HashSet(focusMgr.getDefaultFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS)); set.clear(); //
+         * set.add(KeyStroke.getKeyStroke('\t', 0, false));
+         * focusMgr.setDefaultFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, set); set = new
+         * HashSet(focusMgr.getDefaultFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS)); set.clear(); //
+         * set.add(KeyStroke.getKeyStroke('\t', 0, false));
+         * focusMgr.setDefaultFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, set);
+         */
 
-        
-        set = new HashSet(focusMgr.getDefaultFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS));        
-        set.clear();
-        // set.add(KeyStroke.getKeyStroke('\t', 0, false));
-        focusMgr.setDefaultFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, set);        
-        */
-        
-        
         m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed SLASH"),
             "startSlash");
         m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed ENTER"),
             "startText");
-        m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("control pressed R"), "reply");
+        m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+            KeyStroke.getKeyStroke("control pressed R"), "reply");
 
         m_gametableCanvas.getActionMap().put("startSlash", new AbstractAction()
         {
@@ -442,55 +454,55 @@ public class GametableFrame extends JFrame implements ActionListener
         });
 
         m_gametableCanvas.getActionMap().put("startText", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                if (m_gametableCanvas.isTextFieldFocused())
                 {
-                    /*
-                     * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-                     */
-                    public void actionPerformed(ActionEvent e)
-                    {
-                        if (m_gametableCanvas.isTextFieldFocused())
-                        {
-                            return;
-                        }
+                    return;
+                }
 
-                        if (m_textEntry.getText().length() == 0)
-                        {
-                            // furthermore, only do the set text and focusing if we don't have
-                            // focus (otherwise, we end up with two slashes. One from the user typing it, and
-                            // another from us setting the text, cause our settext happens first.)
-                            if (KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() != m_textEntry)
-                            {
-                                m_textEntry.setText("");
-                            }
-                        }
-                        m_textEntry.requestFocus();
+                if (m_textEntry.getText().length() == 0)
+                {
+                    // furthermore, only do the set text and focusing if we don't have
+                    // focus (otherwise, we end up with two slashes. One from the user typing it, and
+                    // another from us setting the text, cause our settext happens first.)
+                    if (KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() != m_textEntry)
+                    {
+                        m_textEntry.setText("");
                     }
-                });
+                }
+                m_textEntry.requestFocus();
+            }
+        });
 
         m_gametableCanvas.getActionMap().put("reply", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+                // we don't do this if there's already text in the entry field
+                if (m_textEntry.getText().length() == 0)
                 {
-                    /*
-                     * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-                     */
-                    public void actionPerformed(ActionEvent e)
+                    // if they've never received a tell, just tell them that
+                    if (m_lastPrivateMessageSender == null)
                     {
-                    	// we don't do this if there's already text in the entry field
-                        if (m_textEntry.getText().length() == 0)
-                        {
-                        	// if they've never received a tell, just tell them that
-                        	if ( m_lastPrivateMessageSender == null )
-                        	{
-                        		// they've received no tells yet
-                                logAlertMessage("You cannot reply until you receive a /tell from another player.");
-                        	}
-                        	else
-                        	{
-                        		startTellTo(m_lastPrivateMessageSender);
-                        	}
-                        }
-                        m_textEntry.requestFocus();
+                        // they've received no tells yet
+                        logAlertMessage("You cannot reply until you receive a /tell from another player.");
                     }
-                });
+                    else
+                    {
+                        startTellTo(m_lastPrivateMessageSender);
+                    }
+                }
+                m_textEntry.requestFocus();
+            }
+        });
 
         initializeExecutorThread();
     }
@@ -1111,6 +1123,12 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    
+    public boolean shouldShowNames()
+    {
+        return m_showNamesCheckbox.isSelected();
+    }
+    
     /**
      * @return Returns the m_netStatus.
      */
@@ -1237,7 +1255,8 @@ public class GametableFrame extends JFrame implements ActionListener
 
             case REJECT_VERSION_MISMATCH:
             {
-                logAlertMessage("The host is using a different version of the Gametable network protocol. Connection aborted.");
+                logAlertMessage("The host is using a different version of the Gametable network protocol."
+                    + " Connection aborted.");
             }
             break;
         }
@@ -1727,9 +1746,9 @@ public class GametableFrame extends JFrame implements ActionListener
         m_netStatus = NETSTATE_HOST;
         String message = "Hosting on port: " + m_port;
         logSystemMessage(message);
-        
-        logMessage("<a href=\"http://gametable.galactanet.com/echoip.php\">Click here to see the IP address you're hosting on.</a> (Making you click it ensures you have control over your privacy)");         
-        
+
+        logMessage("<a href=\"http://gametable.galactanet.com/echoip.php\">Click here to see the IP address you're hosting on.</a> (Making you click it ensures you have control over your privacy)");
+
         Log.log(Log.NET, message);
 
         m_hostMenuItem.setEnabled(false);
@@ -2119,7 +2138,7 @@ public class GametableFrame extends JFrame implements ActionListener
         // when they get a private message, we format it for the chat log
         logMessage(PRIVATE_MESSAGE_FONT + UtilityFunctions.emitUserLink(fromName) + " tells you: "
             + END_PRIVATE_MESSAGE_FONT + text);
-        
+
         // we track who the last private message sender was, for
         // reply purposes
         m_lastPrivateMessageSender = fromName;
@@ -2407,12 +2426,13 @@ public class GametableFrame extends JFrame implements ActionListener
             // req. 1 param
             if (words.length < 2)
             {
-                logSystemMessage(""+words[0]+" usage: "+words[0]+" &lt;Dice Roll in standard format&gt;");
-                logSystemMessage("or: "+words[0]+" &lt;Macro Name&gt; [&lt;+/-&gt; &lt;Macro Name or Dice Roll&gt;]...");
+                logSystemMessage("" + words[0] + " usage: " + words[0] + " &lt;Dice Roll in standard format&gt;");
+                logSystemMessage("or: " + words[0]
+                    + " &lt;Macro Name&gt; [&lt;+/-&gt; &lt;Macro Name or Dice Roll&gt;]...");
                 logSystemMessage("Examples:");
-                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+words[0]+" 2d6 + 3d4 + 8");
-                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+words[0]+" My Damage + d4");
-                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+words[0]+" d20 + My Damage + My Damage Bonus");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + words[0] + " 2d6 + 3d4 + 8");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + words[0] + " My Damage + d4");
+                logSystemMessage("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + words[0] + " d20 + My Damage + My Damage Bonus");
                 return;
             }
 
@@ -2421,7 +2441,7 @@ public class GametableFrame extends JFrame implements ActionListener
             // First we split the roll into terms
             ArrayList rolls = new ArrayList();
             ArrayList ops = new ArrayList();
-            String remaining = text.substring((words[0]+" ").length());
+            String remaining = text.substring((words[0] + " ").length());
             int length = remaining.length();
             int termStart = 0;
             for (int index = 0; index < length; ++index)
@@ -2510,19 +2530,20 @@ public class GametableFrame extends JFrame implements ActionListener
 
                 first = false;
             }
-            
-            if ( words[0].equals("/roll") )
+
+            if (words[0].equals("/roll"))
             {
-            	// this was a public roll
+                // this was a public roll
                 String toPost = DiceMacro.generateOutputString(getMyPlayer().getCharacterName(), rollBuf.toString(),
-                        resultBuf.toString(), "" + total);
-            	postMessage(toPost);
+                    resultBuf.toString(), "" + total);
+                postMessage(toPost);
             }
             else
             {
-            	// this was a private roll. Don't propigate it to other players
-                String toPost = DiceMacro.generatePrivateOutputString(rollBuf.toString(), resultBuf.toString(), "" + total);
-            	m_chatLog.addText(toPost);
+                // this was a private roll. Don't propigate it to other players
+                String toPost = DiceMacro.generatePrivateOutputString(rollBuf.toString(), resultBuf.toString(), ""
+                    + total);
+                m_chatLog.addText(toPost);
             }
         }
         else if (words[0].equals("/poglist"))
@@ -2672,7 +2693,7 @@ public class GametableFrame extends JFrame implements ActionListener
                 logSystemMessage(words[0] + " usage: " + words[0] + " &lt;pog name&gt;");
                 return;
             }
-            
+
             String name = UtilityFunctions.stitchTogetherWords(words, 1);
             Pog pog = m_gametableCanvas.getActiveMap().getPogNamed(name);
             if (pog == null)
@@ -2684,24 +2705,19 @@ public class GametableFrame extends JFrame implements ActionListener
         }
         else if (words[0].equals("/clearlog"))
         {
-        	m_chatLog.clearText();
+            m_chatLog.clearText();
         }
         else if (words[0].equals("//") || words[0].equals("/help"))
         {
             // list macro commands
-            logSystemMessage("<b><u>Slash Commands</u></b><br>" +
-				"<b>/as:</b> Display a narrative of a character saying something<br>" + 
-				"<b>/emote:</b> Display an emote<br>" +  
-				"<b>/goto:</b> Centers a pog in the map view.<br>" +  
-				"<b>/help:</b> list all slash commands<br>" +  
-				"<b>/macro:</b> macro a die roll<br>" +  
-				"<b>/macrodelete:</b> deletes an unwanted macro<br>" +  
-				"<b>/poglist:</b> lists pogs by attribute<br>" +  
-				"<b>/proll:</b> roll dice privately<br>" +  
-				"<b>/roll:</b> roll dice<br>" + 
-				"<b>/tell:</b> send a private message to another player<br>" +  
-				"<b>/who:</b> lists connected players<br>" +  
-				"<b>//:</b> list all slash commands");
+            logSystemMessage("<b><u>Slash Commands</u></b><br>"
+                + "<b>/as:</b> Display a narrative of a character saying something<br>"
+                + "<b>/emote:</b> Display an emote<br>" + "<b>/goto:</b> Centers a pog in the map view.<br>"
+                + "<b>/help:</b> list all slash commands<br>" + "<b>/macro:</b> macro a die roll<br>"
+                + "<b>/macrodelete:</b> deletes an unwanted macro<br>" + "<b>/poglist:</b> lists pogs by attribute<br>"
+                + "<b>/proll:</b> roll dice privately<br>" + "<b>/roll:</b> roll dice<br>"
+                + "<b>/tell:</b> send a private message to another player<br>"
+                + "<b>/who:</b> lists connected players<br>" + "<b>//:</b> list all slash commands");
         }
     }
 
@@ -2732,6 +2748,7 @@ public class GametableFrame extends JFrame implements ActionListener
             prefDos.writeInt(m_mapPogSplitPane.getDividerLocation());
 
             prefDos.writeUTF(m_actingFileMacros.getAbsolutePath());
+            prefDos.writeBoolean(m_showNamesCheckbox.isSelected());
 
             prefDos.close();
             prefFile.close();
@@ -2763,6 +2780,7 @@ public class GametableFrame extends JFrame implements ActionListener
             m_bMaximized = false;
             applyWindowInfo();
             addMacro("d20", "d20");
+            m_showNamesCheckbox.setSelected(false);
             m_actingFileMacros = new File("macros.xml");
             try
             {
@@ -2799,6 +2817,7 @@ public class GametableFrame extends JFrame implements ActionListener
             m_mapPogSplitPane.setDividerLocation(prefDis.readInt());
 
             m_actingFileMacros = new File(prefDis.readUTF());
+            m_showNamesCheckbox.setSelected(prefDis.readBoolean());
 
             prefDis.close();
             prefFile.close();
