@@ -31,7 +31,7 @@ import javax.swing.filechooser.FileFilter;
 public class UtilityFunctions
 {
     // constants
-	public static final char           UNIVERSAL_SEPARATOR      = '/';
+    public static final char           UNIVERSAL_SEPARATOR      = '/';
     public static final char           LOCAL_SEPARATOR          = File.separatorChar;
 
     public final static int            NO                       = 0;
@@ -509,7 +509,7 @@ public class UtilityFunctions
 
         // TODO: Option for SMOOTH vs FAST?
         Image scaledImage;
-       	scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
         if (scaledImage == null)
         {
             return null;
@@ -706,6 +706,17 @@ public class UtilityFunctions
     {
         Point screenPos = getScreenPosition(component);
         return new Point(screenPoint.x - screenPos.x, screenPoint.y - screenPos.y);
+    }
+
+    /**
+     * @param source Component to get coordinates relative from.
+     * @param destination Component to get coordinates relative to.
+     * @param sourcePoint Source-relative coordinates to convert.
+     * @return destination-relative coordinates of the given source-relative coordinates.
+     */
+    public static Point convertCoordinates(Component source, Component destination, Point sourcePoint)
+    {
+        return getComponentCoordinates(destination, getScreenCoordinates(source, sourcePoint));
     }
 
     private static Map getEncodingMap()

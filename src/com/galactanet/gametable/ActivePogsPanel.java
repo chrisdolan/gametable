@@ -33,7 +33,7 @@ public class ActivePogsPanel extends JPanel
     // --- Constants -------------------------------------------------------------------------------------------------
 
     private static final float CLICK_THRESHHOLD = 2f;
-    
+
     private static final int   POG_TEXT_PADDING = 4;
     private static final int   POG_PADDING      = 1;
     private static final int   POG_BORDER       = 0;
@@ -533,8 +533,8 @@ public class ActivePogsPanel extends JPanel
     {
         if (m_grabbedNode != null)
         {
-            Point localPos = UtilityFunctions.getComponentCoordinates(this, m_grabPosition);
-            PogNode node = getClosestPogNode(localPos.x, localPos.y);
+            Point treePos = UtilityFunctions.getComponentCoordinates(getPogTree(), m_grabPosition);
+            PogNode node = getClosestPogNode(treePos.x, treePos.y);
             if (node != null)
             {
                 boolean after = false;
@@ -542,7 +542,7 @@ public class ActivePogsPanel extends JPanel
                 if (row > -1)
                 {
                     Rectangle bounds = pogTree.getRowBounds(row);
-                    if (localPos.y > bounds.y + bounds.height)
+                    if (treePos.y > bounds.y + bounds.height)
                     {
                         after = true;
                     }
@@ -661,35 +661,45 @@ public class ActivePogsPanel extends JPanel
     public void paint(Graphics g)
     {
         super.paint(g);
-        if (m_grabbedNode != null)
+        try
         {
-            Graphics2D g2 = (Graphics2D)g;
-            Point localPos = UtilityFunctions.getComponentCoordinates(this, m_grabPosition);
-
-            PogNode node = getClosestPogNode(localPos.x, localPos.y);
-            if (node != null)
+            if (m_grabbedNode != null)
             {
-                int row = getRowForNode(node);
-                if (row > -1)
-                {
-                    Rectangle bounds = pogTree.getRowBounds(row);
-                    int drawY = bounds.y + 2;
-                    if (localPos.y > bounds.y + bounds.height)
-                    {
-                        drawY += bounds.height;
-                    }
-                    final int PADDING = 5;
-                    int drawX = PADDING;
-                    g2.setColor(Color.DARK_GRAY);
-                    g2.drawLine(drawX, drawY, drawX + pogTree.getWidth() - (PADDING * 2), drawY);
-                }
-            }
+                Graphics2D g2 = (Graphics2D)g;
+                Point treePos = UtilityFunctions.getComponentCoordinates(getPogTree(), m_grabPosition);
+                Point localPos = UtilityFunctions.getComponentCoordinates(this, m_grabPosition);
 
-            g2.translate(localPos.x - m_grabOffset.x, localPos.y - m_grabOffset.y);
-            JComponent comp = (JComponent)pogRenderer.getTreeCellRendererComponent(pogTree, m_grabbedNode, false,
-                false, true, 0, false);
-            comp.paint(g2);
-            g2.dispose();
+                PogNode node = getClosestPogNode(treePos.x, treePos.y);
+                if (node != null)
+                {
+                    int row = getRowForNode(node);
+                    if (row > -1)
+                    {
+                        Rectangle bounds = pogTree.getRowBounds(row);
+                        Point thisPos = UtilityFunctions.convertCoordinates(getPogTree(), this, new Point(bounds.x,
+                            bounds.y));
+                        int drawY = thisPos.y;
+                        if (localPos.y > thisPos.y + bounds.height)
+                        {
+                            drawY += bounds.height;
+                        }
+                        final int PADDING = 5;
+                        int drawX = PADDING;
+                        g2.setColor(Color.DARK_GRAY);
+                        g2.drawLine(drawX, drawY, drawX + pogTree.getWidth() - (PADDING * 2), drawY);
+                    }
+                }
+
+                g2.translate(localPos.x - m_grabOffset.x, localPos.y - m_grabOffset.y);
+                JComponent comp = (JComponent)pogRenderer.getTreeCellRendererComponent(pogTree, m_grabbedNode, false,
+                    false, true, 0, false);
+                comp.paint(g2);
+                g2.dispose();
+            }
+        }
+        catch (Throwable t)
+        {
+            Log.log(Log.SYS, t);
         }
     }
 
@@ -747,7 +757,7 @@ public class ActivePogsPanel extends JPanel
                 {
                     releasePog();
                     Point p = new Point(e.getX(), e.getY());
-                    
+
                     if (p.distance(m_lastPressPosition) <= CLICK_THRESHHOLD)
                     {
                         m_numClicks++;
