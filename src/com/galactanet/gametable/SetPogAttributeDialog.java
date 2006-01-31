@@ -11,7 +11,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 
 import javax.swing.*;
-import javax.swing.JPanel;
 
 
 
@@ -34,6 +33,7 @@ public class SetPogAttributeDialog extends JDialog
     private JLabel     valueLabel            = null;
     private JPanel     horizontalSpacerPanel = null;
 
+    private boolean    confirmed             = false;
     private String     name                  = null;
     private String     value                 = null;
 
@@ -115,6 +115,7 @@ public class SetPogAttributeDialog extends JDialog
                 {
                     name = nameTextField.getText();
                     value = valueTextField.getText();
+                    confirmed = true;
                     dispose();
                 }
             });
@@ -250,6 +251,14 @@ public class SetPogAttributeDialog extends JDialog
     }
 
     /**
+     * @return Whether this dialog was confirmed or not.
+     */
+    public boolean isConfirmed()
+    {
+        return confirmed;
+    }
+
+    /**
      * Loads the dialog with some existing values.
      * 
      * @param newName
@@ -260,5 +269,18 @@ public class SetPogAttributeDialog extends JDialog
         getNameTextField().setText(newName);
         getValueTextField().setText(newValue);
     }
-    
+
+    /*
+     * @see java.awt.Component#setVisible(boolean)
+     */
+    public void setVisible(boolean b)
+    {
+        if (b && isVisible() != b)
+        {
+            confirmed = false;
+        }
+
+        super.setVisible(b);
+    }
+
 } // @jve:decl-index=0:visual-constraint="10,10"

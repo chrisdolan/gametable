@@ -63,6 +63,11 @@ public class PointerTool extends NullTool
             dialog.loadValues(key, m_menuPog.getAttribute(key));
             dialog.setLocationRelativeTo(m_canvas);
             dialog.setVisible(true);
+            if (!dialog.isConfirmed())
+            {
+                return;
+            }
+            
             String name = dialog.getName();
             String value = dialog.getValue();
             Set toDelete = new HashSet();
