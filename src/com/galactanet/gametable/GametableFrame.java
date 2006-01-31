@@ -2683,7 +2683,7 @@ public class GametableFrame extends JFrame implements ActionListener
             String toSay = text.substring(start).trim();
 
             // simply post text that's an emote instead of a character action
-            String toPost = EMOTE_MESSAGE_FONT + speakerName + " says " + "\"" + toSay + "\"" + END_EMOTE_MESSAGE_FONT;
+            String toPost = EMOTE_MESSAGE_FONT + speakerName + ": "  + END_EMOTE_MESSAGE_FONT + toSay;
             postMessage(toPost);
         }
         else if (words[0].equals("/goto"))
