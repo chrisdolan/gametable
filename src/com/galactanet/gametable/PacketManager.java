@@ -16,6 +16,7 @@ import com.galactanet.gametable.net.Connection;
 /**
  * TODO: comment
  * 
+ * 
  * @author sephalon
  */
 public class PacketManager
