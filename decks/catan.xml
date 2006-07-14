@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<deck>
+	<card name="Monopoly" qty="2" />
+	<card name="Soldier" qty="14" />
+	<card name="+1 VP" qty="5" />
+	<card name="Year of Plenty" qty="2" />
+	<card name="Road Building" qty="2" />
+</deck>
