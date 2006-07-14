@@ -161,6 +161,9 @@ public class GametableFrame extends JFrame implements ActionListener
     private GametableCanvas        m_gametableCanvas        = new GametableCanvas();
 
     private List                   m_players                = new ArrayList();
+    
+    // only valid if this client is the host
+    private List                   m_decks 					= new ArrayList();
 
     // which player I am
     private int                    m_myPlayerIndex;
@@ -1758,6 +1761,9 @@ public class GametableFrame extends JFrame implements ActionListener
 
         // when you host, all the undo stacks clear
         getGametableCanvas().clearUndoStacks();
+        
+        // also, all decks clear
+        m_decks.clear();
     }
 
     public void hostThreadFailed()
@@ -1866,6 +1872,35 @@ public class GametableFrame extends JFrame implements ActionListener
 
         m_netStatus = NETSTATE_NONE;
         logSystemMessage("Disconnected.");
+    }
+    
+    // deck stuff
+    public void createDeck(String deckFileName, String deckName)
+    {
+    	if ( m_netStatus != NETSTATE_HOST )
+    	{
+        	logAlertMessage("Only the host can create a deck.");
+        	return;
+    	}
+
+    	// load up the deck
+        DeckData dd = new DeckData();
+        File deckFile = new File("decks" + UtilityFunctions.LOCAL_SEPARATOR + deckFileName + ".xml");
+        boolean result = dd.init(deckFile);
+        
+        if ( !result )
+        {
+        	logAlertMessage("Could not create the deck.");
+        	return;
+        }
+
+        // create a deck and add it
+        Deck deck = new Deck();
+        deck.init(dd, 0, deckName);
+        m_decks.add(deck);
+        
+        // alert all players that this deck has been created
+        postSystemMessage(getMyPlayer().getPlayerName()+" creates a new "+deckFileName+" deck named "+deckName);
     }
 
     public void eraseAllLines()
@@ -2706,6 +2741,11 @@ public class GametableFrame extends JFrame implements ActionListener
         else if (words[0].equals("/clearlog"))
         {
             m_chatLog.clearText();
+        }
+        else if ( words[0].equals("/deck"))
+        {
+        	// deck commands. there are many
+        	createDeck("catan", "catan");
         }
         else if (words[0].equals("//") || words[0].equals("/help"))
         {
