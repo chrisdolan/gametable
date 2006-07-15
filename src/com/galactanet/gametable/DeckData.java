@@ -118,7 +118,7 @@ class DeckData
 		int m_quantityInDeck; // the number of this card that there are in a deck.
 		int m_cardId; // used by the Deck class
 		int m_deckId; // used by the Deck class
-	};
+	}
 	
 	/*************************** DATA ************************/
 	private int m_numCards;

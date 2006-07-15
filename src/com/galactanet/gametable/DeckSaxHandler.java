@@ -25,10 +25,10 @@ public class DeckSaxHandler extends DefaultHandler
     public static final String ELEMENT_CARDS  = "deck";
     public static final String ELEMENT_CARD   = "card";
 
-    public static final String ATTRIBUTE_NAME       	= "name";
-    public static final String ATTRIBUTE_FILE			= "file";
-    public static final String ATTRIBUTE_DESC			= "desc";
-    public static final String ATTRIBUTE_QTY	 		= "qty";
+    public static final String ATTRIBUTE_NAME = "name";
+    public static final String ATTRIBUTE_FILE = "file";
+    public static final String ATTRIBUTE_DESC = "desc";
+    public static final String ATTRIBUTE_QTY  = "qty";
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
@@ -43,9 +43,9 @@ public class DeckSaxHandler extends DefaultHandler
     private Locator            locator;
 
     /**
-     * The DeckData object we're filling out 
+     * The DeckData object we're filling out
      */
-    private DeckData            m_deckData;
+    private DeckData           m_deckData;
 
     // --- Constructor -----------------------------------------------------------------------------------------------
 
@@ -55,13 +55,13 @@ public class DeckSaxHandler extends DefaultHandler
     public DeckSaxHandler()
     {
     }
-    
+
     /**
      * Initter.
      */
     public void init(DeckData dd)
     {
-    	m_deckData = dd;
+        m_deckData = dd;
     }
 
     // --- Methods ---------------------------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ public class DeckSaxHandler extends DefaultHandler
      */
     public void startDocument() throws SAXException
     {
-    	// deckData requires no initalization
+        // deckData requires no initalization
     }
 
     /*
@@ -93,8 +93,8 @@ public class DeckSaxHandler extends DefaultHandler
         String name = qName;
         if (name == null || name.length() == 0)
         {
-        	// it is not allowed for the name to not exist
-        	throw new SAXException("name field not specified in card field");
+            // it is not allowed for the name to not exist
+            fatalError(new SAXParseException("name field not specified in card field", locator));
         }
 
         if (name.equals(ELEMENT_CARDS))
@@ -102,64 +102,64 @@ public class DeckSaxHandler extends DefaultHandler
         }
         else if (name.equals(ELEMENT_CARD))
         {
-        	// make a card. This will receive all the data
-        	DeckData.Card card = m_deckData.createBlankCard();
-        	
+            // make a card. This will receive all the data
+            DeckData.Card card = m_deckData.createBlankCard();
+
             String cardName = attributes.getValue(ATTRIBUTE_NAME);
-            if ( cardName == null )
+            if (cardName == null)
             {
-            	card.m_cardName = "";
+                card.m_cardName = "";
             }
             else
             {
-            	card.m_cardName = cardName;
+                card.m_cardName = cardName;
             }
-            
+
             String cardFile = attributes.getValue(ATTRIBUTE_FILE);
-            if ( cardFile == null )
+            if (cardFile == null)
             {
-            	card.m_cardFile = "";
+                card.m_cardFile = "";
             }
             else
             {
-            	card.m_cardFile = cardFile;
+                card.m_cardFile = cardFile;
             }
-            
+
             String cardDesc = attributes.getValue(ATTRIBUTE_DESC);
-            if ( cardDesc == null )
+            if (cardDesc == null)
             {
-            	card.m_cardDesc = "";
+                card.m_cardDesc = "";
             }
             else
             {
-            	card.m_cardDesc = cardDesc;
+                card.m_cardDesc = cardDesc;
             }
-            
+
             String qtyStr = attributes.getValue(ATTRIBUTE_QTY);
-            
+
             int qty = 0;
             try
-			{
-            	qty = Integer.parseInt(qtyStr);
-			}
-            catch ( Exception e )
-			{
-            	// there was a problem parsing the int. this is not allowed
-            	throw new SAXException("invalid or missing "+ATTRIBUTE_QTY+" field");
-			}
-            
-            card.m_quantityInDeck = qty;
-            
-            // only add this card type if there is at least 1 of them in the deck
-            if ( qty < 0 )
             {
-            	// a quantity of 0 or less is not allowed
-            	throw new SAXException("invalid or missing "+ATTRIBUTE_QTY+" field");
+                qty = Integer.parseInt(qtyStr);
             }
-        	m_deckData.addCardType(card);
+            catch (Exception e)
+            {
+                // there was a problem parsing the int. this is not allowed
+                error(new SAXParseException("invalid or missing " + ATTRIBUTE_QTY + " field", locator));
+            }
+
+            card.m_quantityInDeck = qty;
+
+            // only add this card type if there is at least 1 of them in the deck
+            if (qty < 0)
+            {
+                // a quantity of 0 or less is not allowed
+                error(new SAXParseException("invalid or missing " + ATTRIBUTE_QTY + " field", locator));
+            }
+            m_deckData.addCardType(card);
         }
     }
-    
+
     /*
      * @see org.xml.sax.helpers.DefaultHandler#endElement(java.lang.String, java.lang.String, java.lang.String)
      */
