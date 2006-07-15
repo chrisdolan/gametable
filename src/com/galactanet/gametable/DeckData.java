@@ -102,6 +102,16 @@ class DeckData
 	// in a deck, there will only be one Card for it in this class
 	public class Card
 	{
+		Card()
+		{
+			m_cardName = ""; 
+			m_cardFile = ""; 
+			m_cardDesc = "";
+			m_quantityInDeck = 0;
+			m_cardId = -1;
+			m_deckName = "";
+		}
+		
 		void copy(Card in)
 		{
 			m_cardName = ""+in.m_cardName; 
@@ -109,7 +119,7 @@ class DeckData
 			m_cardDesc = ""+in.m_cardDesc; 
 			m_quantityInDeck = in.m_quantityInDeck;
 			m_cardId = in.m_cardId;
-			m_deckId = in.m_deckId;
+			m_deckName = in.m_deckName;
 		}
 		
 		String m_cardName; // "Jack of Clubs" 
@@ -117,7 +127,7 @@ class DeckData
 		String m_cardDesc; // "This is the Jack of Clubs!"
 		int m_quantityInDeck; // the number of this card that there are in a deck.
 		int m_cardId; // used by the Deck class
-		int m_deckId; // used by the Deck class
+		String m_deckName; // used by the Deck class
 	}
 	
 	/*************************** DATA ************************/

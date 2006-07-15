@@ -49,18 +49,18 @@ class Deck
 		// get the next card in the deck
 		Integer cardNum = (Integer)m_deck.get(0);
 		m_deck.remove(0);
-		System.out.println(""+cardNum.intValue());
+		// System.out.println(""+cardNum.intValue());
 		DeckData.Card card = m_deckData.getCard(cardNum.intValue());
 		
 		// note the id. We'll need that later when it gets discarded
 		card.m_cardId = cardNum.intValue();
-		card.m_deckId = m_id;
+		card.m_deckName = m_name;
 		return card;
 	}
 	
 	public void discard(DeckData.Card card)
 	{
-		if ( card.m_deckId != m_id )
+		if ( !card.m_deckName.equals(m_name) )
 		{
 			// this is not our card. ignore it
 			return;
@@ -69,8 +69,52 @@ class Deck
 		// note the id of the discarded card
 		Integer cardNum = new Integer(card.m_cardId);
 		
+		// sanity check: make sure a given card only gets added if
+		// it's not already somewhere else.
+		for ( int i=0 ; i<m_discards.size() ; i++ )
+		{
+			int checkCardId = ((Integer)m_discards.get(i)).intValue();
+			if ( checkCardId == card.m_cardId )
+			{
+				// we already have this in the discards
+				// don't panic, just mention it
+				System.out.println("discarded card already in discards.");
+				return;
+			}
+		}
+			
+		for ( int i=0 ; i<m_deck.size() ; i++ )
+		{
+			int checkCardId = ((Integer)m_deck.get(i)).intValue();
+			if ( checkCardId == card.m_cardId )
+			{
+				// we already have this in the discards
+				// don't panic, just mention it
+				System.out.println("discarded card already in the deck.");
+				return;
+			}
+		}
+			
 		// add it to the discards
 		m_discards.add(cardNum);
+	}
+	
+	// reshuffle ALL cards in the deck, even thouse not in the discards
+	public void shuffleAll()
+	{
+		// clear out the deck and discards lists
+		m_deck.clear();
+		m_discards.clear();
+		
+		// fill up the deck array again
+		for ( int i=0 ; i<m_deckData.getNumCards() ; i++ )
+		{
+			Integer toAdd = new Integer(i);
+			m_deck.add(toAdd);
+		}
+		
+		// shuffle
+		shuffle();
 	}
 	
 	// shuffles the cards and discards together

@@ -164,6 +164,9 @@ public class GametableFrame extends JFrame implements ActionListener
     
     // only valid if this client is the host
     private List                   m_decks 					= new ArrayList();
+    
+    // all the cards you have
+    private List				   m_cards					= new ArrayList();
 
     // which player I am
     private int                    m_myPlayerIndex;
@@ -1224,6 +1227,35 @@ public class GametableFrame extends JFrame implements ActionListener
     {
         return getMyPlayer().getId();
     }
+    
+    public void receiveCards(DeckData.Card cards[])
+    {
+    	if ( cards.length == 0 )
+    	{
+    		// drew 0 cards. Ignore.
+    		return;
+    	}
+    	
+    	// all of these cards get added to your hand
+    	for ( int i=0 ; i<cards.length ; i++ )
+    	{
+    		m_cards.add(cards[i]);
+    		String toPost = "You drew: "+cards[i].m_cardName+" ("+cards[i].m_deckName+")";
+    		logSystemMessage(toPost);
+    	}
+    	
+    	// everyone that you drew some cards
+    	if ( cards.length == 1 )
+    	{
+    		postSystemMessage(getMyPlayer().getPlayerName()+" draws from the "+cards[0].m_deckName+" deck.");
+    	}
+    	else
+    	{
+    		postSystemMessage(getMyPlayer().getPlayerName()+" draws "+cards.length+ " cards from the "+cards[0].m_deckName+" deck.");
+    	}
+    	
+    	// tell the player what he got
+    }
 
     public void loginCompletePacketReceived()
     {
@@ -1764,6 +1796,7 @@ public class GametableFrame extends JFrame implements ActionListener
         
         // also, all decks clear
         m_decks.clear();
+        m_cards.clear();
     }
 
     public void hostThreadFailed()
@@ -1874,47 +1907,6 @@ public class GametableFrame extends JFrame implements ActionListener
         logSystemMessage("Disconnected.");
     }
     
-    // deck stuff
-    public void createDeck(String deckFileName, String deckName)
-    {
-    	if ( m_netStatus != NETSTATE_HOST )
-    	{
-        	logAlertMessage("Only the host can create a deck.");
-        	return;
-    	}
-    	
-    	// if the name is already in use, puke out an error
-    	for ( int i=0 ; i<m_decks.size() ; i++ )
-    	{
-    		Deck d = (Deck)m_decks.get(i);
-    		if ( d.m_name.equals(deckName) )
-    		{
-    			// this name is already in use
-            	logAlertMessage("Error - There is already a deck named '"+deckName+"'.");
-            	return;
-    		}
-    	}
-
-    	// load up the deck
-        DeckData dd = new DeckData();
-        File deckFile = new File("decks" + UtilityFunctions.LOCAL_SEPARATOR + deckFileName + ".xml");
-        boolean result = dd.init(deckFile);
-        
-        if ( !result )
-        {
-        	logAlertMessage("Could not create the deck.");
-        	return;
-        }
-
-        // create a deck and add it
-        Deck deck = new Deck();
-        deck.init(dd, 0, deckName);
-        m_decks.add(deck);
-        
-        // alert all players that this deck has been created
-        postSystemMessage(getMyPlayer().getPlayerName()+" creates a new "+deckFileName+" deck named "+deckName);
-    }
-
     public void eraseAllLines()
     {
         // erase with a rect big enough to nail everything
@@ -2777,6 +2769,12 @@ public class GametableFrame extends JFrame implements ActionListener
     public void deckCommand(String[] words)
     {
     	// all deck commands go through here.
+    	if ( m_netStatus == NETSTATE_NONE )
+    	{
+        	logAlertMessage("You must be in a session to use /deck commands.");
+        	return;
+    	}
+    	
     	// words[0] will be "/deck". IF it weren't we wouldn't be here.
     	if ( words.length < 2 )
     	{
@@ -2785,7 +2783,9 @@ public class GametableFrame extends JFrame implements ActionListener
             return;
     	}
     	
-    	if ( words[1].equals("create"))
+    	String command = words[1]; 
+    	
+    	if ( command.equals("create"))
     	{
         	if ( m_netStatus != NETSTATE_HOST )
         	{
@@ -2801,21 +2801,47 @@ public class GametableFrame extends JFrame implements ActionListener
         		return;
     		}
     		
+    		String deckFileName = words[2];
     		String deckName;
     		if ( words.length == 3 )
     		{
     			// they specified the deck, but not a name. So we
     			// name it after the type
-    			deckName = words[2];
+    			deckName = deckFileName;
     		}
     		else
     		{
     			// they specified a name
     			deckName = words[3];
     		}
-    		createDeck(words[2], deckName);
+        	
+        	// if the name is already in use, puke out an error
+        	if ( getDeck(deckName) != null )
+        	{
+            	logAlertMessage("Error - There is already a deck named '"+deckName+"'.");
+            	return;
+        	}
+
+        	// load up the deck
+            DeckData dd = new DeckData();
+            File deckFile = new File("decks" + UtilityFunctions.LOCAL_SEPARATOR + deckFileName + ".xml");
+            boolean result = dd.init(deckFile);
+            
+            if ( !result )
+            {
+            	logAlertMessage("Could not create the deck.");
+            	return;
+            }
+
+            // create a deck and add it
+            Deck deck = new Deck();
+            deck.init(dd, 0, deckName);
+            m_decks.add(deck);
+            
+            // alert all players that this deck has been created
+            postSystemMessage(getMyPlayer().getPlayerName()+" creates a new "+deckFileName+" deck named "+deckName);
     	}
-    	else if ( words[1].equals("destroy"))
+    	else if ( command.equals("destroy"))
     	{
         	if ( m_netStatus != NETSTATE_HOST )
         	{
@@ -2829,33 +2855,370 @@ public class GametableFrame extends JFrame implements ActionListener
         		showDeckUsage();
         		return;
     		}
+    		
+    		// TODO: Remove all cards from this deck from the other players' hands.
         	
     		// remove the deck named words[2]
-    		boolean bRemovedDeck = false;
-    		for ( int i=0 ; i<m_decks.size() ; i++ )
-    		{
-    			Deck d = (Deck)m_decks.get(i);
-    			if ( d.m_name.equals(words[2]) )
-    			{
-    				// delete this deck
-    				m_decks.remove(i);
-    				bRemovedDeck = true;
-    				break;
-    			}
-    		}
+    		String deckName = words[2];
+    		int toRemoveIdx = getDeckIdx(deckName);
     		
-    		if ( bRemovedDeck )
+    		if ( toRemoveIdx != -1 )
     		{
-    			// we successfully destroyed the deck
-    	        postSystemMessage(getMyPlayer().getPlayerName()+" destroys the deck named "+words[2]);
+    			// we can successfully destroy the deck
+    			m_decks.remove(toRemoveIdx);
+    	        postSystemMessage(getMyPlayer().getPlayerName()+" destroys the deck named "+deckName);
     		}
     		else
     		{
     			// we couldn't find a deck with that name
-    			logAlertMessage("There is no deck named '"+words[2]+"'.");
+    			logAlertMessage("There is no deck named '"+deckName+"'.");
+    		}
+    	}
+    	else if ( command.equals("shuffle") )
+    	{
+        	if ( m_netStatus != NETSTATE_HOST )
+        	{
+            	logAlertMessage("Only the host can shuffle a deck.");
+            	return;
+        	}
+        	
+        	if ( words.length < 4 )
+        	{
+        		// not enough parameters
+        		showDeckUsage();
+        		return;
+        	}
+        	
+        	String deckName = words[2];
+        	String operation = words[3];
+        	
+        	Deck deck = getDeck(deckName);
+        	if ( deck == null )
+        	{
+    			logAlertMessage("There is no deck named '"+deckName+"'.");
+    			return;
+        	}
+        	
+        	if ( operation.equals("all") )
+        	{
+        		// collect and shuffle all the cards in the deck. 
+        		// TODO: Remove the cards of this deck from other players' hands
+        		
+        		deck.shuffleAll();
+    	        postSystemMessage(getMyPlayer().getPlayerName()+" collects all the cards from the "+deckName+" deck from all players and shuffles them.");
+    	        postSystemMessage(deckName+" has "+deck.cardsRemaining()+" cards.");
+        	}
+        	else if ( operation.equals("discards") )
+        	{
+        		// shuffle only the cards in the discard pile. 
+        		deck.shuffle();
+    	        postSystemMessage(getMyPlayer().getPlayerName()+" shuffles the discards back into the "+deckName+" deck.");
+    	        postSystemMessage(deckName+" has "+deck.cardsRemaining()+" cards.");
+        	}
+        	else
+        	{
+        		// the shuffle operation is illegal
+        		logAlertMessage("'"+operation+"' is not a valid type of shuffle. This parameter must be either 'all' or 'discards'.");
+        		return;
+        	}
+    	}
+    	else if ( command.equals("draw") )
+    	{
+    		// before chesking net status we check to see if the draw command was 
+    		// legally done
+    		if ( words.length < 3 )
+    		{
+    			// not enough parameters
+    			showDeckUsage();
+    			return;
+    		}
+    		
+    		// ensure that desired deck exists -- this will work even if we're not the 
+    		// host. Because we'll have "dummy" decks in place to track the names
+    		String deckName = words[2];
+    		Deck deck = getDeck(deckName);
+    		if ( deck == null )
+    		{
+    			// that deck doesn't exist
+    			logAlertMessage("There is no deck named '"+deckName+"'.");
+    			return;
+    		}
+    		
+    		int numToDraw = 1;
+    		// they optionally can specify a number of cards to draw
+    		if ( words.length >= 4 )
+    		{
+    			String numToDrawStr = words[3];
+
+    			// note the number of cards to draw
+    			try 
+				{ 
+    				numToDraw = Integer.parseInt(words[3]);
+    				if ( numToDraw <= 0 )
+    				{
+    					// not allowed
+    					throw new Exception();
+    				}
+    			} 
+    			catch ( Exception e )
+				{
+    				// it's ok not to specify a number of cards to draw. It's not
+    				// ok to put garbage in that field
+                	logAlertMessage("'"+words[3]+"' is not a valid number of cards to draw");
+    			}
+    		}
+
+    		drawCards(deckName, numToDraw);
+    	}
+    	else if ( command.equals("hand") )
+    	{
+    		if ( m_cards.size() == 0 )
+    		{
+    			logSystemMessage("You have no cards");
+    			return;
+    		}
+    		
+    		// show them their hand
+			logSystemMessage("You have "+m_cards.size()+" cards:");
+    		for ( int i=0 ; i<m_cards.size() ; i++ )
+    		{
+    			int cardIdx = i+1;
+    			DeckData.Card card = (DeckData.Card)m_cards.get(i); 
+       			String toPost = ""+cardIdx+": "+card.m_cardName+" ("+card.m_deckName+")";
+       			logSystemMessage(toPost);
+    		}
+    	}
+    	else if ( command.equals("discard") )
+    	{
+    		// discard the nth card from your hand
+    		// 1-indexed
+    		if ( words.length < 3 )
+    		{
+    			// note enough parameters
+    			showDeckUsage();
+    			return;
+    		}
+
+    		String param = words[2];
+    		
+    		// the parameter can be "all" or a number
+    		DeckData.Card discards[];
+    		if ( param.equals("all") )
+    		{
+    			// discard all cards
+    			discards = new DeckData.Card[m_cards.size()];
+    			
+    			for ( int i=0 ; i<discards.length ; i++ )
+    			{
+    				discards[i] = (DeckData.Card)m_cards.get(i);
+    			}
+    			m_cards.clear();
+    		}
+    		else
+    		{
+    			// discard the specified card
+    			int idx = -1;
+    			try
+				{
+    				idx = Integer.parseInt(param);
+    				idx--; // make it 0-indexed
+    				
+    				if ( idx < 0 )
+    				{
+    					throw new Exception();
+    				}
+    				
+    				if ( idx >= m_cards.size() )
+    				{
+    					throw new Exception();
+    				}
+				}
+    			catch ( Exception e )
+				{
+    				// they put in some illegal value for the param
+    				logAlertMessage("There is no card '"+param+"'.");
+    				return;
+				}
+    			discards = new DeckData.Card[1];
+    			discards[0] = (DeckData.Card)m_cards.get(idx);
+    			m_cards.remove(idx);
+    		}
+    		
+    		// now we have the discards[] filled with the cards to be
+    		// removed
+    		discardCards(discards);
+    	}
+    	else if ( command.equals("decklist") )
+    	{
+    		// list off the decks
+    		// we keep "dummy" decks for joiners,
+    		// so either a host of a joiner is safe to use this code:
+    		if ( m_decks.size() == 0 )
+    		{
+    			logSystemMessage("There are no decks");
+    			return;
+    		}
+    		
+			logSystemMessage("There are "+m_decks.size()+" decks");
+    		for ( int i=0 ; i<m_decks.size() ; i++ )
+    		{
+    			Deck deck = (Deck)m_decks.get(i);
+    			logSystemMessage("---"+deck.m_name);
+    		}
+    	}
+    	else
+    	{
+    		// they selected a deck command that doesn't exist
+    		showDeckUsage();
+    	}
+    }
+    
+    public void drawCards(String deckName, int numToDraw)
+    {
+    	if ( m_netStatus == NETSTATE_JOINED )
+    	{
+    		// joiners send a rewquest for a card
+    		// TODO: send card request. The host will send
+    		// back a receivecards packet with the desired number of cards
+    		return;
+    	}
+    	
+    	// if we're here, we're the host. So we simply draw the cards
+    	// and give it to ourselves.
+    	DeckData.Card drawnCards[] = getCards(deckName, numToDraw);
+    	if ( drawnCards != null )
+    	{
+    		receiveCards(drawnCards);
+    	}
+    }
+    
+    public void discardCards(DeckData.Card discards[])
+    {
+		if ( m_netStatus == NETSTATE_JOINED )
+		{
+			// send off the discard notification
+			// TODO: send the discard packet
+		}
+		else
+		{
+			doDiscardCards(getMyPlayer().getPlayerName(), discards);
+		}
+    }
+    
+    public void doDiscardCards(String playerName, DeckData.Card discards[])
+    {
+    	if ( discards.length == 0 )
+    	{
+    		// this shouldn't happen, but let's not freak out.
+    		return;
+    	}
+    	
+    	// only the hose should get this
+    	if ( m_netStatus != NETSTATE_HOST )
+    	{
+    		throw new IllegalStateException("doDiscardCards should only be done by the host.");
+    	}
+    	
+    	// tell the decks about the discarded cards
+    	for ( int i=0 ; i<discards.length ; i++ )
+    	{
+    		String deckName = discards[i].m_deckName;
+    		Deck deck = getDeck(deckName);
+    		if ( deck == null )
+    		{
+    			// don't panic. Just ignore it. It probably means
+    			// a player discarded a card right as the host deleted the deck
+    		}
+    		else
+    		{
+    			deck.discard(discards[i]);
     		}
     	}
     	
+    	// tell everyone about the cards that got discarded
+    	if ( discards.length == 1 )
+    	{
+    		postSystemMessage(playerName+" discards: "+discards[0].m_cardName);
+    	}
+    	else 
+    	{
+    		postSystemMessage(playerName+" discards "+discards.length+" cards.");
+    		for ( int i=0 ; i<discards.length ; i++ )
+    		{
+        		postSystemMessage("---"+discards[i].m_cardName);
+    		}
+    	}
+    }
+    
+    public Deck getDeck(String name)
+    {
+    	int idx = getDeckIdx(name);
+    	if ( idx == -1 )
+    	{
+    		return null;
+    	}
+    	else
+    	{
+    		Deck d = (Deck)m_decks.get(idx);
+    		return d;
+    	}
+    }
+    
+    public int getDeckIdx(String name)
+    {
+		for ( int i=0 ; i<m_decks.size() ; i++ )
+		{
+			Deck d = (Deck)m_decks.get(i);
+			if ( d.m_name.equals(name) )
+			{
+				return i;
+			}
+		}
+		return -1;
+    }
+    
+    public DeckData.Card[] getCards(String deckName, int numCards)
+    {
+    	// get the deck
+    	Deck deck = getDeck(deckName);
+    	if ( deck == null )
+    	{
+    		// the deck doesn't exist. There are various ways this could happen,
+    		// mostly due to split-second race conditions where the host deletes the deck while
+    		// a card request was incoming. We just return null in this edge case.
+    		return null;
+    	}
+    	
+    	if ( numCards <= 0 )
+    	{
+    		// invalid
+    		throw new IllegalArgumentException("drawCards: "+numCards);
+    	}
+    	
+    	// We can't draw more cards than there are 
+    	int remain = deck.cardsRemaining();
+    	if ( numCards > remain )
+    	{
+    		numCards = remain;
+    	}
+    	
+    	// make the return value
+    	DeckData.Card ret[] = new DeckData.Card[numCards];
+    	
+    	// draw the cards
+    	for ( int i=0 ; i<numCards ; i++ )
+    	{
+    		ret[i] = deck.drawCard();
+    	}
+    	
+    	// now that the cards are drawn, check the deck status
+    	if ( deck.cardsRemaining() == 0 )
+    	{
+    		// no more cards in the deck, alert them
+	        postSystemMessage("The "+deckName+" deck is out of cards.");
+    	}
+    	
+    	return ret;
     }
     
     public void showDeckUsage()
@@ -2866,8 +3229,9 @@ public class GametableFrame extends JFrame implements ActionListener
         logSystemMessage("---/deck shuffle [deckname] ['all' or 'discards']: shuffle cards back in to the deck.");
         logSystemMessage("---/deck draw [deckname] [number]: draw [number] cards from the specified deck.");
         logSystemMessage("---/deck hand [deckname]: List off the cards (and their ids) you have from the specified deck.");
-        logSystemMessage("---/discard [deckname] [cardID]: Discard a card that you have from the specified deck.");
-        logSystemMessage("---/discard [deckname] all: Discard all cards that you have from the specified deck.");
+        logSystemMessage("---/deck /discard [cardID]: Discard a card. A card's ID can be seen by using /hand.");
+        logSystemMessage("---/deck /discard all: Discard all cards that you have.");
+        logSystemMessage("---/deck decklist: Lists all the decks in play.");
     }
 
     public void savePrefs()
