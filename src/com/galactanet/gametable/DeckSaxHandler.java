@@ -93,7 +93,8 @@ public class DeckSaxHandler extends DefaultHandler
         String name = qName;
         if (name == null || name.length() == 0)
         {
-            name = localName;
+        	// it is not allowed for the name to not exist
+        	throw new SAXException("name field not specified in card field");
         }
 
         if (name.equals(ELEMENT_CARDS))
@@ -143,17 +144,19 @@ public class DeckSaxHandler extends DefaultHandler
 			}
             catch ( Exception e )
 			{
-            	// there was a problem parsing the int
-            	qty = 0;
+            	// there was a problem parsing the int. this is not allowed
+            	throw new SAXException("invalid or missing "+ATTRIBUTE_QTY+" field");
 			}
             
             card.m_quantityInDeck = qty;
             
             // only add this card type if there is at least 1 of them in the deck
-            if ( qty > 0 )
+            if ( qty < 0 )
             {
-            	m_deckData.addCardType(card);
+            	// a quantity of 0 or less is not allowed
+            	throw new SAXException("invalid or missing "+ATTRIBUTE_QTY+" field");
             }
+        	m_deckData.addCardType(card);
         }
     }
     

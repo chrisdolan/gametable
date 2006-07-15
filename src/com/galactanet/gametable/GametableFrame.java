@@ -1882,6 +1882,18 @@ public class GametableFrame extends JFrame implements ActionListener
         	logAlertMessage("Only the host can create a deck.");
         	return;
     	}
+    	
+    	// if the name is already in use, puke out an error
+    	for ( int i=0 ; i<m_decks.size() ; i++ )
+    	{
+    		Deck d = (Deck)m_decks.get(i);
+    		if ( d.m_name.equals(deckName) )
+    		{
+    			// this name is already in use
+            	logAlertMessage("Error - There is already a deck named '"+deckName+"'.");
+            	return;
+    		}
+    	}
 
     	// load up the deck
         DeckData dd = new DeckData();
@@ -2745,13 +2757,14 @@ public class GametableFrame extends JFrame implements ActionListener
         else if ( words[0].equals("/deck"))
         {
         	// deck commands. there are many
-        	createDeck("catan", "catan");
+        	deckCommand(words);
         }
         else if (words[0].equals("//") || words[0].equals("/help"))
         {
             // list macro commands
             logSystemMessage("<b><u>Slash Commands</u></b><br>"
                 + "<b>/as:</b> Display a narrative of a character saying something<br>"
+                + "<b>/deck:</b> Various deck actions. type /deck for more details<br>"
                 + "<b>/emote:</b> Display an emote<br>" + "<b>/goto:</b> Centers a pog in the map view.<br>"
                 + "<b>/help:</b> list all slash commands<br>" + "<b>/macro:</b> macro a die roll<br>"
                 + "<b>/macrodelete:</b> deletes an unwanted macro<br>" + "<b>/poglist:</b> lists pogs by attribute<br>"
@@ -2759,6 +2772,102 @@ public class GametableFrame extends JFrame implements ActionListener
                 + "<b>/tell:</b> send a private message to another player<br>"
                 + "<b>/who:</b> lists connected players<br>" + "<b>//:</b> list all slash commands");
         }
+    }
+    
+    public void deckCommand(String[] words)
+    {
+    	// all deck commands go through here.
+    	// words[0] will be "/deck". IF it weren't we wouldn't be here.
+    	if ( words.length < 2 )
+    	{
+    		// they just said "/deck". give them the help text
+    		showDeckUsage();
+            return;
+    	}
+    	
+    	if ( words[1].equals("create"))
+    	{
+        	if ( m_netStatus != NETSTATE_HOST )
+        	{
+            	logAlertMessage("Only the host can create a deck.");
+            	return;
+        	}
+        	
+    		// create a new deck.
+    		if ( words.length < 3 )
+    		{
+    			// not enough parameters
+        		showDeckUsage();
+        		return;
+    		}
+    		
+    		String deckName;
+    		if ( words.length == 3 )
+    		{
+    			// they specified the deck, but not a name. So we
+    			// name it after the type
+    			deckName = words[2];
+    		}
+    		else
+    		{
+    			// they specified a name
+    			deckName = words[3];
+    		}
+    		createDeck(words[2], deckName);
+    	}
+    	else if ( words[1].equals("destroy"))
+    	{
+        	if ( m_netStatus != NETSTATE_HOST )
+        	{
+            	logAlertMessage("Only the host can destroy a deck.");
+            	return;
+        	}
+        	
+    		if ( words.length < 3 )
+    		{
+    			// they didn't specify a deck
+        		showDeckUsage();
+        		return;
+    		}
+        	
+    		// remove the deck named words[2]
+    		boolean bRemovedDeck = false;
+    		for ( int i=0 ; i<m_decks.size() ; i++ )
+    		{
+    			Deck d = (Deck)m_decks.get(i);
+    			if ( d.m_name.equals(words[2]) )
+    			{
+    				// delete this deck
+    				m_decks.remove(i);
+    				bRemovedDeck = true;
+    				break;
+    			}
+    		}
+    		
+    		if ( bRemovedDeck )
+    		{
+    			// we successfully destroyed the deck
+    	        postSystemMessage(getMyPlayer().getPlayerName()+" destroys the deck named "+words[2]);
+    		}
+    		else
+    		{
+    			// we couldn't find a deck with that name
+    			logAlertMessage("There is no deck named '"+words[2]+"'.");
+    		}
+    	}
+    	
+    }
+    
+    public void showDeckUsage()
+    {
+        logSystemMessage("/deck usage: ");
+        logSystemMessage("---/deck create [decktype] [deckname]: create a new deck. [decktype] is the name of a deck in the decks directory. It will be named [deckname]");
+        logSystemMessage("---/deck destroy [deckname]: remove the specified deck from the session.");
+        logSystemMessage("---/deck shuffle [deckname] ['all' or 'discards']: shuffle cards back in to the deck.");
+        logSystemMessage("---/deck draw [deckname] [number]: draw [number] cards from the specified deck.");
+        logSystemMessage("---/deck hand [deckname]: List off the cards (and their ids) you have from the specified deck.");
+        logSystemMessage("---/discard [deckname] [cardID]: Discard a card that you have from the specified deck.");
+        logSystemMessage("---/discard [deckname] all: Discard all cards that you have from the specified deck.");
     }
 
     public void savePrefs()
