@@ -90,6 +90,25 @@ public class PacketManager
     // pog reorder packet
     public static final int PACKET_POG_REORDER    = 21;
 
+    // informs you of which decks exist
+    public static final int PACKET_DECK_LIST = 22;
+
+    // sent by players who are trying to draw cards
+    public static final int PACKET_DECK_REQUEST_CARDS = 23;
+
+    // sent TO players, giving them cards they requested
+    // (in response to a PACKED_TECK_REQUEST_CARDS)
+    public static final int PACKET_DECK_RECEIVE_CARDS = 24;
+
+    // informs players that a deck is pulling all its cards
+    // home. Either because the deck is being destroyed, or
+    // because it's having a complete shuffling
+    public static final int PACKET_DECK_CLEAR_DECK = 25;
+
+    // sent by players to tell everyone that they've discarded
+    // one or more cards
+    public static final int PACKET_DECK_DISCARD_CARDS = 26;
+
     // --- Static Members --------------------------------------------------------------------------------------------
 
     /**
@@ -260,6 +279,36 @@ public class PacketManager
                     readPogReorderPacket(dis);
                 }
                 break;
+                
+                case PACKET_DECK_LIST:
+                {
+                	readDeckListPacket(dis);
+                }
+                break;
+
+                case PACKET_DECK_REQUEST_CARDS:
+                {
+                	readRequestCardsPacket(conn, dis);
+                }
+                break;
+                
+                case PACKET_DECK_RECEIVE_CARDS:
+                {
+                	readReceiveCardsPacket(dis);
+                }
+                break;
+                
+                case PACKET_DECK_DISCARD_CARDS:
+                {
+                	readDiscardCardsPacket(dis);
+                }
+                break;
+
+                case PACKET_DECK_CLEAR_DECK:
+                {
+                	readClearDeckPacket(dis);
+                }
+                break;
 
                 default:
                 {
@@ -336,6 +385,16 @@ public class PacketManager
                 return "PACKET_PRIVATE_TEXT";
             case PACKET_POG_REORDER:
                 return "PACKET_POG_REORDER";
+            case PACKET_DECK_LIST:
+                return "PACKET_DECK_LIST";
+            case PACKET_DECK_REQUEST_CARDS:
+                return "PACKET_DECK_REQUEST_CARDS";
+            case PACKET_DECK_RECEIVE_CARDS:
+                return "PACKET_DECK_RECEIVE_CARDS";
+            case PACKET_DECK_CLEAR_DECK:
+                return "PACKET_DECK_CLEAR_DECK";
+            case PACKET_DECK_DISCARD_CARDS:
+                return "PACKET_DECK_DISCARD_CARDS";
             default:
                 return "PACKET_UNKNOWN";
         }
@@ -1515,6 +1574,237 @@ public class PacketManager
         }
     }
 
+    /* *********************** DECK LIST PACKET *********************************** */
+    public static byte[] makeDeckListPacket(List decks)
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_DECK_LIST); // packet type
+            dos.writeInt(decks.size()); // number of decks
+            for (int i=0 ; i<decks.size() ; i++ )
+            {
+            	Deck d = (Deck)decks.get(i);
+            	dos.writeUTF(d.m_name); // the name of this deck
+            }
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+    
+    public static void readDeckListPacket(DataInputStream dis)
+    {
+        try
+        {
+            int numDecks = dis.readInt();
+            String[] deckNames = new String[numDecks];
+            
+            for ( int i=0 ; i<deckNames.length ; i++ )
+            {
+            	deckNames[i] = dis.readUTF();
+            }
+
+            // tell the model
+            GametableFrame.getGametableFrame().deckListPacketReceived(deckNames);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+    
+    /* ********************* REQUEST CARDS PACKET *********************************** */
+    public static byte[] makeRequestCardsPacket(String deckName, int numCards)
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_DECK_REQUEST_CARDS); // packet type
+            dos.writeUTF(deckName); // the deck
+            dos.writeInt(numCards); // how many cards
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+    
+    public static void readRequestCardsPacket(Connection conn, DataInputStream dis)
+    {
+        try
+        {
+        	// note the deck we're after
+        	String deckName = dis.readUTF();
+        	
+        	// note how many cards have been requested
+        	int numCards = dis.readInt();
+        	
+            // tell the model
+            GametableFrame.getGametableFrame().requestCardsPacketReceived(conn, deckName, numCards);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }    
+    
+    /* ********************* RERECEIVE CARDS PACKET *********************************** */
+    public static byte[] makeReceiveCardsPacket(DeckData.Card cards[])
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_DECK_RECEIVE_CARDS); // packet type
+            dos.writeInt(cards.length); // how many cards
+            
+            // and now the cards
+            for ( int i=0 ; i<cards.length ; i++ )
+            {
+            	cards[i].write(dos);
+            }
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+    
+    public static void readReceiveCardsPacket(DataInputStream dis)
+    {
+        try
+        {
+        	// how many cards are there?
+        	int numCards = dis.readInt();
+        	
+        	// make the array
+        	DeckData.Card cards[] = new DeckData.Card[numCards];
+        	
+        	// read in all the cards
+            for ( int i=0 ; i<cards.length ; i++ )
+            {
+            	DeckData pointlessJavaLimitation = new DeckData();
+            	cards[i] = pointlessJavaLimitation.createBlankCard();
+            	cards[i].read(dis);
+            }
+        	
+            // tell the model
+            GametableFrame.getGametableFrame().receiveCards(cards);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+    
+    /* ********************* DISCARD CARDS PACKET *********************************** */
+    public static byte[] makeDiscardCardsPacket(String playerName, DeckData.Card cards[])
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_DECK_DISCARD_CARDS); // packet type
+            dos.writeUTF(playerName); // the player doing the discarding
+
+            dos.writeInt(cards.length); // how many cards
+            // and now the cards
+            for ( int i=0 ; i<cards.length ; i++ )
+            {
+            	cards[i].write(dos);
+            }
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+    
+    public static void readDiscardCardsPacket(DataInputStream dis)
+    {
+        try
+        {
+        	// who is discarding?
+        	String playerName = dis.readUTF();
+        	
+        	// how many cards are there?
+        	int numCards = dis.readInt();
+        	
+        	// make the array
+        	DeckData.Card cards[] = new DeckData.Card[numCards];
+        	
+        	// read in all the cards
+            for ( int i=0 ; i<cards.length ; i++ )
+            {
+            	DeckData pointlessJavaLimitation = new DeckData();
+            	cards[i] = pointlessJavaLimitation.createBlankCard();
+            	cards[i].read(dis);
+            }
+        	
+            // tell the model
+            GametableFrame.getGametableFrame().doDiscardCards(playerName, cards);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }        
+    
+    /* ********************* CLEAR DECK PACKET *********************************** */
+    public static byte[] makeClearDeckPacket(String deckName)
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_DECK_CLEAR_DECK); // packet type
+            dos.writeUTF(deckName); // the deck in question
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+    
+    public static void readClearDeckPacket(DataInputStream dis)
+    {
+        try
+        {
+        	// which deck?
+        	String deckName = dis.readUTF();
+
+        	// tell the model
+            GametableFrame.getGametableFrame().clearDeck(deckName);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }        
+    
     /* *********************** POG_SIZE PACKET *********************************** */
 
     public static byte[] makePogReorderPacket(Map changes)

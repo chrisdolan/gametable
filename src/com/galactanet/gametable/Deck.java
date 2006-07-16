@@ -16,6 +16,14 @@ class Deck
 	{
 	}
 	
+	public void initPlaceholderDeck(String name)
+	{
+		// this inits the deck as a placeholder.
+		m_name = name;
+		m_id = -1;
+		m_deckData = null; // this being null ensures that functional calls will throw exceptions
+	}
+	
 	public void init(DeckData deckData, int id, String name)
 	{
 		m_id = id;

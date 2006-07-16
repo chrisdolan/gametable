@@ -122,6 +122,26 @@ class DeckData
 			m_deckName = in.m_deckName;
 		}
 		
+		void write(DataOutputStream dos) throws IOException
+		{
+			dos.writeUTF(m_cardName);
+			dos.writeUTF(m_cardFile);
+			dos.writeUTF(m_cardDesc);
+			dos.writeUTF(m_deckName);
+			dos.writeInt(m_quantityInDeck);
+			dos.writeInt(m_cardId);
+		}
+		
+		void read(DataInputStream dis) throws IOException
+		{
+			m_cardName = dis.readUTF();
+			m_cardFile = dis.readUTF();
+			m_cardDesc = dis.readUTF();
+			m_deckName = dis.readUTF();
+			m_quantityInDeck = dis.readInt();
+			m_cardId = dis.readInt();
+		}
+		
 		String m_cardName; // "Jack of Clubs" 
 		String m_cardFile; // "j_club.png" 
 		String m_cardDesc; // "This is the Jack of Clubs!"

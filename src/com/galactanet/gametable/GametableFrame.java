@@ -94,7 +94,7 @@ public class GametableFrame extends JFrame implements ActionListener
      * The version of the communications protocal used by this build. This needs to change whenever an incompatibility
      * arises betwen versions.
      */
-    public final static int       COMM_VERSION             = 11;
+    public final static int       COMM_VERSION             = 12;
     public final static int       PING_INTERVAL            = 2500;
 
     public final static int       NETSTATE_NONE            = 0;
@@ -1144,8 +1144,6 @@ public class GametableFrame extends JFrame implements ActionListener
     }
 
     /**
-     * TODO: comment
-     * 
      * @return
      */
     public int getNewStateId()
@@ -1507,6 +1505,42 @@ public class GametableFrame extends JFrame implements ActionListener
 
         repaint();
     }
+    
+    public void deckListPacketReceived(String[] deckNames)
+    {
+    	// if we're the host, this is a packet we should never get
+    	if ( m_netStatus == NETSTATE_HOST )
+    	{
+    		throw new IllegalStateException("Host received deckListPacket.");
+    	}
+    	
+    	// set up out bogus decks to have the appropriate names
+    	m_decks.clear();
+    	
+    	for ( int i=0  ;i<deckNames.length ; i++ )
+    	{
+    		Deck bogusDeck = new Deck();
+    		bogusDeck.initPlaceholderDeck(deckNames[i]);
+    		m_decks.add(bogusDeck);
+    	}
+    }
+    
+    public void requestCardsPacketReceived(Connection conn, String deckName, int numCards)
+    {
+    	// the player at conn wants some cards
+    	DeckData.Card cards[] = getCards(deckName, numCards);
+    	
+    	if ( cards == null ) 
+    	{
+    		// there was a problem. Probably a race-condition thaty caused a
+    		// card request to get in after a deck was deleted. Just ignore this
+    		// packet.
+    		return;
+    	}
+    	
+    	// send that player his cards
+    	send(PacketManager.makeReceiveCardsPacket(cards), conn);
+	}
 
     /**
      * Finds the index of a given player.
@@ -1716,6 +1750,9 @@ public class GametableFrame extends JFrame implements ActionListener
 
         // let them know we're done sending them data from the login
         send(PacketManager.makeLoginCompletePacket(), player);
+        
+        // tell them the decks that are in play
+        sendDeckList();
     }
 
     public void sendCastInfo()
@@ -2838,8 +2875,11 @@ public class GametableFrame extends JFrame implements ActionListener
             deck.init(dd, 0, deckName);
             m_decks.add(deck);
             
+            
             // alert all players that this deck has been created
+            sendDeckList();
             postSystemMessage(getMyPlayer().getPlayerName()+" creates a new "+deckFileName+" deck named "+deckName);
+            
     	}
     	else if ( command.equals("destroy"))
     	{
@@ -2856,8 +2896,7 @@ public class GametableFrame extends JFrame implements ActionListener
         		return;
     		}
     		
-    		// TODO: Remove all cards from this deck from the other players' hands.
-        	
+    		
     		// remove the deck named words[2]
     		String deckName = words[2];
     		int toRemoveIdx = getDeckIdx(deckName);
@@ -2866,6 +2905,10 @@ public class GametableFrame extends JFrame implements ActionListener
     		{
     			// we can successfully destroy the deck
     			m_decks.remove(toRemoveIdx);
+
+    			// tell the players
+        		clearDeck(deckName);
+    			sendDeckList();
     	        postSystemMessage(getMyPlayer().getPlayerName()+" destroys the deck named "+deckName);
     		}
     		else
@@ -2902,8 +2945,7 @@ public class GametableFrame extends JFrame implements ActionListener
         	if ( operation.equals("all") )
         	{
         		// collect and shuffle all the cards in the deck. 
-        		// TODO: Remove the cards of this deck from other players' hands
-        		
+        		clearDeck(deckName); // let the other players know about the demise of those cards
         		deck.shuffleAll();
     	        postSystemMessage(getMyPlayer().getPlayerName()+" collects all the cards from the "+deckName+" deck from all players and shuffles them.");
     	        postSystemMessage(deckName+" has "+deck.cardsRemaining()+" cards.");
@@ -3077,9 +3119,8 @@ public class GametableFrame extends JFrame implements ActionListener
     {
     	if ( m_netStatus == NETSTATE_JOINED )
     	{
-    		// joiners send a rewquest for a card
-    		// TODO: send card request. The host will send
-    		// back a receivecards packet with the desired number of cards
+    		// joiners send a request for cards
+        	send(PacketManager.makeRequestCardsPacket(deckName, numToDraw));
     		return;
     	}
     	
@@ -3096,8 +3137,8 @@ public class GametableFrame extends JFrame implements ActionListener
     {
 		if ( m_netStatus == NETSTATE_JOINED )
 		{
-			// send off the discard notification
-			// TODO: send the discard packet
+			// send off the discard packet
+			send(PacketManager.makeDiscardCardsPacket(getMyPlayer().getPlayerName(), discards));
 		}
 		else
 		{
@@ -3148,6 +3189,29 @@ public class GametableFrame extends JFrame implements ActionListener
         		postSystemMessage("---"+discards[i].m_cardName);
     		}
     	}
+    }
+    
+    // when called, all the cards you had from a give deck disappear
+    public void clearDeck(String deckName)
+    {
+    	// if you're the host, send out the packet to tell everyone to
+    	// clear their decks. If you're a joiner, don't. Either way
+    	// clear out your own hand of the offending cards
+    	if ( m_netStatus == NETSTATE_HOST )
+    	{
+    		send(PacketManager.makeClearDeckPacket(deckName));
+    	}
+    	
+    	for ( int i=0 ; i<m_cards.size() ; i++ )
+    	{
+    		DeckData.Card card = (DeckData.Card)m_cards.get(i);
+    		if ( card.m_deckName.equals(deckName))
+    		{
+    			// this card has to go.
+    			m_cards.remove(i);
+    			i--; // to keep up with the changed list
+    		}
+   		}
     }
     
     public Deck getDeck(String name)
@@ -3232,6 +3296,11 @@ public class GametableFrame extends JFrame implements ActionListener
         logSystemMessage("---/deck /discard [cardID]: Discard a card. A card's ID can be seen by using /hand.");
         logSystemMessage("---/deck /discard all: Discard all cards that you have.");
         logSystemMessage("---/deck decklist: Lists all the decks in play.");
+    }
+    
+    void sendDeckList()
+    {
+        send(PacketManager.makeDeckListPacket(m_decks));
     }
 
     public void savePrefs()
