@@ -17,7 +17,7 @@ import javax.swing.UIManager;
  */
 public class GametableApp
 {
-    public static final String  VERSION      = "Gametable v1.2-pre5";
+    public static final String  VERSION      = "Gametable v1.3 pre-1";
     private static final String SYS_LOG_FILE = "gt.sys.log";
     private static final String NET_LOG_FILE = "gt.net.log";
 
