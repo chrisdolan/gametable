@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+
+<deck>
+	<card name="A-Spades" qty="1" />
+	<card name="2-Spades" qty="1" />
+	<card name="3-Spades" qty="1" />
+	<card name="4-Spades" qty="1" />
+	<card name="5-Spades" qty="1" />
+	<card name="6-Spades" qty="1" />
+	<card name="7-Spades" qty="1" />
+	<card name="8-Spades" qty="1" />
+	<card name="9-Spades" qty="1" />
+	<card name="10-Spades" qty="1" />
+	<card name="J-Spades" qty="1" />
+	<card name="Q-Spades" qty="1" />
+	<card name="K-Spades" qty="1" />
+	<card name="A-Hearts" qty="1" />
+	<card name="2-Hearts" qty="1" />
+	<card name="3-Hearts" qty="1" />
+	<card name="4-Hearts" qty="1" />
+	<card name="5-Hearts" qty="1" />
+	<card name="6-Hearts" qty="1" />
+	<card name="7-Hearts" qty="1" />
+	<card name="8-Hearts" qty="1" />
+	<card name="9-Hearts" qty="1" />
+	<card name="10-Hearts" qty="1" />
+	<card name="J-Hearts" qty="1" />
+	<card name="Q-Hearts" qty="1" />
+	<card name="K-Hearts" qty="1" />
+	<card name="A-Diamonds" qty="1" />
+	<card name="2-Diamonds" qty="1" />
+	<card name="3-Diamonds" qty="1" />
+	<card name="4-Diamonds" qty="1" />
+	<card name="5-Diamonds" qty="1" />
+	<card name="6-Diamonds" qty="1" />
+	<card name="7-Diamonds" qty="1" />
+	<card name="8-Diamonds" qty="1" />
+	<card name="9-Diamonds" qty="1" />
+	<card name="10-Diamonds" qty="1" />
+	<card name="J-Diamonds" qty="1" />
+	<card name="Q-Diamonds" qty="1" />
+	<card name="K-Diamonds" qty="1" />
+	<card name="A-Clubs" qty="1" />
+	<card name="2-Clubs" qty="1" />
+	<card name="3-Clubs" qty="1" />
+	<card name="4-Clubs" qty="1" />
+	<card name="5-Clubs" qty="1" />
+	<card name="6-Clubs" qty="1" />
+	<card name="7-Clubs" qty="1" />
+	<card name="8-Clubs" qty="1" />
+	<card name="9-Clubs" qty="1" />
+	<card name="10-Clubs" qty="1" />
+	<card name="J-Clubs" qty="1" />
+	<card name="Q-Clubs" qty="1" />
+	<card name="K-Clubs" qty="1" />
+</deck>
