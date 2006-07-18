@@ -1242,7 +1242,33 @@ public class GametableFrame extends JFrame implements ActionListener
     		logSystemMessage(toPost);
     	}
     	
-    	// everyone that you drew some cards
+
+    	/* --- DISABLED to ensure the build is stable.
+    	// also, all of these cards get added as pogs to your private layer
+    	// if a filename was specified for them.
+    	for ( int i=0 ; i<cards.length ; i++ )
+    	{
+    		if ( cards[i].m_cardFile.length() > 0 )
+    		{
+    			// a file name was specified
+    			// make the pog we'll be needing
+    			PogType type = new PogType("pogs" + UtilityFunctions.LOCAL_SEPARATOR + cards[i].m_cardFile, 1, false);
+    			Pog newPog = new Pog(type);
+    			
+    			// put it on the private layer
+    			GametableMap privateLayer = m_gametableCanvas.getPrivateMap(); 
+    			newPog.setPosition(privateLayer.getScrollX(), privateLayer.getScrollY());
+
+    			// note that we set it to the private layer and leave it there.
+    			// this is because if they drew a card, we want to direct their
+    			// attention to the private layer.
+    			m_gametableCanvas.setActiveMap(privateLayer);
+    			m_gametableCanvas.addCardPog(newPog);
+    		}
+    	}
+    	*/
+    	
+    	// tell everyone that you drew some cards
     	if ( cards.length == 1 )
     	{
     		postSystemMessage(getMyPlayer().getPlayerName()+" draws from the "+cards[0].m_deckName+" deck.");
@@ -1252,7 +1278,6 @@ public class GametableFrame extends JFrame implements ActionListener
     		postSystemMessage(getMyPlayer().getPlayerName()+" draws "+cards.length+ " cards from the "+cards[0].m_deckName+" deck.");
     	}
     	
-    	// tell the player what he got
     }
 
     public void loginCompletePacketReceived()

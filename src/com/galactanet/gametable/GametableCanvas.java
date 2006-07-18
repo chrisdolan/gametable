@@ -1173,6 +1173,15 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         }
     }
 
+    public void addCardPog(Pog toAdd)
+    {
+    	// TODO -- Set a flag in the Pog that denotes it as a Card Pog
+        toAdd.assignUniqueId();
+        m_privateMap.addPog(toAdd);
+        m_gametableFrame.refreshActivePogList();
+        repaint();
+    }
+
     public void doAddPog(Pog toAdd)
     {
         getActiveMap().addPog(toAdd);
