@@ -103,7 +103,7 @@ public class DeckSaxHandler extends DefaultHandler
         else if (name.equals(ELEMENT_CARD))
         {
             // make a card. This will receive all the data
-            DeckData.Card card = m_deckData.createBlankCard();
+            DeckData.Card card = DeckData.createBlankCard();
 
             String cardName = attributes.getValue(ATTRIBUTE_NAME);
             if (cardName == null)

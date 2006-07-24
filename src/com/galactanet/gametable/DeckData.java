@@ -73,7 +73,13 @@ class DeckData
 		throw new IllegalArgumentException("DeckData.getCardType():"+cardNum);
 	}
 	
-	public Card createBlankCard()
+	public static Card createBlankCard()
+	{
+		DeckData dd = new DeckData();
+		return dd.doCreateBlankCard();
+	}
+
+	private Card doCreateBlankCard()
 	{
 		return new Card();
 	}
@@ -96,6 +102,7 @@ class DeckData
 			m_numCards += cardType.m_quantityInDeck;
 		}
 	}
+	
 	
 	/*************************** INNER CLASS ************************/
 	// this is a type of card. There could be 50 of a given card
@@ -120,6 +127,22 @@ class DeckData
 			m_quantityInDeck = in.m_quantityInDeck;
 			m_cardId = in.m_cardId;
 			m_deckName = in.m_deckName;
+		}
+		
+		public Card makeCopy()
+		{
+			Card ret = new Card();
+			ret.copy(this);
+			return ret;
+		}
+		
+		public boolean equals(Card in)
+		{
+			// we are "equal" to another card if we came from the
+			// same deck and have the same id
+			if ( !in.m_cardName.equals(m_cardName) ) return false;
+			if ( in.m_cardId != m_cardId ) return false;
+			return true;
 		}
 		
 		void write(DataOutputStream dos) throws IOException

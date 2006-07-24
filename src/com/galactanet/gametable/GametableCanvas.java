@@ -1114,12 +1114,17 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     public void removePog(int id)
     {
+    	removePog(id, true);
+    }
+    
+    public void removePog(int id, boolean bDiscardCards)
+    {
         int removeArray[] = new int[1];
         removeArray[0] = id;
-        removePogs(removeArray);
+        removePogs(removeArray, bDiscardCards);
     }
 
-    public void removePogs(int ids[])
+    public void removePogs(int ids[], boolean bDiscardCards)
     {
         if (isPublicMap())
         {
@@ -1127,20 +1132,51 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
             if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
             {
-                doRemovePogs(ids);
+                doRemovePogs(ids, bDiscardCards);
             }
         }
         else
         {
-            doRemovePogs(ids);
+            doRemovePogs(ids, bDiscardCards);
         }
     }
 
-    public void doRemovePogs(int ids[])
+    public void doRemovePogs(int ids[], boolean bDiscardCards)
     {
+    	// make a list of all the pogs that are cards
+    	List cardsList = new ArrayList();
+    	
+    	if ( bDiscardCards )
+    	{
+	        for (int i = 0; i < ids.length; i++)
+	        {
+	            Pog toRemove = getActiveMap().getPogByID(ids[i]);
+	            if ( toRemove.isCardPog() )
+	            {
+	            	DeckData.Card card = toRemove.getCard();
+	            	cardsList.add(card);
+	            }
+	        }
+    	}
+        
+    	// remove all the offending pogs
         for (int i = 0; i < ids.length; i++)
         {
             doRemovePog(ids[i]);
+        }
+
+        if ( bDiscardCards )
+        {
+	        // now remove the offending cards
+	        if ( cardsList.size() > 0 )
+	        {
+		    	DeckData.Card cards[] = new DeckData.Card[cardsList.size()];
+		    	for ( int i=0 ; i<cards.length ; i++ )
+		    	{
+		    		cards[i] = (DeckData.Card)cardsList.get(i);
+		    	}
+		    	m_gametableFrame.discardCards(cards);
+	        }
         }
     }
 
@@ -1164,27 +1200,41 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
             if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
             {
-                doAddPog(toAdd);
+                doAddPog(toAdd, true);
             }
         }
         else
         {
-            doAddPog(toAdd);
+            doAddPog(toAdd, false);
         }
+    }
+    
+    public void removeCardPogsForCards(DeckData.Card discards[])
+    {
+    	// distribute this to each layer
+    	m_privateMap.removeCardPogsForCards(discards);
+    	m_publicMap.removeCardPogsForCards(discards);
+    	
+        m_gametableFrame.refreshActivePogList();
+        repaint();
     }
 
     public void addCardPog(Pog toAdd)
     {
-    	// TODO -- Set a flag in the Pog that denotes it as a Card Pog
         toAdd.assignUniqueId();
         m_privateMap.addPog(toAdd);
         m_gametableFrame.refreshActivePogList();
         repaint();
     }
 
-    public void doAddPog(Pog toAdd)
+    public void doAddPog(Pog toAdd, boolean bPublicLayerPog)
     {
-        getActiveMap().addPog(toAdd);
+    	GametableMap map = m_privateMap;
+    	if ( bPublicLayerPog )
+    	{
+    		map = m_publicMap;
+    	}
+    	map.addPog(toAdd);
         m_gametableFrame.refreshActivePogList();
         repaint();
     }

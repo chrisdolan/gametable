@@ -129,6 +129,38 @@ public class GametableMap
         m_pogs.remove(pog);
         m_orderedPogs.remove(pog);
     }
+    
+    public void removeCardPogsForCards(DeckData.Card discards[])
+    {
+    	List removeList = new ArrayList();
+    	
+    	for ( int i=0 ; i<m_pogs.size() ; i++ )
+    	{
+    		Pog pog = (Pog)m_pogs.get(i);
+    		if ( pog.isCardPog() )
+    		{
+    			DeckData.Card pogCard = pog.getCard();
+    			// this is a card pog. Is it oue of the discards?
+    			for ( int j=0 ; j<discards.length ; j++ )
+    			{
+    				if ( pogCard.equals(discards[j]))
+    				{
+						// it's the pog for this card
+						removeList.add(pog);
+    				}
+    			}
+    		}
+    	}
+
+    	// remove any offending pogs
+    	if ( removeList.size() > 0 )
+    	{
+    		for ( int i=0 ; i<removeList.size() ; i++ )
+    		{
+    			removePog((Pog)removeList.get(i));
+    		}
+    	}
+    }
 
     public void clearPogs()
     {

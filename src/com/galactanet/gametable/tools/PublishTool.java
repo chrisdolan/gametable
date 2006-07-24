@@ -190,7 +190,7 @@ public class PublishTool extends NullTool
                     Pog pog = m_canvas.getActiveMap().getPog(i);
                     if (pog.isTinted())
                     {
-                        m_canvas.removePog(pog.getId());
+                        m_canvas.removePog(pog.getId(), false); 
                         i--;
                     }
                 }

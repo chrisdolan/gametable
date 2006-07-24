@@ -1242,31 +1242,14 @@ public class GametableFrame extends JFrame implements ActionListener
     		logSystemMessage(toPost);
     	}
     	
-
-    	/* --- DISABLED to ensure the build is stable.
-    	// also, all of these cards get added as pogs to your private layer
-    	// if a filename was specified for them.
-    	for ( int i=0 ; i<cards.length ; i++ )
+    	// make sure we're on the private layer
+    	if ( m_gametableCanvas.getActiveMap() != m_gametableCanvas.getPrivateMap() )
     	{
-    		if ( cards[i].m_cardFile.length() > 0 )
-    		{
-    			// a file name was specified
-    			// make the pog we'll be needing
-    			PogType type = new PogType("pogs" + UtilityFunctions.LOCAL_SEPARATOR + cards[i].m_cardFile, 1, false);
-    			Pog newPog = new Pog(type);
-    			
-    			// put it on the private layer
-    			GametableMap privateLayer = m_gametableCanvas.getPrivateMap(); 
-    			newPog.setPosition(privateLayer.getScrollX(), privateLayer.getScrollY());
-
-    			// note that we set it to the private layer and leave it there.
-    			// this is because if they drew a card, we want to direct their
-    			// attention to the private layer.
-    			m_gametableCanvas.setActiveMap(privateLayer);
-    			m_gametableCanvas.addCardPog(newPog);
-    		}
+    		// we call toggleLayer rather than setActiveMap because
+    		// toggleLayer cleanly deals with drags in action and other
+    		// interrupted actions. 
+    		toggleLayer();
     	}
-    	*/
     	
     	// tell everyone that you drew some cards
     	if ( cards.length == 1 )
@@ -1428,7 +1411,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
     public void removePogsPacketReceived(int ids[])
     {
-        getGametableCanvas().doRemovePogs(ids);
+        getGametableCanvas().doRemovePogs(ids, false);
 
         if (m_netStatus == NETSTATE_HOST)
         {
@@ -1437,9 +1420,9 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
-    public void addPogPacketReceived(Pog pog)
+    public void addPogPacketReceived(Pog pog, boolean bPublicLayerPog)
     {
-        getGametableCanvas().doAddPog(pog);
+        getGametableCanvas().doAddPog(pog, bPublicLayerPog);
 
         // update the next pog id if necessary
         if (pog.getId() >= Pog.g_nextId)
@@ -1550,8 +1533,38 @@ public class GametableFrame extends JFrame implements ActionListener
     	}
     }
     
+    // makes a card pog out of the sent in card
+    public Pog makeCardPog(DeckData.Card card)
+    {
+    	// there might not be a pog associated with this card
+    	if ( card.m_cardFile.length() == 0 )
+    	{
+    		return null;
+    	}
+    	
+    	PogType newPogType = getPogLibrary().getPog("pogs" + UtilityFunctions.LOCAL_SEPARATOR + card.m_cardFile);
+    	
+    	// there could be a problem with the deck definition. It's an easy mistake
+    	// to make. So rather than freak out, we just return null.
+    	if ( newPogType == null ) 
+   		{
+    		return null;
+   		}
+    	
+    	Pog newPog = new Pog(newPogType);
+    	
+    	// make it a card pog
+    	newPog.makeCardPog(card);
+    	return newPog;
+    }
+    
     public void requestCardsPacketReceived(Connection conn, String deckName, int numCards)
     {
+    	if ( m_netStatus != NETSTATE_HOST )
+    	{
+    		// this shouldn't happen
+    		throw new IllegalStateException("Non-host had a call to requestCardsPacketReceived");
+    	}
     	// the player at conn wants some cards
     	DeckData.Card cards[] = getCards(deckName, numCards);
     	
@@ -1565,6 +1578,21 @@ public class GametableFrame extends JFrame implements ActionListener
     	
     	// send that player his cards
     	send(PacketManager.makeReceiveCardsPacket(cards), conn);
+    	
+    	// also, we need to send that player the pogs for each of those cards
+    	for ( int i=0 ; i<cards.length ; i++ )
+    	{
+    		Pog newPog = makeCardPog(cards[i]);
+    		newPog.assignUniqueId();
+    		
+    		if ( newPog != null )
+    		{
+		    	// make a pog packet, saying this pog should go to the PRIVATE LAYER,
+		    	// then send it to that player. Note that we don't add it to
+		    	// our own layer.
+		    	send(PacketManager.makeAddPogPacket(newPog, false), conn);
+    		}
+    	}
 	}
 
     /**
@@ -1996,7 +2024,7 @@ public class GametableFrame extends JFrame implements ActionListener
             removeArray[i] = pog.getId();
         }
 
-        getGametableCanvas().removePogs(removeArray);
+        getGametableCanvas().removePogs(removeArray, true);
     }
 
     public void eraseAll()
@@ -3079,7 +3107,6 @@ public class GametableFrame extends JFrame implements ActionListener
     			{
     				discards[i] = (DeckData.Card)m_cards.get(i);
     			}
-    			m_cards.clear();
     		}
     		else
     		{
@@ -3108,7 +3135,6 @@ public class GametableFrame extends JFrame implements ActionListener
 				}
     			discards = new DeckData.Card[1];
     			discards[0] = (DeckData.Card)m_cards.get(idx);
-    			m_cards.remove(idx);
     		}
     		
     		// now we have the discards[] filled with the cards to be
@@ -3155,6 +3181,17 @@ public class GametableFrame extends JFrame implements ActionListener
     	if ( drawnCards != null )
     	{
     		receiveCards(drawnCards);
+    		
+    		// also, we need to add the desired cards to our own private layer
+    		for ( int i=0 ; i<drawnCards.length ; i++ )
+    		{
+    			Pog cardPog = makeCardPog(drawnCards[i]);
+    			if ( cardPog != null )
+    			{
+    				// add this pog card to our own private layer
+    				m_gametableCanvas.addCardPog(cardPog);
+    			}
+    		}
     	}
     }
     
@@ -3165,9 +3202,25 @@ public class GametableFrame extends JFrame implements ActionListener
 			// send off the discard packet
 			send(PacketManager.makeDiscardCardsPacket(getMyPlayer().getPlayerName(), discards));
 		}
-		else
+		else if ( m_netStatus == NETSTATE_HOST )
 		{
 			doDiscardCards(getMyPlayer().getPlayerName(), discards);
+		}
+		
+		// and in either case, we remove the cards from ourselves.
+		for ( int i=0 ; i<m_cards.size() ; i++ )
+		{
+			DeckData.Card handCard = (DeckData.Card)m_cards.get(i);
+			for ( int j=0 ; j<discards.length ; j++ )
+			{
+				if (handCard.equals(discards[j]))
+				{
+					// we need to dump this card
+					m_cards.remove(i);
+					i--; // to keep up with the iteration
+					break;
+				}
+			}
 		}
     }
     
@@ -3200,6 +3253,9 @@ public class GametableFrame extends JFrame implements ActionListener
     			deck.discard(discards[i]);
     		}
     	}
+    	
+    	// finally, remove any card pogs that are hanging around based on these cards
+    	m_gametableCanvas.removeCardPogsForCards(discards);
     	
     	// tell everyone about the cards that got discarded
     	if ( discards.length == 1 )

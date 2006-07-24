@@ -131,6 +131,10 @@ public class Pog implements Comparable
      * Name/value pairs of the attributes assigned to this pog.
      */
     private Map             m_attributes           = new TreeMap();
+    
+    // null in most cases. If it's not null, it's a 
+    // card in a deck
+    private DeckData.Card 		m_card;
 
     // a special kind of hack-ish value that will cause a pog
     // to set itself to not be loaded if the values for it are
@@ -175,6 +179,21 @@ public class Pog implements Comparable
         // boolean underlay =
         dis.readBoolean();
         m_scale = dis.readFloat();
+        
+        // read in the card info, if any
+        boolean bCardExists = dis.readBoolean();
+        if ( bCardExists )
+        {
+        	m_card = DeckData.createBlankCard();
+        	m_card.read(dis);
+        }
+        else
+        {
+        	// no card 
+        	m_card = null;
+        }
+
+        
         int numAttributes = dis.readInt();
         m_attributes.clear();
         for (int i = 0; i < numAttributes; i++)
@@ -211,6 +230,17 @@ public class Pog implements Comparable
         m_canvas = orig.m_canvas;
         m_scale = orig.m_scale;
         m_text = orig.m_text;
+
+        if ( orig.m_card == null )
+        {
+        	m_card = orig.m_card;
+        }
+        else
+        {
+        	m_card = DeckData.createBlankCard();
+        	m_card.copy(orig.m_card);
+        }
+        
         for (Iterator iterator = orig.m_attributes.values().iterator(); iterator.hasNext();)
         {
             Attribute attribute = (Attribute)iterator.next();
@@ -223,6 +253,47 @@ public class Pog implements Comparable
     {
         m_pogType = type;
         m_canvas = canvas;
+    }
+    
+    /************************** CARD POG STUFF *******************************/
+    public void makeCardPog(DeckData.Card card)
+    {
+    	// note the card info. We copy it, so we aren't affected
+    	// by future changes to this card instance.
+    	m_card = card.makeCopy();
+    	
+    	/*
+    	Commented out because these attributes become
+    	really annoying in play. They pop up whenever the
+    	mouse is over the card and it's irritating.
+    	// set the appropriate attributes
+    	if ( card.m_cardName.length() > 0 )
+    	{
+    		m_text = card.m_cardName;
+    	}
+    	if ( card.m_cardDesc.length() > 0 )
+    	{
+    		setAttribute("Desc", card.m_cardDesc);
+    	}
+    	if ( card.m_deckName.length() > 0 )
+    	{
+    		setAttribute("Deck", card.m_deckName);
+    	}
+    	*/
+    }
+    
+    public boolean isCardPog()
+    {
+    	if ( m_card == null )
+    	{
+    		return false;
+    	}
+    	return true;
+    }
+    
+    public DeckData.Card getCard()
+    {
+    	return m_card;
     }
 
     public void assignUniqueId()
@@ -518,6 +589,18 @@ public class Pog implements Comparable
         dos.writeUTF(m_text);
         dos.writeBoolean(isUnderlay());
         dos.writeFloat(m_scale);
+        
+        // write out the card info, if any
+        if ( m_card != null )
+        {
+        	dos.writeBoolean(true); // we have a valid card
+        	m_card.write(dos);
+        }
+        else
+        {
+        	dos.writeBoolean(false); // no card info
+        }
+        
         dos.writeInt(m_attributes.size());
         for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
         {

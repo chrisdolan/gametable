@@ -705,8 +705,13 @@ public class PacketManager
     }
 
     /* *********************** ADDPOG PACKET *********************************** */
-
+    // calls for the pog to be added to the public layer 
     public static byte[] makeAddPogPacket(Pog pog)
+    {
+    	return makeAddPogPacket(pog, true);
+    }
+    
+    public static byte[] makeAddPogPacket(Pog pog, boolean bPublicLayerPog)
     {
         try
         {
@@ -714,6 +719,7 @@ public class PacketManager
             DataOutputStream dos = new DataOutputStream(baos);
 
             dos.writeInt(PACKET_ADDPOG); // type
+            dos.writeBoolean(bPublicLayerPog); //layer
             pog.writeToPacket(dos);
 
             return baos.toByteArray();
@@ -729,6 +735,8 @@ public class PacketManager
     {
         try
         {
+            boolean bPublicLayerPog = dis.readBoolean(); //layer. true = public. false = private
+
             Pog pog = new Pog(dis);
             if ( pog.m_bStillborn )
             {
@@ -745,7 +753,7 @@ public class PacketManager
 
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
-            gtFrame.addPogPacketReceived(pog);
+            gtFrame.addPogPacketReceived(pog, bPublicLayerPog);
         }
         catch (IOException ex)
         {
@@ -1698,8 +1706,7 @@ public class PacketManager
         	// read in all the cards
             for ( int i=0 ; i<cards.length ; i++ )
             {
-            	DeckData pointlessJavaLimitation = new DeckData();
-            	cards[i] = pointlessJavaLimitation.createBlankCard();
+            	cards[i] = DeckData.createBlankCard();
             	cards[i].read(dis);
             }
         	
@@ -1755,8 +1762,7 @@ public class PacketManager
         	// read in all the cards
             for ( int i=0 ; i<cards.length ; i++ )
             {
-            	DeckData pointlessJavaLimitation = new DeckData();
-            	cards[i] = pointlessJavaLimitation.createBlankCard();
+            	cards[i] = DeckData.createBlankCard();
             	cards[i].read(dis);
             }
         	
