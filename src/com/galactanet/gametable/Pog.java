@@ -116,6 +116,8 @@ public class Pog implements Comparable
      * Scale for this pog.
      */
     private float           m_scale                = 1f;
+    
+    private double          m_angle                = 0.;
 
     /**
      * Is this pog tinted?
@@ -179,6 +181,7 @@ public class Pog implements Comparable
         // boolean underlay =
         dis.readBoolean();
         m_scale = dis.readFloat();
+        m_angle = dis.readDouble();
         
         // read in the card info, if any
         boolean bCardExists = dis.readBoolean();
@@ -229,6 +232,7 @@ public class Pog implements Comparable
         m_pogType = orig.m_pogType;
         m_canvas = orig.m_canvas;
         m_scale = orig.m_scale;
+        m_angle = orig.m_angle;
         m_text = orig.m_text;
 
         if ( orig.m_card == null )
@@ -333,20 +337,20 @@ public class Pog implements Comparable
     {
         if (m_scale == 1f)
         {
-            return m_pogType.getWidth();
+            return m_pogType.getWidth(m_angle);
         }
 
-        return Math.round(m_pogType.getWidth() * m_scale);
+        return Math.round(m_pogType.getWidth(m_angle) * m_scale);
     }
 
     public int getHeight()
     {
         if (m_scale == 1f)
         {
-            return m_pogType.getHeight();
+            return m_pogType.getHeight(m_angle);
         }
 
-        return Math.round(m_pogType.getHeight() * m_scale);
+        return Math.round(m_pogType.getHeight(m_angle) * m_scale);
     }
 
     public boolean isUnderlay()
@@ -392,13 +396,18 @@ public class Pog implements Comparable
             return m_pogType.getFaceSize();
         }
 
-        return Math.max(Math.round(Math.max(m_pogType.getWidth(), m_pogType.getHeight()) * m_scale
+        return Math.max(Math.round(Math.max(m_pogType.getWidth(m_angle), m_pogType.getHeight(m_angle)) * m_scale
             / GametableCanvas.BASE_SQUARE_SIZE), 1);
+    }
+    
+    public double getAngle()
+    {
+        return m_angle;
     }
 
     public boolean testHit(Point modelPoint)
     {
-        return m_pogType.testHit(modelToPog(modelPoint));
+        return m_pogType.testHit(modelToPog(modelPoint), m_angle);
     }
 
     public boolean testHit(int modelX, int modelY)
@@ -493,7 +502,7 @@ public class Pog implements Comparable
         }
 
         float targetDimension = GametableCanvas.BASE_SQUARE_SIZE * faceSize;
-        float maxDimension = Math.max(getPogType().getWidth(), getPogType().getHeight());
+        float maxDimension = Math.max(getPogType().getWidth(m_angle), getPogType().getHeight(m_angle));
         if (maxDimension == 0)
         {
             throw new ArithmeticException("Zero sized pog dimension: " + this);
@@ -501,6 +510,11 @@ public class Pog implements Comparable
         m_scale = targetDimension / maxDimension;
     }
 
+    public void setAngle(double angle)
+    {
+        m_angle = angle;
+    }
+    
     /**
      * @return A vector to adjust the drag position when snapping for odd-sized pogs.
      */
@@ -529,7 +543,7 @@ public class Pog implements Comparable
         // we have to work with ratios, cause the pog could be large or huge, gargantuan, etc.
         float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
             / (float)GametableCanvas.BASE_SQUARE_SIZE;
-        m_pogType.drawScaled(g, x, y, scale * m_scale);
+        m_pogType.drawScaled(g, x, y, scale * m_scale, m_angle);
     }
 
     public void drawGhostlyToCanvas(Graphics g)
@@ -547,12 +561,12 @@ public class Pog implements Comparable
         float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
             / (float)GametableCanvas.BASE_SQUARE_SIZE;
 
-        m_pogType.drawScaled(g, drawCoords.x, drawCoords.y, scale * m_scale);
+        m_pogType.drawScaled(g, drawCoords.x, drawCoords.y, scale * m_scale, m_angle);
 
         // if we're tinted, draw tinted
         if (m_bTinted)
         {
-            m_pogType.drawTint(g, drawCoords.x, drawCoords.y, scale * m_scale, Color.GREEN);
+            m_pogType.drawTint(g, drawCoords.x, drawCoords.y, scale * m_scale, Color.GREEN, m_angle);
         }
     }
 
@@ -589,6 +603,7 @@ public class Pog implements Comparable
         dos.writeUTF(m_text);
         dos.writeBoolean(isUnderlay());
         dos.writeFloat(m_scale);
+        dos.writeDouble(m_angle);
         
         // write out the card info, if any
         if ( m_card != null )

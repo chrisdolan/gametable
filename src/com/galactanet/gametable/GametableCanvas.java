@@ -746,11 +746,13 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         return viewToModel(new Point(viewX, viewY));
     }
 
+    /* 
+     * Modified to accomodate grid distance factor 
+     */
     public double modelToSquares(double m)
     {
-        return (m / BASE_SQUARE_SIZE);
+        return (m_gametableFrame.grid_multiplier * m / BASE_SQUARE_SIZE);
     }
-
     public void tick(long ms)
     {
         if (m_scrolling)
@@ -1095,6 +1097,23 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         }
     }
 
+    public void rotatePog(int id, double newAngle)
+    {
+        if (isPublicMap())
+        {
+            m_gametableFrame.send(PacketManager.makeRotatePogPacket(id, newAngle));
+
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
+            {
+                doRotatePog(id, newAngle);
+            }
+        }
+        else
+        {
+            doRotatePog(id, newAngle);
+        }
+    }
+
     public void doMovePog(int id, int newX, int newY)
     {
         Pog toMove = getActiveMap().getPogByID(id);
@@ -1108,6 +1127,23 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         // this pog moves to the end of the array
         getActiveMap().removePog(toMove);
         getActiveMap().addPog(toMove);
+
+        repaint();
+    }
+
+    public void doRotatePog(int id, double newAngle)
+    {
+        Pog toRotate = getActiveMap().getPogByID(id);
+        if (toRotate == null)
+        {
+            return;
+        }
+
+        toRotate.setAngle(newAngle);
+
+        // this pog moves to the end of the array
+        getActiveMap().removePog(toRotate);
+        getActiveMap().addPog(toRotate);
 
         repaint();
     }

@@ -368,6 +368,89 @@ public class PointerTool extends NullTool
 
         menu.add(sizeMenu);
 
+        JMenu rotateMenu = new JMenu("Rotation");
+        item = new JMenuItem("0");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                m_canvas.rotatePog(m_menuPog.getId(), 0);
+            }
+        });
+        rotateMenu.add(item);
+
+        item = new JMenuItem("60");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                m_canvas.rotatePog(m_menuPog.getId(), 60);
+            }
+        });
+        rotateMenu.add(item);
+
+        item = new JMenuItem("90");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                m_canvas.rotatePog(m_menuPog.getId(), 90);
+            }
+        });
+        
+        rotateMenu.add(item);
+        item = new JMenuItem("120");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                m_canvas.rotatePog(m_menuPog.getId(), 120);
+            }
+        });
+        rotateMenu.add(item);
+
+        item = new JMenuItem("180");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                m_canvas.rotatePog(m_menuPog.getId(), 180);
+            }
+        });
+        rotateMenu.add(item);
+
+        item = new JMenuItem("240");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                m_canvas.rotatePog(m_menuPog.getId(), 240);
+            }
+        });
+        rotateMenu.add(item);
+
+        item = new JMenuItem("270");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                m_canvas.rotatePog(m_menuPog.getId(), 270);
+            }
+        });
+        rotateMenu.add(item);
+        
+        item = new JMenuItem("300");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                m_canvas.rotatePog(m_menuPog.getId(), 300);
+            }
+        });
+        rotateMenu.add(item);
+
+        menu.add(rotateMenu);
+
         Point mousePosition = m_canvas.modelToView(x, y);
         menu.show(m_canvas, mousePosition.x, mousePosition.y);
     }

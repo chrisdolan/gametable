@@ -51,7 +51,7 @@ public class ChatLogPane extends JEditorPane
     private static final Font  FONT_ROLLOVER       = Font.decode("sans-12");
     private static final Color COLOR_ROLLOVER      = new Color(0xFF, 0xFF, 0x7F, 0xAF);
 
-    private static final int   MAX_ENTRIES         = 2000;
+    private static final int   MAX_ENTRIES         = 1000;
 
     // --- Types -----------------------------------------------------------------------------------------------------
 
@@ -227,7 +227,7 @@ public class ChatLogPane extends JEditorPane
             }
         });
 
-        addText("Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>.");
+        addText("<br>Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>.");
     }
 
     // --- Methods ---------------------------------------------------------------------------------------------------
@@ -279,6 +279,7 @@ public class ChatLogPane extends JEditorPane
         for (int i = 0, size = entryArray.length; i < size; ++i)
         {
             entries.add(entryArray[i]);
+            Log.log(Log.PLAY, entryArray[i]+"<br>");
         }
 
         boolean set = false;

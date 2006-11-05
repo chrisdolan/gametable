@@ -35,6 +35,11 @@ public class Log
      */
     public static final int         NET               = 1;
 
+    /**
+     * The logging context for play output.
+     */
+    public static final int         PLAY               = 2;
+
     // --- Constants ---
 
     private static final String     DIVIDER           = " *************************";
@@ -118,6 +123,8 @@ public class Log
                 return "SYS";
             case NET:
                 return "NET";
+            case PLAY:
+            	return "PLAY";
             default:
                 return "UNKNOWN";
         }

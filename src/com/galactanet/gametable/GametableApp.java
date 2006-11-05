@@ -20,6 +20,7 @@ public class GametableApp
     public static final String  VERSION      = "Gametable v1.3 pre-1";
     private static final String SYS_LOG_FILE = "gt.sys.log";
     private static final String NET_LOG_FILE = "gt.net.log";
+    private static final String PLAY_LOG_FILE = "gt.play.html";
 
     /**
      * Main method
@@ -34,6 +35,7 @@ public class GametableApp
             System.setProperty("java.protocol.handler.pkgs","com.galactanet.gametable.protocol");
             Log.initializeLog(Log.SYS, SYS_LOG_FILE);
             Log.initializeLog(Log.NET, NET_LOG_FILE);
+            Log.initializeLog(Log.PLAY, PLAY_LOG_FILE);
             Log.log(Log.SYS, VERSION);
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             Toolkit.getDefaultToolkit().setDynamicLayout(true);

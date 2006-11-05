@@ -125,13 +125,15 @@ public class RulerTool extends NullTool
                 Graphics2D g3 = (Graphics2D)g.create();
                 g3.setFont(Font.decode("sans-12"));
 
-                String s = squaresDistance + "u";
+                String s = squaresDistance + GametableFrame.getGametableFrame().grid_unit;
                 FontMetrics fm = g3.getFontMetrics();
                 Rectangle rect = fm.getStringBounds(s, g3).getBounds();
 
                 rect.grow(3, 1);
+                
+                Point drawPoint = new Point((drawAnchor.x+drawFloat.x)/2, (drawAnchor.y+drawFloat.y)/2);
 
-                Point drawPoint = m_canvas.modelToDraw(m_mousePosition);
+                /*Point drawPoint = m_canvas.modelToDraw(m_mousePosition);
                 drawPoint.y -= rect.height + rect.y + 10;
                 Point viewPoint = m_canvas.modelToView(m_canvas.drawToModel(drawPoint));
                 if (viewPoint.y - rect.height < 0)
@@ -143,8 +145,8 @@ public class RulerTool extends NullTool
                 if (viewPoint.x + rect.width >= m_canvas.getWidth())
                 {
                     drawPoint.x -= rect.width + 10;
-                }
-                                g3.translate(drawPoint.x, drawPoint.y);
+                }*/
+                g3.translate(drawPoint.x, drawPoint.y);
                 g3.setColor(new Color(0x00, 0x99, 0x00, 0xAA));
                 g3.fill(rect);
                 g3.setColor(new Color(0x00, 0x66, 0x00));

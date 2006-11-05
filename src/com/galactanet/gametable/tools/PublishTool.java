@@ -13,6 +13,7 @@ import com.galactanet.gametable.GametableCanvas;
 import com.galactanet.gametable.Pog;
 import com.galactanet.gametable.LineSegment;
 import com.galactanet.gametable.GametableFrame;
+import com.galactanet.gametable.GametableMap;
 
 
 
@@ -26,6 +27,8 @@ public class PublishTool extends NullTool
     private GametableCanvas m_canvas;
     private Point           m_mouseAnchor;
     private Point           m_mouseFloat;
+    private GametableMap    m_from;
+    private GametableMap    m_to;
 
     // private boolean m_bEraseColor;
 
@@ -59,11 +62,18 @@ public class PublishTool extends NullTool
      */
     public void mouseButtonPressed(int x, int y, int modifierMask)
     {
+        
         if (m_canvas.isPublicMap())
         {
             // this tool is not useable on the public map. So we cancel this action
-            GametableFrame.getGametableFrame().getToolManager().cancelToolAction();
-            return;
+            //GametableFrame.getGametableFrame().getToolManager().cancelToolAction();
+            //return;
+            m_from = m_canvas.getPublicMap();
+            m_to = m_canvas.getPrivateMap();
+        } else
+        {
+            m_from = m_canvas.getPrivateMap();
+            m_to = m_canvas.getPublicMap();
         }
 
         m_mouseAnchor = new Point(x, y);
@@ -86,9 +96,9 @@ public class PublishTool extends NullTool
     // turns off all the tinting for the pogs
     public void clearTints()
     {
-        for (int i = 0; i < m_canvas.getActiveMap().getNumPogs(); i++)
+        for (int i = 0; i < m_from.getNumPogs(); i++)
         {
-            m_canvas.getActiveMap().getPog(i).setTinted(false);
+            m_from.getPog(i).setTinted(false);
         }
     }
 
@@ -97,9 +107,9 @@ public class PublishTool extends NullTool
     {
         Rectangle selRect = createRectangle(m_mouseAnchor, m_mouseFloat);
 
-        for (int i = 0; i < m_canvas.getActiveMap().getNumPogs(); i++)
+        for (int i = 0; i < m_from.getNumPogs(); i++)
         {
-            Pog pog = m_canvas.getActiveMap().getPog(i);
+            Pog pog = m_from.getPog(i);
 
             int size = pog.getFaceSize() * GametableCanvas.BASE_SQUARE_SIZE;
             Point tl = new Point(pog.getPosition());
@@ -130,18 +140,18 @@ public class PublishTool extends NullTool
             // GametableFrame frame = GametableFrame.g_gameTableFrame;
 
             // first off, copy all the pogs/underlays over to the public layer
-            for (int i = 0; i < m_canvas.getPrivateMap().getNumPogs(); i++)
+            for (int i = 0; i < m_from.getNumPogs(); i++)
             {
-                Pog pog = m_canvas.getActiveMap().getPog(i);
+                Pog pog = m_from.getPog(i);
                 if (pog.isTinted())
                 {
                     // this pog gets copied
                     Pog newPog = new Pog(pog);
                     newPog.assignUniqueId();
 
-                    m_canvas.setActiveMap(m_canvas.getPublicMap());
+                    m_canvas.setActiveMap(m_to);
                     m_canvas.addPog(newPog);
-                    m_canvas.setActiveMap(m_canvas.getPrivateMap());
+                    m_canvas.setActiveMap(m_from);
                 }
             }
 
@@ -150,9 +160,9 @@ public class PublishTool extends NullTool
             // ones that are at least partially in the rect
             List lineList = new ArrayList();
 
-            for (int i = 0; i < m_canvas.getPrivateMap().getNumLines(); i++)
+            for (int i = 0; i < m_from.getNumLines(); i++)
             {
-                LineSegment ls = m_canvas.getPrivateMap().getLineAt(i);
+                LineSegment ls = m_from.getLineAt(i);
                 LineSegment result = ls.getPortionInsideRect(m_mouseAnchor, m_mouseFloat);
 
                 if (result != null)
@@ -169,9 +179,9 @@ public class PublishTool extends NullTool
                 toAdd[i] = (LineSegment)lineList.get(i);
             }
 
-            m_canvas.setActiveMap(m_canvas.getPublicMap());
+            m_canvas.setActiveMap(m_to);
             m_canvas.addLineSegments(toAdd);
-            m_canvas.setActiveMap(m_canvas.getPrivateMap());
+            m_canvas.setActiveMap(m_from);
 
             boolean bDeleteFromPrivate = false;
             if ((modifierMask & MODIFIER_CTRL) == 0) // not holding control
@@ -185,9 +195,9 @@ public class PublishTool extends NullTool
             if (bDeleteFromPrivate)
             {
                 // remove the pogs that we moved
-                for (int i = 0; i < m_canvas.getPrivateMap().getNumPogs(); i++)
+                for (int i = 0; i < m_from.getNumPogs(); i++)
                 {
-                    Pog pog = m_canvas.getActiveMap().getPog(i);
+                    Pog pog = m_from.getPog(i);
                     if (pog.isTinted())
                     {
                         m_canvas.removePog(pog.getId(), false); 

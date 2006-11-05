@@ -120,6 +120,10 @@ public class BoxTool extends NullTool
     /*
      * @see com.galactanet.gametable.AbstractTool#paint(java.awt.Graphics)
      */
+    /*
+     * Modified from original to have separate distance indicators for
+     * each dimension.
+     */
     public void paint(Graphics g)
     {
         if (m_mouseAnchor != null)
@@ -142,20 +146,25 @@ public class BoxTool extends NullTool
             --modelRect.height;
             double squaresWidth = m_canvas.modelToSquares(modelRect.width);
             double squaresHeight = m_canvas.modelToSquares(modelRect.height);
-            if (squaresWidth > 0.75 && squaresHeight > 0.75)
+            double indicatorThreshold = .75 * GametableFrame.getGametableFrame().grid_multiplier;
+            if (squaresWidth> indicatorThreshold)
             {
                 squaresWidth = Math.round(squaresWidth * 100) / 100.0;
-                squaresHeight = Math.round(squaresHeight * 100) / 100.0;
-                Graphics2D g3 = (Graphics2D)g.create();
-                g3.setFont(Font.decode("sans-12"));
 
-                String s = squaresWidth + " x " + squaresHeight + "u";
+                Graphics2D g3 = (Graphics2D)g.create();
+
+                g3.setFont(Font.decode("sans-12"));
+                
+//                String s1 = squaresWidth + " x " + squaresHeight + "u";
+                String sw = Double.toString(squaresWidth)+  GametableFrame.getGametableFrame().grid_unit;
+                
                 FontMetrics fm = g3.getFontMetrics();
-                Rectangle rect = fm.getStringBounds(s, g3).getBounds();
+                Rectangle rect = fm.getStringBounds(sw, g3).getBounds();
 
                 rect.grow(3, 1);
 
-                Point drawPoint = m_canvas.modelToDraw(m_mousePosition);
+                
+/*                Point drawPoint = m_canvas.modelToDraw(m_mousePosition);
                 drawPoint.y -= rect.height + rect.y + 10;
                 Point viewPoint = m_canvas.modelToView(m_canvas.drawToModel(drawPoint));
                 if (viewPoint.y - rect.height < 0)
@@ -168,15 +177,42 @@ public class BoxTool extends NullTool
                 {
                     drawPoint.x -= rect.width + 10;
                 }
-                
+*/
+                Point drawPoint = m_canvas.modelToDraw(m_mouseAnchor);
+                Point mousePoint = m_canvas.modelToDraw(m_mouseFloat);
+                drawPoint.x = (drawPoint.x + mousePoint.x)/2;
+                drawPoint.y = mousePoint.y - 10;
                 g3.translate(drawPoint.x, drawPoint.y);
                 g3.setColor(new Color(0x00, 0x99, 0x00, 0xAA));
                 g3.fill(rect);
                 g3.setColor(new Color(0x00, 0x66, 0x00));
                 g3.draw(rect);
                 g3.setColor(new Color(0xFF, 0xFF, 0xFF, 0xCC));
-                g3.drawString(s, 0, 0);
+                g3.drawString(sw, 0, 0);
                 g3.dispose();
+                
+            }
+            if (squaresHeight > indicatorThreshold) 
+            {
+                Point drawPoint = m_canvas.modelToDraw(m_mouseAnchor);
+                Point mousePoint = m_canvas.modelToDraw(m_mouseFloat);
+                Graphics2D g4 = (Graphics2D)g.create();
+                squaresHeight = Math.round(squaresHeight * 100) / 100.0;
+                g4.setFont(Font.decode("sans-12"));
+                String sh = Double.toString(squaresHeight) + GametableFrame.getGametableFrame().grid_unit;
+                FontMetrics fm2 = g4.getFontMetrics();
+                Rectangle rect2 = fm2.getStringBounds(sh, g4).getBounds();
+                rect2.grow(3,1);
+                drawPoint.x = mousePoint.x + 10;
+                drawPoint.y = (drawPoint.y + mousePoint.y)/2;
+                g4.translate(drawPoint.x, drawPoint.y);
+                g4.setColor(new Color(0x00, 0x99, 0x00, 0xAA));
+                g4.fill(rect2);
+                g4.setColor(new Color(0x00, 0x66, 0x00));
+                g4.draw(rect2);
+                g4.setColor(new Color(0xFF, 0xFF, 0xFF, 0xCC));
+                g4.drawString(sh, 0, 0);
+                g4.dispose();
             }
         }
     }

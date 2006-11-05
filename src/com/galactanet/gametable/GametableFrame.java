@@ -14,6 +14,7 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.event.*;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -94,7 +95,7 @@ public class GametableFrame extends JFrame implements ActionListener
      * The version of the communications protocal used by this build. This needs to change whenever an incompatibility
      * arises betwen versions.
      */
-    public final static int       COMM_VERSION             = 12;
+    public final static int       COMM_VERSION             = 13;
     public final static int       PING_INTERVAL            = 2500;
 
     public final static int       NETSTATE_NONE            = 0;
@@ -233,6 +234,15 @@ public class GametableFrame extends JFrame implements ActionListener
     // the name of the last person who sent a private message
     public String                  m_lastPrivateMessageSender;
 
+    /* 
+     * Added variables below in order to accomodate grid unit multiplier
+     */
+    JTextField m_gridunitmultiplier;
+    JComboBox m_gridunit;
+    public double grid_multiplier = 5.0;
+    public String grid_unit = "ft";
+    
+    
     /**
      * Construct the frame
      */
@@ -314,6 +324,34 @@ public class GametableFrame extends JFrame implements ActionListener
         initializeTools();
 
         m_toolBar.add(Box.createHorizontalStrut(5));
+
+        /*
+         * Added in order to accomodate grid unit multiplier
+         */
+        m_gridunitmultiplier = new JTextField("5", 3);
+        m_gridunitmultiplier.setMaximumSize(new Dimension(42, 21));
+        String[] units = {"ft", "m", "u"};
+        m_gridunit = new JComboBox(units);
+        m_gridunit.setMaximumSize(new Dimension(42, 21));
+        m_toolBar.add(m_gridunitmultiplier);
+        m_toolBar.add(m_gridunit);
+        m_gridunitmultiplier.getDocument().addDocumentListener(new DocumentListener()
+        {
+            public void changedUpdate(DocumentEvent e)
+            {
+                grid_multiplier = Double.parseDouble(m_gridunitmultiplier.getText());
+            }
+            public void insertUpdate(DocumentEvent e)
+            {
+                grid_multiplier = Double.parseDouble(m_gridunitmultiplier.getText()); 
+            }
+            public void removeUpdate(DocumentEvent e)
+            {
+                grid_multiplier = Double.parseDouble(m_gridunitmultiplier.getText());
+            }
+        });
+        m_gridunit.addActionListener(this);
+        
         m_showNamesCheckbox.setFocusable(false);
         m_showNamesCheckbox.addActionListener(new ActionListener()
         {
@@ -372,7 +410,6 @@ public class GametableFrame extends JFrame implements ActionListener
 
         m_colorCombo.addActionListener(this);
         updateGridModeMenu();
-        updatePrivateLayerModeMenuItem();
 
         addComponentListener(new ComponentAdapter()
         {
@@ -1098,6 +1135,14 @@ public class GametableFrame extends JFrame implements ActionListener
 
     public void actionPerformed(ActionEvent e)
     {
+        /*
+         * Added in order to accomodate grid unit multiplier
+         */
+        if (e.getSource() == m_gridunit)
+        {
+            grid_unit = (String)(m_gridunit.getSelectedItem());
+        }
+        
         if (e.getSource() == m_colorCombo)
         {
             Integer col = (Integer)m_colorCombo.getSelectedItem();
@@ -1144,6 +1189,8 @@ public class GametableFrame extends JFrame implements ActionListener
     }
 
     /**
+     * TODO: comment
+     * 
      * @return
      */
     public int getNewStateId()
@@ -1406,6 +1453,17 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             // if we're the host, send it to the clients
             send(PacketManager.makeMovePogPacket(id, newX, newY));
+        }
+    }
+
+    public void rotatePogPacketReceived(int id, double newAngle)
+    {
+        getGametableCanvas().doRotatePog(id, newAngle);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if we're the host, send it to the clients
+            send(PacketManager.makeRotatePogPacket(id, newAngle));
         }
     }
 
@@ -2055,23 +2113,6 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
-    public void updatePrivateLayerModeMenuItem()
-    {
-        // note the tool ID of the publish tool
-        int toolId = m_toolManager.getToolInfo("Publish").getId();
-
-        if (getGametableCanvas().isPublicMap())
-        {
-            m_togglePrivateMapMenuItem.setState(false);
-            m_toolButtons[toolId].setEnabled(false);
-        }
-        else
-        {
-            m_togglePrivateMapMenuItem.setState(true);
-            m_toolButtons[toolId].setEnabled(true);
-        }
-    }
-
     /**
      * Reacquires pogs and then refreshes the pog list.
      */
@@ -2112,8 +2153,6 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             getGametableCanvas().setActiveMap(getGametableCanvas().getPublicMap());
         }
-
-        updatePrivateLayerModeMenuItem();
 
         // if they toggled the layer, whatever tool they're using is cancelled
         getToolManager().cancelToolAction();

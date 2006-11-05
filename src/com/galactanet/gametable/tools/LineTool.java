@@ -109,6 +109,10 @@ public class LineTool extends NullTool
     /*
      * @see com.galactanet.gametable.AbstractTool#paint(java.awt.Graphics)
      */
+    /*
+     * Modified from original to put the distance indicator near the middle
+     * of the line.
+     */
     public void paint(Graphics g)
     {
         if (m_mouseAnchor != null)
@@ -130,19 +134,21 @@ public class LineTool extends NullTool
             Point drawFloat = m_canvas.modelToDraw(m_mouseFloat);
             g2.drawLine(drawAnchor.x, drawAnchor.y, drawFloat.x, drawFloat.y);
 
-            if (squaresDistance >= 0.75)
+            double indicatorThreshold = .75 * GametableFrame.getGametableFrame().grid_multiplier;
+            if (squaresDistance >= indicatorThreshold)
             {
                 Graphics2D g3 = (Graphics2D)g.create();
                 g3.setFont(Font.decode("sans-12"));
 
-                String s = squaresDistance + "u";
+                String s = squaresDistance + GametableFrame.getGametableFrame().grid_unit;
                 FontMetrics fm = g3.getFontMetrics();
                 Rectangle rect = fm.getStringBounds(s, g3).getBounds();
 
                 rect.grow(3, 1);
 
-                Point drawPoint = m_canvas.modelToDraw(m_mousePosition);
-                drawPoint.y -= rect.height + rect.y + 10;
+                //Point drawPoint = m_canvas.modelToDraw(m_mousePosition);
+                Point drawPoint = new Point((drawAnchor.x+drawFloat.x)/2, (drawAnchor.y+drawFloat.y)/2);
+                /* drawPoint.y -= rect.height + rect.y + 10;
                 Point viewPoint = m_canvas.modelToView(m_canvas.drawToModel(drawPoint));
                 if (viewPoint.y - rect.height < 0)
                 {
@@ -154,7 +160,8 @@ public class LineTool extends NullTool
                 {
                     drawPoint.x -= rect.width + 10;
                 }
-                                g3.translate(drawPoint.x, drawPoint.y);
+                */
+                g3.translate(drawPoint.x, drawPoint.y);
                 g3.setColor(new Color(0x00, 0x99, 0x00, 0xAA));
                 g3.fill(rect);
                 g3.setColor(new Color(0x00, 0x66, 0x00));

@@ -46,6 +46,9 @@ public class PacketManager
 
     // Pog moved
     public static final int PACKET_MOVEPOG        = 7;
+    
+    // Pog rotated
+    public static final int PACKET_ROTATEPOG      = 27;
 
     // point state change
     public static final int PACKET_POINT          = 8;
@@ -201,6 +204,11 @@ public class PacketManager
                     readMovePogPacket(dis);
                 }
                 break;
+                
+                case PACKET_ROTATEPOG:
+                {
+                    readRotatePogPacket(dis);
+                }
 
                 case PACKET_POINT:
                 {
@@ -869,6 +877,44 @@ public class PacketManager
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
             gtFrame.movePogPacketReceived(id, newX, newY);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+
+    /* *********************** ROTATEPOG PACKET ********************************* */
+    public static byte[] makeRotatePogPacket(int id, double newAngle)
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_ROTATEPOG); // type
+            dos.writeInt(id);
+            dos.writeDouble(newAngle);
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
+    public static void readRotatePogPacket(DataInputStream dis)
+    {
+        try
+        {
+            int id = dis.readInt();
+            double newAngle = dis.readDouble();
+
+            // tell the model
+            GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.rotatePogPacketReceived(id, newAngle);
         }
         catch (IOException ex)
         {

@@ -773,7 +773,7 @@ public class PogPanel extends JPanel
             Point localPos = UtilityFunctions.getComponentCoordinates(this, getGrabPosition());
             Point offset = getGrabOffset();
             g2.translate(localPos.x - offset.x, localPos.y - offset.y);
-            m_grabbedPog.getPogType().drawGhostly(g2, 0, 0);
+            m_grabbedPog.getPogType().drawGhostly(g2, 0, 0, 0);
             g2.dispose();
         }
         else if (m_hoverPog != null && m_mousePosition != null)
@@ -781,16 +781,16 @@ public class PogPanel extends JPanel
             Graphics2D g2 = (Graphics2D)g;
             int drawX = m_mousePosition.x;
             int drawY = m_mousePosition.y + 16;
-            int overBottom = (drawY + m_hoverPog.getHeight()) - getHeight();
-            int overTop = -(drawY - (m_hoverPog.getHeight() + 16));
+            int overBottom = (drawY + m_hoverPog.getHeight(0)) - getHeight();
+            int overTop = -(drawY - (m_hoverPog.getHeight(0) + 16));
             if (overBottom > overTop)
             {
-                drawY -= m_hoverPog.getHeight() + 16;
+                drawY -= m_hoverPog.getHeight(0) + 16;
             }
 
-            if (drawX > getWidth() - m_hoverPog.getWidth() - HOVER_MARGIN)
+            if (drawX > getWidth() - m_hoverPog.getWidth(0) - HOVER_MARGIN)
             {
-                drawX = getWidth() - m_hoverPog.getWidth() - HOVER_MARGIN;
+                drawX = getWidth() - m_hoverPog.getWidth(0) - HOVER_MARGIN;
             }
 
             if (drawX < HOVER_MARGIN)
@@ -800,12 +800,12 @@ public class PogPanel extends JPanel
 
             g2.translate(drawX, drawY);
             g2.setColor(POG_BACKGROUND_COLOR);
-            g2.fillRect(-POG_PADDING, -POG_PADDING, m_hoverPog.getWidth() + POG_PADDING * 2, m_hoverPog.getHeight()
+            g2.fillRect(-POG_PADDING, -POG_PADDING, m_hoverPog.getWidth(0) + POG_PADDING * 2, m_hoverPog.getHeight(0)
                 + POG_PADDING * 2);
             g2.setColor(POG_BORDER_COLOR);
-            g2.drawRect(-POG_PADDING, -POG_PADDING, m_hoverPog.getWidth() + POG_PADDING * 2 - 1, m_hoverPog.getHeight()
+            g2.drawRect(-POG_PADDING, -POG_PADDING, m_hoverPog.getWidth(0) + POG_PADDING * 2 - 1, m_hoverPog.getHeight(0)
                 + POG_PADDING * 2 - 1);
-            m_hoverPog.drawTranslucent(g2, 0, 0, 0.9f);
+            m_hoverPog.drawTranslucent(g2, 0, 0, 0.9f, 0);
             g2.dispose();
         }
     }
@@ -905,7 +905,7 @@ public class PogPanel extends JPanel
                         PogNode node = (PogNode)val;
                         Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e
                             .getY()));
-                        Point localCoords = new Point(node.getPog().getWidth() / 2, node.getPog().getHeight() / 2);
+                        Point localCoords = new Point(node.getPog().getWidth(0) / 2, node.getPog().getHeight(0) / 2);
                         grabPog(node.getPog(), screenCoords, localCoords);
                     }
                 }

@@ -44,10 +44,11 @@ public class GridMode
 
     public void snapPogToGrid(Pog pog)
     {
-        int squareSize = GametableCanvas.BASE_SQUARE_SIZE * pog.getFaceSize();
-        Point snappedPoint = snapPointEx(new Point(pog.getX(), pog.getY()), true, squareSize);
+//      int squareSize = GametableCanvas.BASE_SQUARE_SIZE * pog.getFaceSize();
+        Point snappedPoint = snapPointEx(new Point(pog.getX(), pog.getY()), true, 
+            GametableCanvas.BASE_SQUARE_SIZE * pog.getFaceSize());
         
-        if (pog.getWidth() < squareSize)
+/*        if (pog.getWidth() < squareSize)
         {
             snappedPoint.x += (squareSize - pog.getWidth()) / 2;
         }
@@ -56,7 +57,7 @@ public class GridMode
         {
             snappedPoint.y += (squareSize - pog.getHeight()) / 2;
         }
-
+*/
         pog.setPosition(snappedPoint.x, snappedPoint.y);
     }
 

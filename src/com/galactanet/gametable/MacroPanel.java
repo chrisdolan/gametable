@@ -105,16 +105,17 @@ public class MacroPanel extends JPanel
             layout.getConstraints(panel).setY(Spring.constant(2));
             layout.putConstraint(SpringLayout.NORTH, panel, 2, SpringLayout.NORTH, this);
             layout.putConstraint(SpringLayout.SOUTH, panel, -2, SpringLayout.SOUTH, this);
+            layout.putConstraint(SpringLayout.WEST, panel, 2, SpringLayout.EAST, rollButton);
 
-            layout.putConstraint(SpringLayout.EAST, rollButton, -2, SpringLayout.EAST, this);
+            layout.putConstraint(SpringLayout.WEST, rollButton, 2, SpringLayout.EAST, editButton);
             layout.putConstraint(SpringLayout.NORTH, rollButton, 2, SpringLayout.NORTH, this);
             layout.putConstraint(SpringLayout.SOUTH, rollButton, -2, SpringLayout.SOUTH, this);
 
-            layout.putConstraint(SpringLayout.EAST, editButton, -2, SpringLayout.WEST, rollButton);
+            layout.putConstraint(SpringLayout.WEST, editButton, 2, SpringLayout.EAST, deleteButton);
             layout.putConstraint(SpringLayout.NORTH, editButton, 2, SpringLayout.NORTH, this);
             layout.putConstraint(SpringLayout.SOUTH, editButton, -2, SpringLayout.SOUTH, this);
 
-            layout.putConstraint(SpringLayout.EAST, deleteButton, -2, SpringLayout.WEST, editButton);
+            layout.putConstraint(SpringLayout.WEST, deleteButton, 2, SpringLayout.WEST, this);
             layout.putConstraint(SpringLayout.NORTH, deleteButton, 2, SpringLayout.NORTH, this);
             layout.putConstraint(SpringLayout.SOUTH, deleteButton, -2, SpringLayout.SOUTH, this);
 
@@ -186,7 +187,16 @@ public class MacroPanel extends JPanel
          */
         public void actionPerformed(ActionEvent e)
         {
-            GametableFrame.getGametableFrame().postMessage(macro.doMacro());
+            if ((e.getModifiers() & ActionEvent.CTRL_MASK) != 0) {
+                if (semiPrivate)
+                    GametableFrame.getGametableFrame().postMessage(
+                        GametableFrame.DIEROLL_MESSAGE_FONT +
+                        UtilityFunctions.emitUserLink(GametableFrame.getGametableFrame().getMyPlayer().
+                        getCharacterName()) + " is rolling dice..." +
+                        GametableFrame.END_DIEROLL_MESSAGE_FONT);
+                GametableFrame.getGametableFrame().parseSlashCommand("/proll " + macro.getMacro());
+            } else
+                GametableFrame.getGametableFrame().postMessage(macro.doMacro());
         }
     }
 
@@ -260,9 +270,11 @@ public class MacroPanel extends JPanel
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
-    private JScrollPane scrollPane = null;
-    private JPanel      macroPanel = null;
-    private JPanel      topPanel   = null;
+    private JScrollPane    scrollPane     = null;
+    private JPanel         macroPanel     = null;
+    private JPanel         topPanel       = null;
+    private JCheckBox      semiPrivateBox = null;
+    private static boolean semiPrivate;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -317,7 +329,9 @@ public class MacroPanel extends JPanel
             topPanel = new JPanel();
             topPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
             JButton addButton = new JButton("Add...");
+            semiPrivateBox = new JCheckBox("Semiprivate rolls");
             addButton.setFocusable(false);
+            semiPrivateBox.setFocusable(false);
             addButton.addActionListener(new ActionListener()
             {
                 /*
@@ -328,6 +342,17 @@ public class MacroPanel extends JPanel
                     GametableFrame.getGametableFrame().addDieMacro();
                 }
             });
+            semiPrivateBox.addActionListener(new ActionListener()
+            {
+                /*
+                 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+                 */
+                public void actionPerformed(ActionEvent e)
+                {
+                    semiPrivate = semiPrivateBox.isSelected();
+                }
+            });
+            topPanel.add(semiPrivateBox);
             topPanel.add(addButton);
         }
         return topPanel;
@@ -344,6 +369,7 @@ public class MacroPanel extends JPanel
         {
             scrollPane = new JScrollPane(getMacroPanel(), ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+            scrollPane.getVerticalScrollBar().setUnitIncrement(10);
         }
         return scrollPane;
     }
