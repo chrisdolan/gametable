@@ -9,6 +9,7 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.*;
 import java.util.BitSet;
+import java.util.Hashtable;
 import javax.swing.ImageIcon;
 
 
@@ -35,6 +36,7 @@ public class PogType
     private String              m_filename;
     private boolean             m_bUnderlay;
     private boolean             m_bUnknown;
+    private Hashtable           m_iconcache=new Hashtable();
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -133,7 +135,19 @@ public class PogType
         {
             return m_faceSize * GametableCanvas.BASE_SQUARE_SIZE;
         }
-        return rotate(m_image, angle).getWidth(null);
+
+        if (angle==0)
+            return m_image.getWidth(null);
+        Dimension bounds=(Dimension)(m_iconcache.get(Double.valueOf(angle)));
+        if (bounds==null)
+        {
+            rotate(m_image,angle);
+            bounds=(Dimension)(m_iconcache.get(Double.valueOf(angle)));
+        }
+        // If caching images instead of dimensions, this should be
+        //        return (int)(bounds.getWidth(null));
+        return (int)(bounds.getWidth());
+
     }
 
     /**
@@ -141,11 +155,24 @@ public class PogType
      */
     public int getHeight(double angle)
     {
+
+        
         if (m_image == null)
         {
             return m_faceSize * GametableCanvas.BASE_SQUARE_SIZE;
         }
-        return rotate(m_image, angle).getHeight(null);
+
+        if (angle==0)
+            return m_image.getHeight(null);
+        Dimension bounds=(Dimension)(m_iconcache.get(Double.valueOf(angle)));
+        if (bounds==null)
+        {
+            rotate(m_image,angle);
+            bounds=(Dimension)(m_iconcache.get(Double.valueOf(angle)));
+        }
+        // If caching images instead of dimensions, this should be
+        //        return (int)(bounds.getHeight(null));        
+        return (int)(bounds.getHeight());
     }
 
     public int getListIconWidth()
@@ -378,11 +405,31 @@ public class PogType
     private Image rotate(Image i, double angle) {
         if (angle == 0)
             return i;
+/* 
+ * This will speed up the program, but require more memory as it caches the image
+ * not dimensions, remove the uncommented lines in the lower if. uncomment the commented line
+ * and change Dimension to Image in the getHeight() and getWidth() methods
+ * to fully implement this
+        if (m_iconcache.containsKey(Double.valueOf(angle)))
+        {
+        	return (Image)(m_iconcache.get(Double.valueOf(angle)));
+        }
+*/
+        
         BufferedImage bufferedImage = toBufferedImage(i);
         AffineTransform tx = new AffineTransform();
         tx.rotate(Math.toRadians(angle), bufferedImage.getWidth()/2, bufferedImage.getHeight()/2);
         AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
-        return Toolkit.getDefaultToolkit().createImage(op.filter(bufferedImage, null).getSource());
+        Image returnedImage=Toolkit.getDefaultToolkit().createImage(op.filter(bufferedImage, null).getSource());
+        
+        if (!m_iconcache.containsKey(Double.valueOf(angle)))
+        {
+            Dimension bounds=new Dimension(returnedImage.getWidth(null),returnedImage.getHeight(null));
+            m_iconcache.put(Double.valueOf(angle),bounds);
+            //m_iconcache.put(Double.valueOf(angle),returnedImage);
+        }
+        
+        return returnedImage;
     }
     
     private static BufferedImage toBufferedImage(Image image) {
