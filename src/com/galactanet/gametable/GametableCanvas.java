@@ -1148,6 +1148,38 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         repaint();
     }
 
+    public void lockPog(int id, boolean newLock)
+    {
+        if (isPublicMap())
+        {
+            m_gametableFrame.send(PacketManager.makeLockPogPacket(id, newLock));
+
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
+            {
+                doLockPog(id, newLock);
+            }
+        }
+        else
+        {
+            doLockPog(id, newLock);
+        }
+    }
+
+    public void doLockPog(int id, boolean newLock)
+    {
+        Pog toLock = getActiveMap().getPogByID(id);
+        if (toLock == null)
+        {
+            return;
+        }
+
+        toLock.setLocked(newLock);
+
+        // this pog moves to the end of the array
+        getActiveMap().removePog(toLock);
+        getActiveMap().addPog(toLock);
+    }
+
     public void removePog(int id)
     {
     	removePog(id, true);

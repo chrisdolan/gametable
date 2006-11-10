@@ -169,7 +169,7 @@ public class PointerTool extends NullTool
     {
         setSnapping(modifierMask);
         m_mousePosition = new Point(x, y);
-        if (m_grabbedPog != null)
+        if (m_grabbedPog != null && !m_grabbedPog.isLocked())
         {
             m_clicked = false;
             if (m_snapping)
@@ -191,6 +191,10 @@ public class PointerTool extends NullTool
             Point viewDelta = new Point(m_startMouse.x - mousePosition.x, m_startMouse.y - mousePosition.y);
             Point modelDelta = m_canvas.drawToModel(viewDelta);
             m_canvas.scrollMapTo(m_startScroll.x + modelDelta.x, m_startScroll.y + modelDelta.y);
+        }
+        else if (m_grabbedPog != null && m_grabbedPog.isLocked())
+        {
+            m_clicked = false;
         }
         else
         {
@@ -237,7 +241,17 @@ public class PointerTool extends NullTool
         m_menuPog = m_grabbedPog;
         JPopupMenu menu = new JPopupMenu("Pog");
         menu.add(new JMenuItem("Cancel"));
-        JMenuItem item = new JMenuItem("Set Name...");
+        JMenuItem item = new JMenuItem(m_menuPog.isLocked() ? "Unlock" : "Lock");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                m_canvas.lockPog(m_menuPog.getId(), !m_menuPog.isLocked());
+                System.out.println(m_menuPog.isLocked());
+            }
+        });
+        menu.add(item);
+        item = new JMenuItem("Set Name...");
         item.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)

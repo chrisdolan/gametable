@@ -15,9 +15,7 @@ import java.util.List;
 
 import javax.swing.*;
 import javax.swing.event.*;
-import javax.swing.border.BevelBorder;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EmptyBorder;
+import javax.swing.border.*;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -95,7 +93,7 @@ public class GametableFrame extends JFrame implements ActionListener
      * The version of the communications protocal used by this build. This needs to change whenever an incompatibility
      * arises betwen versions.
      */
-    public final static int       COMM_VERSION             = 13;
+    public final static int       COMM_VERSION             = 14;
     public final static int       PING_INTERVAL            = 2500;
 
     public final static int       NETSTATE_NONE            = 0;
@@ -158,10 +156,13 @@ public class GametableFrame extends JFrame implements ActionListener
     private JCheckBoxMenuItem      m_hexGridModeMenuItem    = new JCheckBoxMenuItem("Hex Grid");
     private JCheckBoxMenuItem      m_togglePrivateMapMenuItem;
 
+    private JLabel                 m_status                 = new JLabel(" ");
     private JPanel                 m_chatPanel              = new JPanel();
     private GametableCanvas        m_gametableCanvas        = new GametableCanvas();
 
     private List                   m_players                = new ArrayList();
+    
+    private List                   m_typing                 = new ArrayList();
     
     // only valid if this client is the host
     private List                   m_decks 					= new ArrayList();
@@ -389,6 +390,9 @@ public class GametableFrame extends JFrame implements ActionListener
         m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.LEFT);
         m_mapPogSplitPane.add(m_mapChatSplitPane, JSplitPane.RIGHT);
         getContentPane().add(m_mapPogSplitPane, BorderLayout.CENTER);
+        m_status.setBorder(new EtchedBorder(EtchedBorder.RAISED));
+        getContentPane().add(m_status, BorderLayout.SOUTH);
+        updateStatus();
 
         m_disconnectMenuItem.setEnabled(false);
 
@@ -1467,6 +1471,17 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    public void lockPogPacketReceived(int id, boolean newLock)
+    {
+        getGametableCanvas().doLockPog(id, newLock);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if we're the host, send it to the clients
+            send(PacketManager.makeLockPogPacket(id, newLock));
+        }
+    }
+
     public void removePogsPacketReceived(int ids[])
     {
         getGametableCanvas().doRemovePogs(ids, false);
@@ -1529,6 +1544,23 @@ public class GametableFrame extends JFrame implements ActionListener
         getGametableCanvas().doAddLineSegments(lines, authorID, stateID);
     }
 
+    public void typingPacketReceived(String playerName, boolean typing)
+    {
+        if (typing)
+        {
+            m_typing.add(playerName);
+        }
+        else
+        {
+            m_typing.remove(playerName);
+        }
+        
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            send(PacketManager.makeTypingPacket(playerName, typing));
+        }
+    }
+    
     public void textPacketReceived(String text)
     {
         if (m_netStatus == NETSTATE_HOST)
@@ -2053,6 +2085,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
         m_netStatus = NETSTATE_NONE;
         logSystemMessage("Disconnected.");
+        updateStatus();
     }
     
     public void eraseAllLines()
@@ -3082,7 +3115,8 @@ public class GametableFrame extends JFrame implements ActionListener
     		// they optionally can specify a number of cards to draw
     		if ( words.length >= 4 )
     		{
-    			String numToDrawStr = words[3];
+    			// numToDrawStr is never used.
+                // String numToDrawStr = words[3];
 
     			// note the number of cards to draw
     			try 
@@ -3341,7 +3375,8 @@ public class GametableFrame extends JFrame implements ActionListener
     	{
     		return null;
     	}
-    	else
+    	// Doesn't get here if idx == -1; no need for else
+    	// else
     	{
     		Deck d = (Deck)m_decks.get(idx);
     		return d;
@@ -3696,6 +3731,73 @@ public class GametableFrame extends JFrame implements ActionListener
         repaint();
         refreshPogList();
     }
+    
+    public void updateStatus()
+    {
+        switch (m_netStatus) {
+            case NETSTATE_NONE:
+            {
+                m_status.setText(" Disconnected");
+            }
+            break;
+            
+            case NETSTATE_JOINED:
+            {
+                m_status.setText(" Connected: ");
+            }
+            break;
+
+            case NETSTATE_HOST:
+            {
+                m_status.setText(" Hosting: ");
+            }
+            break;
+            
+            default:
+            {
+                m_status.setText(" Unknown state; ");
+            }
+            break;
+        }
+        
+        if (m_netStatus != NETSTATE_NONE)
+        {
+            m_status.setText(m_status.getText() + m_players.size() + " player"
+                    + (m_players.size() == 1 ? "" : "s") + " connected. ");
+            switch (m_typing.size())
+            {
+                case 0:
+                {}
+                break;
+                
+                case 1:
+                {
+                    m_status.setText(m_status.getText() + m_typing.get(0)
+                            + " is typing.");
+                }
+                break;
+                
+                case 2:
+                {
+                    m_status.setText(m_status.getText() + m_typing.get(0)
+                            + " and " + m_typing.get(1) + " are typing.");
+                }
+                break;
+                
+                default:
+                {
+                    for (int i = 0; i < m_typing.size() - 1; i++)
+                    {
+                        m_status.setText(m_status.getText() + m_typing.get(i)
+                                + ", ");
+                    }
+                    m_status.setText(m_status.getText() + " and "
+                            + m_typing.get(m_typing.size() - 1)
+                            + " are typing.");
+                }
+            }
+        }
+    }
 
     private void tick()
     {
@@ -3740,6 +3842,7 @@ public class GametableFrame extends JFrame implements ActionListener
                     m_lastPingTime -= PING_INTERVAL;
                 }
             }
+            updateStatus();
         }
         m_gametableCanvas.tick(ms);
     }

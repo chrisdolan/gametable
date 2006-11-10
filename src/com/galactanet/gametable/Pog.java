@@ -123,6 +123,11 @@ public class Pog implements Comparable
      * Is this pog tinted?
      */
     private boolean         m_bTinted              = false;
+    
+    /**
+     * Locked state for this pog.
+     */
+    private boolean         m_locked               = false;
 
     /**
      * True if this pog is notifying the world that it's text had changed.
@@ -182,6 +187,7 @@ public class Pog implements Comparable
         dis.readBoolean();
         m_scale = dis.readFloat();
         m_angle = dis.readDouble();
+        m_locked = dis.readBoolean();
         
         // read in the card info, if any
         boolean bCardExists = dis.readBoolean();
@@ -321,6 +327,11 @@ public class Pog implements Comparable
     public boolean isTinted()
     {
         return m_bTinted;
+    }
+    
+    public boolean isLocked()
+    {
+        return m_locked;
     }
 
     public String getFilename()
@@ -476,6 +487,11 @@ public class Pog implements Comparable
     {
         m_bTinted = b;
     }
+    
+    public void setLocked(boolean b)
+    {
+        m_locked = b;
+    }
 
     public void setPosition(Point pos)
     {
@@ -604,6 +620,7 @@ public class Pog implements Comparable
         dos.writeBoolean(isUnderlay());
         dos.writeFloat(m_scale);
         dos.writeDouble(m_angle);
+        dos.writeBoolean(m_locked);
         
         // write out the card info, if any
         if ( m_card != null )

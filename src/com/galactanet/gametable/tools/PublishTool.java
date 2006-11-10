@@ -12,7 +12,6 @@ import java.util.List;
 import com.galactanet.gametable.GametableCanvas;
 import com.galactanet.gametable.Pog;
 import com.galactanet.gametable.LineSegment;
-import com.galactanet.gametable.GametableFrame;
 import com.galactanet.gametable.GametableMap;
 
 

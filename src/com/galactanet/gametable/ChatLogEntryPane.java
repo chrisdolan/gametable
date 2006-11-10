@@ -58,6 +58,7 @@ public class ChatLogEntryPane extends JEditorPane
 
     private boolean             ignoreCaret     = false;
     private boolean             spaceTyped      = false;
+    private boolean             lastTypedSent   = false;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -279,6 +280,16 @@ public class ChatLogEntryPane extends JEditorPane
                     toolbar.updateStyles();
                 }
                 spaceTyped = false;
+                // Send a typing packet. Caret position anywhere other than 1
+                // means we're typing.
+                // TODO: Find a better way. This sucks.
+                if (lastTypedSent != (e.getDot() != 1))
+                {
+                    frame.send(PacketManager.makeTypingPacket(
+                            frame.getMyPlayer().getPlayerName(),
+                            e.getDot() != 1));
+                    lastTypedSent = (e.getDot() != 1);
+                }
             }
         });
 

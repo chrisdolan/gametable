@@ -23,16 +23,19 @@ public class PacketManager
 {
     // --- Constants -------------------------------------------------------------------------------------------------
 
-    // packet sent by a new joiner as soon as he joins
+    // Packet sent by a new joiner as soon as he joins
     public static final int PACKET_PLAYER         = 0;
 
-    // packet sent by the host telling all the players in the game
+    // Packet sent by the host telling all the players in the game
     public static final int PACKET_CAST           = 1;
 
-    // packet with text to go to the text log
+    // Packet with text to go to the text log
     public static final int PACKET_TEXT           = 2;
+    
+    // Player is typing
+    public static final int PACKET_TYPING         = 29;
 
-    // lines being added
+    // Lines being added
     public static final int PACKET_LINES          = 3;
 
     // Eraser used
@@ -49,6 +52,9 @@ public class PacketManager
     
     // Pog rotated
     public static final int PACKET_ROTATEPOG      = 27;
+    
+    // Pog lock state changed
+    public static final int PACKET_LOCKPOG        = 28;
 
     // point state change
     public static final int PACKET_POINT          = 8;
@@ -174,6 +180,12 @@ public class PacketManager
                     readTextPacket(dis);
                 }
                 break;
+                
+                case PACKET_TYPING:
+                {
+                    readTypingPacket(dis);
+                }
+                break;
 
                 case PACKET_LINES:
                 {
@@ -209,6 +221,13 @@ public class PacketManager
                 {
                     readRotatePogPacket(dis);
                 }
+                break;
+                
+                case PACKET_LOCKPOG:
+                {
+                    readLockPogPacket(dis);
+                }
+                break;
 
                 case PACKET_POINT:
                 {
@@ -357,6 +376,8 @@ public class PacketManager
                 return "PACKET_CAST";
             case PACKET_TEXT:
                 return "PACKET_TEXT";
+            case PACKET_TYPING:
+                return "PACKET_TYPING";
             case PACKET_LINES:
                 return "PACKET_LINES";
             case PACKET_ERASE:
@@ -367,6 +388,8 @@ public class PacketManager
                 return "PACKET_REMOVEPOGS";
             case PACKET_MOVEPOG:
                 return "PACKET_MOVEPOG";
+            case PACKET_LOCKPOG:
+                return "PACKET_LOCKPOG";
             case PACKET_POINT:
                 return "PACKET_POINT";
             case PACKET_POGDATA:
@@ -559,6 +582,46 @@ public class PacketManager
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
             gtFrame.textPacketReceived(text);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+
+    /* *********************** TYPING PACKET *********************************** */
+
+    public static byte[] makeTypingPacket(String playerName, boolean typing)
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_TYPING); // type
+            dos.writeUTF(playerName);
+            dos.writeBoolean(typing);
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
+    public static void readTypingPacket(DataInputStream dis)
+    {
+
+        try
+        {
+            String playerName = dis.readUTF();
+            boolean typing = dis.readBoolean();
+
+            // tell the model
+            GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.typingPacketReceived(playerName, typing);
         }
         catch (IOException ex)
         {
@@ -915,6 +978,44 @@ public class PacketManager
             // tell the model
             GametableFrame gtFrame = GametableFrame.getGametableFrame();
             gtFrame.rotatePogPacketReceived(id, newAngle);
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+
+    /* ************************  LOCKPOG PACKET ********************************* */
+    public static byte[] makeLockPogPacket(int id, boolean newLocked)
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_LOCKPOG); // type
+            dos.writeInt(id);
+            dos.writeBoolean(newLocked);
+
+            return baos.toByteArray();
+        }
+        catch (IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
+    public static void readLockPogPacket(DataInputStream dis)
+    {
+        try
+        {
+            int id = dis.readInt();
+            boolean newLocked = dis.readBoolean();
+
+            // tell the model
+            GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.lockPogPacketReceived(id, newLocked);
         }
         catch (IOException ex)
         {
