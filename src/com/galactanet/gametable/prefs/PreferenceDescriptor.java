@@ -12,33 +12,25 @@ package com.galactanet.gametable.prefs;
  */
 public class PreferenceDescriptor
 {
-    public static final int TYPE_TEXT_ENTRY = 0;
     public static final int TYPE_CHOICE     = 1;
     public static final int TYPE_FLAG       = 2;
+    public static final int TYPE_TEXT_ENTRY = 0;
 
-    private String          name;
-    private String          displayName;
-    private int             type;
-    private Object          defaultValue;
+    private final Object    defaultValue;
+    private final String    displayName;
+    private final String    name;
     private Object          parameter;
-
-
+    private final int       type;
 
     /**
-     * Fully qualified constructor.
+     * Simple Constructor.
      * 
      * @param prefName The unique name of this preference.
-     * @param dispName The display name of this preference.
-     * @param prefType The type of preference.
-     * @param defaultVal An object representing the default value of this preference.
-     * @param param A flex parameter, generally a list of possible values for choice fields.
+     * @param prefType The type of this preference.
      */
-    public PreferenceDescriptor(String prefName, String dispName, int prefType, Object defaultVal, Object param)
+    public PreferenceDescriptor(final String prefName, final int prefType)
     {
-        name = prefName;
-        displayName = dispName;
-        type = prefType;
-        defaultValue = defaultVal;
+        this(prefName, prefName, prefType, null, null);
     }
 
     /**
@@ -50,44 +42,28 @@ public class PreferenceDescriptor
      * @param defaultVal An object representing the default value of this preference.
      * @param param A flex parameter, generally a list of possible values for choice fields.
      */
-    public PreferenceDescriptor(String prefName, String dispName, int prefType, Object defaultVal)
+    public PreferenceDescriptor(final String prefName, final String dispName, final int prefType,
+        final Object defaultVal)
     {
         this(prefName, dispName, prefType, defaultVal, null);
     }
 
     /**
-     * Simple Constructor.
+     * Fully qualified constructor.
      * 
      * @param prefName The unique name of this preference.
-     * @param prefType The type of this preference.
+     * @param dispName The display name of this preference.
+     * @param prefType The type of preference.
+     * @param defaultVal An object representing the default value of this preference.
+     * @param param A flex parameter, generally a list of possible values for choice fields.
      */
-    public PreferenceDescriptor(String prefName, int prefType)
+    public PreferenceDescriptor(final String prefName, final String dispName, final int prefType,
+        final Object defaultVal, final Object param)
     {
-        this(prefName, prefName, prefType, null, null);
-    }
-
-    /**
-     * @return Returns the name.
-     */
-    public String getName()
-    {
-        return name;
-    }
-
-    /**
-     * @return Returns the displayName.
-     */
-    public String getDisplayName()
-    {
-        return displayName;
-    }
-
-    /**
-     * @return Returns the type.
-     */
-    public int getType()
-    {
-        return type;
+        name = prefName;
+        displayName = dispName;
+        type = prefType;
+        defaultValue = defaultVal;
     }
 
     /**
@@ -99,11 +75,35 @@ public class PreferenceDescriptor
     }
 
     /**
+     * @return Returns the displayName.
+     */
+    public String getDisplayName()
+    {
+        return displayName;
+    }
+
+    /**
+     * @return Returns the name.
+     */
+    public String getName()
+    {
+        return name;
+    }
+
+    /**
      * @return Returns the parameter.
      */
     public Object getParameter()
     {
         return parameter;
+    }
+
+    /**
+     * @return Returns the type.
+     */
+    public int getType()
+    {
+        return type;
     }
 
 }

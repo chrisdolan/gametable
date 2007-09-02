@@ -27,324 +27,6 @@ public class ActivePogsPanel extends JPanel
 {
     // --- Constants -------------------------------------------------------------------------------------------------
 
-    private static final float CLICK_THRESHHOLD = 2f;
-
-    private static final int   POG_TEXT_PADDING = 4;
-    private static final int   POG_PADDING      = 1;
-    private static final int   POG_BORDER       = 0;
-    private static final int   POG_MARGIN       = 0;
-
-    private static final Color BACKGROUND_COLOR = Color.WHITE;
-    private static final Font  FONT_NODE        = Font.decode("sansserif-12");
-    private static final Font  FONT_VALUE       = FONT_NODE;
-    private static final Font  FONT_KEY         = FONT_VALUE.deriveFont(Font.BOLD);
-
-    private static final int   SPACE            = POG_PADDING + POG_BORDER + POG_MARGIN;
-    private static final int   TOTAL_SPACE      = SPACE * 2;
-
-    // --- Types -----------------------------------------------------------------------------------------------------
-
-    /**
-     * Class to track the status of branches in the pog tree.
-     * 
-     * @author Iffy
-     */
-    private class BranchTracker implements TreeExpansionListener
-    {
-        private Set     expandedNodes  = new HashSet();
-        private Set     collapsedNodes = new HashSet();
-        private boolean allExpanded    = false;
-
-        public BranchTracker()
-        {
-        }
-
-        public void reset()
-        {
-            expandedNodes.clear();
-            collapsedNodes.clear();
-            allExpanded = false;
-        }
-
-        public void restoreTree(JTree tree)
-        {
-            if (allExpanded)
-            {
-                expandAll(tree);
-                return;
-            }
-
-            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
-            RootNode root = (RootNode)model.getRoot();
-
-            tree.removeTreeExpansionListener(this);
-            try
-            {
-                Iterator iterator = new HashSet(expandedNodes).iterator();
-                while (iterator.hasNext())
-                {
-                    Pog pog = (Pog)iterator.next();
-                    PogNode node = root.findNodeFor(pog);
-                    if (node != null)
-                    {
-                        TreePath path = new TreePath(model.getPathToRoot(node));
-                        tree.expandPath(path);
-                    }
-                    else
-                    {
-                        expandedNodes.remove(pog);
-                    }
-                }
-
-                iterator = new HashSet(collapsedNodes).iterator();
-                while (iterator.hasNext())
-                {
-                    Pog pog = (Pog)iterator.next();
-                    PogNode node = root.findNodeFor(pog);
-                    if (node != null)
-                    {
-                        TreePath path = new TreePath(model.getPathToRoot(node));
-                        tree.collapseRow(tree.getRowForPath(path));
-                    }
-                    else
-                    {
-                        collapsedNodes.remove(pog);
-                    }
-                }
-            }
-            finally
-            {
-                tree.addTreeExpansionListener(this);
-            }
-        }
-
-        public void expandAll(JTree tree)
-        {
-            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
-            expandAll(tree, (TreeNode)model.getRoot());
-            allExpanded = true;
-        }
-
-        private void expandAll(JTree tree, TreeNode node)
-        {
-            if (node.isLeaf() || !node.getAllowsChildren() || node.getChildCount() == 0)
-            {
-                return;
-            }
-
-            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
-            tree.expandPath(new TreePath(model.getPathToRoot(node)));
-            for (int i = 0, size = node.getChildCount(); i < size; ++i)
-            {
-                expandAll(tree, node.getChildAt(i));
-            }
-        }
-
-        public void collapseAll(JTree tree)
-        {
-            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
-            collapseAll(tree, (TreeNode)model.getRoot());
-            allExpanded = false;
-        }
-
-        private void collapseAll(JTree tree, TreeNode node)
-        {
-            if (node.isLeaf() || !node.getAllowsChildren() || node.getChildCount() == 0)
-            {
-                return;
-            }
-
-            DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
-            tree.collapsePath(new TreePath(model.getPathToRoot(node)));
-            for (int i = 0, size = node.getChildCount(); i < size; ++i)
-            {
-                collapseAll(tree, node.getChildAt(i));
-            }
-        }
-
-        // --- TreeExpansionListener Implementation ---
-
-        /*
-         * @see javax.swing.event.TreeExpansionListener#treeExpanded(javax.swing.event.TreeExpansionEvent)
-         */
-        public void treeExpanded(TreeExpansionEvent event)
-        {
-            try
-            {
-                PogNode node = (PogNode)event.getPath().getLastPathComponent();
-                expandedNodes.add(node.getPog());
-                collapsedNodes.remove(node.getPog());
-            }
-            catch (ClassCastException cce)
-            {
-                // ignore non-pog nodes
-            }
-        }
-
-        /*
-         * @see javax.swing.event.TreeExpansionListener#treeCollapsed(javax.swing.event.TreeExpansionEvent)
-         */
-        public void treeCollapsed(TreeExpansionEvent event)
-        {
-            try
-            {
-                PogNode node = (PogNode)event.getPath().getLastPathComponent();
-                expandedNodes.remove(node.getPog());
-                collapsedNodes.add(node.getPog());
-                allExpanded = false;
-            }
-            catch (ClassCastException cce)
-            {
-                // ignore non-pog nodes
-            }
-        }
-    }
-
-    /**
-     * Root node class for the tree.
-     * 
-     * @author iffy
-     */
-    private static class RootNode extends DefaultMutableTreeNode
-    {
-        public RootNode(GametableMap map)
-        {
-            super(map, true);
-            for (Iterator iterator = getMap().getOrderedPogs().iterator(); iterator.hasNext();)
-            {
-                add(new PogNode((Pog)iterator.next()));
-            }
-        }
-
-        public PogNode findNodeFor(Pog pog)
-        {
-            for (int i = 0, size = getChildCount(); i < size; ++i)
-            {
-                PogNode node = (PogNode)getChildAt(i);
-                if (pog.equals(node.getPog()))
-                {
-                    return node;
-                }
-            }
-
-            return null;
-        }
-
-        public GametableMap getMap()
-        {
-            return (GametableMap)getUserObject();
-        }
-    }
-
-    /**
-     * A TreeNode representing a library.
-     * 
-     * @author Iffy
-     */
-    private static class PogNode extends DefaultMutableTreeNode
-    {
-        public PogNode(Pog pog)
-        {
-            super(pog, true);
-            for (Iterator iterator = getPog().getAttributeNames().iterator(); iterator.hasNext();)
-            {
-                add(new AttributeNode((String)iterator.next()));
-            }
-        }
-
-        /**
-         * @return Returns the pog for this node.
-         */
-        public Pog getPog()
-        {
-            return (Pog)getUserObject();
-        }
-
-        // --- Object Implementation ---
-
-        /*
-         * @see java.lang.Object#hashCode()
-         */
-        public int hashCode()
-        {
-            return getPog().hashCode();
-        }
-
-        /*
-         * @see java.lang.Object#equals(java.lang.Object)
-         */
-        public boolean equals(Object o)
-        {
-            if (o == this)
-            {
-                return true;
-            }
-
-            PogNode node = (PogNode)o;
-            return (node.getPog().equals(getPog()));
-        }
-    }
-
-    /**
-     * A Leaf TreeNode representing a Pog's attribute.
-     * 
-     * @author Iffy
-     */
-    private static class AttributeNode extends DefaultMutableTreeNode
-    {
-        public AttributeNode(String att)
-        {
-            super(att, false);
-        }
-
-        /**
-         * @return Returns the pog for this node.
-         */
-        public Pog getPog()
-        {
-            return getPogNodeParent().getPog();
-        }
-
-        /**
-         * @return Returns the attribute for this node.
-         */
-        public String getAttribute()
-        {
-            return (String)getUserObject();
-        }
-
-        // --- Object Implementation ---
-
-        /*
-         * @see java.lang.Object#hashCode()
-         */
-        public int hashCode()
-        {
-            return getPog().hashCode() ^ getAttribute().hashCode();
-        }
-
-        /*
-         * @see java.lang.Object#equals(java.lang.Object)
-         */
-        public boolean equals(Object o)
-        {
-            if (o == this)
-            {
-                return true;
-            }
-
-            AttributeNode node = (AttributeNode)o;
-            return (node.getPog().equals(getPog()) && node.getAttribute().equals(getAttribute()));
-        }
-
-        // --- Private Methods ---
-
-        private PogNode getPogNodeParent()
-        {
-            return (PogNode)getParent();
-        }
-    }
-
     /**
      * Cell renderer for the tree.
      * 
@@ -352,58 +34,17 @@ public class ActivePogsPanel extends JPanel
      */
     private static class ActivePogTreeCellRenderer extends JComponent implements TreeCellRenderer
     {
-        Pog     pog       = null;
-        String  attribute = null;
-        boolean expanded  = false;
-        boolean leaf      = false;
+        /**
+         * 
+         */
+        private static final long serialVersionUID = 2211176162170052851L;
+        String                    attribute        = null;
+        boolean                   expanded         = false;
+        boolean                   leaf             = false;
+        Pog                       pog              = null;
 
         public ActivePogTreeCellRenderer()
         {
-        }
-
-        /*
-         * @see javax.swing.tree.TreeCellRenderer#getTreeCellRendererComponent(javax.swing.JTree, java.lang.Object,
-         *      boolean, boolean, boolean, int, boolean)
-         */
-        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean exp, boolean lf,
-            int r, boolean focus)
-        {
-            pog = null;
-            attribute = null;
-            if (value instanceof PogNode)
-            {
-                PogNode node = (PogNode)value;
-                pog = node.getPog();
-            }
-            else if (value instanceof AttributeNode)
-            {
-                AttributeNode node = (AttributeNode)value;
-                pog = node.getPog();
-                attribute = node.getAttribute();
-            }
-            else
-            {
-                return this;
-            }
-            expanded = exp;
-            leaf = lf;
-
-            Dimension size = getMySize();
-            setSize(size);
-            setPreferredSize(size);
-
-            return this;
-        }
-
-        private String getValue()
-        {
-            String value = pog.getAttribute(attribute);
-            if (value == null)
-            {
-                return "";
-            }
-
-            return value;
         }
 
         private String getLabel()
@@ -429,11 +70,11 @@ public class ActivePogsPanel extends JPanel
             {
                 int w = PogPanel.POG_ICON_SIZE;
                 int h = PogPanel.POG_ICON_SIZE;
-                String label = getLabel();
-                if (label != null && label.length() > 0)
+                final String label = getLabel();
+                if ((label != null) && (label.length() > 0))
                 {
-                    FontRenderContext frc = new FontRenderContext(null, true, false);
-                    Rectangle stringBounds = FONT_NODE.getStringBounds(label, frc).getBounds();
+                    final FontRenderContext frc = new FontRenderContext(null, true, false);
+                    final Rectangle stringBounds = FONT_NODE.getStringBounds(label, frc).getBounds();
                     w += stringBounds.width + POG_TEXT_PADDING;
                     if (stringBounds.height > h)
                     {
@@ -447,9 +88,9 @@ public class ActivePogsPanel extends JPanel
             int w = 0;
             int h = 0;
 
-            FontRenderContext frc = new FontRenderContext(null, true, false);
-            Rectangle keyBounds = FONT_KEY.getStringBounds(getLabel(), frc).getBounds();
-            Rectangle valueBounds = FONT_VALUE.getStringBounds(getValue(), frc).getBounds();
+            final FontRenderContext frc = new FontRenderContext(null, true, false);
+            final Rectangle keyBounds = FONT_KEY.getStringBounds(getLabel(), frc).getBounds();
+            final Rectangle valueBounds = FONT_VALUE.getStringBounds(getValue(), frc).getBounds();
             h = Math.max(keyBounds.height, valueBounds.height);
             w = keyBounds.width + valueBounds.width;
 
@@ -457,17 +98,62 @@ public class ActivePogsPanel extends JPanel
         }
 
         /*
+         * @see javax.swing.tree.TreeCellRenderer#getTreeCellRendererComponent(javax.swing.JTree, java.lang.Object,
+         *      boolean, boolean, boolean, int, boolean)
+         */
+        public Component getTreeCellRendererComponent(final JTree tree, final Object value, final boolean sel,
+            final boolean exp, final boolean lf, final int r, final boolean focus)
+        {
+            pog = null;
+            attribute = null;
+            if (value instanceof PogNode)
+            {
+                final PogNode node = (PogNode)value;
+                pog = node.getPog();
+            }
+            else if (value instanceof AttributeNode)
+            {
+                final AttributeNode node = (AttributeNode)value;
+                pog = node.getPog();
+                attribute = node.getAttribute();
+            }
+            else
+            {
+                return this;
+            }
+            expanded = exp;
+            leaf = lf;
+
+            final Dimension size = getMySize();
+            setSize(size);
+            setPreferredSize(size);
+
+            return this;
+        }
+
+        private String getValue()
+        {
+            final String value = pog.getAttribute(attribute);
+            if (value == null)
+            {
+                return "";
+            }
+
+            return value;
+        }
+
+        /*
          * @see javax.swing.JComponent#paintComponent(java.awt.Graphics)
          */
-        protected void paintComponent(Graphics g)
+        protected void paintComponent(final Graphics g)
         {
             if (pog == null)
             {
                 return;
             }
 
-            PogType pogType = pog.getPogType();
-            Graphics2D g2 = (Graphics2D)g;
+            final PogType pogType = pog.getPogType();
+            final Graphics2D g2 = (Graphics2D)g;
             g2.addRenderingHints(UtilityFunctions.STANDARD_RENDERING_HINTS);
             g2.setColor(Color.BLACK);
             if (attribute == null)
@@ -475,25 +161,25 @@ public class ActivePogsPanel extends JPanel
                 pogType.drawListIcon(g2, SPACE + (PogPanel.POG_ICON_SIZE - pogType.getListIconWidth()) / 2, SPACE
                     + (PogPanel.POG_ICON_SIZE - pogType.getListIconHeight()) / 2);
 
-                String label = getLabel();
-                if (label != null && label.length() > 0)
+                final String label = getLabel();
+                if ((label != null) && (label.length() > 0))
                 {
                     g2.setFont(FONT_NODE);
-                    FontMetrics fm = g2.getFontMetrics();
-                    Rectangle stringBounds = fm.getStringBounds(label, g2).getBounds();
-                    int drawX = SPACE + PogPanel.POG_ICON_SIZE + POG_TEXT_PADDING;
-                    int drawY = SPACE + (PogPanel.POG_ICON_SIZE - stringBounds.height) / 2 - stringBounds.y;
+                    final FontMetrics fm = g2.getFontMetrics();
+                    final Rectangle stringBounds = fm.getStringBounds(label, g2).getBounds();
+                    final int drawX = SPACE + PogPanel.POG_ICON_SIZE + POG_TEXT_PADDING;
+                    final int drawY = SPACE + (PogPanel.POG_ICON_SIZE - stringBounds.height) / 2 - stringBounds.y;
                     g2.drawString(label, drawX, drawY);
                 }
             }
             else
             {
-                String label = getLabel();
-                String value = getValue();
-                Rectangle keyBounds = g2.getFontMetrics(FONT_KEY).getStringBounds(label, g2).getBounds();
-                Rectangle valueBounds = g2.getFontMetrics(FONT_VALUE).getStringBounds(value, g2).getBounds();
-                int drawX = SPACE;
-                int drawY = SPACE + Math.max(Math.abs(keyBounds.y), Math.abs(valueBounds.y));
+                final String label = getLabel();
+                final String value = getValue();
+                final Rectangle keyBounds = g2.getFontMetrics(FONT_KEY).getStringBounds(label, g2).getBounds();
+                final Rectangle valueBounds = g2.getFontMetrics(FONT_VALUE).getStringBounds(value, g2).getBounds();
+                final int drawX = SPACE;
+                final int drawY = SPACE + Math.max(Math.abs(keyBounds.y), Math.abs(valueBounds.y));
                 g2.setFont(FONT_KEY);
                 g2.drawString(label, drawX, drawY);
                 g2.setFont(FONT_VALUE);
@@ -503,44 +189,383 @@ public class ActivePogsPanel extends JPanel
         }
     }
 
+    /**
+     * A Leaf TreeNode representing a Pog's attribute.
+     * 
+     * @author Iffy
+     */
+    private static class AttributeNode extends DefaultMutableTreeNode
+    {
+        /**
+         * 
+         */
+        private static final long serialVersionUID = -7669642437687369529L;
+
+        public AttributeNode(final String att)
+        {
+            super(att, false);
+        }
+
+        /*
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
+        public boolean equals(final Object o)
+        {
+            if (o == this)
+            {
+                return true;
+            }
+
+            final AttributeNode node = (AttributeNode)o;
+            return (node.getPog().equals(getPog()) && node.getAttribute().equals(getAttribute()));
+        }
+
+        /**
+         * @return Returns the attribute for this node.
+         */
+        public String getAttribute()
+        {
+            return (String)getUserObject();
+        }
+
+        // --- Object Implementation ---
+
+        /**
+         * @return Returns the pog for this node.
+         */
+        public Pog getPog()
+        {
+            return getPogNodeParent().getPog();
+        }
+
+        private PogNode getPogNodeParent()
+        {
+            return (PogNode)getParent();
+        }
+
+        // --- Private Methods ---
+
+        /*
+         * @see java.lang.Object#hashCode()
+         */
+        public int hashCode()
+        {
+            return getPog().hashCode() ^ getAttribute().hashCode();
+        }
+    }
+
+    /**
+     * Class to track the status of branches in the pog tree.
+     * 
+     * @author Iffy
+     */
+    private class BranchTracker implements TreeExpansionListener
+    {
+        private boolean   allExpanded    = false;
+        private final Set collapsedNodes = new HashSet();
+        private final Set expandedNodes  = new HashSet();
+
+        public BranchTracker()
+        {
+        }
+
+        public void collapseAll(final JTree tree)
+        {
+            final DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            collapseAll(tree, (TreeNode)model.getRoot());
+            allExpanded = false;
+        }
+
+        private void collapseAll(final JTree tree, final TreeNode node)
+        {
+            if (node.isLeaf() || !node.getAllowsChildren() || (node.getChildCount() == 0))
+            {
+                return;
+            }
+
+            final DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            tree.collapsePath(new TreePath(model.getPathToRoot(node)));
+            for (int i = 0, size = node.getChildCount(); i < size; ++i)
+            {
+                collapseAll(tree, node.getChildAt(i));
+            }
+        }
+
+        public void expandAll(final JTree tree)
+        {
+            final DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            expandAll(tree, (TreeNode)model.getRoot());
+            allExpanded = true;
+        }
+
+        private void expandAll(final JTree tree, final TreeNode node)
+        {
+            if (node.isLeaf() || !node.getAllowsChildren() || (node.getChildCount() == 0))
+            {
+                return;
+            }
+
+            final DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            tree.expandPath(new TreePath(model.getPathToRoot(node)));
+            for (int i = 0, size = node.getChildCount(); i < size; ++i)
+            {
+                expandAll(tree, node.getChildAt(i));
+            }
+        }
+
+        public void reset()
+        {
+            expandedNodes.clear();
+            collapsedNodes.clear();
+            allExpanded = false;
+        }
+
+        public void restoreTree(final JTree tree)
+        {
+            if (allExpanded)
+            {
+                expandAll(tree);
+                return;
+            }
+
+            final DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+            final RootNode root = (RootNode)model.getRoot();
+
+            tree.removeTreeExpansionListener(this);
+            try
+            {
+                Iterator iterator = new HashSet(expandedNodes).iterator();
+                while (iterator.hasNext())
+                {
+                    final Pog pog = (Pog)iterator.next();
+                    final PogNode node = root.findNodeFor(pog);
+                    if (node != null)
+                    {
+                        final TreePath path = new TreePath(model.getPathToRoot(node));
+                        tree.expandPath(path);
+                    }
+                    else
+                    {
+                        expandedNodes.remove(pog);
+                    }
+                }
+
+                iterator = new HashSet(collapsedNodes).iterator();
+                while (iterator.hasNext())
+                {
+                    final Pog pog = (Pog)iterator.next();
+                    final PogNode node = root.findNodeFor(pog);
+                    if (node != null)
+                    {
+                        final TreePath path = new TreePath(model.getPathToRoot(node));
+                        tree.collapseRow(tree.getRowForPath(path));
+                    }
+                    else
+                    {
+                        collapsedNodes.remove(pog);
+                    }
+                }
+            }
+            finally
+            {
+                tree.addTreeExpansionListener(this);
+            }
+        }
+
+        // --- TreeExpansionListener Implementation ---
+
+        /*
+         * @see javax.swing.event.TreeExpansionListener#treeCollapsed(javax.swing.event.TreeExpansionEvent)
+         */
+        public void treeCollapsed(final TreeExpansionEvent event)
+        {
+            try
+            {
+                final PogNode node = (PogNode)event.getPath().getLastPathComponent();
+                expandedNodes.remove(node.getPog());
+                collapsedNodes.add(node.getPog());
+                allExpanded = false;
+            }
+            catch (final ClassCastException cce)
+            {
+                // ignore non-pog nodes
+            }
+        }
+
+        /*
+         * @see javax.swing.event.TreeExpansionListener#treeExpanded(javax.swing.event.TreeExpansionEvent)
+         */
+        public void treeExpanded(final TreeExpansionEvent event)
+        {
+            try
+            {
+                final PogNode node = (PogNode)event.getPath().getLastPathComponent();
+                expandedNodes.add(node.getPog());
+                collapsedNodes.remove(node.getPog());
+            }
+            catch (final ClassCastException cce)
+            {
+                // ignore non-pog nodes
+            }
+        }
+    }
+    /**
+     * A TreeNode representing a library.
+     * 
+     * @author Iffy
+     */
+    private static class PogNode extends DefaultMutableTreeNode
+    {
+        /**
+         * 
+         */
+        private static final long serialVersionUID = -5086776295684411196L;
+
+        public PogNode(final Pog pog)
+        {
+            super(pog, true);
+            for (final Iterator iterator = getPog().getAttributeNames().iterator(); iterator.hasNext();)
+            {
+                add(new AttributeNode((String)iterator.next()));
+            }
+        }
+
+        /*
+         * @see java.lang.Object#equals(java.lang.Object)
+         */
+        public boolean equals(final Object o)
+        {
+            if (o == this)
+            {
+                return true;
+            }
+
+            final PogNode node = (PogNode)o;
+            return (node.getPog().equals(getPog()));
+        }
+
+        // --- Object Implementation ---
+
+        /**
+         * @return Returns the pog for this node.
+         */
+        public Pog getPog()
+        {
+            return (Pog)getUserObject();
+        }
+
+        /*
+         * @see java.lang.Object#hashCode()
+         */
+        public int hashCode()
+        {
+            return getPog().hashCode();
+        }
+    }
+    /**
+     * Root node class for the tree.
+     * 
+     * @author iffy
+     */
+    private static class RootNode extends DefaultMutableTreeNode
+    {
+        /**
+         * 
+         */
+        private static final long serialVersionUID = -2217746931413629754L;
+
+        public RootNode(final GametableMap map)
+        {
+            super(map, true);
+            for (final Iterator iterator = getMap().getOrderedPogs().iterator(); iterator.hasNext();)
+            {
+                add(new PogNode((Pog)iterator.next()));
+            }
+        }
+
+        public PogNode findNodeFor(final Pog pog)
+        {
+            for (int i = 0, size = getChildCount(); i < size; ++i)
+            {
+                final PogNode node = (PogNode)getChildAt(i);
+                if (pog.equals(node.getPog()))
+                {
+                    return node;
+                }
+            }
+
+            return null;
+        }
+
+        public GametableMap getMap()
+        {
+            return (GametableMap)getUserObject();
+        }
+    }
+
+    private static final Color              BACKGROUND_COLOR    = Color.WHITE;
+
+    private static final float              CLICK_THRESHHOLD    = 2f;
+    private static final Font               FONT_NODE           = Font.decode("sansserif-12");
+    private static final Font               FONT_VALUE          = FONT_NODE;
+    private static final Font               FONT_KEY            = FONT_VALUE.deriveFont(Font.BOLD);
+
+    private static final int                POG_BORDER          = 0;
+    private static final int                POG_MARGIN          = 0;
+
+    // --- Types -----------------------------------------------------------------------------------------------------
+
+    private static final int                POG_PADDING         = 1;
+
+    private static final int                POG_TEXT_PADDING    = 4;
+
+    /**
+     * 
+     */
+    private static final long               serialVersionUID    = -5840985576215910472L;
+
+    private static final int                SPACE               = POG_PADDING + POG_BORDER + POG_MARGIN;
+
+    private static final int                TOTAL_SPACE         = SPACE * 2;
+
     // --- Members ---------------------------------------------------------------------------------------------------
-
-    /**
-     * The main component for this damn thing.
-     */
-    private JTree                     pogTree;
-
-    /**
-     * The scroll pane for the tree.
-     */
-    private JScrollPane               scrollPane;
-
-    /**
-     * A map of GametableMaps to BranchTrackers for thier pog lists.
-     */
-    private Map                       trackers            = new HashMap();
-
-    // --- Pog Dragging Members ---
-
-    private ActivePogTreeCellRenderer pogRenderer         = new ActivePogTreeCellRenderer();
 
     /**
      * The currently grabbed pog.
      */
-    private PogNode                   m_grabbedNode       = null;
-
-    /**
-     * The position of the currently grabbed pog.
-     */
-    private Point                     m_grabPosition      = null;
+    private PogNode                         m_grabbedNode       = null;
 
     /**
      * The offset at which the pog was grabbed.
      */
-    private Point                     m_grabOffset        = null;
+    private Point                           m_grabOffset        = null;
 
-    private int                       m_numClicks         = 0;
-    private Point                     m_lastPressPosition = null;
+    /**
+     * The position of the currently grabbed pog.
+     */
+    private Point                           m_grabPosition      = null;
+
+    // --- Pog Dragging Members ---
+
+    private Point                           m_lastPressPosition = null;
+
+    private int                             m_numClicks         = 0;
+
+    private final ActivePogTreeCellRenderer pogRenderer         = new ActivePogTreeCellRenderer();
+
+    /**
+     * The main component for this damn thing.
+     */
+    private JTree                           pogTree;
+
+    /**
+     * The scroll pane for the tree.
+     */
+    private JScrollPane                     scrollPane;
+    /**
+     * A map of GametableMaps to BranchTrackers for thier pog lists.
+     */
+    private final Map                       trackers            = new HashMap();
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -556,190 +581,49 @@ public class ActivePogsPanel extends JPanel
 
     // --- Methods ---------------------------------------------------------------------------------------------------
 
-    public void refresh()
+    private PogNode getClosestPogNode(final int x, final int y)
     {
-        removeTrackers();
-        GametableMap map = GametableFrame.getGametableFrame().getGametableCanvas().getActiveMap();
-        pogTree.setModel(new DefaultTreeModel(new RootNode(map)));
-        BranchTracker tracker = getTrackerFor(map);
-        pogTree.addTreeExpansionListener(tracker);
-        tracker.restoreTree(pogTree);
+        final TreePath path = pogTree.getClosestPathForLocation(x, y);
+        if (path == null)
+        {
+            return null;
+        }
+
+        for (int i = path.getPathCount(); i-- > 0;)
+        {
+            final Object val = path.getPathComponent(i);
+            if (val instanceof PogNode)
+            {
+                return (PogNode)val;
+            }
+        }
+
+        return null;
     }
 
     // --- Accessor methods ---
 
-    private void removeTrackers()
-    {
-        for (Iterator iterator = trackers.values().iterator(); iterator.hasNext();)
-        {
-            pogTree.removeTreeExpansionListener((TreeExpansionListener)iterator.next());
-        }
-    }
-
-    private BranchTracker getTrackerFor(GametableMap map)
-    {
-        BranchTracker tracker = (BranchTracker)trackers.get(map);
-        if (tracker == null)
-        {
-            tracker = new BranchTracker();
-            trackers.put(map, tracker);
-        }
-
-        return tracker;
-    }
-
     private GametableMap getMap()
     {
-        DefaultTreeModel model = (DefaultTreeModel)getPogTree().getModel();
-        RootNode root = (RootNode)model.getRoot();
+        final DefaultTreeModel model = (DefaultTreeModel)getPogTree().getModel();
+        final RootNode root = (RootNode)model.getRoot();
 
         return root.getMap();
     }
 
-    private BranchTracker getTracker()
-    {
-        return getTrackerFor(getMap());
-    }
-
-    // --- Dragging methods ---
-
-    private void grabPog(PogNode p, Point pos, Point offset)
-    {
-        m_grabbedNode = p;
-        m_grabOffset = offset;
-        m_grabPosition = pos;
-    }
-
-    private void releasePog()
-    {
-        if (m_grabbedNode != null)
-        {
-            Point treePos = UtilityFunctions.getComponentCoordinates(getPogTree(), m_grabPosition);
-            PogNode node = getClosestPogNode(treePos.x, treePos.y);
-            if (node != null)
-            {
-                boolean after = false;
-                int row = getRowForNode(node);
-                if (row > -1)
-                {
-                    Rectangle bounds = pogTree.getRowBounds(row);
-                    if (treePos.y > bounds.y + bounds.height)
-                    {
-                        after = true;
-                    }
-                }
-
-                Pog sourcePog = m_grabbedNode.getPog();
-                Pog targetPog = node.getPog();
-                if (!sourcePog.equals(targetPog))
-                {
-                    List pogs = new ArrayList(GametableFrame.getGametableFrame().getGametableCanvas().getActiveMap()
-                        .getOrderedPogs());
-                    int sourceIndex = pogs.indexOf(sourcePog);
-                    int targetIndex = pogs.indexOf(targetPog);
-                    Map changes = new HashMap();
-                    if (sourceIndex < targetIndex)
-                    {
-                        // Moving a pog down in the list
-                        if (!after)
-                        {
-                            --targetIndex;
-                            targetPog = (Pog)pogs.get(targetIndex);
-                        }
-                        changes.put(new Integer(sourcePog.getId()), new Long(targetPog.getSortOrder()));
-                        for (int i = sourceIndex + 1; i <= targetIndex; ++i)
-                        {
-                            Pog a = (Pog)pogs.get(i);
-                            Pog b = (Pog)pogs.get(i - 1);
-
-                            changes.put(new Integer(a.getId()), new Long(b.getSortOrder()));
-                        }
-                    }
-                    else
-                    {
-                        // Moving a pog up in the list
-                        changes.put(new Integer(sourcePog.getId()), new Long(targetPog.getSortOrder()));
-                        for (int i = targetIndex; i < sourceIndex; ++i)
-                        {
-                            Pog a = (Pog)pogs.get(i);
-                            Pog b = (Pog)pogs.get(i + 1);
-
-                            changes.put(new Integer(a.getId()), new Long(b.getSortOrder()));
-                        }
-                    }
-                    GametableFrame.getGametableFrame().getGametableCanvas().reorderPogs(changes);
-                }
-            }
-
-            m_grabbedNode = null;
-            m_grabPosition = null;
-            m_grabOffset = null;
-            repaint();
-        }
-    }
-
-    private void moveGrabPosition(Point pos)
-    {
-        if (m_grabbedNode != null)
-        {
-            m_grabPosition = pos;
-            repaint();
-        }
-    }
-
-    private PogNode getPogNode(int x, int y)
-    {
-        TreePath path = pogTree.getPathForLocation(x, y);
-        if (path == null)
-        {
-            return null;
-        }
-
-        for (int i = path.getPathCount(); i-- > 0;)
-        {
-            Object val = path.getPathComponent(i);
-            if (val instanceof PogNode)
-            {
-                return (PogNode)val;
-            }
-        }
-
-        return null;
-    }
-
-    private PogNode getClosestPogNode(int x, int y)
-    {
-        TreePath path = pogTree.getClosestPathForLocation(x, y);
-        if (path == null)
-        {
-            return null;
-        }
-
-        for (int i = path.getPathCount(); i-- > 0;)
-        {
-            Object val = path.getPathComponent(i);
-            if (val instanceof PogNode)
-            {
-                return (PogNode)val;
-            }
-        }
-
-        return null;
-    }
-
-    private PogNode getNextPogNode(PogNode node)
+    private PogNode getNextPogNode(final PogNode node)
     {
         int row = getRowForNode(node);
         while (true)
         {
             ++row;
-            TreePath path = pogTree.getPathForRow(row);
+            final TreePath path = pogTree.getPathForRow(row);
             if (path == null)
             {
                 return null;
             }
 
-            Object val = path.getLastPathComponent();
+            final Object val = path.getLastPathComponent();
             if (val instanceof PogNode)
             {
                 return (PogNode)val;
@@ -747,132 +631,24 @@ public class ActivePogsPanel extends JPanel
         }
     }
 
-    private int getRowForNode(PogNode node)
+    private PogNode getPogNode(final int x, final int y)
     {
-        DefaultTreeModel model = (DefaultTreeModel)pogTree.getModel();
-        TreePath path = new TreePath(model.getPathToRoot(node));
-        return pogTree.getRowForPath(path);
-    }
-
-    // --- Component Implementation ---
-
-    /*
-     * @see java.awt.Component#paint(java.awt.Graphics)
-     */
-    public void paint(Graphics g)
-    {
-        super.paint(g);
-        try
+        final TreePath path = pogTree.getPathForLocation(x, y);
+        if (path == null)
         {
-            if (m_grabbedNode != null)
+            return null;
+        }
+
+        for (int i = path.getPathCount(); i-- > 0;)
+        {
+            final Object val = path.getPathComponent(i);
+            if (val instanceof PogNode)
             {
-                Graphics2D g2 = (Graphics2D)g;
-                Point treePos = UtilityFunctions.getComponentCoordinates(getPogTree(), m_grabPosition);
-                Point localPos = UtilityFunctions.getComponentCoordinates(this, m_grabPosition);
-
-                PogNode node = getClosestPogNode(treePos.x, treePos.y);
-                if (node != null)
-                {
-                    int row = getRowForNode(node);
-                    if (row > -1)
-                    {
-                        Rectangle bounds = pogTree.getRowBounds(row);
-                        Point thisPos = UtilityFunctions.convertCoordinates(getPogTree(), this, new Point(bounds.x,
-                            bounds.y));
-                        int drawY = thisPos.y;
-
-                        // go to next node if in attributes area
-                        if (localPos.y > thisPos.y + bounds.height)
-                        {
-                            PogNode nextNode = getNextPogNode(node);
-                            if (nextNode == null)
-                            {
-                                drawY += bounds.height;
-                            }
-                            else
-                            {
-                                node = nextNode;
-                                row = getRowForNode(node);
-                                bounds = pogTree.getRowBounds(row);
-                                thisPos = UtilityFunctions.convertCoordinates(getPogTree(), this, new Point(bounds.x,
-                                    bounds.y));
-                                drawY = thisPos.y;
-                            }
-                        }
-
-                        final int PADDING = 5;
-                        int drawX = PADDING;
-                        g2.setColor(Color.DARK_GRAY);
-                        g2.drawLine(drawX, drawY, drawX + pogTree.getWidth() - (PADDING * 2), drawY);
-                    }
-                }
-
-                g2.translate(localPos.x - m_grabOffset.x, localPos.y - m_grabOffset.y);
-                JComponent comp = (JComponent)pogRenderer.getTreeCellRendererComponent(pogTree, m_grabbedNode, false,
-                    false, true, 0, false);
-                comp.paint(g2);
-                g2.dispose();
+                return (PogNode)val;
             }
         }
-        catch (Throwable t)
-        {
-            Log.log(Log.SYS, t);
-        }
-    }
 
-    // --- Initialization methods ---
-
-    private JToolBar getToolbar()
-    {
-        JToolBar toolbar = new JToolBar();
-        toolbar.setFloatable(false);
-        toolbar.setMargin(new Insets(2, 2, 2, 2));
-        toolbar.setRollover(true);
-
-        Insets margin = new Insets(2, 2, 2, 2);
-        Image collapseImage = UtilityFunctions.getImage("assets/collapse.png");
-        JButton collapseButton = new JButton("Collapse All", new ImageIcon(collapseImage));
-        collapseButton.setFocusable(false);
-        collapseButton.setMargin(margin);
-        collapseButton.addActionListener(new ActionListener()
-        {
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(ActionEvent e)
-            {
-                getTracker().collapseAll(getPogTree());
-            }
-        });
-        toolbar.add(collapseButton);
-
-        Image expandImage = UtilityFunctions.getImage("assets/expand.png");
-        JButton expandButton = new JButton("Expand All", new ImageIcon(expandImage));
-        expandButton.setMargin(margin);
-        expandButton.setFocusable(false);
-        expandButton.addActionListener(new ActionListener()
-        {
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(ActionEvent e)
-            {
-                getTracker().expandAll(getPogTree());
-            }
-        });
-        toolbar.add(expandButton);
-
-        return toolbar;
-    }
-
-    private JScrollPane getScrollPane()
-    {
-        if (scrollPane == null)
-        {
-            scrollPane = new JScrollPane(getPogTree());
-            scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        }
-        return scrollPane;
+        return null;
     }
 
     private JTree getPogTree()
@@ -891,24 +667,31 @@ public class ActivePogsPanel extends JPanel
             pogTree.addMouseListener(new MouseAdapter()
             {
                 /*
+                 * @see java.awt.event.MouseListener#mouseReleased(java.awt.event.MouseEvent)
+                 */
+                public void mouseExited(final MouseEvent e)
+                {
+                }
+
+                /*
                  * @see java.awt.event.MouseAdapter#mousePressed(java.awt.event.MouseEvent)
                  */
-                public void mousePressed(MouseEvent e)
+                public void mousePressed(final MouseEvent e)
                 {
                     m_lastPressPosition = new Point(e.getX(), e.getY());
-                    TreePath path = pogTree.getPathForLocation(e.getX(), e.getY());
+                    final TreePath path = pogTree.getPathForLocation(e.getX(), e.getY());
                     if (path == null)
                     {
                         return;
                     }
 
-                    Object val = path.getLastPathComponent();
+                    final Object val = path.getLastPathComponent();
                     if (val instanceof PogNode)
                     {
-                        PogNode node = (PogNode)val;
-                        Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, m_lastPressPosition);
-                        Point localCoords = new Point(node.getPog().getPogType().getListIconWidth() / 2, node.getPog()
-                            .getPogType().getListIconHeight() / 2);
+                        final PogNode node = (PogNode)val;
+                        final Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, m_lastPressPosition);
+                        final Point localCoords = new Point(node.getPog().getPogType().getListIconWidth() / 2, node
+                            .getPog().getPogType().getListIconHeight() / 2);
                         grabPog(node, screenCoords, localCoords);
                     }
                 }
@@ -916,10 +699,10 @@ public class ActivePogsPanel extends JPanel
                 /*
                  * @see java.awt.event.MouseAdapter#mouseReleased(java.awt.event.MouseEvent)
                  */
-                public void mouseReleased(MouseEvent e)
+                public void mouseReleased(final MouseEvent e)
                 {
                     releasePog();
-                    Point p = new Point(e.getX(), e.getY());
+                    final Point p = new Point(e.getX(), e.getY());
 
                     if (p.distance(m_lastPressPosition) <= CLICK_THRESHHOLD)
                     {
@@ -928,19 +711,12 @@ public class ActivePogsPanel extends JPanel
 
                     if (m_numClicks == 2)
                     {
-                        PogNode node = getPogNode(e.getX(), e.getY());
+                        final PogNode node = getPogNode(e.getX(), e.getY());
                         if (node != null)
                         {
                             GametableFrame.getGametableFrame().getGametableCanvas().scrollToPog(node.getPog());
                         }
                     }
-                }
-
-                /*
-                 * @see java.awt.event.MouseListener#mouseReleased(java.awt.event.MouseEvent)
-                 */
-                public void mouseExited(MouseEvent e)
-                {
                 }
 
             });
@@ -950,7 +726,7 @@ public class ActivePogsPanel extends JPanel
                 /*
                  * @see java.awt.event.MouseMotionAdapter#mouseDragged(java.awt.event.MouseEvent)
                  */
-                public void mouseDragged(MouseEvent e)
+                public void mouseDragged(final MouseEvent e)
                 {
                     mouseMoved(e);
                 }
@@ -958,9 +734,10 @@ public class ActivePogsPanel extends JPanel
                 /*
                  * @see java.awt.event.MouseMotionAdapter#mouseMoved(java.awt.event.MouseEvent)
                  */
-                public void mouseMoved(MouseEvent e)
+                public void mouseMoved(final MouseEvent e)
                 {
-                    Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e.getY()));
+                    final Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e
+                        .getY()));
                     moveGrabPosition(screenCoords);
                     m_numClicks = 0;
                 }
@@ -968,5 +745,254 @@ public class ActivePogsPanel extends JPanel
             refresh();
         }
         return pogTree;
+    }
+
+    // --- Dragging methods ---
+
+    private int getRowForNode(final PogNode node)
+    {
+        final DefaultTreeModel model = (DefaultTreeModel)pogTree.getModel();
+        final TreePath path = new TreePath(model.getPathToRoot(node));
+        return pogTree.getRowForPath(path);
+    }
+
+    private JScrollPane getScrollPane()
+    {
+        if (scrollPane == null)
+        {
+            scrollPane = new JScrollPane(getPogTree());
+            scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        }
+        return scrollPane;
+    }
+
+    private JToolBar getToolbar()
+    {
+        final JToolBar toolbar = new JToolBar();
+        toolbar.setFloatable(false);
+        toolbar.setMargin(new Insets(2, 2, 2, 2));
+        toolbar.setRollover(true);
+
+        final Insets margin = new Insets(2, 2, 2, 2);
+        final Image collapseImage = UtilityFunctions.getImage("assets/collapse.png");
+        final JButton collapseButton = new JButton("Collapse All", new ImageIcon(collapseImage));
+        collapseButton.setFocusable(false);
+        collapseButton.setMargin(margin);
+        collapseButton.addActionListener(new ActionListener()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                getTracker().collapseAll(getPogTree());
+            }
+        });
+        toolbar.add(collapseButton);
+
+        final Image expandImage = UtilityFunctions.getImage("assets/expand.png");
+        final JButton expandButton = new JButton("Expand All", new ImageIcon(expandImage));
+        expandButton.setMargin(margin);
+        expandButton.setFocusable(false);
+        expandButton.addActionListener(new ActionListener()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                getTracker().expandAll(getPogTree());
+            }
+        });
+        toolbar.add(expandButton);
+
+        return toolbar;
+    }
+
+    private BranchTracker getTracker()
+    {
+        return getTrackerFor(getMap());
+    }
+
+    private BranchTracker getTrackerFor(final GametableMap map)
+    {
+        BranchTracker tracker = (BranchTracker)trackers.get(map);
+        if (tracker == null)
+        {
+            tracker = new BranchTracker();
+            trackers.put(map, tracker);
+        }
+
+        return tracker;
+    }
+
+    private void grabPog(final PogNode p, final Point pos, final Point offset)
+    {
+        m_grabbedNode = p;
+        m_grabOffset = offset;
+        m_grabPosition = pos;
+    }
+
+    private void moveGrabPosition(final Point pos)
+    {
+        if (m_grabbedNode != null)
+        {
+            m_grabPosition = pos;
+            repaint();
+        }
+    }
+
+    // --- Component Implementation ---
+
+    /*
+     * @see java.awt.Component#paint(java.awt.Graphics)
+     */
+    public void paint(final Graphics g)
+    {
+        super.paint(g);
+        try
+        {
+            if (m_grabbedNode != null)
+            {
+                final Graphics2D g2 = (Graphics2D)g;
+                final Point treePos = UtilityFunctions.getComponentCoordinates(getPogTree(), m_grabPosition);
+                final Point localPos = UtilityFunctions.getComponentCoordinates(this, m_grabPosition);
+
+                PogNode node = getClosestPogNode(treePos.x, treePos.y);
+                if (node != null)
+                {
+                    int row = getRowForNode(node);
+                    if (row > -1)
+                    {
+                        Rectangle bounds = pogTree.getRowBounds(row);
+                        Point thisPos = UtilityFunctions.convertCoordinates(getPogTree(), this, new Point(bounds.x,
+                            bounds.y));
+                        int drawY = thisPos.y;
+
+                        // go to next node if in attributes area
+                        if (localPos.y > thisPos.y + bounds.height)
+                        {
+                            final PogNode nextNode = getNextPogNode(node);
+                            if (nextNode == null)
+                            {
+                                drawY += bounds.height;
+                            }
+                            else
+                            {
+                                node = nextNode;
+                                row = getRowForNode(node);
+                                bounds = pogTree.getRowBounds(row);
+                                thisPos = UtilityFunctions.convertCoordinates(getPogTree(), this, new Point(bounds.x,
+                                    bounds.y));
+                                drawY = thisPos.y;
+                            }
+                        }
+
+                        final int PADDING = 5;
+                        final int drawX = PADDING;
+                        g2.setColor(Color.DARK_GRAY);
+                        g2.drawLine(drawX, drawY, drawX + pogTree.getWidth() - (PADDING * 2), drawY);
+                    }
+                }
+
+                g2.translate(localPos.x - m_grabOffset.x, localPos.y - m_grabOffset.y);
+                final JComponent comp = (JComponent)pogRenderer.getTreeCellRendererComponent(pogTree, m_grabbedNode,
+                    false, false, true, 0, false);
+                comp.paint(g2);
+                g2.dispose();
+            }
+        }
+        catch (final Throwable t)
+        {
+            Log.log(Log.SYS, t);
+        }
+    }
+
+    // --- Initialization methods ---
+
+    public void refresh()
+    {
+        removeTrackers();
+        final GametableMap map = GametableFrame.getGametableFrame().getGametableCanvas().getActiveMap();
+        pogTree.setModel(new DefaultTreeModel(new RootNode(map)));
+        final BranchTracker tracker = getTrackerFor(map);
+        pogTree.addTreeExpansionListener(tracker);
+        tracker.restoreTree(pogTree);
+    }
+
+    private void releasePog()
+    {
+        if (m_grabbedNode != null)
+        {
+            final Point treePos = UtilityFunctions.getComponentCoordinates(getPogTree(), m_grabPosition);
+            final PogNode node = getClosestPogNode(treePos.x, treePos.y);
+            if (node != null)
+            {
+                boolean after = false;
+                final int row = getRowForNode(node);
+                if (row > -1)
+                {
+                    final Rectangle bounds = pogTree.getRowBounds(row);
+                    if (treePos.y > bounds.y + bounds.height)
+                    {
+                        after = true;
+                    }
+                }
+
+                final Pog sourcePog = m_grabbedNode.getPog();
+                Pog targetPog = node.getPog();
+                if (!sourcePog.equals(targetPog))
+                {
+                    final List pogs = new ArrayList(GametableFrame.getGametableFrame().getGametableCanvas()
+                        .getActiveMap().getOrderedPogs());
+                    final int sourceIndex = pogs.indexOf(sourcePog);
+                    int targetIndex = pogs.indexOf(targetPog);
+                    final Map changes = new HashMap();
+                    if (sourceIndex < targetIndex)
+                    {
+                        // Moving a pog down in the list
+                        if (!after)
+                        {
+                            --targetIndex;
+                            targetPog = (Pog)pogs.get(targetIndex);
+                        }
+                        changes.put(new Integer(sourcePog.getId()), new Long(targetPog.getSortOrder()));
+                        for (int i = sourceIndex + 1; i <= targetIndex; ++i)
+                        {
+                            final Pog a = (Pog)pogs.get(i);
+                            final Pog b = (Pog)pogs.get(i - 1);
+
+                            changes.put(new Integer(a.getId()), new Long(b.getSortOrder()));
+                        }
+                    }
+                    else
+                    {
+                        // Moving a pog up in the list
+                        changes.put(new Integer(sourcePog.getId()), new Long(targetPog.getSortOrder()));
+                        for (int i = targetIndex; i < sourceIndex; ++i)
+                        {
+                            final Pog a = (Pog)pogs.get(i);
+                            final Pog b = (Pog)pogs.get(i + 1);
+
+                            changes.put(new Integer(a.getId()), new Long(b.getSortOrder()));
+                        }
+                    }
+                    GametableFrame.getGametableFrame().getGametableCanvas().reorderPogs(changes);
+                }
+            }
+
+            m_grabbedNode = null;
+            m_grabPosition = null;
+            m_grabOffset = null;
+            repaint();
+        }
+    }
+
+    private void removeTrackers()
+    {
+        for (final Iterator iterator = trackers.values().iterator(); iterator.hasNext();)
+        {
+            pogTree.removeTreeExpansionListener((TreeExpansionListener)iterator.next());
+        }
     }
 }

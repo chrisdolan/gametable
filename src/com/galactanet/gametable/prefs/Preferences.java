@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 
+
 /**
  * Class that encapsulates all of the persistable preference state for GameTable.
  * 
@@ -23,14 +24,12 @@ public class Preferences
     /**
      * The map of custom preference descriptors.
      */
-    private Map preferenceDescriptors = new HashMap();
+    private final Map preferenceDescriptors = new HashMap();
 
     /**
      * Map of the custom preference values.
      */
-    private Map preferenceValues      = new HashMap();
-
-
+    private final Map preferenceValues      = new HashMap();
 
     // --- Constructors ---
 
@@ -43,36 +42,15 @@ public class Preferences
 
     // --- Public Functions ---
 
-    public void addPreference(PreferenceDescriptor pref)
+    public void addPreference(final PreferenceDescriptor pref)
     {
         preferenceDescriptors.put(pref.getName(), pref);
         preferenceValues.put(pref.getName(), pref.getDefaultValue());
     }
 
-    public PreferenceDescriptor getPreference(String name)
+    public boolean getBooleanValue(final String name)
     {
-        return (PreferenceDescriptor)preferenceDescriptors.get(name);
-    }
-
-    public Set getPreferenceNames()
-    {
-        return Collections.unmodifiableSet(preferenceDescriptors.entrySet());
-    }
-
-    public Object getValue(String name)
-    {
-        Object o = preferenceValues.get(name);
-        if (o == null)
-        {
-            return getDefaultValue(name);
-        }
-
-        return o;
-    }
-
-    public boolean getBooleanValue(String name)
-    {
-        Object o = preferenceValues.get(name);
+        final Object o = preferenceValues.get(name);
         if (o == null)
         {
             return getDefaultBooleanValue(name);
@@ -81,9 +59,60 @@ public class Preferences
         return ("true".equalsIgnoreCase(o.toString()));
     }
 
-    public int getIntegerValue(String name)
+    private boolean getDefaultBooleanValue(final String name)
     {
-        Object o = preferenceValues.get(name);
+        final PreferenceDescriptor pref = getPreference(name);
+        if ((pref == null) || (pref.getDefaultValue() == null))
+        {
+            return false;
+        }
+
+        return ("true".equalsIgnoreCase(pref.getDefaultValue().toString()));
+    }
+
+    private int getDefaultIntegerValue(final String name)
+    {
+        final PreferenceDescriptor pref = getPreference(name);
+        if ((pref == null) || (pref.getDefaultValue() == null))
+        {
+            return Integer.MIN_VALUE;
+        }
+
+        try
+        {
+            return Integer.parseInt(pref.getDefaultValue().toString());
+        }
+        catch (final NumberFormatException nfe)
+        {
+            return Integer.MIN_VALUE;
+        }
+    }
+
+    private String getDefaultStringValue(final String name)
+    {
+        final PreferenceDescriptor pref = getPreference(name);
+        if ((pref == null) || (pref.getDefaultValue() == null))
+        {
+            return null;
+        }
+
+        return pref.getDefaultValue().toString();
+    }
+
+    private Object getDefaultValue(final String name)
+    {
+        final PreferenceDescriptor pref = getPreference(name);
+        if (pref == null)
+        {
+            return null;
+        }
+
+        return pref.getDefaultValue();
+    }
+
+    public int getIntegerValue(final String name)
+    {
+        final Object o = preferenceValues.get(name);
         if (o == null)
         {
             return getDefaultIntegerValue(name);
@@ -93,15 +122,27 @@ public class Preferences
         {
             return Integer.parseInt(o.toString());
         }
-        catch (NumberFormatException nfe)
+        catch (final NumberFormatException nfe)
         {
             return getDefaultIntegerValue(name);
         }
     }
 
-    public String getStringValue(String name)
+    // --- Private Functions ---
+
+    public PreferenceDescriptor getPreference(final String name)
     {
-        Object o = preferenceValues.get(name);
+        return (PreferenceDescriptor)preferenceDescriptors.get(name);
+    }
+
+    public Set getPreferenceNames()
+    {
+        return Collections.unmodifiableSet(preferenceDescriptors.entrySet());
+    }
+
+    public String getStringValue(final String name)
+    {
+        final Object o = preferenceValues.get(name);
         if (o == null)
         {
             return getDefaultStringValue(name);
@@ -110,56 +151,14 @@ public class Preferences
         return o.toString();
     }
 
-    // --- Private Functions ---
-
-    private Object getDefaultValue(String name)
+    public Object getValue(final String name)
     {
-        PreferenceDescriptor pref = getPreference(name);
-        if (pref == null)
+        final Object o = preferenceValues.get(name);
+        if (o == null)
         {
-            return null;
+            return getDefaultValue(name);
         }
 
-        return pref.getDefaultValue();
-    }
-
-    private boolean getDefaultBooleanValue(String name)
-    {
-        PreferenceDescriptor pref = getPreference(name);
-        if (pref == null || pref.getDefaultValue() == null)
-        {
-            return false;
-        }
-
-        return ("true".equalsIgnoreCase(pref.getDefaultValue().toString()));
-    }
-
-    private int getDefaultIntegerValue(String name)
-    {
-        PreferenceDescriptor pref = getPreference(name);
-        if (pref == null || pref.getDefaultValue() == null)
-        {
-            return Integer.MIN_VALUE;
-        }
-
-        try
-        {
-            return Integer.parseInt(pref.getDefaultValue().toString());
-        }
-        catch (NumberFormatException nfe)
-        {
-            return Integer.MIN_VALUE;
-        }
-    }
-
-    private String getDefaultStringValue(String name)
-    {
-        PreferenceDescriptor pref = getPreference(name);
-        if (pref == null || pref.getDefaultValue() == null)
-        {
-            return null;
-        }
-
-        return pref.getDefaultValue().toString();
+        return o;
     }
 }

@@ -24,8 +24,8 @@ public class XmlSerializer
 {
     // --- Members ---------------------------------------------------------------------------------------------------
 
-    Writer  out;
     boolean bTagOpen = false;
+    Writer  out;
     List    tagStack = new LinkedList();
 
     // --- Constructors ----------------------------------------------------------------------------------------------
@@ -36,23 +36,7 @@ public class XmlSerializer
 
     // --- Methods ---------------------------------------------------------------------------------------------------
 
-    public void startDocument(Writer w) throws IOException
-    {
-        out = w;
-        out.write("<?xml version=\"1.0\"?>");
-        tagStack.clear();
-    }
-
-    public void startElement(String name) throws IOException
-    {
-        checkTagClose();
-        out.write('<');
-        out.write(name);
-        pushTag(name);
-        bTagOpen = true;
-    }
-
-    public void addAttribute(String name, String value) throws IOException
+    public void addAttribute(final String name, final String value) throws IOException
     {
         out.write(' ');
         out.write(name);
@@ -61,19 +45,33 @@ public class XmlSerializer
         out.write('"');
     }
 
-    public void addAttributes(Map attributes) throws IOException
+    public void addAttributes(final Map attributes) throws IOException
     {
-        for (Iterator iterator = attributes.entrySet().iterator(); iterator.hasNext();)
+        for (final Iterator iterator = attributes.entrySet().iterator(); iterator.hasNext();)
         {
-            Map.Entry entry = (Map.Entry)iterator.next();
+            final Map.Entry entry = (Map.Entry)iterator.next();
             addAttribute((String)entry.getKey(), (String)entry.getValue());
         }
     }
 
-    public void addText(String text) throws IOException
+    public void addText(final String text) throws IOException
     {
         checkTagClose();
         UtilityFunctions.xmlEncode(out, new StringReader(text));
+    }
+
+    private void checkTagClose() throws IOException
+    {
+        if (bTagOpen)
+        {
+            out.write('>');
+            bTagOpen = false;
+        }
+    }
+
+    public void endDocument() throws IOException
+    {
+        out.flush();
     }
 
     public void endElement() throws IOException
@@ -92,30 +90,32 @@ public class XmlSerializer
         bTagOpen = false;
     }
 
-    public void endDocument() throws IOException
-    {
-        out.flush();
-    }
-
-    /* --- Private Methods ------------------------------------------------- */
-
-    private void pushTag(String name)
-    {
-        tagStack.add(0, name);
-    }
-
     private String popTag()
     {
         return (String)tagStack.remove(0);
     }
 
-    private void checkTagClose() throws IOException
+    /* --- Private Methods ------------------------------------------------- */
+
+    private void pushTag(final String name)
     {
-        if (bTagOpen)
-        {
-            out.write('>');
-            bTagOpen = false;
-        }
+        tagStack.add(0, name);
+    }
+
+    public void startDocument(final Writer w) throws IOException
+    {
+        out = w;
+        out.write("<?xml version=\"1.0\"?>");
+        tagStack.clear();
+    }
+
+    public void startElement(final String name) throws IOException
+    {
+        checkTagClose();
+        out.write('<');
+        out.write(name);
+        pushTag(name);
+        bTagOpen = true;
     }
 
 }

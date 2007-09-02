@@ -23,14 +23,36 @@ public class GametableMap
 
     /* ******************* CONSTRUCTION ************************ */
 
-    private GametableMap()
-    {
-        // no default construction allowed
-    }
+    protected boolean       m_bIsSharedMap;
+
+    /** ************************** CLASS DATA ****************************** */
+    // lines on the map
+    protected List          m_lines         = new ArrayList();
+
+    /* ***************** LINES MANAGEMENT********************* */
+
+    protected SortedSet     m_orderedPogs   = new TreeSet();
+
+    // pogs on the map
+    protected List          m_pogs          = new ArrayList();
+
+    private int             m_redoIndex     = -1;
+
+    // add to origin to get actual coordinates.
+    // (Negative if inside image)
+    private int             m_scrollX;
+
+    // add to origin to get actual coordinates.
+    // (Negative if inside image)
+    private int             m_scrollY;
+
+    /* ***************** POGS MANAGEMENT********************* */
+
+    private List            m_undoLevels    = new ArrayList();
 
     // bIsSharedMap is true if this is the shared gametable map.
     // it is false if it's a private map (private layer).
-    public GametableMap(boolean bIsSharedMap)
+    public GametableMap(final boolean bIsSharedMap)
     {
         m_bIsSharedMap = bIsSharedMap;
 
@@ -39,83 +61,12 @@ public class GametableMap
         endUndoableAction(-1, -1);
     }
 
-    /* ***************** LINES MANAGEMENT********************* */
-
-    public int getNumLines()
-    {
-        return m_lines.size();
-    }
-
-    public LineSegment getLineAt(int idx)
-    {
-        return (LineSegment)m_lines.get(idx);
-    }
-
-    public void addLine(LineSegment ls)
+    public void addLine(final LineSegment ls)
     {
         m_lines.add(ls);
     }
 
-    public void removeLine(LineSegment ls)
-    {
-        m_lines.remove(ls);
-    }
-
-    public void clearLines()
-    {
-        m_lines = new ArrayList();
-    }
-
-    /* ***************** POGS MANAGEMENT********************* */
-
-    public List getPogs()
-    {
-        return Collections.unmodifiableList(m_pogs);
-    }
-
-    public SortedSet getOrderedPogs()
-    {
-        return Collections.unmodifiableSortedSet(m_orderedPogs);
-    }
-
-    public Pog getPogNamed(String pogName)
-    {
-        List pogs = getPogsNamed(pogName);
-        if (pogs.isEmpty())
-        {
-            return null;
-        }
-        
-        return (Pog)pogs.get(0);
-    }
-
-    public List getPogsNamed(String pogName)
-    {
-        String normalizedName = UtilityFunctions.normalizeName(pogName);
-        List retVal = new ArrayList();
-        for (int i = 0, size = getNumPogs(); i < size; ++i)
-        {
-            Pog pog = getPog(i);
-            if (UtilityFunctions.normalizeName(pog.getText()).equals(normalizedName))
-            {
-                retVal.add(pog);
-            }
-        }
-
-        return retVal;
-    }
-
-    public int getNumPogs()
-    {
-        return m_pogs.size();
-    }
-
-    public Pog getPog(int idx)
-    {
-        return (Pog)m_pogs.get(idx);
-    }
-
-    public void addPog(Pog pog)
+    public void addPog(final Pog pog)
     {
         m_pogs.add(pog);
         if (!pog.isUnderlay())
@@ -124,42 +75,79 @@ public class GametableMap
         }
     }
 
-    public void removePog(Pog pog)
+    private void adoptState(final MapState state)
     {
-        m_pogs.remove(pog);
-        m_orderedPogs.remove(pog);
+        // adopt the lines from the MapState
+        m_lines = new ArrayList();
+        for (int i = 0; i < state.m_lineSegments.size(); i++)
+        {
+            final LineSegment ls = (LineSegment)state.m_lineSegments.get(i);
+            final LineSegment toAdd = new LineSegment(ls);
+            m_lines.add(toAdd);
+        }
     }
-    
-    public void removeCardPogsForCards(DeckData.Card discards[])
-    {
-    	List removeList = new ArrayList();
-    	
-    	for ( int i=0 ; i<m_pogs.size() ; i++ )
-    	{
-    		Pog pog = (Pog)m_pogs.get(i);
-    		if ( pog.isCardPog() )
-    		{
-    			DeckData.Card pogCard = pog.getCard();
-    			// this is a card pog. Is it oue of the discards?
-    			for ( int j=0 ; j<discards.length ; j++ )
-    			{
-    				if ( pogCard.equals(discards[j]))
-    				{
-						// it's the pog for this card
-						removeList.add(pog);
-    				}
-    			}
-    		}
-    	}
 
-    	// remove any offending pogs
-    	if ( removeList.size() > 0 )
-    	{
-    		for ( int i=0 ; i<removeList.size() ; i++ )
-    		{
-    			removePog((Pog)removeList.get(i));
-    		}
-    	}
+    // call before making changes you want to be undoable
+    public void beginUndoableAction()
+    {
+        // nothing needed here yet
+    }
+
+    public boolean canRedo()
+    {
+        // you can't redo if there's no action to redo
+        if (m_redoIndex < 0)
+        {
+            return false;
+        }
+
+        // you can redo if it's the private layer
+        if (!m_bIsSharedMap)
+        {
+            return true;
+        }
+
+        // you can't redo if it's not an action you did
+        final int myID = GametableFrame.getGametableFrame().getMyPlayerId();
+
+        final MapState nextRedoable = (MapState)m_undoLevels.get(m_redoIndex);
+        if (nextRedoable.m_playerID == myID)
+        {
+            // you did the last redoable action. You can redo it
+            return true;
+        }
+        return false;
+    }
+
+    public boolean canUndo()
+    {
+        // if there's nothing to undo, then no, you can't undo it
+        if (m_undoLevels.size() == 0)
+        {
+            return false;
+        }
+
+        if (!m_bIsSharedMap)
+        {
+            // we're the private layer. We can undo anything
+            return true;
+        }
+
+        // the most recent action has to be yours for it to be undoable
+        final int myID = GametableFrame.getGametableFrame().getMyPlayerId();
+
+        final MapState lastUndoable = (MapState)m_undoLevels.get(m_undoLevels.size() - 1);
+        if (lastUndoable.m_playerID == myID)
+        {
+            // you did the last undoable action. You can undo
+            return true;
+        }
+        return false;
+    }
+
+    public void clearLines()
+    {
+        m_lines = new ArrayList();
     }
 
     public void clearPogs()
@@ -168,21 +156,73 @@ public class GametableMap
         m_orderedPogs.clear();
     }
 
-    public Pog getPogByID(int id)
+    /** ***************** UNDO MANAGEMENT********************* */
+    public void clearUndos()
     {
-        for (int i = 0, size = getNumPogs(); i < size; ++i)
-        {
-            Pog pog = getPog(i);
-            if (pog.getId() == id)
-            {
-                return pog;
-            }
-        }
+        m_undoLevels = new ArrayList();
+        m_redoIndex = -1;
 
-        return null;
+        // seed it
+        beginUndoableAction();
+        endUndoableAction(-1, -1);
     }
 
-    public Pog getPogAt(Point modelPosition)
+    // call after making the changes you want undoable
+    public void endUndoableAction(final int playerID, final int stateID)
+    {
+        // adding an action means removing any actions from the undo tree beyond the current state
+        if (m_redoIndex >= 0)
+        {
+            killStates(m_redoIndex);
+            m_redoIndex = -1;
+        }
+
+        final MapState state = new MapState();
+        state.setLines(m_lines);
+        state.m_playerID = playerID;
+        state.m_stateID = stateID;
+
+        // add it to the undo stack
+        m_undoLevels.add(state);
+
+        // trim the stack if necessary
+        if (m_undoLevels.size() > MAX_UNDO_LEVELS)
+        {
+            // dump the earliest one
+            m_undoLevels.remove(0);
+        }
+
+        // System.out.println("Added undoable - state:"+stateID+", plr:"+playerID);
+    }
+
+    public LineSegment getLineAt(final int idx)
+    {
+        return (LineSegment)m_lines.get(idx);
+    }
+
+    /* ***************** SCROLL MANAGEMENT********************* */
+
+    public int getNumLines()
+    {
+        return m_lines.size();
+    }
+
+    public int getNumPogs()
+    {
+        return m_pogs.size();
+    }
+
+    public SortedSet getOrderedPogs()
+    {
+        return Collections.unmodifiableSortedSet(m_orderedPogs);
+    }
+
+    public Pog getPog(final int idx)
+    {
+        return (Pog)m_pogs.get(idx);
+    }
+
+    public Pog getPogAt(final Point modelPosition)
     {
         if (modelPosition == null)
         {
@@ -194,7 +234,7 @@ public class GametableMap
 
         for (int i = 0; i < getNumPogs(); i++)
         {
-            Pog pog = getPog(i);
+            final Pog pog = getPog(i);
 
             if (pog.testHit(modelPosition))
             {
@@ -219,42 +259,50 @@ public class GametableMap
         return underlayHit;
     }
 
-    public void reorderPogs(Map changes)
+    public Pog getPogByID(final int id)
     {
-        if (changes == null)
+        for (int i = 0, size = getNumPogs(); i < size; ++i)
         {
-            return;
+            final Pog pog = getPog(i);
+            if (pog.getId() == id)
+            {
+                return pog;
+            }
         }
 
-        for (Iterator iterator = changes.entrySet().iterator(); iterator.hasNext();)
-        {
-            Map.Entry entry = (Map.Entry)iterator.next();
-            Integer id = (Integer)entry.getKey();
-            Long order = (Long)entry.getValue();
-
-            setSortOrder(id.intValue(), order.longValue());
-        }
+        return null;
     }
 
-    public void setSortOrder(int id, long order)
+    public Pog getPogNamed(final String pogName)
     {
-        Pog pog = getPogByID(id);
-        if (pog == null)
+        final List pogs = getPogsNamed(pogName);
+        if (pogs.isEmpty())
         {
-            return;
+            return null;
         }
 
-        m_orderedPogs.remove(pog);
-        pog.setSortOrder(order);
-        m_orderedPogs.add(pog);
+        return (Pog)pogs.get(0);
     }
 
-    /* ***************** SCROLL MANAGEMENT********************* */
-
-    public void setScroll(int x, int y)
+    public List getPogs()
     {
-        m_scrollX = x;
-        m_scrollY = y;
+        return Collections.unmodifiableList(m_pogs);
+    }
+
+    public List getPogsNamed(final String pogName)
+    {
+        final String normalizedName = UtilityFunctions.normalizeName(pogName);
+        final List retVal = new ArrayList();
+        for (int i = 0, size = getNumPogs(); i < size; ++i)
+        {
+            final Pog pog = getPog(i);
+            if (UtilityFunctions.normalizeName(pog.getText()).equals(normalizedName))
+            {
+                retVal.add(pog);
+            }
+        }
+
+        return retVal;
     }
 
     public int getScrollX()
@@ -267,108 +315,101 @@ public class GametableMap
         return m_scrollY;
     }
 
-    /** ***************** UNDO MANAGEMENT********************* */
-    public void clearUndos()
+    private int getUseableStackSize()
     {
-        m_undoLevels = new ArrayList();
-        m_redoIndex = -1;
-
-        // seed it
-        beginUndoableAction();
-        endUndoableAction(-1, -1);
-    }
-
-    // call before making changes you want to be undoable
-    public void beginUndoableAction()
-    {
-        // nothing needed here yet
-    }
-
-    // call after making the changes you want undoable
-    public void endUndoableAction(int playerID, int stateID)
-    {
-        // adding an action means removing any actions from the undo tree beyond the current state
+        // youcan't look at undoables past the redoIndex
+        int useableStackSize = m_undoLevels.size();
         if (m_redoIndex >= 0)
         {
-            killStates(m_redoIndex);
+            useableStackSize = m_redoIndex;
+        }
+
+        return useableStackSize;
+    }
+
+    private void killStates(final int startIdx)
+    {
+        while (m_undoLevels.size() > startIdx)
+        {
+            m_undoLevels.remove(startIdx);
+        }
+    }
+
+    public void redo()
+    {
+        if (!canRedo())
+        {
+            return;
+        }
+
+        // fairly simple, actually. just adopt the state and advance the redo
+        final MapState nextRedoable = (MapState)m_undoLevels.get(m_redoIndex);
+        adoptState(nextRedoable);
+        m_redoIndex++;
+
+        if (m_redoIndex >= m_undoLevels.size())
+        {
+            // we've redone up to the end of the undo stack.
             m_redoIndex = -1;
         }
-
-        MapState state = new MapState();
-        state.setLines(m_lines);
-        state.m_playerID = playerID;
-        state.m_stateID = stateID;
-
-        // add it to the undo stack
-        m_undoLevels.add(state);
-
-        // trim the stack if necessary
-        if (m_undoLevels.size() > MAX_UNDO_LEVELS)
-        {
-            // dump the earliest one
-            m_undoLevels.remove(0);
-        }
-
-        // System.out.println("Added undoable - state:"+stateID+", plr:"+playerID);
     }
 
-    public boolean canUndo()
+    public void redo(final int stateID)
     {
-        // if there's nothing to undo, then no, you can't undo it
-        if (m_undoLevels.size() == 0)
-        {
-            return false;
-        }
-
+        // this function has no meaning on the private map
         if (!m_bIsSharedMap)
         {
-            // we're the private layer. We can undo anything
-            return true;
+            return;
         }
 
-        // the most recent action has to be yours for it to be undoable
-        int myID = GametableFrame.getGametableFrame().getMyPlayerId();
+        // for redo, we don't care if it's you who did the undoable action or not.
+        // it could have been sent in from another player. We just redo it.
 
-        MapState lastUndoable = (MapState)m_undoLevels.get(m_undoLevels.size() - 1);
-        if (lastUndoable.m_playerID == myID)
+        // first, find the action.
+        int stateIdx = -1;
+        for (int i = 0; i < m_undoLevels.size(); i++)
         {
-            // you did the last undoable action. You can undo
-            return true;
+            final MapState state = (MapState)m_undoLevels.get(i);
+            if (state.m_stateID == stateID)
+            {
+                // this is the action that we can redo.
+                stateIdx = i;
+            }
         }
-        return false;
-    }
 
-    public boolean canRedo()
-    {
-        // you can't redo if there's no action to redo
-        if (m_redoIndex < 0)
+        if (stateIdx < 0)
         {
-            return false;
+            // Houston... we have a problem.
+            // if we're here, it means someone managed to send an redo
+            // command and we don't have the state to revert to. This
+            // means we'll probably desynch with the rest of the players.
+            // This shouldn't happen. But on the offchance that it does for
+            // some unknown reason, we should defensively return, rather than
+            // crash. Desynched is better than crashed.
+            return;
         }
 
-        // you can redo if it's the private layer
-        if (!m_bIsSharedMap)
+        // get the state
+        final MapState redoTo = (MapState)m_undoLevels.get(stateIdx);
+
+        // adopt the state
+        adoptState(redoTo);
+
+        // now we have to trash all states beyond this undo state
+        m_redoIndex = stateIdx + 1;
+
+        if (m_redoIndex >= m_undoLevels.size())
         {
-            return true;
+            // no worlds left to conquer
+            m_redoIndex = -1;
         }
-
-        // you can't redo if it's not an action you did
-        int myID = GametableFrame.getGametableFrame().getMyPlayerId();
-
-        MapState nextRedoable = (MapState)m_undoLevels.get(m_redoIndex);
-        if (nextRedoable.m_playerID == myID)
-        {
-            // you did the last redoable action. You can redo it
-            return true;
-        }
-        return false;
     }
 
     public void redoNextRecent()
     {
-        MapState nextRedoable = (MapState)m_undoLevels.get(m_redoIndex);
-        GametableFrame frame = GametableFrame.getGametableFrame();
-        GametableCanvas canvas = frame.getGametableCanvas();
+        final MapState nextRedoable = (MapState)m_undoLevels.get(m_redoIndex);
+        final GametableFrame frame = GametableFrame.getGametableFrame();
+        final GametableCanvas canvas = frame.getGametableCanvas();
         if (m_bIsSharedMap)
         {
             if (canvas.isPublicMap())
@@ -393,134 +434,86 @@ public class GametableMap
         }
     }
 
-    public void redo()
+    public void removeCardPogsForCards(final DeckData.Card discards[])
     {
-        if (!canRedo())
+        final List removeList = new ArrayList();
+
+        for (int i = 0; i < m_pogs.size(); i++)
         {
-            return;
-        }
-
-        // fairly simple, actually. just adopt the state and advance the redo
-        MapState nextRedoable = (MapState)m_undoLevels.get(m_redoIndex);
-        adoptState(nextRedoable);
-        m_redoIndex++;
-
-        if (m_redoIndex >= m_undoLevels.size())
-        {
-            // we've redone up to the end of the undo stack.
-            m_redoIndex = -1;
-        }
-    }
-
-    public void redo(int stateID)
-    {
-        // this function has no meaning on the private map
-        if (!m_bIsSharedMap)
-        {
-            return;
-        }
-
-        // for redo, we don't care if it's you who did the undoable action or not.
-        // it could have been sent in from another player. We just redo it.
-
-        // first, find the action.
-        int stateIdx = -1;
-        for (int i = 0; i < m_undoLevels.size(); i++)
-        {
-            MapState state = (MapState)m_undoLevels.get(i);
-            if (state.m_stateID == stateID)
+            final Pog pog = (Pog)m_pogs.get(i);
+            if (pog.isCardPog())
             {
-                // this is the action that we can redo.
-                stateIdx = i;
-            }
-        }
-
-        if (stateIdx < 0)
-        {
-            // Houston... we have a problem.
-            // if we're here, it means someone managed to send an redo
-            // command and we don't have the state to revert to. This
-            // means we'll probably desynch with the rest of the players.
-            // This shouldn't happen. But on the offchance that it does for
-            // some unknown reason, we should defensively return, rather than
-            // crash. Desynched is better than crashed.
-            return;
-        }
-
-        // get the state
-        MapState redoTo = (MapState)m_undoLevels.get(stateIdx);
-
-        // adopt the state
-        adoptState(redoTo);
-
-        // now we have to trash all states beyond this undo state
-        m_redoIndex = stateIdx + 1;
-
-        if (m_redoIndex >= m_undoLevels.size())
-        {
-            // no worlds left to conquer
-            m_redoIndex = -1;
-        }
-    }
-
-    private int getUseableStackSize()
-    {
-        // youcan't look at undoables past the redoIndex
-        int useableStackSize = m_undoLevels.size();
-        if (m_redoIndex >= 0)
-        {
-            useableStackSize = m_redoIndex;
-        }
-
-        return useableStackSize;
-    }
-
-    public void undoMostRecent()
-    {
-        // safety check
-        if (!canUndo())
-        {
-            return;
-        }
-
-        int useableStackSize = getUseableStackSize();
-
-        if (m_bIsSharedMap)
-        {
-            MapState lastUndoable = (MapState)m_undoLevels.get(useableStackSize - 1);
-            GametableFrame frame = GametableFrame.getGametableFrame();
-            GametableCanvas canvas = frame.getGametableCanvas();
-            if (canvas.isPublicMap())
-            {
-                frame.send(PacketManager.makeUndoPacket(lastUndoable.m_stateID));
-
-                if (frame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
+                final DeckData.Card pogCard = pog.getCard();
+                // this is a card pog. Is it oue of the discards?
+                for (int j = 0; j < discards.length; j++)
                 {
-                    undo(lastUndoable.m_stateID);
+                    if (pogCard.equals(discards[j]))
+                    {
+                        // it's the pog for this card
+                        removeList.add(pog);
+                    }
                 }
             }
-            else
-            {
-                undo(lastUndoable.m_stateID);
-            }
         }
-        else
+
+        // remove any offending pogs
+        if (removeList.size() > 0)
         {
-            // undoing on the private map doesn't work through IDs,
-            // and causes no network activity
-            int undoToIdx = useableStackSize - 2;
-            if (undoToIdx < 0)
+            for (int i = 0; i < removeList.size(); i++)
             {
-                // nothing to undo
-                return;
+                removePog((Pog)removeList.get(i));
             }
-            MapState undoTo = (MapState)m_undoLevels.get(undoToIdx);
-            adoptState(undoTo);
-            m_redoIndex = useableStackSize - 1;
         }
     }
 
-    public void undo(int stateID)
+    public void removeLine(final LineSegment ls)
+    {
+        m_lines.remove(ls);
+    }
+
+    public void removePog(final Pog pog)
+    {
+        m_pogs.remove(pog);
+        m_orderedPogs.remove(pog);
+    }
+
+    public void reorderPogs(final Map changes)
+    {
+        if (changes == null)
+        {
+            return;
+        }
+
+        for (final Iterator iterator = changes.entrySet().iterator(); iterator.hasNext();)
+        {
+            final Map.Entry entry = (Map.Entry)iterator.next();
+            final Integer id = (Integer)entry.getKey();
+            final Long order = (Long)entry.getValue();
+
+            setSortOrder(id.intValue(), order.longValue());
+        }
+    }
+
+    public void setScroll(final int x, final int y)
+    {
+        m_scrollX = x;
+        m_scrollY = y;
+    }
+
+    public void setSortOrder(final int id, final long order)
+    {
+        final Pog pog = getPogByID(id);
+        if (pog == null)
+        {
+            return;
+        }
+
+        m_orderedPogs.remove(pog);
+        pog.setSortOrder(order);
+        m_orderedPogs.add(pog);
+    }
+
+    public void undo(final int stateID)
     {
         // this function has no meaning on the private map
         if (!m_bIsSharedMap)
@@ -532,11 +525,11 @@ public class GametableMap
         // it could have been sent in from another player. We just undo it.
 
         // first, find the action.
-        int useableStackSize = getUseableStackSize();
+        final int useableStackSize = getUseableStackSize();
         int stateIdx = -1;
         for (int i = 0; i < useableStackSize; i++)
         {
-            MapState state = (MapState)m_undoLevels.get(i);
+            final MapState state = (MapState)m_undoLevels.get(i);
             if (state.m_stateID == stateID)
             {
                 // this is the action that we can undo.
@@ -559,7 +552,7 @@ public class GametableMap
         }
 
         // get the state
-        MapState undoTo = (MapState)m_undoLevels.get(stateIdx);
+        final MapState undoTo = (MapState)m_undoLevels.get(stateIdx);
         // System.out.println("Undoing to ID:" + undoTo.m_stateID);
 
         // adopt the state
@@ -569,45 +562,48 @@ public class GametableMap
         m_redoIndex = stateIdx + 1;
     }
 
-    private void killStates(int startIdx)
+    public void undoMostRecent()
     {
-        while (m_undoLevels.size() > startIdx)
+        // safety check
+        if (!canUndo())
         {
-            m_undoLevels.remove(startIdx);
+            return;
+        }
+
+        final int useableStackSize = getUseableStackSize();
+
+        if (m_bIsSharedMap)
+        {
+            final MapState lastUndoable = (MapState)m_undoLevels.get(useableStackSize - 1);
+            final GametableFrame frame = GametableFrame.getGametableFrame();
+            final GametableCanvas canvas = frame.getGametableCanvas();
+            if (canvas.isPublicMap())
+            {
+                frame.send(PacketManager.makeUndoPacket(lastUndoable.m_stateID));
+
+                if (frame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
+                {
+                    undo(lastUndoable.m_stateID);
+                }
+            }
+            else
+            {
+                undo(lastUndoable.m_stateID);
+            }
+        }
+        else
+        {
+            // undoing on the private map doesn't work through IDs,
+            // and causes no network activity
+            final int undoToIdx = useableStackSize - 2;
+            if (undoToIdx < 0)
+            {
+                // nothing to undo
+                return;
+            }
+            final MapState undoTo = (MapState)m_undoLevels.get(undoToIdx);
+            adoptState(undoTo);
+            m_redoIndex = useableStackSize - 1;
         }
     }
-
-    private void adoptState(MapState state)
-    {
-        // adopt the lines from the MapState
-        m_lines = new ArrayList();
-        for (int i = 0; i < state.m_lineSegments.size(); i++)
-        {
-            LineSegment ls = (LineSegment)state.m_lineSegments.get(i);
-            LineSegment toAdd = new LineSegment(ls);
-            m_lines.add(toAdd);
-        }
-    }
-
-    /** ************************** CLASS DATA ****************************** */
-    // lines on the map
-    protected List      m_lines       = new ArrayList();
-
-    // pogs on the map
-    protected List      m_pogs        = new ArrayList();
-
-    protected SortedSet m_orderedPogs = new TreeSet();
-
-    protected boolean   m_bIsSharedMap;
-
-    // add to origin to get actual coordinates.
-    // (Negative if inside image)
-    private int         m_scrollX;
-
-    // add to origin to get actual coordinates.
-    // (Negative if inside image)
-    private int         m_scrollY;
-
-    private List        m_undoLevels  = new ArrayList();
-    private int         m_redoIndex   = -1;
 }

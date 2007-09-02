@@ -22,20 +22,24 @@ import javax.swing.*;
 public class SetPogAttributeDialog extends JDialog
 {
 
-    private JPanel     contentPanel          = null;
-    private JPanel     bottomPanel           = null;
-    private JButton    okButton              = null;
-    private JButton    cancelButton          = null;
-    private JPanel     centerPanel           = null;
-    private JTextField nameTextField         = null;
-    private JTextField valueTextField        = null;
-    private JLabel     nameLabel             = null;
-    private JLabel     valueLabel            = null;
-    private JPanel     horizontalSpacerPanel = null;
+    /**
+     * 
+     */
+    private static final long serialVersionUID      = 1204064083654715689L;
+    private JPanel            bottomPanel           = null;
+    private JButton           cancelButton          = null;
+    private JPanel            centerPanel           = null;
+    private boolean           confirmed             = false;
+    private JPanel            contentPanel          = null;
+    private JPanel            horizontalSpacerPanel = null;
+    private String            name                  = null;
+    private JLabel            nameLabel             = null;
+    private JTextField        nameTextField         = null;
+    private JButton           okButton              = null;
 
-    private boolean    confirmed             = false;
-    private String     name                  = null;
-    private String     value                 = null;
+    private String            value                 = null;
+    private JLabel            valueLabel            = null;
+    private JTextField        valueTextField        = null;
 
     /**
      * This is the default constructor
@@ -47,38 +51,6 @@ public class SetPogAttributeDialog extends JDialog
     }
 
     /**
-     * This method initializes this
-     * 
-     * @return void
-     */
-    private void initialize()
-    {
-        this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        this.setModal(true);
-        this.setResizable(false);
-        this.setTitle("Set Pog Attribute");
-        this.setContentPane(getContentPanel());
-        this.pack();
-    }
-
-    /**
-     * This method initializes jContentPane
-     * 
-     * @return javax.swing.JPanel
-     */
-    private JPanel getContentPanel()
-    {
-        if (contentPanel == null)
-        {
-            contentPanel = new JPanel();
-            contentPanel.setLayout(new BorderLayout());
-            contentPanel.add(getBottomPanel(), java.awt.BorderLayout.SOUTH);
-            contentPanel.add(getCenterPanel(), java.awt.BorderLayout.CENTER);
-        }
-        return contentPanel;
-    }
-
-    /**
      * This method initializes bottomPanel
      * 
      * @return javax.swing.JPanel
@@ -87,7 +59,7 @@ public class SetPogAttributeDialog extends JDialog
     {
         if (bottomPanel == null)
         {
-            FlowLayout flowLayout = new FlowLayout();
+            final FlowLayout flowLayout = new FlowLayout();
             flowLayout.setAlignment(java.awt.FlowLayout.RIGHT);
             bottomPanel = new JPanel();
             bottomPanel.setLayout(flowLayout);
@@ -95,32 +67,6 @@ public class SetPogAttributeDialog extends JDialog
             bottomPanel.add(getCancelButton(), null);
         }
         return bottomPanel;
-    }
-
-    /**
-     * This method initializes okButton
-     * 
-     * @return javax.swing.JButton
-     */
-    private JButton getOkButton()
-    {
-        if (okButton == null)
-        {
-            okButton = new JButton();
-            okButton.setText("Ok");
-            okButton.setSelected(true);
-            okButton.addActionListener(new java.awt.event.ActionListener()
-            {
-                public void actionPerformed(java.awt.event.ActionEvent e)
-                {
-                    name = nameTextField.getText();
-                    value = valueTextField.getText();
-                    confirmed = true;
-                    dispose();
-                }
-            });
-        }
-        return okButton;
     }
 
     /**
@@ -136,7 +82,7 @@ public class SetPogAttributeDialog extends JDialog
             cancelButton.setText("Cancel");
             cancelButton.addActionListener(new java.awt.event.ActionListener()
             {
-                public void actionPerformed(java.awt.event.ActionEvent e)
+                public void actionPerformed(final java.awt.event.ActionEvent e)
                 {
                     dispose();
                 }
@@ -154,25 +100,25 @@ public class SetPogAttributeDialog extends JDialog
     {
         if (centerPanel == null)
         {
-            GridBagConstraints gridBagConstraints = new GridBagConstraints();
+            final GridBagConstraints gridBagConstraints = new GridBagConstraints();
             gridBagConstraints.gridx = 2;
             gridBagConstraints.gridy = 1;
-            GridBagConstraints gridBagConstraints4 = new GridBagConstraints();
+            final GridBagConstraints gridBagConstraints4 = new GridBagConstraints();
             gridBagConstraints4.gridx = 0;
             gridBagConstraints4.gridy = 3;
             valueLabel = new JLabel();
             valueLabel.setText("Value: ");
-            GridBagConstraints gridBagConstraints3 = new GridBagConstraints();
+            final GridBagConstraints gridBagConstraints3 = new GridBagConstraints();
             gridBagConstraints3.gridx = 0;
             gridBagConstraints3.gridy = 0;
             nameLabel = new JLabel();
             nameLabel.setText("Name: ");
-            GridBagConstraints gridBagConstraints21 = new GridBagConstraints();
+            final GridBagConstraints gridBagConstraints21 = new GridBagConstraints();
             gridBagConstraints21.fill = java.awt.GridBagConstraints.HORIZONTAL;
             gridBagConstraints21.gridy = 3;
             gridBagConstraints21.weightx = 1.0;
             gridBagConstraints21.gridx = 2;
-            GridBagConstraints gridBagConstraints1 = new GridBagConstraints();
+            final GridBagConstraints gridBagConstraints1 = new GridBagConstraints();
             gridBagConstraints1.fill = java.awt.GridBagConstraints.HORIZONTAL;
             gridBagConstraints1.gridy = 0;
             gridBagConstraints1.weightx = 1.0;
@@ -190,33 +136,20 @@ public class SetPogAttributeDialog extends JDialog
     }
 
     /**
-     * This method initializes nameTextField
+     * This method initializes jContentPane
      * 
-     * @return javax.swing.JTextField
+     * @return javax.swing.JPanel
      */
-    private JTextField getNameTextField()
+    private JPanel getContentPanel()
     {
-        if (nameTextField == null)
+        if (contentPanel == null)
         {
-            nameTextField = new JTextField();
-            nameTextField.setPreferredSize(new java.awt.Dimension(150, 20));
+            contentPanel = new JPanel();
+            contentPanel.setLayout(new BorderLayout());
+            contentPanel.add(getBottomPanel(), java.awt.BorderLayout.SOUTH);
+            contentPanel.add(getCenterPanel(), java.awt.BorderLayout.CENTER);
         }
-        return nameTextField;
-    }
-
-    /**
-     * This method initializes valueTextField
-     * 
-     * @return javax.swing.JTextField
-     */
-    private JTextField getValueTextField()
-    {
-        if (valueTextField == null)
-        {
-            valueTextField = new JTextField();
-            valueTextField.setPreferredSize(new java.awt.Dimension(150, 20));
-        }
-        return valueTextField;
+        return contentPanel;
     }
 
     /**
@@ -243,11 +176,82 @@ public class SetPogAttributeDialog extends JDialog
     }
 
     /**
+     * This method initializes nameTextField
+     * 
+     * @return javax.swing.JTextField
+     */
+    private JTextField getNameTextField()
+    {
+        if (nameTextField == null)
+        {
+            nameTextField = new JTextField();
+            nameTextField.setPreferredSize(new java.awt.Dimension(150, 20));
+        }
+        return nameTextField;
+    }
+
+    /**
+     * This method initializes okButton
+     * 
+     * @return javax.swing.JButton
+     */
+    private JButton getOkButton()
+    {
+        if (okButton == null)
+        {
+            okButton = new JButton();
+            okButton.setText("Ok");
+            okButton.setSelected(true);
+            okButton.addActionListener(new java.awt.event.ActionListener()
+            {
+                public void actionPerformed(final java.awt.event.ActionEvent e)
+                {
+                    name = nameTextField.getText();
+                    value = valueTextField.getText();
+                    confirmed = true;
+                    dispose();
+                }
+            });
+        }
+        return okButton;
+    }
+
+    /**
      * @return Returns the value.
      */
     public String getValue()
     {
         return value;
+    }
+
+    /**
+     * This method initializes valueTextField
+     * 
+     * @return javax.swing.JTextField
+     */
+    private JTextField getValueTextField()
+    {
+        if (valueTextField == null)
+        {
+            valueTextField = new JTextField();
+            valueTextField.setPreferredSize(new java.awt.Dimension(150, 20));
+        }
+        return valueTextField;
+    }
+
+    /**
+     * This method initializes this
+     * 
+     * @return void
+     */
+    private void initialize()
+    {
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setModal(true);
+        setResizable(false);
+        setTitle("Set Pog Attribute");
+        setContentPane(getContentPanel());
+        pack();
     }
 
     /**
@@ -264,7 +268,7 @@ public class SetPogAttributeDialog extends JDialog
      * @param newName
      * @param newValue
      */
-    public void loadValues(String newName, String newValue)
+    public void loadValues(final String newName, final String newValue)
     {
         getNameTextField().setText(newName);
         getValueTextField().setText(newValue);
@@ -273,9 +277,9 @@ public class SetPogAttributeDialog extends JDialog
     /*
      * @see java.awt.Component#setVisible(boolean)
      */
-    public void setVisible(boolean b)
+    public void setVisible(final boolean b)
     {
-        if (b && isVisible() != b)
+        if (b && (isVisible() != b))
         {
             confirmed = false;
         }

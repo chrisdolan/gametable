@@ -32,26 +32,26 @@ public class Connection
 {
     public interface State
     {
-        public int PENDING_CONNECTION = 0;
         public int CONNECTED          = 1;
-        public int LOGGED_IN          = 2;
         public int FLUSHING           = 3;
+        public int LOGGED_IN          = 2;
+        public int PENDING_CONNECTION = 0;
     }
 
-    private static final int DEFAULT_BUFFER_SIZE = 1024;
+    private static final int    DEFAULT_BUFFER_SIZE = 1024;
 
-    private ByteBuffer       receiveBuffer;
-    private ByteBuffer       sendBuffer;
-    private NetworkThread    thread;
-    private SocketChannel    channel;
-    private SelectionKey     key;
-    private int              state               = State.PENDING_CONNECTION;
-    private List             queue               = new LinkedList();
+    private final SocketChannel channel;
+    private SelectionKey        key;
+    private final List          queue               = new LinkedList();
+    private ByteBuffer          receiveBuffer;
+    private ByteBuffer          sendBuffer;
+    private int                 state               = State.PENDING_CONNECTION;
+    private NetworkThread       thread;
 
     /**
      * Incoming Connection Constructor
      */
-    public Connection(SocketChannel chan) throws IOException
+    public Connection(final SocketChannel chan) throws IOException
     {
         channel = chan;
         channel.configureBlocking(false);
@@ -62,7 +62,7 @@ public class Connection
     /**
      * Outgoing Connection Constructor
      */
-    public Connection(String addr, int port) throws IOException
+    public Connection(final String addr, final int port) throws IOException
     {
         channel = SocketChannel.open(new InetSocketAddress(addr, port));
         if (channel.finishConnect())
@@ -72,6 +72,32 @@ public class Connection
         channel.configureBlocking(false);
         sendBuffer = ByteBuffer.allocateDirect(DEFAULT_BUFFER_SIZE);
         receiveBuffer = ByteBuffer.allocateDirect(DEFAULT_BUFFER_SIZE);
+    }
+
+    /**
+     * Closes this connection.
+     */
+    public void close()
+    {
+        boolean term = false;
+        synchronized (sendBuffer)
+        {
+            sendBuffer.flip();
+            if (sendBuffer.hasRemaining())
+            {
+                state = State.FLUSHING;
+                sendBuffer.compact();
+            }
+            else
+            {
+                term = true;
+            }
+        }
+
+        if (term)
+        {
+            terminate();
+        }
     }
 
     /**
@@ -91,18 +117,45 @@ public class Connection
     }
 
     /**
+     * @return
+     */
+    public boolean hasPackets()
+    {
+        synchronized (queue)
+        {
+            return queue.size() > 0;
+        }
+    }
+
+    /**
      * @return True if this connection is connected.
      */
     public boolean isConnected()
     {
-        //System.out.println(this + " connected: " + channel.socket().isConnected());  
-        return channel.socket().isConnected() && thread != null;
+        // System.out.println(this + " connected: " + channel.socket().isConnected());
+        return channel.socket().isConnected() && (thread != null);
     }
 
     public boolean isDead()
     {
-        //System.out.println(this + " connected2: " + channel.socket().isConnected());  
-        return (!channel.socket().isConnected() && state != State.PENDING_CONNECTION);
+        // System.out.println(this + " connected2: " + channel.socket().isConnected());
+        return (!channel.socket().isConnected() && (state != State.PENDING_CONNECTION));
+    }
+
+    /**
+     * @return True if this connection is logged in.
+     */
+    public boolean isLoggedIn()
+    {
+        return isConnected() && (state == State.LOGGED_IN);
+    }
+
+    void markConnected()
+    {
+        if (state == State.PENDING_CONNECTION)
+        {
+            state = State.CONNECTED;
+        }
     }
 
     public void markLoggedIn()
@@ -114,46 +167,72 @@ public class Connection
     }
 
     /**
-     * @return True if this connection is logged in.
+     * Reads as much as it can from the net without blocking.
+     * 
+     * @throws IOException
      */
-    public boolean isLoggedIn()
+    void readFromNet() throws IOException
     {
-        return isConnected() && state == State.LOGGED_IN;
+        synchronized (receiveBuffer)
+        {
+            while (true)
+            {
+                if (receiveBuffer.limit() == receiveBuffer.position())
+                {
+                    final ByteBuffer newBuffer = ByteBuffer.allocateDirect(receiveBuffer.capacity() * 2);
+                    receiveBuffer.flip();
+                    newBuffer.put(receiveBuffer);
+                    receiveBuffer = newBuffer;
+                }
+
+                final int count = channel.read(receiveBuffer);
+                if (count < 1)
+                {
+                    break;
+                }
+            }
+        }
+
+        while (true)
+        {
+            final byte[] packet = readPacket();
+            if (packet == null)
+            {
+                break;
+            }
+            Log.log(Log.NET, "Read: " + PacketManager.getPacketName(packet) + ", length = " + packet.length);
+
+            queue.add(packet);
+        }
     }
 
     /**
-     * @param packet Packet data to send.
+     * @return
      */
-    public void sendPacket(byte[] packet)
+    private byte[] readPacket()
     {
-        int size = packet.length + 4;
-        Log.log(Log.NET, "Sending : " + PacketManager.getPacketName(packet) + ", length = " + packet.length);
-        synchronized (sendBuffer)
+        synchronized (receiveBuffer)
         {
-            if (sendBuffer.limit() - sendBuffer.position() <= size)
+            receiveBuffer.flip();
+            if (receiveBuffer.remaining() < 4)
             {
-                int newCapacity = sendBuffer.capacity();
-                while (newCapacity - sendBuffer.position() <= size)
-                {
-                    newCapacity *= 2;
-                }
-                ByteBuffer newBuffer = ByteBuffer.allocateDirect(newCapacity);
-                sendBuffer.flip();
-                newBuffer.put(sendBuffer);
-                sendBuffer = newBuffer;
+                receiveBuffer.compact();
+                return null;
             }
 
-            try
+            final int size = receiveBuffer.getInt(0);
+            if (receiveBuffer.remaining() < size + 4)
             {
-                sendBuffer.putInt(packet.length);
-                sendBuffer.put(packet);
-            }
-            catch (BufferOverflowException boe)
-            {
-                Log.log(Log.NET, boe);
+                receiveBuffer.compact();
+                return null;
             }
 
-            thread.markForWriting(this);
+            final byte[] retVal = new byte[size];
+            receiveBuffer.getInt();
+            receiveBuffer.get(retVal);
+            receiveBuffer.compact();
+
+            return retVal;
         }
     }
 
@@ -173,108 +252,65 @@ public class Connection
         }
     }
 
-    /**
-     * @return
-     */
-    public boolean hasPackets()
+    void register(final NetworkThread t, final int ops) throws ClosedChannelException
     {
-        synchronized (queue)
+        thread = t;
+        key = channel.register(thread.getSelector(), ops, this);
+        if (isConnected())
         {
-            return queue.size() > 0;
+            markConnected();
+            key.interestOps(ops & ~SelectionKey.OP_CONNECT);
         }
     }
 
     /**
-     * Closes this connection.
+     * @param packet Packet data to send.
      */
-    public void close()
+    public void sendPacket(final byte[] packet)
     {
-        boolean term = false;
+        final int size = packet.length + 4;
+        Log.log(Log.NET, "Sending : " + PacketManager.getPacketName(packet) + ", length = " + packet.length);
         synchronized (sendBuffer)
         {
-            sendBuffer.flip();
-            if (sendBuffer.hasRemaining())
+            if (sendBuffer.limit() - sendBuffer.position() <= size)
             {
-                state = State.FLUSHING;
-                sendBuffer.compact();
-            } else {
-                term = true;
+                int newCapacity = sendBuffer.capacity();
+                while (newCapacity - sendBuffer.position() <= size)
+                {
+                    newCapacity *= 2;
+                }
+                final ByteBuffer newBuffer = ByteBuffer.allocateDirect(newCapacity);
+                sendBuffer.flip();
+                newBuffer.put(sendBuffer);
+                sendBuffer = newBuffer;
             }
-        }
-        
-        if (term)
-        {
-            terminate();
+
+            try
+            {
+                sendBuffer.putInt(packet.length);
+                sendBuffer.put(packet);
+            }
+            catch (final BufferOverflowException boe)
+            {
+                Log.log(Log.NET, boe);
+            }
+
+            thread.markForWriting(this);
         }
     }
 
-    /**
-     * @return
-     */
-    private byte[] readPacket()
+    private void terminate()
     {
-        synchronized (receiveBuffer)
+        Log.log(Log.NET, "Connection.terminate();");
+        try
         {
-            receiveBuffer.flip();
-            if (receiveBuffer.remaining() < 4)
-            {
-                receiveBuffer.compact();
-                return null;
-            }
-
-            int size = receiveBuffer.getInt(0);
-            if (receiveBuffer.remaining() < size + 4)
-            {
-                receiveBuffer.compact();
-                return null;
-            }
-
-            byte[] retVal = new byte[size];
-            receiveBuffer.getInt();
-            receiveBuffer.get(retVal);
-            receiveBuffer.compact();
-
-            return retVal;
+            key.cancel();
+            channel.socket().close();
+            channel.close();
         }
-    }
-
-    /**
-     * Reads as much as it can from the net without blocking.
-     * 
-     * @throws IOException
-     */
-    void readFromNet() throws IOException
-    {
-        synchronized (receiveBuffer)
+        catch (final IOException e)
         {
-            while (true)
-            {
-                if (receiveBuffer.limit() == receiveBuffer.position())
-                {
-                    ByteBuffer newBuffer = ByteBuffer.allocateDirect(receiveBuffer.capacity() * 2);
-                    receiveBuffer.flip();
-                    newBuffer.put(receiveBuffer);
-                    receiveBuffer = newBuffer;
-                }
-
-                int count = channel.read(receiveBuffer);
-                if (count < 1)
-                {
-                    break;
-                }
-            }
-        }
-
-        while (true)
-        {
-            byte[] packet = readPacket();
-            if (packet == null)
-            {
-                break;
-            }
-            Log.log(Log.NET, "Read: " + PacketManager.getPacketName(packet) + ", length = " + packet.length);
-
-            queue.add(packet);
+            Log.log(Log.NET, e);
         }
     }
 
@@ -306,40 +342,6 @@ public class Connection
             }
 
             sendBuffer.compact();
-        }
-    }
-
-    void register(NetworkThread t, int ops) throws ClosedChannelException
-    {
-        thread = t;
-        key = channel.register(thread.getSelector(), ops, this);
-        if (isConnected())
-        {
-            markConnected();
-            key.interestOps(ops & ~SelectionKey.OP_CONNECT);
-        }
-    }
-
-    void markConnected()
-    {
-        if (state == State.PENDING_CONNECTION)
-        {
-            state = State.CONNECTED;
-        }
-    }
-
-    private void terminate()
-    {
-        Log.log(Log.NET, "Connection.terminate();");
-        try
-        {
-            key.cancel();
-            channel.socket().close();
-            channel.close();
-        }
-        catch (IOException e)
-        {
-            Log.log(Log.NET, e);
         }
     }
 }

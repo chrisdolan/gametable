@@ -27,22 +27,131 @@ public class MacroPanel extends JPanel
     // --- Types -----------------------------------------------------------------------------------------------------
 
     /**
+     * Action for macro buttons.
+     * 
+     * @author Iffy
+     */
+    private static class DeleteMacroActionListener implements ActionListener
+    {
+        private final DiceMacro macro;
+
+        public DeleteMacroActionListener(final DiceMacro mac)
+        {
+            macro = mac;
+        }
+
+        /*
+         * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+         */
+        public void actionPerformed(final ActionEvent e)
+        {
+            GametableFrame.getGametableFrame().removeMacro(macro);
+        }
+    }
+
+    /**
+     * Action for macro buttons.
+     * 
+     * @author Iffy
+     */
+    private class EditMacroActionListener implements ActionListener
+    {
+        private final DiceMacro macro;
+
+        public EditMacroActionListener(final DiceMacro mac)
+        {
+            macro = mac;
+        }
+
+        /*
+         * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+         */
+        public void actionPerformed(final ActionEvent e)
+        {
+            final NewMacroDialog dialog = new NewMacroDialog();
+            dialog.initializeValues(macro.getName(), macro.getMacro());
+            dialog.setVisible(true);
+            if (dialog.isAccepted())
+            {
+                final String name = dialog.getMacroName();
+                final String def = dialog.getMacroDefinition();
+                final DiceMacro existingMacro = GametableFrame.getGametableFrame().getMacro(name);
+                if ((existingMacro != null) && (existingMacro != macro))
+                {
+                    final int result = UtilityFunctions.yesNoDialog(GametableFrame.getGametableFrame(),
+                        "You already have a macro named \"" + name + "\", "
+                            + "are you sure you want to replace it with \"" + def + "\"?", "Replace Macro?");
+                    if (result == UtilityFunctions.YES)
+                    {
+                        GametableFrame.getGametableFrame().removeMacro(name);
+                        GametableFrame.getGametableFrame().addMacro(name, def);
+                    }
+                    return;
+                }
+                GametableFrame.getGametableFrame().removeMacro(macro);
+                GametableFrame.getGametableFrame().addMacro(name, def);
+            }
+        }
+    }
+
+    /**
+     * Action for macro buttons.
+     * 
+     * @author Iffy
+     */
+    private static class MacroActionListener implements ActionListener
+    {
+        private final DiceMacro macro;
+
+        public MacroActionListener(final DiceMacro mac)
+        {
+            macro = mac;
+        }
+
+        /*
+         * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+         */
+        public void actionPerformed(final ActionEvent e)
+        {
+            if ((e.getModifiers() & ActionEvent.CTRL_MASK) != 0)
+            {
+                if (semiPrivate)
+                {
+                    GametableFrame.getGametableFrame().postMessage(
+                        GametableFrame.DIEROLL_MESSAGE_FONT
+                            + UtilityFunctions.emitUserLink(GametableFrame.getGametableFrame().getMyPlayer()
+                                .getCharacterName()) + " is rolling dice..." + GametableFrame.END_DIEROLL_MESSAGE_FONT);
+                }
+                GametableFrame.getGametableFrame().parseSlashCommand("/proll " + macro.getMacro());
+            }
+            else
+            {
+                GametableFrame.getGametableFrame().postMessage(macro.doMacro());
+            }
+        }
+    }
+
+    /**
      * A component representing a macro.
      * 
      * @author Iffy
      */
     private class MacroEntryPanel extends JPanel
     {
-        private DiceMacro macro;
-        private JLabel    nameLabel;
-        private JButton   rollButton;
-        private JButton   editButton;
-        private JButton   deleteButton;
+        /**
+         * 
+         */
+        private static final long serialVersionUID = -6134370797200018514L;
+        private JButton           deleteButton;
+        private JButton           editButton;
+        private final DiceMacro   macro;
+        private JLabel            nameLabel;
+        private JButton           rollButton;
 
         /**
          * This is the default constructor
          */
-        public MacroEntryPanel(DiceMacro mac)
+        public MacroEntryPanel(final DiceMacro mac)
         {
             macro = mac;
             initialize();
@@ -51,6 +160,40 @@ public class MacroPanel extends JPanel
         public DiceMacro getMacro()
         {
             return macro;
+        }
+
+        /*
+         * @see javax.swing.JComponent#getMaximumSize()
+         */
+        public Dimension getMaximumSize()
+        {
+            final Dimension d = super.getMaximumSize();
+            return new Dimension(d.width, 31);
+        }
+
+        /*
+         * @see javax.swing.JComponent#getMinimumSize()
+         */
+        public Dimension getMinimumSize()
+        {
+            final Dimension d = super.getMinimumSize();
+            return new Dimension(d.width, 31);
+        }
+
+        /*
+         * @see javax.swing.JComponent#getPreferredSize()
+         */
+        public Dimension getPreferredSize()
+        {
+            final int minWidth = 100;
+            int width = 8;
+            for (int i = 0, size = getComponentCount(); i < size; ++i)
+            {
+                final Component component = getComponent(i);
+                width += component.getPreferredSize().width + 2;
+            }
+
+            return new Dimension(Math.max(minWidth, width), 31);
         }
 
         /**
@@ -65,18 +208,18 @@ public class MacroPanel extends JPanel
             setMaximumSize(new Dimension(32768, 31));
             setMinimumSize(new Dimension(100, 31));
 
-            SpringLayout layout = new SpringLayout();
+            final SpringLayout layout = new SpringLayout();
             setLayout(layout);
 
             nameLabel = new JLabel(macro.getName());
             nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD));
             nameLabel.setToolTipText(macro.toString());
 
-            JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 3));
+            final JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 3));
             panel.add(nameLabel);
             add(panel);
 
-            Image deleteImage = UtilityFunctions.getCachedImage("assets/delete.png");
+            final Image deleteImage = UtilityFunctions.getCachedImage("assets/delete.png");
 
             deleteButton = new JButton(new ImageIcon(deleteImage));
             deleteButton.setMargin(new Insets(0, 0, 0, 0));
@@ -84,7 +227,7 @@ public class MacroPanel extends JPanel
             deleteButton.addActionListener(new DeleteMacroActionListener(macro));
             add(deleteButton);
 
-            Image editImage = UtilityFunctions.getCachedImage("assets/edit.png");
+            final Image editImage = UtilityFunctions.getCachedImage("assets/edit.png");
 
             editButton = new JButton(new ImageIcon(editImage));
             editButton.setMargin(new Insets(0, 0, 0, 0));
@@ -92,7 +235,7 @@ public class MacroPanel extends JPanel
             editButton.addActionListener(new EditMacroActionListener(macro));
             add(editButton);
 
-            Image rollImage = UtilityFunctions.getCachedImage("assets/roll.png");
+            final Image rollImage = UtilityFunctions.getCachedImage("assets/roll.png");
 
             rollButton = new JButton(new ImageIcon(rollImage));
             rollButton.setMargin(new Insets(0, 0, 0, 0));
@@ -125,40 +268,6 @@ public class MacroPanel extends JPanel
             updateFromMacro();
         }
 
-        /*
-         * @see javax.swing.JComponent#getMinimumSize()
-         */
-        public Dimension getMinimumSize()
-        {
-            Dimension d = super.getMinimumSize();
-            return new Dimension(d.width, 31);
-        }
-
-        /*
-         * @see javax.swing.JComponent#getMaximumSize()
-         */
-        public Dimension getMaximumSize()
-        {
-            Dimension d = super.getMaximumSize();
-            return new Dimension(d.width, 31);
-        }
-
-        /*
-         * @see javax.swing.JComponent#getPreferredSize()
-         */
-        public Dimension getPreferredSize()
-        {
-            int minWidth = 100;
-            int width = 8;
-            for (int i = 0, size = getComponentCount(); i < size; ++i)
-            {
-                Component component = getComponent(i);
-                width += component.getPreferredSize().width + 2;
-            }
-
-            return new Dimension(Math.max(minWidth, width), 31);
-        }
-
         private void updateFromMacro()
         {
             nameLabel.setText(macro.getName());
@@ -168,113 +277,18 @@ public class MacroPanel extends JPanel
         }
     }
 
-    /**
-     * Action for macro buttons.
-     * 
-     * @author Iffy
-     */
-    private static class MacroActionListener implements ActionListener
-    {
-        private DiceMacro macro;
-
-        public MacroActionListener(DiceMacro mac)
-        {
-            macro = mac;
-        }
-
-        /*
-         * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-         */
-        public void actionPerformed(ActionEvent e)
-        {
-            if ((e.getModifiers() & ActionEvent.CTRL_MASK) != 0) {
-                if (semiPrivate)
-                    GametableFrame.getGametableFrame().postMessage(
-                        GametableFrame.DIEROLL_MESSAGE_FONT +
-                        UtilityFunctions.emitUserLink(GametableFrame.getGametableFrame().getMyPlayer().
-                        getCharacterName()) + " is rolling dice..." +
-                        GametableFrame.END_DIEROLL_MESSAGE_FONT);
-                GametableFrame.getGametableFrame().parseSlashCommand("/proll " + macro.getMacro());
-            } else
-                GametableFrame.getGametableFrame().postMessage(macro.doMacro());
-        }
-    }
-
-    /**
-     * Action for macro buttons.
-     * 
-     * @author Iffy
-     */
-    private static class DeleteMacroActionListener implements ActionListener
-    {
-        private DiceMacro macro;
-
-        public DeleteMacroActionListener(DiceMacro mac)
-        {
-            macro = mac;
-        }
-
-        /*
-         * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-         */
-        public void actionPerformed(ActionEvent e)
-        {
-            GametableFrame.getGametableFrame().removeMacro(macro);
-        }
-    }
-
-    /**
-     * Action for macro buttons.
-     * 
-     * @author Iffy
-     */
-    private class EditMacroActionListener implements ActionListener
-    {
-        private DiceMacro macro;
-
-        public EditMacroActionListener(DiceMacro mac)
-        {
-            macro = mac;
-        }
-
-        /*
-         * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-         */
-        public void actionPerformed(ActionEvent e)
-        {
-            NewMacroDialog dialog = new NewMacroDialog();
-            dialog.initializeValues(macro.getName(), macro.getMacro());
-            dialog.setVisible(true);
-            if (dialog.isAccepted())
-            {
-                String name = dialog.getMacroName();
-                String def = dialog.getMacroDefinition();
-                DiceMacro existingMacro = GametableFrame.getGametableFrame().getMacro(name);
-                if (existingMacro != null && existingMacro != macro)
-                {
-                    int result = UtilityFunctions.yesNoDialog(GametableFrame.getGametableFrame(),
-                        "You already have a macro named \"" + name + "\", "
-                            + "are you sure you want to replace it with \"" + def + "\"?", "Replace Macro?");
-                    if (result == UtilityFunctions.YES)
-                    {
-                        GametableFrame.getGametableFrame().removeMacro(name);
-                        GametableFrame.getGametableFrame().addMacro(name, def);
-                    }
-                    return;
-                }
-                GametableFrame.getGametableFrame().removeMacro(macro);
-                GametableFrame.getGametableFrame().addMacro(name, def);
-            }
-        }
-    }
+    private static boolean    semiPrivate;
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
-    private JScrollPane    scrollPane     = null;
-    private JPanel         macroPanel     = null;
-    private JPanel         topPanel       = null;
-    private JCheckBox      semiPrivateBox = null;
-    private static boolean semiPrivate;
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -8000107664792911955L;
+    private JPanel            macroPanel       = null;
+    private JScrollPane       scrollPane       = null;
+    private JCheckBox         semiPrivateBox   = null;
+    private JPanel            topPanel         = null;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -290,73 +304,22 @@ public class MacroPanel extends JPanel
     // --- Methods ---------------------------------------------------------------------------------------------------
 
     /**
-     * Updates the macro list from the latest data.
+     * This method initializes macroPanel
+     * 
+     * @return javax.swing.JPanel
      */
-    public void refreshMacroList()
+    private JPanel getMacroPanel()
     {
-        Collection macros = GametableFrame.getGametableFrame().getMacros();
-        macroPanel.removeAll();
-
-        for (Iterator iterator = macros.iterator(); iterator.hasNext();)
+        if (macroPanel == null)
         {
-            DiceMacro macro = (DiceMacro)iterator.next();
-            MacroEntryPanel panel = new MacroEntryPanel(macro);
-            macroPanel.add(panel);
+            macroPanel = new JPanel();
+            macroPanel.setLayout(new BoxLayout(macroPanel, BoxLayout.Y_AXIS));
+            macroPanel.setBackground(Color.WHITE);
         }
-        macroPanel.validate();
-        scrollPane.validate();
-        macroPanel.repaint();
+        return macroPanel;
     }
 
     // --- Private Methods ---
-
-    /**
-     * This method initializes this
-     * 
-     * @return void
-     */
-    private void initialize()
-    {
-        setLayout(new BorderLayout());
-        add(getTopPanel(), BorderLayout.SOUTH);
-        add(getScrollPane(), BorderLayout.CENTER);
-    }
-
-    private JPanel getTopPanel()
-    {
-        if (topPanel == null)
-        {
-            topPanel = new JPanel();
-            topPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
-            JButton addButton = new JButton("Add...");
-            semiPrivateBox = new JCheckBox("Semiprivate rolls");
-            addButton.setFocusable(false);
-            semiPrivateBox.setFocusable(false);
-            addButton.addActionListener(new ActionListener()
-            {
-                /*
-                 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-                 */
-                public void actionPerformed(ActionEvent e)
-                {
-                    GametableFrame.getGametableFrame().addDieMacro();
-                }
-            });
-            semiPrivateBox.addActionListener(new ActionListener()
-            {
-                /*
-                 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-                 */
-                public void actionPerformed(ActionEvent e)
-                {
-                    semiPrivate = semiPrivateBox.isSelected();
-                }
-            });
-            topPanel.add(semiPrivateBox);
-            topPanel.add(addButton);
-        }
-        return topPanel;
-    }
 
     /**
      * This method initializes scrollPane
@@ -374,20 +337,71 @@ public class MacroPanel extends JPanel
         return scrollPane;
     }
 
-    /**
-     * This method initializes macroPanel
-     * 
-     * @return javax.swing.JPanel
-     */
-    private JPanel getMacroPanel()
+    private JPanel getTopPanel()
     {
-        if (macroPanel == null)
+        if (topPanel == null)
         {
-            macroPanel = new JPanel();
-            macroPanel.setLayout(new BoxLayout(macroPanel, BoxLayout.Y_AXIS));
-            macroPanel.setBackground(Color.WHITE);
+            topPanel = new JPanel();
+            topPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+            final JButton addButton = new JButton("Add...");
+            semiPrivateBox = new JCheckBox("Semiprivate rolls");
+            addButton.setFocusable(false);
+            semiPrivateBox.setFocusable(false);
+            addButton.addActionListener(new ActionListener()
+            {
+                /*
+                 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+                 */
+                public void actionPerformed(final ActionEvent e)
+                {
+                    GametableFrame.getGametableFrame().addDieMacro();
+                }
+            });
+            semiPrivateBox.addActionListener(new ActionListener()
+            {
+                /*
+                 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+                 */
+                public void actionPerformed(final ActionEvent e)
+                {
+                    semiPrivate = semiPrivateBox.isSelected();
+                }
+            });
+            topPanel.add(semiPrivateBox);
+            topPanel.add(addButton);
         }
-        return macroPanel;
+        return topPanel;
+    }
+
+    /**
+     * This method initializes this
+     * 
+     * @return void
+     */
+    private void initialize()
+    {
+        setLayout(new BorderLayout());
+        add(getTopPanel(), BorderLayout.SOUTH);
+        add(getScrollPane(), BorderLayout.CENTER);
+    }
+
+    /**
+     * Updates the macro list from the latest data.
+     */
+    public void refreshMacroList()
+    {
+        final Collection macros = GametableFrame.getGametableFrame().getMacros();
+        macroPanel.removeAll();
+
+        for (final Iterator iterator = macros.iterator(); iterator.hasNext();)
+        {
+            final DiceMacro macro = (DiceMacro)iterator.next();
+            final MacroEntryPanel panel = new MacroEntryPanel(macro);
+            macroPanel.add(panel);
+        }
+        macroPanel.validate();
+        scrollPane.validate();
+        macroPanel.repaint();
     }
 
 }

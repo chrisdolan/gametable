@@ -10,6 +10,7 @@ import java.awt.Point;
 import com.galactanet.gametable.GametableCanvas;
 
 
+
 /**
  * TODO: comment
  * 
@@ -18,10 +19,8 @@ import com.galactanet.gametable.GametableCanvas;
 public class HandTool extends NullTool
 {
     private GametableCanvas m_canvas;
-    private Point           m_startScroll;
     private Point           m_startMouse;
-
-
+    private Point           m_startScroll;
 
     /**
      * Constructor;
@@ -33,11 +32,18 @@ public class HandTool extends NullTool
     /*
      * @see com.galactanet.gametable.AbstractTool#activate(com.galactanet.gametable.GametableCanvas)
      */
-    public void activate(GametableCanvas canvas)
+    public void activate(final GametableCanvas canvas)
     {
         m_canvas = canvas;
         m_startScroll = null;
         m_startMouse = null;
+    }
+
+    public void endAction()
+    {
+        m_startScroll = null;
+        m_startMouse = null;
+        m_canvas.setToolCursor(0);
     }
 
     /*
@@ -51,7 +57,7 @@ public class HandTool extends NullTool
     /*
      * @see com.galactanet.gametable.AbstractTool#mouseButtonPressed(int, int)
      */
-    public void mouseButtonPressed(int x, int y, int modifierMask)
+    public void mouseButtonPressed(final int x, final int y, final int modifierMask)
     {
         m_startScroll = m_canvas
             .drawToModel(m_canvas.getPublicMap().getScrollX(), m_canvas.getPublicMap().getScrollY());
@@ -60,32 +66,25 @@ public class HandTool extends NullTool
     }
 
     /*
+     * @see com.galactanet.gametable.AbstractTool#mouseButtonReleased(int, int)
+     */
+    public void mouseButtonReleased(final int x, final int y, final int modifierMask)
+    {
+        endAction();
+    }
+
+    /*
      * @see com.galactanet.gametable.AbstractTool#mouseMoved(int, int)
      */
-    public void mouseMoved(int x, int y, int modifierMask)
+    public void mouseMoved(final int x, final int y, final int modifierMask)
     {
         if (m_startScroll != null)
         {
-            Point mousePosition = m_canvas.modelToView(x, y);
-            Point viewDelta = new Point(m_startMouse.x - mousePosition.x, m_startMouse.y - mousePosition.y);
-            Point modelDelta = m_canvas.drawToModel(viewDelta);
+            final Point mousePosition = m_canvas.modelToView(x, y);
+            final Point viewDelta = new Point(m_startMouse.x - mousePosition.x, m_startMouse.y - mousePosition.y);
+            final Point modelDelta = m_canvas.drawToModel(viewDelta);
             m_canvas.scrollMapTo(m_startScroll.x + modelDelta.x, m_startScroll.y + modelDelta.y);
         }
     }
 
-    /*
-     * @see com.galactanet.gametable.AbstractTool#mouseButtonReleased(int, int)
-     */
-    public void mouseButtonReleased(int x, int y, int modifierMask)
-    {
-    	endAction();
-    }
-
-    public void endAction()
-    {
-        m_startScroll = null;
-        m_startMouse = null;
-        m_canvas.setToolCursor(0);
-    }
-    
 }

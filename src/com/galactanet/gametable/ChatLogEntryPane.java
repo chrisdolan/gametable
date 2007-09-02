@@ -29,9 +29,13 @@ public class ChatLogEntryPane extends JEditorPane
 
     private class StyleAction extends AbstractAction
     {
-        String style;
+        /**
+         * 
+         */
+        private static final long serialVersionUID = -6659861238593013643L;
+        String                    style;
 
-        StyleAction(String styleName)
+        StyleAction(final String styleName)
         {
             style = styleName;
         }
@@ -39,48 +43,133 @@ public class ChatLogEntryPane extends JEditorPane
         /*
          * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
          */
-        public void actionPerformed(ActionEvent e)
+        public void actionPerformed(final ActionEvent e)
         {
             toggleStyle(style);
         }
     }
 
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 3333422308857068208L;
+
     // --- Members ---------------------------------------------------------------------------------------------------
 
+    private static void applyStyle(final HTMLDocument doc, final int start, final int end, final AttributeSet styleOn,
+        final AttributeSet styleOff)
+    {
+        boolean allSet = true;
+
+        final List elements = getElementsIn(doc, start, end);
+        for (int i = 0, size = elements.size(); i < size; ++i)
+        {
+            final AbstractDocument.LeafElement element = (AbstractDocument.LeafElement)elements.get(i);
+            if (!element.containsAttributes(styleOn))
+            {
+                allSet = false;
+                break;
+            }
+        }
+
+        if (allSet)
+        {
+            if (styleOff != null)
+            {
+                doc.setCharacterAttributes(start, end - start, styleOff, false);
+            }
+            return;
+        }
+
+        doc.setCharacterAttributes(start, end - start, styleOn, false);
+    }
+
+    private static String getAttributeString(final AttributeSet attributes)
+    {
+        final AttributeSet clean = getCleanStyle(attributes);
+        final StringBuffer buffer = new StringBuffer();
+        buffer.append('{');
+        for (final Enumeration e = clean.getAttributeNames(); e.hasMoreElements();)
+        {
+            final Object key = e.nextElement();
+            buffer.append(' ');
+            buffer.append(key.toString());
+            if (!(key instanceof String))
+            {
+                buffer.append(" (");
+                buffer.append(key.getClass().getName());
+                buffer.append(')');
+            }
+            buffer.append(" => ");
+            final Object value = clean.getAttribute(key);
+            buffer.append(value.toString());
+            if (!(value instanceof String))
+            {
+                buffer.append(" (");
+                buffer.append(value.getClass().getName());
+                buffer.append(')');
+            }
+        }
+        buffer.append(" }");
+
+        return buffer.toString();
+    }
+
+    private static AttributeSet getCleanStyle(final AttributeSet attributes)
+    {
+        final SimpleAttributeSet retVal = new SimpleAttributeSet(attributes);
+        retVal.removeAttribute(StyleConstants.NameAttribute);
+        return retVal;
+    }
+
+    private static AttributeSet getCleanStyle(final HTMLDocument doc, final String name)
+    {
+        return getCleanStyle(doc.getStyle(name));
+    }
+
+    private static List getElementsIn(final HTMLDocument doc, final int start, final int end)
+    {
+        final List retVal = new ArrayList();
+        int pos = start;
+        while (true)
+        {
+            final AbstractDocument.LeafElement elem = (AbstractDocument.LeafElement)doc.getCharacterElement(pos);
+            retVal.add(elem);
+            if (elem.getEndOffset() >= end)
+            {
+                break;
+            }
+            pos = elem.getEndOffset();
+        }
+
+        return retVal;
+    }
+
+    private final GametableFrame frame;
     /**
      * List of sent items.
      */
-    private List                history         = new ArrayList();
-    private int                 historyPosition = 0;
-    private StyledEntryToolbar  toolbar         = null;
-    private MutableAttributeSet styleOverride   = null;
-    private GametableFrame      frame;
-
-    private boolean             ignoreCaret     = false;
-    private boolean             spaceTyped      = false;
-    private boolean             lastTypedSent   = false;
+    private final List           history         = new ArrayList();
+    private int                  historyPosition = 0;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
-    public ChatLogEntryPane(GametableFrame parentFrame)
+    private boolean              ignoreCaret     = false;
+
+    private boolean              lastTypedSent   = false;
+
+    private boolean              spaceTyped      = false;
+
+    private MutableAttributeSet  styleOverride   = null;
+
+    private StyledEntryToolbar   toolbar         = null;
+
+    public ChatLogEntryPane(final GametableFrame parentFrame)
     {
         super("text/html", ChatLogPane.DEFAULT_TEXT);
         frame = parentFrame;
         initialize();
         clear();
-    }
-
-    public void setToolbar(StyledEntryToolbar bar)
-    {
-        toolbar = bar;
-    }
-
-    /**
-     * @return the component to add to UIs
-     */
-    public Component getComponentToAdd()
-    {
-        return this;
     }
 
     /**
@@ -92,86 +181,49 @@ public class ChatLogEntryPane extends JEditorPane
     }
 
     /**
-     * @return the useful part of the text of this component.
+     * @return the component to add to UIs
      */
-    public String getText()
+    public Component getComponentToAdd()
     {
-        return UtilityFunctions.getBodyContent(super.getText());
+        return this;
+    }
+
+    private AttributeSet getCurrentStyle()
+    {
+        if (styleOverride != null)
+        {
+            return styleOverride;
+        }
+
+        final HTMLDocument doc = (HTMLDocument)getDocument();
+        int pos = getCaretPosition();
+        if (pos != doc.getStartPosition().getOffset() + 1)
+        {
+            --pos;
+        }
+        return doc.getCharacterElement(pos).getAttributes();
     }
 
     public String getPlainText()
     {
-        HTMLDocument doc = (HTMLDocument)getDocument();
+        final HTMLDocument doc = (HTMLDocument)getDocument();
         try
         {
             return doc.getText(doc.getStartPosition().getOffset(), doc.getLength());
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             Log.log(Log.SYS, e);
             return "";
         }
     }
 
-    public void setText(String text)
+    /**
+     * @return the useful part of the text of this component.
+     */
+    public String getText()
     {
-        super.setText(ChatLogPane.DEFAULT_TEXT_HEADER + text + ChatLogPane.DEFAULT_TEXT_FOOTER);
-    }
-
-    public void toggleStyle(String style)
-    {
-        HTMLDocument doc = (HTMLDocument)getDocument();
-        Caret c = getCaret();
-        int start = Math.min(c.getMark(), c.getDot());
-        int end = Math.max(c.getMark(), c.getDot());
-
-        if (start == end)
-        {
-            setCurrentStyle(style, !isCurrentStyle(style));
-
-            getAttributeString(styleOverride);
-            toolbar.updateStyles();
-            return;
-        }
-
-        AttributeSet styleOn = getCleanStyle(doc, "." + style);
-        AttributeSet styleOff = getCleanStyle(doc, ".no-" + style);
-        applyStyle(doc, start, end, styleOn, styleOff);
-
-        toolbar.updateStyles();
-    }
-
-    public boolean isCurrentStyle(String style)
-    {
-        AttributeSet current = getCurrentStyle();
-        HTMLDocument doc = (HTMLDocument)getDocument();
-        AttributeSet styleOn = getCleanStyle(doc, "." + style);
-
-        return current.containsAttributes(styleOn);
-    }
-
-    public void setCurrentStyle(String style, boolean status)
-    {
-        HTMLDocument doc = (HTMLDocument)getDocument();
-        AttributeSet styleOn = getCleanStyle(doc, "." + style);
-        AttributeSet styleOff = getCleanStyle(doc, ".no-" + style);
-
-        AttributeSet current = getCurrentStyle();
-        if (styleOverride == null)
-        {
-            styleOverride = new SimpleAttributeSet(current);
-        }
-
-        if (current.containsAttributes(styleOn))
-        {
-            styleOverride.removeAttributes(styleOn);
-            styleOverride.addAttributes(styleOff);
-        }
-        else
-        {
-            styleOverride.addAttributes(styleOn);
-            styleOverride.removeAttributes(styleOff);
-        }
+        return UtilityFunctions.getBodyContent(super.getText());
     }
 
     /**
@@ -195,7 +247,7 @@ public class ChatLogEntryPane extends JEditorPane
             /*
              * @see java.awt.event.KeyAdapter#keyPressed(java.awt.event.KeyEvent)
              */
-            public void keyPressed(KeyEvent e)
+            public void keyPressed(final KeyEvent e)
             {
                 spaceTyped = false;
             }
@@ -203,7 +255,7 @@ public class ChatLogEntryPane extends JEditorPane
             /*
              * @see java.awt.event.KeyAdapter#keyTyped(java.awt.event.KeyEvent)
              */
-            public void keyTyped(KeyEvent e)
+            public void keyTyped(final KeyEvent e)
             {
                 if ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0)
                 {
@@ -216,14 +268,14 @@ public class ChatLogEntryPane extends JEditorPane
                     return;
                 }
 
-                if (e.getKeyChar() == '\n' || e.getKeyChar() == (char)8)
+                if ((e.getKeyChar() == '\n') || (e.getKeyChar() == (char)8))
                 {
                     return;
                 }
 
-                String charStr = String.valueOf(e.getKeyChar());
-                HTMLDocument doc = (HTMLDocument)getDocument();
-                int dotPos = getCaret().getDot();
+                final String charStr = String.valueOf(e.getKeyChar());
+                final HTMLDocument doc = (HTMLDocument)getDocument();
+                final int dotPos = getCaret().getDot();
                 if (styleOverride != null)
                 {
                     try
@@ -236,7 +288,7 @@ public class ChatLogEntryPane extends JEditorPane
                         setCaretPosition(dotPos);
                         setCaretPosition(dotPos + charStr.length());
                     }
-                    catch (Exception ex)
+                    catch (final Exception ex)
                     {
                         Log.log(Log.SYS, ex);
                     }
@@ -260,7 +312,7 @@ public class ChatLogEntryPane extends JEditorPane
             /*
              * @see java.awt.event.MouseAdapter#mousePressed(java.awt.event.MouseEvent)
              */
-            public void mousePressed(MouseEvent e)
+            public void mousePressed(final MouseEvent e)
             {
                 spaceTyped = false;
             }
@@ -271,9 +323,9 @@ public class ChatLogEntryPane extends JEditorPane
             /*
              * @see javax.swing.event.CaretListener#caretUpdate(javax.swing.event.CaretEvent)
              */
-            public void caretUpdate(CaretEvent e)
+            public void caretUpdate(final CaretEvent e)
             {
-                //System.out.println("caretUpdate(" + e + ")");
+                // System.out.println("caretUpdate(" + e + ")");
                 if (!ignoreCaret && !spaceTyped)
                 {
                     styleOverride = null;
@@ -285,9 +337,7 @@ public class ChatLogEntryPane extends JEditorPane
                 // TODO: Find a better way. This sucks.
                 if (lastTypedSent != (e.getDot() != 1))
                 {
-                    frame.send(PacketManager.makeTypingPacket(
-                            frame.getMyPlayer().getPlayerName(),
-                            e.getDot() != 1));
+                    frame.send(PacketManager.makeTypingPacket(frame.getMyPlayer().getPlayerName(), e.getDot() != 1));
                     lastTypedSent = (e.getDot() != 1);
                 }
             }
@@ -299,10 +349,15 @@ public class ChatLogEntryPane extends JEditorPane
 
         getActionMap().put("historyBack", new AbstractAction()
         {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = -8619495333157141200L;
+
             /*
              * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
              */
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 historyPosition--;
                 if (historyPosition < 0)
@@ -319,10 +374,15 @@ public class ChatLogEntryPane extends JEditorPane
 
         getActionMap().put("historyForward", new AbstractAction()
         {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = -1252509345269856189L;
+
             /*
              * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
              */
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 historyPosition++;
 
@@ -347,13 +407,18 @@ public class ChatLogEntryPane extends JEditorPane
 
         getActionMap().put("enter", new AbstractAction()
         {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = 415264524729572508L;
+
             /*
              * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
              */
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 // they hit return on the text bar
-                String entered = getText().trim();
+                final String entered = getText().trim();
                 if (entered.length() == 0)
                 {
                     // useless string.
@@ -366,8 +431,8 @@ public class ChatLogEntryPane extends JEditorPane
                 historyPosition = history.size();
 
                 // parse for commands
-                String plain = getPlainText().trim();
-                if (plain.length() > 0 && plain.charAt(0) == '/')
+                final String plain = getPlainText().trim();
+                if ((plain.length() > 0) && (plain.charAt(0) == '/'))
                 {
                     frame.parseSlashCommand(plain);
                 }
@@ -387,107 +452,69 @@ public class ChatLogEntryPane extends JEditorPane
         });
     }
 
-    private AttributeSet getCurrentStyle()
+    public boolean isCurrentStyle(final String style)
     {
-        if (styleOverride != null)
-        {
-            return styleOverride;
-        }
+        final AttributeSet current = getCurrentStyle();
+        final HTMLDocument doc = (HTMLDocument)getDocument();
+        final AttributeSet styleOn = getCleanStyle(doc, "." + style);
 
-        HTMLDocument doc = (HTMLDocument)getDocument();
-        int pos = getCaretPosition();
-        if (pos != doc.getStartPosition().getOffset() + 1)
-        {
-            --pos;
-        }
-        return doc.getCharacterElement(pos).getAttributes();
+        return current.containsAttributes(styleOn);
     }
 
-    private static AttributeSet getCleanStyle(HTMLDocument doc, String name)
+    public void setCurrentStyle(final String style, final boolean status)
     {
-        return getCleanStyle(doc.getStyle(name));
-    }
+        final HTMLDocument doc = (HTMLDocument)getDocument();
+        final AttributeSet styleOn = getCleanStyle(doc, "." + style);
+        final AttributeSet styleOff = getCleanStyle(doc, ".no-" + style);
 
-    private static AttributeSet getCleanStyle(AttributeSet attributes)
-    {
-        SimpleAttributeSet retVal = new SimpleAttributeSet(attributes);
-        retVal.removeAttribute(StyleConstants.NameAttribute);
-        return retVal;
-    }
-
-    private static void applyStyle(HTMLDocument doc, int start, int end, AttributeSet styleOn, AttributeSet styleOff)
-    {
-        boolean allSet = true;
-
-        List elements = getElementsIn(doc, start, end);
-        for (int i = 0, size = elements.size(); i < size; ++i)
+        final AttributeSet current = getCurrentStyle();
+        if (styleOverride == null)
         {
-            AbstractDocument.LeafElement element = (AbstractDocument.LeafElement)elements.get(i);
-            if (!element.containsAttributes(styleOn))
-            {
-                allSet = false;
-                break;
-            }
+            styleOverride = new SimpleAttributeSet(current);
         }
 
-        if (allSet)
+        if (current.containsAttributes(styleOn))
         {
-            if (styleOff != null)
-            {
-                doc.setCharacterAttributes(start, end - start, styleOff, false);
-            }
+            styleOverride.removeAttributes(styleOn);
+            styleOverride.addAttributes(styleOff);
+        }
+        else
+        {
+            styleOverride.addAttributes(styleOn);
+            styleOverride.removeAttributes(styleOff);
+        }
+    }
+
+    public void setText(final String text)
+    {
+        super.setText(ChatLogPane.DEFAULT_TEXT_HEADER + text + ChatLogPane.DEFAULT_TEXT_FOOTER);
+    }
+
+    public void setToolbar(final StyledEntryToolbar bar)
+    {
+        toolbar = bar;
+    }
+
+    public void toggleStyle(final String style)
+    {
+        final HTMLDocument doc = (HTMLDocument)getDocument();
+        final Caret c = getCaret();
+        final int start = Math.min(c.getMark(), c.getDot());
+        final int end = Math.max(c.getMark(), c.getDot());
+
+        if (start == end)
+        {
+            setCurrentStyle(style, !isCurrentStyle(style));
+
+            getAttributeString(styleOverride);
+            toolbar.updateStyles();
             return;
         }
 
-        doc.setCharacterAttributes(start, end - start, styleOn, false);
-    }
+        final AttributeSet styleOn = getCleanStyle(doc, "." + style);
+        final AttributeSet styleOff = getCleanStyle(doc, ".no-" + style);
+        applyStyle(doc, start, end, styleOn, styleOff);
 
-    private static List getElementsIn(HTMLDocument doc, int start, int end)
-    {
-        List retVal = new ArrayList();
-        int pos = start;
-        while (true)
-        {
-            AbstractDocument.LeafElement elem = (AbstractDocument.LeafElement)doc.getCharacterElement(pos);
-            retVal.add(elem);
-            if (elem.getEndOffset() >= end)
-            {
-                break;
-            }
-            pos = elem.getEndOffset();
-        }
-
-        return retVal;
-    }
-
-    private static String getAttributeString(AttributeSet attributes)
-    {
-        AttributeSet clean = getCleanStyle(attributes);
-        StringBuffer buffer = new StringBuffer();
-        buffer.append('{');
-        for (Enumeration e = clean.getAttributeNames(); e.hasMoreElements();)
-        {
-            Object key = e.nextElement();
-            buffer.append(' ');
-            buffer.append(key.toString());
-            if (!(key instanceof String))
-            {
-                buffer.append(" (");
-                buffer.append(key.getClass().getName());
-                buffer.append(')');
-            }
-            buffer.append(" => ");
-            Object value = clean.getAttribute(key);
-            buffer.append(value.toString());
-            if (!(value instanceof String))
-            {
-                buffer.append(" (");
-                buffer.append(value.getClass().getName());
-                buffer.append(')');
-            }
-        }
-        buffer.append(" }");
-
-        return buffer.toString();
+        toolbar.updateStyles();
     }
 }

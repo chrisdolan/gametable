@@ -14,8 +14,12 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
-import javax.swing.event.*;
-import javax.swing.border.*;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.EtchedBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -37,34 +41,20 @@ import com.galactanet.gametable.prefs.Preferences;
  */
 public class GametableFrame extends JFrame implements ActionListener
 {
-    class ToolButtonActionListener implements ActionListener
-    {
-        int m_id;
-
-        ToolButtonActionListener(int id)
-        {
-            m_id = id;
-        }
-
-        /*
-         * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-         */
-        public void actionPerformed(ActionEvent e)
-        {
-            getGametableCanvas().setActiveTool(m_id);
-        }
-    }
-
     class ToolButtonAbstractAction extends AbstractAction
     {
-        int m_id;
+        /**
+         * 
+         */
+        private static final long serialVersionUID = 6185807427550145052L;
+        int                       m_id;
 
-        ToolButtonAbstractAction(int id)
+        ToolButtonAbstractAction(final int id)
         {
             m_id = id;
         }
 
-        public void actionPerformed(ActionEvent event)
+        public void actionPerformed(final ActionEvent event)
         {
             if (getFocusOwner() instanceof JTextField)
             {
@@ -74,36 +64,25 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
-    /**
-     * Default password for when there is no prefs file.
-     */
-    private static final String   DEFAULT_PASSWORD         = "";
+    class ToolButtonActionListener implements ActionListener
+    {
+        int m_id;
 
-    /**
-     * Default server for when there is no prefs file.
-     */
-    private static final String   DEFAULT_SERVER           = "localhost";
+        ToolButtonActionListener(final int id)
+        {
+            m_id = id;
+        }
 
-    /**
-     * Default Character name for when there is no prefs file.
-     */
-    private static final String   DEFAULT_CHARACTER_NAME   = "Anonymous";
+        /*
+         * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+         */
+        public void actionPerformed(final ActionEvent e)
+        {
+            getGametableCanvas().setActiveTool(m_id);
+        }
+    }
 
-    /**
-     * The version of the communications protocal used by this build. This needs to change whenever an incompatibility
-     * arises betwen versions.
-     */
-    public final static int       COMM_VERSION             = 14;
-    public final static int       PING_INTERVAL            = 2500;
-
-    public final static int       NETSTATE_NONE            = 0;
-    public final static int       NETSTATE_HOST            = 1;
-    public final static int       NETSTATE_JOINED          = 2;
-
-    public final static int       REJECT_INVALID_PASSWORD  = 0;
-    public final static int       REJECT_VERSION_MISMATCH  = 1;
-
-    public final static int       DEFAULT_PORT             = 6812;
+    public final static String    ALERT_MESSAGE_FONT       = "<b><font color=\"#FF0000\">";
 
     public final static Integer[] COLORS                   = {
         new Integer(new Color(0, 0, 0).getRGB()), new Integer(new Color(198, 198, 198).getRGB()),
@@ -116,28 +95,64 @@ public class GametableFrame extends JFrame implements ActionListener
         new Integer(new Color(132, 132, 0).getRGB()), new Integer(new Color(132, 132, 132).getRGB())
                                                            };
 
-    private final static boolean  DEBUG_FOCUS              = false;
-    private final static boolean  SEND_PINGS               = false;
+    /**
+     * The version of the communications protocol used by this build. This needs to change whenever an incompatibility
+     * arises between versions.
+     */
+    public final static int       COMM_VERSION             = 14;
 
-    // font colors
-    public final static String    SYSTEM_MESSAGE_FONT      = "<font color=\"#666600\">";
-    public final static String    ALERT_MESSAGE_FONT       = "<b><font color=\"#FF0000\">";
-    public final static String    PRIVATE_MESSAGE_FONT     = "<font color=\"#009900\">";
-    public final static String    EMOTE_MESSAGE_FONT       = "<font color=\"#004477\">";
-    public final static String    SAY_MESSAGE_FONT         = "<font color=\"#007744\">";
+    private final static boolean  DEBUG_FOCUS              = false;
+
+    /**
+     * Default Character name for when there is no prefs file.
+     */
+    private static final String   DEFAULT_CHARACTER_NAME   = "Anonymous";
+    /**
+     * Default password for when there is no prefs file.
+     */
+    private static final String   DEFAULT_PASSWORD         = "";
+
+    public final static int       DEFAULT_PORT             = 6812;
+    /**
+     * Default server for when there is no prefs file.
+     */
+    private static final String   DEFAULT_SERVER           = "localhost";
     public final static String    DIEROLL_MESSAGE_FONT     = "<b><font color=\"#990022\">";
 
-    public final static String    END_SYSTEM_MESSAGE_FONT  = "</font>";
+    public final static String    EMOTE_MESSAGE_FONT       = "<font color=\"#004477\">";
     public final static String    END_ALERT_MESSAGE_FONT   = "</b></font>";
-    public final static String    END_PRIVATE_MESSAGE_FONT = "</font>";
-    public final static String    END_EMOTE_MESSAGE_FONT   = "</font>";
-    public final static String    END_SAY_MESSAGE_FONT     = "</font>";
+
     public final static String    END_DIEROLL_MESSAGE_FONT = "</b></font>";
+
+    public final static String    END_EMOTE_MESSAGE_FONT   = "</font>";
+
+    public final static String    END_PRIVATE_MESSAGE_FONT = "</font>";
+    public final static String    END_SAY_MESSAGE_FONT     = "</font>";
+
+    public final static String    END_SYSTEM_MESSAGE_FONT  = "</font>";
 
     /**
      * The global gametable instance.
      */
     private static GametableFrame g_gametableFrame;
+    public final static int       NETSTATE_HOST            = 1;
+    public final static int       NETSTATE_JOINED          = 2;
+    public final static int       NETSTATE_NONE            = 0;
+
+    public final static int       PING_INTERVAL            = 2500;
+    public final static String    PRIVATE_MESSAGE_FONT     = "<font color=\"#009900\">";
+    public final static int       REJECT_INVALID_PASSWORD  = 0;
+    public final static int       REJECT_VERSION_MISMATCH  = 1;
+    public final static String    SAY_MESSAGE_FONT         = "<font color=\"#007744\">";
+    private final static boolean  SEND_PINGS               = false;
+
+    /**
+     * 
+     */
+    private static final long     serialVersionUID         = -1997597054204909759L;
+
+    // font colors
+    public final static String    SYSTEM_MESSAGE_FONT      = "<font color=\"#666600\">";
 
     /**
      * @return The global GametableFrame instance.
@@ -147,103 +162,102 @@ public class GametableFrame extends JFrame implements ActionListener
         return g_gametableFrame;
     }
 
-    private JMenuItem              m_hostMenuItem;
-    private JMenuItem              m_joinMenuItem;
-    private JMenuItem              m_disconnectMenuItem;
+    public double                   grid_multiplier          = 5.0;
+    public String                   grid_unit                = "ft";
+    public File                     m_actingFileMacros;
 
-    private JCheckBoxMenuItem      m_noGridModeMenuItem     = new JCheckBoxMenuItem("No Grid");
-    private JCheckBoxMenuItem      m_squareGridModeMenuItem = new JCheckBoxMenuItem("Square Grid");
-    private JCheckBoxMenuItem      m_hexGridModeMenuItem    = new JCheckBoxMenuItem("Hex Grid");
-    private JCheckBoxMenuItem      m_togglePrivateMapMenuItem;
-
-    private JLabel                 m_status                 = new JLabel(" ");
-    private JPanel                 m_chatPanel              = new JPanel();
-    private GametableCanvas        m_gametableCanvas        = new GametableCanvas();
-
-    private List                   m_players                = new ArrayList();
-    
-    private List                   m_typing                 = new ArrayList();
-    
-    // only valid if this client is the host
-    private List                   m_decks 					= new ArrayList();
-    
-    // all the cards you have
-    private List				   m_cards					= new ArrayList();
-
-    // which player I am
-    private int                    m_myPlayerIndex;
-
-    public String                  m_playerName             = System.getProperty("user.name");
-    public String                  m_characterName          = DEFAULT_CHARACTER_NAME;
-    public String                  m_ipAddress              = DEFAULT_SERVER;
-    public int                     m_port                   = DEFAULT_PORT;
-    public String                  m_password               = DEFAULT_PASSWORD;
-
-    private JPanel                 m_textAndEntryPanel      = new JPanel();
-    private ChatLogEntryPane       m_textEntry              = new ChatLogEntryPane(this);
-    private ChatLogPane            m_chatLog                = new ChatLogPane();
-    private JSplitPane             m_mapChatSplitPane       = new JSplitPane();
-
-    private JPanel                 m_textAreaPanel          = new JPanel();
-    private JSplitPane             m_mapPogSplitPane        = new JSplitPane();
-    private PogPanel               m_pogPanel               = null;
-    private MacroPanel             m_macroPanel             = null;
-    private ActivePogsPanel        m_activePogsPanel        = null;
-    private JToolBar               m_toolBar                = new JToolBar();
-    private ButtonGroup            m_toolButtonGroup        = new ButtonGroup();
-
-    private JCheckBox              m_showNamesCheckbox      = new JCheckBox("Show pog names");
-
-    private Map                    m_macroMap               = new TreeMap();
-
-    private int                    m_netStatus              = NETSTATE_NONE;
-
-    private volatile NetworkThread m_networkThread;
-    private PeriodicExecutorThread m_executorThread;
-
-    private long                   m_lastPingTime           = 0;
-    private long                   m_lastTickTime           = 0;
-
-    public Color                   m_drawColor              = Color.BLACK;
-
-    // window size and position
-    private Point                  m_windowPos;
-    private Dimension              m_windowSize;
-    private boolean                m_bMaximized;
-
-    private JTabbedPane            m_pogsTabbedPane         = new JTabbedPane();
-    private JComboBox              m_colorCombo             = new JComboBox(COLORS);
-
+    public File                     m_actingFilePrivate;
     // The current file path used by save and open.
     // NULL if unset.
     // one for the public map, one for the private map
-    public File                    m_actingFilePublic;
-    public File                    m_actingFilePrivate;
-    public File                    m_actingFileMacros;
+    public File                     m_actingFilePublic;
+    private ActivePogsPanel         m_activePogsPanel        = null;
+    private boolean                 m_bMaximized;
 
-    private ToolManager            m_toolManager            = new ToolManager();
-    private JToggleButton          m_toolButtons[]          = null;
-    private Preferences            m_preferences            = new Preferences();
-    private PogLibrary             m_pogLibrary             = null;
+    // all the cards you have
+    private final List              m_cards                  = new ArrayList();
+    public String                   m_characterName          = DEFAULT_CHARACTER_NAME;
+    private final ChatLogPane       m_chatLog                = new ChatLogPane();
 
-    // the id that will be assigned to the next player to join
-    public int                     m_nextPlayerId;
+    private final JPanel            m_chatPanel              = new JPanel();
 
-    // the id that will be assigned to the change made
-    public int                     m_nextStateId;
+    private final JComboBox         m_colorCombo             = new JComboBox(COLORS);
 
-    // the name of the last person who sent a private message
-    public String                  m_lastPrivateMessageSender;
+    // only valid if this client is the host
+    private final List              m_decks                  = new ArrayList();
 
-    /* 
+    private JMenuItem               m_disconnectMenuItem;
+
+    public Color                    m_drawColor              = Color.BLACK;
+
+    private PeriodicExecutorThread  m_executorThread;
+    private final GametableCanvas   m_gametableCanvas        = new GametableCanvas();
+    JComboBox                       m_gridunit;
+    /*
      * Added variables below in order to accomodate grid unit multiplier
      */
-    JTextField m_gridunitmultiplier;
-    JComboBox m_gridunit;
-    public double grid_multiplier = 5.0;
-    public String grid_unit = "ft";
-    
-    
+    JTextField                      m_gridunitmultiplier;
+    private final JCheckBoxMenuItem m_hexGridModeMenuItem    = new JCheckBoxMenuItem("Hex Grid");
+
+    private JMenuItem               m_hostMenuItem;
+    public String                   m_ipAddress              = DEFAULT_SERVER;
+    private JMenuItem               m_joinMenuItem;
+    private long                    m_lastPingTime           = 0;
+
+    // the name of the last person who sent a private message
+    public String                   m_lastPrivateMessageSender;
+    private long                    m_lastTickTime           = 0;
+    private final Map               m_macroMap               = new TreeMap();
+    private MacroPanel              m_macroPanel             = null;
+    private final JSplitPane        m_mapChatSplitPane       = new JSplitPane();
+    private final JSplitPane        m_mapPogSplitPane        = new JSplitPane();
+    // which player I am
+    private int                     m_myPlayerIndex;
+
+    private int                     m_netStatus              = NETSTATE_NONE;
+
+    private volatile NetworkThread  m_networkThread;
+
+    // the id that will be assigned to the next player to join
+    public int                      m_nextPlayerId;
+
+    // the id that will be assigned to the change made
+    public int                      m_nextStateId;
+    private final JCheckBoxMenuItem m_noGridModeMenuItem     = new JCheckBoxMenuItem("No Grid");
+
+    public String                   m_password               = DEFAULT_PASSWORD;
+    public String                   m_playerName             = System.getProperty("user.name");
+
+    private List                    m_players                = new ArrayList();
+
+    private PogLibrary              m_pogLibrary             = null;
+    private PogPanel                m_pogPanel               = null;
+    private final JTabbedPane       m_pogsTabbedPane         = new JTabbedPane();
+
+    public int                      m_port                   = DEFAULT_PORT;
+    private final Preferences       m_preferences            = new Preferences();
+
+    private final JCheckBox         m_showNamesCheckbox      = new JCheckBox("Show pog names");
+    private final JCheckBoxMenuItem m_squareGridModeMenuItem = new JCheckBoxMenuItem("Square Grid");
+    private final JLabel            m_status                 = new JLabel(" ");
+
+    private final JPanel            m_textAndEntryPanel      = new JPanel();
+    private final JPanel            m_textAreaPanel          = new JPanel();
+    private final ChatLogEntryPane  m_textEntry              = new ChatLogEntryPane(this);
+    private JCheckBoxMenuItem       m_togglePrivateMapMenuItem;
+
+    private final JToolBar          m_toolBar                = new JToolBar();
+
+    private final ButtonGroup       m_toolButtonGroup        = new ButtonGroup();
+
+    private JToggleButton           m_toolButtons[]          = null;
+
+    private final ToolManager       m_toolManager            = new ToolManager();
+    private final List              m_typing                 = new ArrayList();
+    // window size and position
+    private Point                   m_windowPos;
+    private Dimension               m_windowSize;
+
     /**
      * Construct the frame
      */
@@ -255,378 +269,945 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             initialize();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             Log.log(Log.SYS, e);
         }
     }
 
-    /**
-     * Performs initialization.
-     * 
-     * @throws IOException
-     */
-    private void initialize() throws IOException
+    public void actionPerformed(final ActionEvent e)
     {
-        if (DEBUG_FOCUS)
-        {
-            KeyboardFocusManager man = KeyboardFocusManager.getCurrentKeyboardFocusManager();
-            man.addPropertyChangeListener(new PropertyChangeListener()
-            {
-                /*
-                 * @see java.beans.PropertyChangeListener#propertyChange(java.beans.PropertyChangeEvent)
-                 */
-                public void propertyChange(PropertyChangeEvent e)
-                {
-                    System.out.println(e.getPropertyName() + ":\n    " + e.getOldValue() + "\n -> " + e.getNewValue());
-                }
-
-            });
-        }
-
-        setContentPane(new JPanel(new BorderLayout()));
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setTitle(GametableApp.VERSION);
-        setJMenuBar(getMainMenuBar());
-        m_noGridModeMenuItem.addActionListener(this);
-        m_squareGridModeMenuItem.addActionListener(this);
-        m_hexGridModeMenuItem.addActionListener(this);
-
-        m_chatPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
-        m_chatPanel.setLayout(new BorderLayout());
-
-        m_textAndEntryPanel.setLayout(new BorderLayout());
-
-        JPanel entryPanel = new JPanel(new BorderLayout(0, 0));
-        entryPanel.add(new StyledEntryToolbar(m_textEntry), BorderLayout.NORTH);
-        entryPanel.add(m_textEntry.getComponentToAdd(), BorderLayout.SOUTH);
-        m_textAndEntryPanel.add(entryPanel, BorderLayout.SOUTH);
-
-        m_textAndEntryPanel.add(m_chatLog.getComponentToAdd(), BorderLayout.CENTER);
-
-        m_mapChatSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
-        m_mapChatSplitPane.setContinuousLayout(true);
-        m_mapChatSplitPane.setResizeWeight(1.0);
-        m_mapChatSplitPane.setBorder(null);
-
-        m_textAreaPanel.setLayout(new BorderLayout());
-
-        m_mapPogSplitPane.setContinuousLayout(true);
-        m_mapPogSplitPane.setBorder(null);
-
-        m_colorCombo.setMaximumSize(new Dimension(100, 21));
-        m_colorCombo.setFocusable(false);
-        m_toolBar.setFloatable(false);
-        m_toolBar.setRollover(true);
-        m_toolBar.setBorder(new EmptyBorder(2, 5, 2, 5));
-        m_toolBar.add(m_colorCombo, null);
-        m_toolBar.add(Box.createHorizontalStrut(5));
-
-        initializeTools();
-
-        m_toolBar.add(Box.createHorizontalStrut(5));
-
         /*
          * Added in order to accomodate grid unit multiplier
          */
-        m_gridunitmultiplier = new JTextField("5", 3);
-        m_gridunitmultiplier.setMaximumSize(new Dimension(42, 21));
-        String[] units = {"ft", "m", "u"};
-        m_gridunit = new JComboBox(units);
-        m_gridunit.setMaximumSize(new Dimension(42, 21));
-        m_toolBar.add(m_gridunitmultiplier);
-        m_toolBar.add(m_gridunit);
-        m_gridunitmultiplier.getDocument().addDocumentListener(new DocumentListener()
+        if (e.getSource() == m_gridunit)
         {
-            public void changedUpdate(DocumentEvent e)
-            {
-                grid_multiplier = Double.parseDouble(m_gridunitmultiplier.getText());
-            }
-            public void insertUpdate(DocumentEvent e)
-            {
-                grid_multiplier = Double.parseDouble(m_gridunitmultiplier.getText()); 
-            }
-            public void removeUpdate(DocumentEvent e)
-            {
-                grid_multiplier = Double.parseDouble(m_gridunitmultiplier.getText());
-            }
-        });
-        m_gridunit.addActionListener(this);
-        
-        m_showNamesCheckbox.setFocusable(false);
-        m_showNamesCheckbox.addActionListener(new ActionListener()
+            grid_unit = (String)(m_gridunit.getSelectedItem());
+        }
+
+        if (e.getSource() == m_colorCombo)
         {
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(ActionEvent e)
-            {
-                m_gametableCanvas.repaint();
-            }
-        });
-        m_toolBar.add(m_showNamesCheckbox);
-
-        getContentPane().add(m_toolBar, BorderLayout.NORTH);
-
-        m_pogLibrary = new PogLibrary();
-        getGametableCanvas().init(this);
-
-        m_pogPanel = new PogPanel(m_pogLibrary, getGametableCanvas());
-        m_pogsTabbedPane.add(m_pogPanel, "Pog Library");
-        m_activePogsPanel = new ActivePogsPanel();
-        m_pogsTabbedPane.add(m_activePogsPanel, "Active Pogs");
-        m_macroPanel = new MacroPanel();
-        m_pogsTabbedPane.add(m_macroPanel, "Dice Macros");
-        m_pogsTabbedPane.setFocusable(false);
-
-        m_chatPanel.add(m_textAreaPanel, BorderLayout.CENTER);
-        m_textAreaPanel.add(m_textAndEntryPanel, BorderLayout.CENTER);
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED), new EmptyBorder(1, 1, 1, 1)));
-        panel.add(getGametableCanvas(), BorderLayout.CENTER);
-        m_mapChatSplitPane.add(panel, JSplitPane.TOP);
-        m_mapChatSplitPane.add(m_chatPanel, JSplitPane.BOTTOM);
-
-        m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.LEFT);
-        m_mapPogSplitPane.add(m_mapChatSplitPane, JSplitPane.RIGHT);
-        getContentPane().add(m_mapPogSplitPane, BorderLayout.CENTER);
-        m_status.setBorder(new EtchedBorder(EtchedBorder.RAISED));
-        getContentPane().add(m_status, BorderLayout.SOUTH);
-        updateStatus();
-
-        m_disconnectMenuItem.setEnabled(false);
-
-        ColorComboCellRenderer renderer = new ColorComboCellRenderer();
-        m_colorCombo.setRenderer(renderer);
-
-        // load the primary map
-        getGametableCanvas().setActiveMap(getGametableCanvas().getPrivateMap());
-        PacketSourceState.beginFileLoad();
-        loadState(new File("autosavepvt.grm"));
-        PacketSourceState.endFileLoad();
-
-        getGametableCanvas().setActiveMap(getGametableCanvas().getPublicMap());
-        loadState(new File("autosave.grm"));
-        loadPrefs();
-
-        addPlayer(new Player(m_playerName, m_characterName, -1));
-        this.m_myPlayerIndex = 0;
-
-        m_colorCombo.addActionListener(this);
-        updateGridModeMenu();
-
-        addComponentListener(new ComponentAdapter()
+            final Integer col = (Integer)m_colorCombo.getSelectedItem();
+            m_drawColor = new Color(col.intValue());
+        }
+        else if (e.getSource() == m_noGridModeMenuItem)
         {
-            /*
-             * @see java.awt.event.ComponentListener#componentResized(java.awt.event.ComponentEvent)
-             */
-            public void componentResized(ComponentEvent event)
-            {
-                updateWindowInfo();
-            }
-
-            /*
-             * @see java.awt.event.ComponentListener#componentMoved(java.awt.event.ComponentEvent)
-             */
-            public void componentMoved(ComponentEvent e)
-            {
-                updateWindowInfo();
-            }
-
-        });
-
-        addWindowListener(new WindowAdapter()
+            getGametableCanvas().m_gridMode = getGametableCanvas().m_noGridMode;
+            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_NONE));
+            updateGridModeMenu();
+            getGametableCanvas().repaint();
+            postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
+        }
+        else if (e.getSource() == m_squareGridModeMenuItem)
         {
-            /*
-             * @see java.awt.event.WindowAdapter#windowClosing(java.awt.event.WindowEvent)
-             */
-            public void windowClosing(WindowEvent e)
-            {
-                saveAll();
-            }
-
-            /*
-             * @see java.awt.event.WindowListener#windowClosed(java.awt.event.WindowEvent)
-             */
-            public void windowClosed(WindowEvent e)
-            {
-                saveAll();
-            }
-        });
-
-        /*
-         * // change the default component traverse settings // we do this cause we don't really care about those //
-         * settings, but we want to be able to use the tab key KeyboardFocusManager focusMgr =
-         * KeyboardFocusManager.getCurrentKeyboardFocusManager(); Set set = new
-         * HashSet(focusMgr.getDefaultFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS)); set.clear(); //
-         * set.add(KeyStroke.getKeyStroke('\t', 0, false));
-         * focusMgr.setDefaultFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, set); set = new
-         * HashSet(focusMgr.getDefaultFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS)); set.clear(); //
-         * set.add(KeyStroke.getKeyStroke('\t', 0, false));
-         * focusMgr.setDefaultFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, set);
-         */
-
-        m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed SLASH"),
-            "startSlash");
-        m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed ENTER"),
-            "startText");
-        m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
-            KeyStroke.getKeyStroke("control pressed R"), "reply");
-
-        m_gametableCanvas.getActionMap().put("startSlash", new AbstractAction()
+            getGametableCanvas().m_gridMode = getGametableCanvas().m_squareGridMode;
+            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_SQUARES));
+            updateGridModeMenu();
+            getGametableCanvas().repaint();
+            postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
+        }
+        else if (e.getSource() == m_hexGridModeMenuItem)
         {
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(ActionEvent e)
-            {
-                if (m_gametableCanvas.isTextFieldFocused())
-                {
-                    return;
-                }
-
-                // only do this at the start of a line
-                if (m_textEntry.getText().length() == 0)
-                {
-                    // furthermore, only do the set text and focusing if we don't have
-                    // focus (otherwise, we end up with two slashes. One from the user typing it, and
-                    // another from us setting the text, cause our settext happens first.)
-                    if (KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() != m_textEntry)
-                    {
-                        m_textEntry.setText("/");
-                    }
-                }
-                m_textEntry.requestFocus();
-            }
-        });
-
-        m_gametableCanvas.getActionMap().put("startText", new AbstractAction()
-        {
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(ActionEvent e)
-            {
-                if (m_gametableCanvas.isTextFieldFocused())
-                {
-                    return;
-                }
-
-                if (m_textEntry.getText().length() == 0)
-                {
-                    // furthermore, only do the set text and focusing if we don't have
-                    // focus (otherwise, we end up with two slashes. One from the user typing it, and
-                    // another from us setting the text, cause our settext happens first.)
-                    if (KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() != m_textEntry)
-                    {
-                        m_textEntry.setText("");
-                    }
-                }
-                m_textEntry.requestFocus();
-            }
-        });
-
-        m_gametableCanvas.getActionMap().put("reply", new AbstractAction()
-        {
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(ActionEvent e)
-            {
-                // we don't do this if there's already text in the entry field
-                if (m_textEntry.getText().length() == 0)
-                {
-                    // if they've never received a tell, just tell them that
-                    if (m_lastPrivateMessageSender == null)
-                    {
-                        // they've received no tells yet
-                        logAlertMessage("You cannot reply until you receive a /tell from another player.");
-                    }
-                    else
-                    {
-                        startTellTo(m_lastPrivateMessageSender);
-                    }
-                }
-                m_textEntry.requestFocus();
-            }
-        });
-
-        initializeExecutorThread();
+            getGametableCanvas().m_gridMode = getGametableCanvas().m_hexGridMode;
+            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_HEX));
+            updateGridModeMenu();
+            getGametableCanvas().repaint();
+            postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
+        }
     }
 
     /**
-     * Initializes the tools from the ToolManager.
+     * Invokes the whole addDieMacro dialog process.
      */
-    private void initializeTools()
+    public void addDieMacro()
     {
-        try
+        final NewMacroDialog dialog = new NewMacroDialog();
+        dialog.setVisible(true);
+
+        if (dialog.isAccepted())
         {
-            m_toolManager.initialize();
-            int buttonSize = m_toolManager.getMaxIconSize();
-            int numTools = m_toolManager.getNumTools();
-            m_toolButtons = new JToggleButton[numTools];
-            for (int toolId = 0; toolId < numTools; toolId++)
+            // extrace the macro from the controls and add it
+            final String name = dialog.getMacroName();
+            final String macro = dialog.getMacroDefinition();
+            if (getMacro(name) != null)
             {
-                ToolManager.Info info = m_toolManager.getToolInfo(toolId);
-                Image im = UtilityFunctions.createDrawableImage(buttonSize, buttonSize);
+                final int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
+                    "You already have a macro named \"" + name + "\", " + "are you sure you want to replace it with \""
+                        + macro + "\"?", "Replace Macro?");
+                if (result == UtilityFunctions.YES)
                 {
-                    Graphics g = im.getGraphics();
-                    Image icon = info.getIcon();
-                    int offsetX = (buttonSize - icon.getWidth(null)) / 2;
-                    int offsetY = (buttonSize - icon.getHeight(null)) / 2;
-                    g.drawImage(info.getIcon(), offsetX, offsetY, null);
-                    g.dispose();
-                }
-
-                JToggleButton button = new JToggleButton(new ImageIcon(im));
-                m_toolBar.add(button);
-                button.addActionListener(new ToolButtonActionListener(toolId));
-                button.setFocusable(false);
-                m_toolButtonGroup.add(button);
-                m_toolButtons[toolId] = button;
-
-                String keyInfo = "";
-                if (info.getQuickKey() != null)
-                {
-                    String actionId = "tool" + toolId + "Action";
-                    getGametableCanvas().getActionMap().put(actionId, new ToolButtonAbstractAction(toolId));
-                    KeyStroke keystroke = KeyStroke.getKeyStroke("ctrl " + info.getQuickKey());
-                    getGametableCanvas().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keystroke, actionId);
-                    keyInfo = " (Ctrl+" + info.getQuickKey() + ")";
-                }
-                button.setToolTipText(info.getName() + keyInfo);
-                List prefs = info.getTool().getPreferences();
-                for (int i = 0; i < prefs.size(); i++)
-                {
-                    m_preferences.addPreference((PreferenceDescriptor)prefs.get(i));
+                    addMacro(name, macro);
                 }
             }
-        }
-        catch (IOException ioe)
-        {
-            Log.log(Log.SYS, "Failure initializing tools.");
-            Log.log(Log.SYS, ioe);
+            else
+            {
+                addMacro(name, macro);
+            }
         }
     }
 
     // --- Menus ---
 
-    private JMenuBar getMainMenuBar()
+    public void addMacro(final DiceMacro dm)
     {
-        JMenuBar menuBar = new JMenuBar();
-        menuBar.add(getFileMenu());
-        menuBar.add(getEditMenu());
-        menuBar.add(getNetworkMenu());
-        menuBar.add(getMapMenu());
-        menuBar.add(getDiceMenu());
-        menuBar.add(getHelpMenu());
+        addMacroForced(dm);
+        m_macroPanel.refreshMacroList();
+    }
 
-        return menuBar;
+    public void addMacro(final String name, final String macro)
+    {
+        final DiceMacro newMacro = new DiceMacro();
+        boolean res = newMacro.init(macro, name);
+        if (!res)
+        {
+            logAlertMessage("Error in macro");
+            return;
+        }
+        addMacro(newMacro);
+    }
+
+    private void addMacroForced(final DiceMacro macro)
+    {
+        removeMacroForced(macro.getName());
+        m_macroMap.put(UtilityFunctions.normalizeName(macro.getName()), macro);
+    }
+
+    public void addPlayer(final Player player)
+    {
+        m_players.add(player);
+    }
+
+    public void addPogPacketReceived(final Pog pog, final boolean bPublicLayerPog)
+    {
+        getGametableCanvas().doAddPog(pog, bPublicLayerPog);
+
+        // update the next pog id if necessary
+        if (pog.getId() >= Pog.g_nextId)
+        {
+            Pog.g_nextId = pog.getId() + 5;
+        }
+
+        // update the next pog id if necessary
+        if (pog.getSortOrder() >= Pog.g_nextSortId)
+        {
+            Pog.g_nextSortId = pog.getSortOrder() + 1;
+        }
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if we're the host, send it to the clients
+            send(PacketManager.makeAddPogPacket(pog));
+        }
+    }
+
+    /**
+     * Updates the frame size and position based on the preferences stored.
+     */
+    public void applyWindowInfo()
+    {
+        final Point locCopy = new Point(m_windowPos);
+        setSize(m_windowSize);
+        m_windowPos = locCopy;
+        setLocation(locCopy);
+        if (m_bMaximized)
+        {
+            setExtendedState(MAXIMIZED_BOTH);
+        }
+        else
+        {
+            setExtendedState(NORMAL);
+        }
+    }
+
+    // when called, all the cards you had from a give deck disappear
+    public void clearDeck(final String deckName)
+    {
+        // if you're the host, send out the packet to tell everyone to
+        // clear their decks. If you're a joiner, don't. Either way
+        // clear out your own hand of the offending cards
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            send(PacketManager.makeClearDeckPacket(deckName));
+        }
+
+        for (int i = 0; i < m_cards.size(); i++)
+        {
+            final DeckData.Card card = (DeckData.Card)m_cards.get(i);
+            if (card.m_deckName.equals(deckName))
+            {
+                // this card has to go.
+                m_cards.remove(i);
+                i--; // to keep up with the changed list
+            }
+        }
+    }
+
+    public void confirmHost()
+    {
+        if (m_netStatus != NETSTATE_HOST)
+        {
+            throw new IllegalStateException("confirmHost failure");
+        }
+    }
+
+    // --- MenuItems ---
+
+    public void confirmJoined()
+    {
+        if (m_netStatus != NETSTATE_JOINED)
+        {
+            throw new IllegalStateException("confirmJoined failure");
+        }
+    }
+
+    public void connectionDropped(final Connection conn)
+    {
+        if (m_netStatus == NETSTATE_JOINED)
+        {
+            // we lost our connection to the host
+            logAlertMessage("Your connection to the host was lost.");
+            disconnect();
+
+            m_netStatus = NETSTATE_NONE;
+            return;
+        }
+
+        // find the player who owns that connection
+        final Player dead = getPlayerFromConnection(conn);
+        if (dead != null)
+        {
+            // remove this player
+            m_players.remove(dead);
+            sendCastInfo();
+            postSystemMessage(dead.getPlayerName() + " has left the session");
+        }
+        else
+        {
+            postAlertMessage("Someone tried to log in, but was rejected.");
+        }
+    }
+
+    public void deckCommand(final String[] words)
+    {
+        // all deck commands go through here.
+        if (m_netStatus == NETSTATE_NONE)
+        {
+            logAlertMessage("You must be in a session to use /deck commands.");
+            return;
+        }
+
+        // words[0] will be "/deck". IF it weren't we wouldn't be here.
+        if (words.length < 2)
+        {
+            // they just said "/deck". give them the help text
+            showDeckUsage();
+            return;
+        }
+
+        final String command = words[1];
+
+        if (command.equals("create"))
+        {
+            if (m_netStatus != NETSTATE_HOST)
+            {
+                logAlertMessage("Only the host can create a deck.");
+                return;
+            }
+
+            // create a new deck.
+            if (words.length < 3)
+            {
+                // not enough parameters
+                showDeckUsage();
+                return;
+            }
+
+            final String deckFileName = words[2];
+            String deckName;
+            if (words.length == 3)
+            {
+                // they specified the deck, but not a name. So we
+                // name it after the type
+                deckName = deckFileName;
+            }
+            else
+            {
+                // they specified a name
+                deckName = words[3];
+            }
+
+            // if the name is already in use, puke out an error
+            if (getDeck(deckName) != null)
+            {
+                logAlertMessage("Error - There is already a deck named '" + deckName + "'.");
+                return;
+            }
+
+            // load up the deck
+            final DeckData dd = new DeckData();
+            final File deckFile = new File("decks" + UtilityFunctions.LOCAL_SEPARATOR + deckFileName + ".xml");
+            boolean result = dd.init(deckFile);
+
+            if (!result)
+            {
+                logAlertMessage("Could not create the deck.");
+                return;
+            }
+
+            // create a deck and add it
+            final Deck deck = new Deck();
+            deck.init(dd, 0, deckName);
+            m_decks.add(deck);
+
+            // alert all players that this deck has been created
+            sendDeckList();
+            postSystemMessage(getMyPlayer().getPlayerName() + " creates a new " + deckFileName + " deck named "
+                + deckName);
+
+        }
+        else if (command.equals("destroy"))
+        {
+            if (m_netStatus != NETSTATE_HOST)
+            {
+                logAlertMessage("Only the host can destroy a deck.");
+                return;
+            }
+
+            if (words.length < 3)
+            {
+                // they didn't specify a deck
+                showDeckUsage();
+                return;
+            }
+
+            // remove the deck named words[2]
+            final String deckName = words[2];
+            final int toRemoveIdx = getDeckIdx(deckName);
+
+            if (toRemoveIdx != -1)
+            {
+                // we can successfully destroy the deck
+                m_decks.remove(toRemoveIdx);
+
+                // tell the players
+                clearDeck(deckName);
+                sendDeckList();
+                postSystemMessage(getMyPlayer().getPlayerName() + " destroys the deck named " + deckName);
+            }
+            else
+            {
+                // we couldn't find a deck with that name
+                logAlertMessage("There is no deck named '" + deckName + "'.");
+            }
+        }
+        else if (command.equals("shuffle"))
+        {
+            if (m_netStatus != NETSTATE_HOST)
+            {
+                logAlertMessage("Only the host can shuffle a deck.");
+                return;
+            }
+
+            if (words.length < 4)
+            {
+                // not enough parameters
+                showDeckUsage();
+                return;
+            }
+
+            final String deckName = words[2];
+            final String operation = words[3];
+
+            final Deck deck = getDeck(deckName);
+            if (deck == null)
+            {
+                logAlertMessage("There is no deck named '" + deckName + "'.");
+                return;
+            }
+
+            if (operation.equals("all"))
+            {
+                // collect and shuffle all the cards in the deck.
+                clearDeck(deckName); // let the other players know about the demise of those cards
+                deck.shuffleAll();
+                postSystemMessage(getMyPlayer().getPlayerName() + " collects all the cards from the " + deckName
+                    + " deck from all players and shuffles them.");
+                postSystemMessage(deckName + " has " + deck.cardsRemaining() + " cards.");
+            }
+            else if (operation.equals("discards"))
+            {
+                // shuffle only the cards in the discard pile.
+                deck.shuffle();
+                postSystemMessage(getMyPlayer().getPlayerName() + " shuffles the discards back into the " + deckName
+                    + " deck.");
+                postSystemMessage(deckName + " has " + deck.cardsRemaining() + " cards.");
+            }
+            else
+            {
+                // the shuffle operation is illegal
+                logAlertMessage("'" + operation
+                    + "' is not a valid type of shuffle. This parameter must be either 'all' or 'discards'.");
+                return;
+            }
+        }
+        else if (command.equals("draw"))
+        {
+            // before chesking net status we check to see if the draw command was
+            // legally done
+            if (words.length < 3)
+            {
+                // not enough parameters
+                showDeckUsage();
+                return;
+            }
+
+            // ensure that desired deck exists -- this will work even if we're not the
+            // host. Because we'll have "dummy" decks in place to track the names
+            final String deckName = words[2];
+            final Deck deck = getDeck(deckName);
+            if (deck == null)
+            {
+                // that deck doesn't exist
+                logAlertMessage("There is no deck named '" + deckName + "'.");
+                return;
+            }
+
+            int numToDraw = 1;
+            // they optionally can specify a number of cards to draw
+            if (words.length >= 4)
+            {
+                // numToDrawStr is never used.
+                // String numToDrawStr = words[3];
+
+                // note the number of cards to draw
+                try
+                {
+                    numToDraw = Integer.parseInt(words[3]);
+                    if (numToDraw <= 0)
+                    {
+                        // not allowed
+                        throw new Exception();
+                    }
+                }
+                catch (final Exception e)
+                {
+                    // it's ok not to specify a number of cards to draw. It's not
+                    // ok to put garbage in that field
+                    logAlertMessage("'" + words[3] + "' is not a valid number of cards to draw");
+                }
+            }
+
+            drawCards(deckName, numToDraw);
+        }
+        else if (command.equals("hand"))
+        {
+            if (m_cards.size() == 0)
+            {
+                logSystemMessage("You have no cards");
+                return;
+            }
+
+            // show them their hand
+            logSystemMessage("You have " + m_cards.size() + " cards:");
+            for (int i = 0; i < m_cards.size(); i++)
+            {
+                final int cardIdx = i + 1;
+                final DeckData.Card card = (DeckData.Card)m_cards.get(i);
+                final String toPost = "" + cardIdx + ": " + card.m_cardName + " (" + card.m_deckName + ")";
+                logSystemMessage(toPost);
+            }
+        }
+        else if (command.equals("discard"))
+        {
+            // discard the nth card from your hand
+            // 1-indexed
+            if (words.length < 3)
+            {
+                // note enough parameters
+                showDeckUsage();
+                return;
+            }
+
+            final String param = words[2];
+
+            // the parameter can be "all" or a number
+            DeckData.Card discards[];
+            if (param.equals("all"))
+            {
+                // discard all cards
+                discards = new DeckData.Card[m_cards.size()];
+
+                for (int i = 0; i < discards.length; i++)
+                {
+                    discards[i] = (DeckData.Card)m_cards.get(i);
+                }
+            }
+            else
+            {
+                // discard the specified card
+                int idx = -1;
+                try
+                {
+                    idx = Integer.parseInt(param);
+                    idx--; // make it 0-indexed
+
+                    if (idx < 0)
+                    {
+                        throw new Exception();
+                    }
+
+                    if (idx >= m_cards.size())
+                    {
+                        throw new Exception();
+                    }
+                }
+                catch (final Exception e)
+                {
+                    // they put in some illegal value for the param
+                    logAlertMessage("There is no card '" + param + "'.");
+                    return;
+                }
+                discards = new DeckData.Card[1];
+                discards[0] = (DeckData.Card)m_cards.get(idx);
+            }
+
+            // now we have the discards[] filled with the cards to be
+            // removed
+            discardCards(discards);
+        }
+        else if (command.equals("decklist"))
+        {
+            // list off the decks
+            // we keep "dummy" decks for joiners,
+            // so either a host of a joiner is safe to use this code:
+            if (m_decks.size() == 0)
+            {
+                logSystemMessage("There are no decks");
+                return;
+            }
+
+            logSystemMessage("There are " + m_decks.size() + " decks");
+            for (int i = 0; i < m_decks.size(); i++)
+            {
+                final Deck deck = (Deck)m_decks.get(i);
+                logSystemMessage("---" + deck.m_name);
+            }
+        }
+        else
+        {
+            // they selected a deck command that doesn't exist
+            showDeckUsage();
+        }
+    }
+
+    public void deckListPacketReceived(final String[] deckNames)
+    {
+        // if we're the host, this is a packet we should never get
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            throw new IllegalStateException("Host received deckListPacket.");
+        }
+
+        // set up out bogus decks to have the appropriate names
+        m_decks.clear();
+
+        for (int i = 0; i < deckNames.length; i++)
+        {
+            final Deck bogusDeck = new Deck();
+            bogusDeck.initPlaceholderDeck(deckNames[i]);
+            m_decks.add(bogusDeck);
+        }
+    }
+
+    public void discardCards(final DeckData.Card discards[])
+    {
+        if (m_netStatus == NETSTATE_JOINED)
+        {
+            // send off the discard packet
+            send(PacketManager.makeDiscardCardsPacket(getMyPlayer().getPlayerName(), discards));
+        }
+        else if (m_netStatus == NETSTATE_HOST)
+        {
+            doDiscardCards(getMyPlayer().getPlayerName(), discards);
+        }
+
+        // and in either case, we remove the cards from ourselves.
+        for (int i = 0; i < m_cards.size(); i++)
+        {
+            final DeckData.Card handCard = (DeckData.Card)m_cards.get(i);
+            for (int j = 0; j < discards.length; j++)
+            {
+                if (handCard.equals(discards[j]))
+                {
+                    // we need to dump this card
+                    m_cards.remove(i);
+                    i--; // to keep up with the iteration
+                    break;
+                }
+            }
+        }
+    }
+
+    public void disconnect()
+    {
+        if (m_netStatus == NETSTATE_NONE)
+        {
+            logAlertMessage("Nothing to disconnect from.");
+            return;
+        }
+
+        if (m_networkThread != null)
+        {
+            m_networkThread.interrupt();
+            m_networkThread = null;
+        }
+
+        m_hostMenuItem.setEnabled(true);
+        m_joinMenuItem.setEnabled(true);
+        m_disconnectMenuItem.setEnabled(false);
+
+        m_players = new ArrayList();
+        final Player me = new Player(m_playerName, m_characterName, -1);
+        m_players.add(me);
+        m_myPlayerIndex = 0;
+        setTitle(GametableApp.VERSION);
+
+        // we might have disconnected during inital data recipt
+        PacketSourceState.endHostDump();
+
+        m_netStatus = NETSTATE_NONE;
+        logSystemMessage("Disconnected.");
+        updateStatus();
+    }
+
+    public void doDiscardCards(final String playerName, final DeckData.Card discards[])
+    {
+        if (discards.length == 0)
+        {
+            // this shouldn't happen, but let's not freak out.
+            return;
+        }
+
+        // only the hose should get this
+        if (m_netStatus != NETSTATE_HOST)
+        {
+            throw new IllegalStateException("doDiscardCards should only be done by the host.");
+        }
+
+        // tell the decks about the discarded cards
+        for (int i = 0; i < discards.length; i++)
+        {
+            final String deckName = discards[i].m_deckName;
+            final Deck deck = getDeck(deckName);
+            if (deck == null)
+            {
+                // don't panic. Just ignore it. It probably means
+                // a player discarded a card right as the host deleted the deck
+            }
+            else
+            {
+                deck.discard(discards[i]);
+            }
+        }
+
+        // finally, remove any card pogs that are hanging around based on these cards
+        m_gametableCanvas.removeCardPogsForCards(discards);
+
+        // tell everyone about the cards that got discarded
+        if (discards.length == 1)
+        {
+            postSystemMessage(playerName + " discards: " + discards[0].m_cardName);
+        }
+        else
+        {
+            postSystemMessage(playerName + " discards " + discards.length + " cards.");
+            for (int i = 0; i < discards.length; i++)
+            {
+                postSystemMessage("---" + discards[i].m_cardName);
+            }
+        }
+    }
+
+    public void drawCards(final String deckName, final int numToDraw)
+    {
+        if (m_netStatus == NETSTATE_JOINED)
+        {
+            // joiners send a request for cards
+            send(PacketManager.makeRequestCardsPacket(deckName, numToDraw));
+            return;
+        }
+
+        // if we're here, we're the host. So we simply draw the cards
+        // and give it to ourselves.
+        final DeckData.Card drawnCards[] = getCards(deckName, numToDraw);
+        if (drawnCards != null)
+        {
+            receiveCards(drawnCards);
+
+            // also, we need to add the desired cards to our own private layer
+            for (int i = 0; i < drawnCards.length; i++)
+            {
+                final Pog cardPog = makeCardPog(drawnCards[i]);
+                if (cardPog != null)
+                {
+                    // add this pog card to our own private layer
+                    m_gametableCanvas.addCardPog(cardPog);
+                }
+            }
+        }
+    }
+
+    public void eraseAll()
+    {
+        eraseAllLines();
+        eraseAllPogs();
+    }
+
+    public void eraseAllLines()
+    {
+        // erase with a rect big enough to nail everything
+        final Rectangle toErase = new Rectangle();
+
+        toErase.x = Integer.MIN_VALUE / 2;
+        toErase.y = Integer.MIN_VALUE / 2;
+        toErase.width = Integer.MAX_VALUE;
+        toErase.height = Integer.MAX_VALUE;
+
+        // go to town
+        getGametableCanvas().erase(toErase, false, 0);
+
+        repaint();
+    }
+
+    public void eraseAllPogs()
+    {
+        // make an int array of all the IDs
+        final int removeArray[] = new int[getGametableCanvas().getActiveMap().getNumPogs()];
+
+        for (int i = 0; i < getGametableCanvas().getActiveMap().getNumPogs(); i++)
+        {
+            final Pog pog = getGametableCanvas().getActiveMap().getPog(i);
+            removeArray[i] = pog.getId();
+        }
+
+        getGametableCanvas().removePogs(removeArray, true);
+    }
+
+    public void erasePacketReceived(final Rectangle r, final boolean bColorSpecific, final int color,
+        final int authorID, final int state)
+    {
+        int stateId = state;
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if we're the host, send it to the clients
+            // and give it a genuine state ID first
+            stateId = getNewStateId();
+            send(PacketManager.makeErasePacket(r, bColorSpecific, color, authorID, stateId));
+        }
+
+        // erase the lines
+        getGametableCanvas().doErase(r, bColorSpecific, color, authorID, stateId);
+    }
+
+    public DiceMacro findMacro(final String term)
+    {
+        final String name = UtilityFunctions.normalizeName(term);
+        DiceMacro macro = getMacro(name);
+        if (macro == null)
+        {
+            macro = new DiceMacro();
+            if (!macro.init(term, null))
+            {
+                macro = null;
+            }
+        }
+
+        return macro;
+    }
+
+    private JMenuItem getAboutMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("About");
+        item.setAccelerator(KeyStroke.getKeyStroke("F1"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                UtilityFunctions.msgBox(GametableFrame.this, GametableApp.VERSION
+                    + " by Andy Weir and David Ghandehari", "Version");
+            }
+        });
+        return item;
+    }
+
+    private JMenuItem getAddDiceMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("Add macro...");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                addDieMacro();
+            }
+        });
+        return item;
+    }
+
+    public DeckData.Card[] getCards(final String deckName, final int num)
+    {
+        int numCards = num;
+
+        // get the deck
+        final Deck deck = getDeck(deckName);
+        if (deck == null)
+        {
+            // the deck doesn't exist. There are various ways this could happen,
+            // mostly due to split-second race conditions where the host deletes the deck while
+            // a card request was incoming. We just return null in this edge case.
+            return null;
+        }
+
+        if (numCards <= 0)
+        {
+            // invalid
+            throw new IllegalArgumentException("drawCards: " + numCards);
+        }
+
+        // We can't draw more cards than there are
+        final int remain = deck.cardsRemaining();
+        if (numCards > remain)
+        {
+            numCards = remain;
+        }
+
+        // make the return value
+        final DeckData.Card ret[] = new DeckData.Card[numCards];
+
+        // draw the cards
+        for (int i = 0; i < numCards; i++)
+        {
+            ret[i] = deck.drawCard();
+        }
+
+        // now that the cards are drawn, check the deck status
+        if (deck.cardsRemaining() == 0)
+        {
+            // no more cards in the deck, alert them
+            postSystemMessage("The " + deckName + " deck is out of cards.");
+        }
+
+        return ret;
+    }
+
+    private JMenuItem getClearMapMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("Clear Map");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                final int res = UtilityFunctions.yesNoDialog(GametableFrame.this,
+                    "This will clear all lines, pogs, and underlays on the entire layer. Are you sure?", "Clear Map");
+                if (res == UtilityFunctions.YES)
+                {
+                    eraseAllPogs();
+                    eraseAllLines();
+                    repaint();
+                }
+            }
+        });
+
+        return item;
+    }
+
+    public Deck getDeck(final String name)
+    {
+        final int idx = getDeckIdx(name);
+        if (idx == -1)
+        {
+            return null;
+        }
+        // Doesn't get here if idx == -1; no need for else
+        // else
+        {
+            final Deck d = (Deck)m_decks.get(idx);
+            return d;
+        }
+    }
+
+    public int getDeckIdx(final String name)
+    {
+        for (int i = 0; i < m_decks.size(); i++)
+        {
+            final Deck d = (Deck)m_decks.get(i);
+            if (d.m_name.equals(name))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private JMenuItem getDeleteDiceMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("Delete macro...");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                final Object[] list = m_macroMap.values().toArray();
+                // give them a list of macros they can delete
+                final Object sel = JOptionPane.showInputDialog(GametableFrame.this, "Select Dice Macro to remove:",
+                    "Remove Dice Macro", JOptionPane.PLAIN_MESSAGE, null, list, list[0]);
+                if (sel != null)
+                {
+                    removeMacro((DiceMacro)sel);
+                }
+            }
+        });
+        return item;
+    }
+
+    private JMenu getDiceMenu()
+    {
+        final JMenu menu = new JMenu("Dice");
+        menu.add(getAddDiceMenuItem());
+        menu.add(getDeleteDiceMenuItem());
+        menu.add(getLoadDiceMenuItem());
+        menu.add(getSaveDiceMenuItem());
+        menu.add(getSaveAsDiceMenuItem());
+        return menu;
+    }
+
+    private JMenuItem getDisconnectMenuItem()
+    {
+        if (m_disconnectMenuItem == null)
+        {
+            final JMenuItem item = new JMenuItem("Disconnect");
+            item.addActionListener(new ActionListener()
+            {
+                public void actionPerformed(final ActionEvent e)
+                {
+                    disconnect();
+                }
+            });
+            m_disconnectMenuItem = item;
+        }
+        return m_disconnectMenuItem;
+    }
+
+    private JMenu getEditMenu()
+    {
+        final JMenu menu = new JMenu("Edit");
+        menu.add(getUndoMenuItem());
+        menu.add(getRedoMenuItem());
+
+        return menu;
     }
 
     private JMenu getFileMenu()
     {
-        JMenu menu = new JMenu("File");
+        final JMenu menu = new JMenu("File");
 
         menu.add(getOpenMapMenuItem());
         menu.add(getSaveMapMenuItem());
@@ -637,29 +1218,123 @@ public class GametableFrame extends JFrame implements ActionListener
         return menu;
     }
 
-    private JMenu getEditMenu()
+    /**
+     * @return Returns the gametableCanvas.
+     */
+    public GametableCanvas getGametableCanvas()
     {
-        JMenu menu = new JMenu("Edit");
-        menu.add(getUndoMenuItem());
-        menu.add(getRedoMenuItem());
+        return m_gametableCanvas;
+    }
+
+    private JMenu getGridModeMenu()
+    {
+        final JMenu menu = new JMenu("Grid Mode");
+        menu.add(m_noGridModeMenuItem);
+        menu.add(m_squareGridModeMenuItem);
+        menu.add(m_hexGridModeMenuItem);
 
         return menu;
     }
 
-    private JMenu getNetworkMenu()
+    private JMenu getHelpMenu()
     {
-        JMenu menu = new JMenu("Network");
-        menu.add(getListPlayersMenuItem());
-        menu.add(getHostMenuItem());
-        menu.add(getJoinMenuItem());
-        menu.add(getDisconnectMenuItem());
-
+        final JMenu menu = new JMenu("Help");
+        menu.add(getAboutMenuItem());
         return menu;
+    }
+
+    private JMenuItem getHostMenuItem()
+    {
+        if (m_hostMenuItem == null)
+        {
+            final JMenuItem item = new JMenuItem("Host...");
+            item.addActionListener(new ActionListener()
+            {
+                public void actionPerformed(final ActionEvent e)
+                {
+                    host();
+                }
+            });
+
+            m_hostMenuItem = item;
+        }
+        return m_hostMenuItem;
+    }
+
+    private JMenuItem getJoinMenuItem()
+    {
+        if (m_joinMenuItem == null)
+        {
+            final JMenuItem item = new JMenuItem("Join...");
+            item.addActionListener(new ActionListener()
+            {
+                public void actionPerformed(final ActionEvent e)
+                {
+                    join();
+                }
+            });
+            m_joinMenuItem = item;
+        }
+        return m_joinMenuItem;
+    }
+
+    private JMenuItem getListPlayersMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("List Players");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl W"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                parseSlashCommand("/who");
+            }
+        });
+        return item;
+    }
+
+    private JMenuItem getLoadDiceMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("Load macros...");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                loadMacros();
+            }
+        });
+        return item;
+    }
+
+    public DiceMacro getMacro(final String name)
+    {
+        final String realName = UtilityFunctions.normalizeName(name);
+        return (DiceMacro)m_macroMap.get(realName);
+    }
+
+    /**
+     * @return Gets the list of macros.
+     */
+    public Collection getMacros()
+    {
+        return Collections.unmodifiableCollection(m_macroMap.values());
+    }
+
+    private JMenuBar getMainMenuBar()
+    {
+        final JMenuBar menuBar = new JMenuBar();
+        menuBar.add(getFileMenu());
+        menuBar.add(getEditMenu());
+        menuBar.add(getNetworkMenu());
+        menuBar.add(getMapMenu());
+        menuBar.add(getDiceMenu());
+        menuBar.add(getHelpMenu());
+
+        return menuBar;
     }
 
     private JMenu getMapMenu()
     {
-        JMenu menu = new JMenu("Map");
+        final JMenu menu = new JMenu("Map");
         menu.add(getClearMapMenuItem());
         menu.add(getRecenterAllPlayersMenuItem());
         menu.add(getGridModeMenu());
@@ -668,51 +1343,74 @@ public class GametableFrame extends JFrame implements ActionListener
         return menu;
     }
 
-    private JMenu getGridModeMenu()
+    /**
+     * @return The player representing this client.
+     */
+    public Player getMyPlayer()
     {
-        JMenu menu = new JMenu("Grid Mode");
-        menu.add(m_noGridModeMenuItem);
-        menu.add(m_squareGridModeMenuItem);
-        menu.add(m_hexGridModeMenuItem);
+        return (Player)m_players.get(getMyPlayerIndex());
+    }
+
+    /**
+     * @return The id of the player representing this client.
+     */
+    public int getMyPlayerId()
+    {
+        return getMyPlayer().getId();
+    }
+
+    /**
+     * @return Returns the myPlayerIndex.
+     */
+    public int getMyPlayerIndex()
+    {
+        return m_myPlayerIndex;
+    }
+
+    /**
+     * @return Returns the m_netStatus.
+     */
+    public int getNetStatus()
+    {
+        return m_netStatus;
+    }
+
+    private JMenu getNetworkMenu()
+    {
+        final JMenu menu = new JMenu("Network");
+        menu.add(getListPlayersMenuItem());
+        menu.add(getHostMenuItem());
+        menu.add(getJoinMenuItem());
+        menu.add(getDisconnectMenuItem());
 
         return menu;
     }
 
-    private JMenu getDiceMenu()
+    /**
+     * TODO: comment
+     * 
+     * @return
+     */
+    public int getNewStateId()
     {
-        JMenu menu = new JMenu("Dice");
-        menu.add(getAddDiceMenuItem());
-        menu.add(getDeleteDiceMenuItem());
-        menu.add(getLoadDiceMenuItem());
-        menu.add(getSaveDiceMenuItem());
-        menu.add(getSaveAsDiceMenuItem());
-        return menu;
+        return m_nextStateId++;
     }
-
-    private JMenu getHelpMenu()
-    {
-        JMenu menu = new JMenu("Help");
-        menu.add(getAboutMenuItem());
-        return menu;
-    }
-
-    // --- MenuItems ---
 
     private JMenuItem getOpenMapMenuItem()
     {
-        JMenuItem item = new JMenuItem("Open Map...");
+        final JMenuItem item = new JMenuItem("Open Map...");
         item.setAccelerator(KeyStroke.getKeyStroke("ctrl pressed O"));
         item.addActionListener(new ActionListener()
         {
             /*
              * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
              */
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 // opening while on the public layer...
                 if (getGametableCanvas().getActiveMap() == getGametableCanvas().getPublicMap())
                 {
-                    File openFile = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
+                    final File openFile = UtilityFunctions.doFileOpenDialog("Open", "grm", true);
 
                     if (openFile == null)
                     {
@@ -722,7 +1420,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
                     m_actingFilePublic = openFile;
 
-                    int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
+                    final int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
                         "This will load a map file, replacing all existing map data for you and all players in the "
                             + "session. Are you sure you want to do this?", "Confirm Load");
                     if (result == UtilityFunctions.YES)
@@ -738,7 +1436,7 @@ public class GametableFrame extends JFrame implements ActionListener
                             {
                                 // joiners dispatch the save file to the host
                                 // for processing
-                                byte grmFile[] = UtilityFunctions.loadFileToArray(m_actingFilePublic);
+                                final byte grmFile[] = UtilityFunctions.loadFileToArray(m_actingFilePublic);
                                 if (grmFile != null)
                                 {
                                     send(PacketManager.makeGrmPacket(grmFile));
@@ -762,7 +1460,7 @@ public class GametableFrame extends JFrame implements ActionListener
                     {
                         // we have to pretend we're not connected while loading. We
                         // don't want these packets to be propagatet to other players
-                        int oldStatus = m_netStatus;
+                        final int oldStatus = m_netStatus;
                         m_netStatus = NETSTATE_NONE;
                         PacketSourceState.beginFileLoad();
                         loadState(m_actingFilePrivate);
@@ -776,16 +1474,193 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    public Player getPlayerFromConnection(final Connection conn)
+    {
+        for (int i = 0; i < m_players.size(); i++)
+        {
+            final Player plr = (Player)m_players.get(i);
+            if (conn == plr.getConnection())
+            {
+                return plr;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds the index of a given player.
+     * 
+     * @param player Player to find index of.
+     * @return Index of the given player, or -1.
+     */
+    public int getPlayerIndex(final Player player)
+    {
+        return m_players.indexOf(player);
+    }
+
+    /**
+     * @return Returns the player list.
+     */
+    public List getPlayers()
+    {
+        return Collections.unmodifiableList(m_players);
+    }
+
+    /**
+     * @return The root pog library.
+     */
+    public PogLibrary getPogLibrary()
+    {
+        return m_pogLibrary;
+    }
+
+    /**
+     * @return The pog panel.
+     */
+    public PogPanel getPogPanel()
+    {
+        return m_pogPanel;
+    }
+
+    /**
+     * @return The preferences object.
+     */
+    public Preferences getPreferences()
+    {
+        return m_preferences;
+    }
+
+    private JMenuItem getQuitMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("Quit");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl Q"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                dispose();
+            }
+        });
+
+        return item;
+    }
+
+    private JMenuItem getRecenterAllPlayersMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("Recenter all Players");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                final int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
+                    "This will recenter everyone's map view to match yours, "
+                        + "and will set their zoom levels to match yours. Are you sure you want to do this?",
+                    "Recenter?");
+                if (result == UtilityFunctions.YES)
+                {
+                    // get our view center
+                    final int viewCenterX = getGametableCanvas().getWidth() / 2;
+                    final int viewCenterY = getGametableCanvas().getHeight() / 2;
+
+                    // convert to model coordinates
+                    final Point modelCenter = getGametableCanvas().viewToModel(viewCenterX, viewCenterY);
+                    getGametableCanvas().recenterView(modelCenter.x, modelCenter.y, getGametableCanvas().m_zoom);
+                    postSystemMessage(getMyPlayer().getPlayerName() + " Recenters everyone's view!");
+                }
+            }
+        });
+        return item;
+    }
+
+    private JMenuItem getRedoMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("Redo");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl Y"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                getGametableCanvas().redo();
+            }
+        });
+
+        return item;
+    }
+
+    private JMenuItem getSaveAsDiceMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("Save macros as...");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                saveMacros();
+            }
+        });
+        return item;
+    }
+
+    public JMenuItem getSaveAsMapMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("Save Map As...");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl shift pressed S"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                if (getGametableCanvas().isPublicMap())
+                {
+                    m_actingFilePublic = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+                    if (m_actingFilePublic != null)
+                    {
+                        saveState(getGametableCanvas().getActiveMap(), m_actingFilePublic);
+                    }
+                }
+                else
+                {
+                    m_actingFilePrivate = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
+                    if (m_actingFilePrivate != null)
+                    {
+                        saveState(getGametableCanvas().getActiveMap(), m_actingFilePrivate);
+                    }
+                }
+            }
+        });
+
+        return item;
+    }
+
+    private JMenuItem getSaveDiceMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("Save macros...");
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                try
+                {
+                    saveMacros(m_actingFilePrivate);
+                }
+                catch (final IOException ioe)
+                {
+                    Log.log(Log.SYS, ioe);
+                }
+            }
+        });
+        return item;
+    }
+
     public JMenuItem getSaveMapMenuItem()
     {
-        JMenuItem item = new JMenuItem("Save Map");
+        final JMenuItem item = new JMenuItem("Save Map");
         item.setAccelerator(KeyStroke.getKeyStroke("ctrl pressed S"));
         item.addActionListener(new ActionListener()
         {
             /*
              * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
              */
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 if (getGametableCanvas().isPublicMap())
                 {
@@ -819,43 +1694,13 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
-    public JMenuItem getSaveAsMapMenuItem()
-    {
-        JMenuItem item = new JMenuItem("Save Map As...");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl shift pressed S"));
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                if (getGametableCanvas().isPublicMap())
-                {
-                    m_actingFilePublic = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
-                    if (m_actingFilePublic != null)
-                    {
-                        saveState(getGametableCanvas().getActiveMap(), m_actingFilePublic);
-                    }
-                }
-                else
-                {
-                    m_actingFilePrivate = UtilityFunctions.doFileSaveDialog("Save As", "grm", true);
-                    if (m_actingFilePrivate != null)
-                    {
-                        saveState(getGametableCanvas().getActiveMap(), m_actingFilePrivate);
-                    }
-                }
-            }
-        });
-
-        return item;
-    }
-
     private JMenuItem getScanForPogsMenuItem()
     {
-        JMenuItem item = new JMenuItem("Scan for Pogs");
+        final JMenuItem item = new JMenuItem("Scan for Pogs");
         item.setAccelerator(KeyStroke.getKeyStroke("F5"));
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 reacquirePogs();
             }
@@ -864,174 +1709,15 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
-    private JMenuItem getQuitMenuItem()
-    {
-        JMenuItem item = new JMenuItem("Quit");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl Q"));
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                dispose();
-            }
-        });
-
-        return item;
-    }
-
-    private JMenuItem getUndoMenuItem()
-    {
-        JMenuItem item = new JMenuItem("Undo");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl Z"));
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                getGametableCanvas().undo();
-            }
-        });
-
-        return item;
-    }
-
-    private JMenuItem getRedoMenuItem()
-    {
-        JMenuItem item = new JMenuItem("Redo");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl Y"));
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                getGametableCanvas().redo();
-            }
-        });
-
-        return item;
-    }
-
-    private JMenuItem getListPlayersMenuItem()
-    {
-        JMenuItem item = new JMenuItem("List Players");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl W"));
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                parseSlashCommand("/who");
-            }
-        });
-        return item;
-    }
-
-    private JMenuItem getHostMenuItem()
-    {
-        if (m_hostMenuItem == null)
-        {
-            JMenuItem item = new JMenuItem("Host...");
-            item.addActionListener(new ActionListener()
-            {
-                public void actionPerformed(ActionEvent e)
-                {
-                    host();
-                }
-            });
-
-            m_hostMenuItem = item;
-        }
-        return m_hostMenuItem;
-    }
-
-    private JMenuItem getJoinMenuItem()
-    {
-        if (m_joinMenuItem == null)
-        {
-            JMenuItem item = new JMenuItem("Join...");
-            item.addActionListener(new ActionListener()
-            {
-                public void actionPerformed(ActionEvent e)
-                {
-                    join();
-                }
-            });
-            m_joinMenuItem = item;
-        }
-        return m_joinMenuItem;
-    }
-
-    private JMenuItem getDisconnectMenuItem()
-    {
-        if (m_disconnectMenuItem == null)
-        {
-            JMenuItem item = new JMenuItem("Disconnect");
-            item.addActionListener(new ActionListener()
-            {
-                public void actionPerformed(ActionEvent e)
-                {
-                    disconnect();
-                }
-            });
-            m_disconnectMenuItem = item;
-        }
-        return m_disconnectMenuItem;
-    }
-
-    private JMenuItem getClearMapMenuItem()
-    {
-        JMenuItem item = new JMenuItem("Clear Map");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                int res = UtilityFunctions.yesNoDialog(GametableFrame.this,
-                    "This will clear all lines, pogs, and underlays on the entire layer. Are you sure?", "Clear Map");
-                if (res == UtilityFunctions.YES)
-                {
-                    eraseAllPogs();
-                    eraseAllLines();
-                    repaint();
-                }
-            }
-        });
-
-        return item;
-    }
-
-    private JMenuItem getRecenterAllPlayersMenuItem()
-    {
-        JMenuItem item = new JMenuItem("Recenter all Players");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
-                    "This will recenter everyone's map view to match yours, "
-                        + "and will set their zoom levels to match yours. Are you sure you want to do this?",
-                    "Recenter?");
-                if (result == UtilityFunctions.YES)
-                {
-                    // get our view center
-                    int viewCenterX = getGametableCanvas().getWidth() / 2;
-                    int viewCenterY = getGametableCanvas().getHeight() / 2;
-
-                    // convert to model coordinates
-                    Point modelCenter = getGametableCanvas().viewToModel(viewCenterX, viewCenterY);
-                    getGametableCanvas().recenterView(modelCenter.x, modelCenter.y, getGametableCanvas().m_zoom);
-                    postSystemMessage(getMyPlayer().getPlayerName() + " Recenters everyone's view!");
-                }
-            }
-        });
-        return item;
-    }
-
     private JMenuItem getTogglePrivateMapMenuItem()
     {
         if (m_togglePrivateMapMenuItem == null)
         {
-            JCheckBoxMenuItem item = new JCheckBoxMenuItem("Edit Private Map");
+            final JCheckBoxMenuItem item = new JCheckBoxMenuItem("Edit Private Map");
             item.setAccelerator(KeyStroke.getKeyStroke("ctrl F"));
             item.addActionListener(new ActionListener()
             {
-                public void actionPerformed(ActionEvent e)
+                public void actionPerformed(final ActionEvent e)
                 {
                     toggleLayer();
                 }
@@ -1043,553 +1729,27 @@ public class GametableFrame extends JFrame implements ActionListener
         return m_togglePrivateMapMenuItem;
     }
 
-    private JMenuItem getAddDiceMenuItem()
+    public ToolManager getToolManager()
     {
-        JMenuItem item = new JMenuItem("Add macro...");
+        return m_toolManager;
+    }
+
+    private JMenuItem getUndoMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("Undo");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl Z"));
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
-                addDieMacro();
+                getGametableCanvas().undo();
             }
         });
+
         return item;
     }
 
-    private JMenuItem getDeleteDiceMenuItem()
-    {
-        JMenuItem item = new JMenuItem("Delete macro...");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                Object[] list = m_macroMap.values().toArray();
-                // give them a list of macros they can delete
-                Object sel = JOptionPane.showInputDialog(GametableFrame.this, "Select Dice Macro to remove:",
-                    "Remove Dice Macro", JOptionPane.PLAIN_MESSAGE, null, list, list[0]);
-                if (sel != null)
-                {
-                    removeMacro((DiceMacro)sel);
-                }
-            }
-        });
-        return item;
-    }
-
-    private JMenuItem getLoadDiceMenuItem()
-    {
-        JMenuItem item = new JMenuItem("Load macros...");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                loadMacros();
-            }
-        });
-        return item;
-    }
-
-    private JMenuItem getSaveDiceMenuItem()
-    {
-        JMenuItem item = new JMenuItem("Save macros...");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                try
-                {
-                    saveMacros(m_actingFilePrivate);
-                }
-                catch (IOException ioe)
-                {
-                    Log.log(Log.SYS, ioe);
-                }
-            }
-        });
-        return item;
-    }
-
-    private JMenuItem getSaveAsDiceMenuItem()
-    {
-        JMenuItem item = new JMenuItem("Save macros as...");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                saveMacros();
-            }
-        });
-        return item;
-    }
-
-    private JMenuItem getAboutMenuItem()
-    {
-        JMenuItem item = new JMenuItem("About");
-        item.setAccelerator(KeyStroke.getKeyStroke("F1"));
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                UtilityFunctions.msgBox(GametableFrame.this, GametableApp.VERSION
-                    + " by Andy Weir and David Ghandehari", "Version");
-            }
-        });
-        return item;
-    }
-
-    public void actionPerformed(ActionEvent e)
-    {
-        /*
-         * Added in order to accomodate grid unit multiplier
-         */
-        if (e.getSource() == m_gridunit)
-        {
-            grid_unit = (String)(m_gridunit.getSelectedItem());
-        }
-        
-        if (e.getSource() == m_colorCombo)
-        {
-            Integer col = (Integer)m_colorCombo.getSelectedItem();
-            m_drawColor = new Color(col.intValue());
-        }
-        else if (e.getSource() == m_noGridModeMenuItem)
-        {
-            getGametableCanvas().m_gridMode = getGametableCanvas().m_noGridMode;
-            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_NONE));
-            updateGridModeMenu();
-            getGametableCanvas().repaint();
-            postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
-        }
-        else if (e.getSource() == m_squareGridModeMenuItem)
-        {
-            getGametableCanvas().m_gridMode = getGametableCanvas().m_squareGridMode;
-            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_SQUARES));
-            updateGridModeMenu();
-            getGametableCanvas().repaint();
-            postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
-        }
-        else if (e.getSource() == m_hexGridModeMenuItem)
-        {
-            getGametableCanvas().m_gridMode = getGametableCanvas().m_hexGridMode;
-            send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_HEX));
-            updateGridModeMenu();
-            getGametableCanvas().repaint();
-            postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
-        }
-    }
-
-    
-    public boolean shouldShowNames()
-    {
-        return m_showNamesCheckbox.isSelected();
-    }
-    
-    /**
-     * @return Returns the m_netStatus.
-     */
-    public int getNetStatus()
-    {
-        return m_netStatus;
-    }
-
-    /**
-     * TODO: comment
-     * 
-     * @return
-     */
-    public int getNewStateId()
-    {
-        return m_nextStateId++;
-    }
-
-    /**
-     * @return The pog panel.
-     */
-    public PogPanel getPogPanel()
-    {
-        return m_pogPanel;
-    }
-
-    /**
-     * @return The preferences object.
-     */
-    public Preferences getPreferences()
-    {
-        return m_preferences;
-    }
-
-    /**
-     * @return The root pog library.
-     */
-    public PogLibrary getPogLibrary()
-    {
-        return m_pogLibrary;
-    }
-
-    /**
-     * @return Returns the gametableCanvas.
-     */
-    public GametableCanvas getGametableCanvas()
-    {
-        return m_gametableCanvas;
-    }
-
-    /**
-     * Records the current state of the window.
-     */
-    public void updateWindowInfo()
-    {
-        // we only update our internal size and
-        // position variables if we aren't maximized.
-        if ((getExtendedState() & MAXIMIZED_BOTH) != 0)
-        {
-            m_bMaximized = true;
-        }
-        else
-        {
-            m_bMaximized = false;
-            m_windowSize = getSize();
-            m_windowPos = getLocation();
-        }
-    }
-
-    /**
-     * @return The player representing this client.
-     */
-    public Player getMyPlayer()
-    {
-        return (Player)m_players.get(getMyPlayerIndex());
-    }
-
-    /**
-     * @return Returns the player list.
-     */
-    public List getPlayers()
-    {
-        return Collections.unmodifiableList(m_players);
-    }
-
-    /**
-     * @return The id of the player representing this client.
-     */
-    public int getMyPlayerId()
-    {
-        return getMyPlayer().getId();
-    }
-    
-    public void receiveCards(DeckData.Card cards[])
-    {
-    	if ( cards.length == 0 )
-    	{
-    		// drew 0 cards. Ignore.
-    		return;
-    	}
-    	
-    	// all of these cards get added to your hand
-    	for ( int i=0 ; i<cards.length ; i++ )
-    	{
-    		m_cards.add(cards[i]);
-    		String toPost = "You drew: "+cards[i].m_cardName+" ("+cards[i].m_deckName+")";
-    		logSystemMessage(toPost);
-    	}
-    	
-    	// make sure we're on the private layer
-    	if ( m_gametableCanvas.getActiveMap() != m_gametableCanvas.getPrivateMap() )
-    	{
-    		// we call toggleLayer rather than setActiveMap because
-    		// toggleLayer cleanly deals with drags in action and other
-    		// interrupted actions. 
-    		toggleLayer();
-    	}
-    	
-    	// tell everyone that you drew some cards
-    	if ( cards.length == 1 )
-    	{
-    		postSystemMessage(getMyPlayer().getPlayerName()+" draws from the "+cards[0].m_deckName+" deck.");
-    	}
-    	else
-    	{
-    		postSystemMessage(getMyPlayer().getPlayerName()+" draws "+cards.length+ " cards from the "+cards[0].m_deckName+" deck.");
-    	}
-    	
-    }
-
-    public void loginCompletePacketReceived()
-    {
-        // this packet is never redistributed.
-        // all we do in response to this allow pog text
-        // highlights. The pogs don't know the difference between
-        // inital data and actual player changes.
-        PacketSourceState.endHostDump();
-
-        // seed our undo stack with this as the bottom rung
-        getGametableCanvas().getPublicMap().beginUndoableAction();
-        getGametableCanvas().getPublicMap().endUndoableAction(-1, -1);
-    }
-
-    public void pingPacketReceived()
-    {
-        // do nothing for now
-    }
-
-    public void rejectPacketReceived(int reason)
-    {
-        confirmJoined();
-
-        // you got rejected!
-        switch (reason)
-        {
-            case REJECT_INVALID_PASSWORD:
-            {
-                logAlertMessage("Invalid Password. Connection refused.");
-            }
-            break;
-
-            case REJECT_VERSION_MISMATCH:
-            {
-                logAlertMessage("The host is using a different version of the Gametable network protocol."
-                    + " Connection aborted.");
-            }
-            break;
-        }
-        disconnect();
-    }
-
-    public void recenterPacketReceived(int x, int y, int zoom)
-    {
-        getGametableCanvas().doRecenterView(x, y, zoom);
-
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            m_networkThread.send(PacketManager.makeRecenterPacket(x, y, zoom));
-        }
-    }
-
-    public void pogDataPacketReceived(int id, String s, Map toAdd, Set toDelete)
-    {
-        getGametableCanvas().doSetPogData(id, s, toAdd, toDelete);
-
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            m_networkThread.send(PacketManager.makePogDataPacket(id, s, toAdd, toDelete));
-        }
-    }
-
-    public void grmPacketReceived(byte grmFile[])
-    {
-        // only the host should ever get this packet. If a joiner gets it
-        // for some reason, it should ignore it.
-        // if we're offline, then sure, go ahead and load
-        if (m_netStatus != NETSTATE_JOINED)
-        {
-            loadStateFromRawFileData(grmFile);
-        }
-    }
-
-    public void undoPacketReceived(int stateID)
-    {
-        getGametableCanvas().doUndo(stateID);
-
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            // if we're the host, send it to the clients
-            send(PacketManager.makeUndoPacket(stateID));
-        }
-
-        repaint();
-    }
-
-    public void redoPacketReceived(int stateID)
-    {
-        getGametableCanvas().doRedo(stateID);
-
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            // if we're the host, send it to the clients
-            send(PacketManager.makeRedoPacket(stateID));
-        }
-
-        repaint();
-    }
-
-    public void pogSizePacketReceived(int id, float size)
-    {
-        getGametableCanvas().doSetPogSize(id, size);
-
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            m_networkThread.send(PacketManager.makePogSizePacket(id, size));
-        }
-    }
-
-    public void pogReorderPacketReceived(Map changes)
-    {
-        getGametableCanvas().doPogReorder(changes);
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            m_networkThread.send(PacketManager.makePogReorderPacket(changes));
-        }
-    }
-
-    public void pointPacketReceived(int plrIdx, int x, int y, boolean bPointing)
-    {
-        // we're not interested in point packets of our own hand
-        if (plrIdx != getMyPlayerIndex())
-        {
-            Player plr = (Player)m_players.get(plrIdx);
-            plr.setPoint(x, y);
-            plr.setPointing(bPointing);
-        }
-
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            send(PacketManager.makePointPacket(plrIdx, x, y, bPointing));
-        }
-
-        getGametableCanvas().repaint();
-    }
-
-    public void movePogPacketReceived(int id, int newX, int newY)
-    {
-        getGametableCanvas().doMovePog(id, newX, newY);
-
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            // if we're the host, send it to the clients
-            send(PacketManager.makeMovePogPacket(id, newX, newY));
-        }
-    }
-
-    public void rotatePogPacketReceived(int id, double newAngle)
-    {
-        getGametableCanvas().doRotatePog(id, newAngle);
-
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            // if we're the host, send it to the clients
-            send(PacketManager.makeRotatePogPacket(id, newAngle));
-        }
-    }
-
-    public void lockPogPacketReceived(int id, boolean newLock)
-    {
-        getGametableCanvas().doLockPog(id, newLock);
-
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            // if we're the host, send it to the clients
-            send(PacketManager.makeLockPogPacket(id, newLock));
-        }
-    }
-
-    public void removePogsPacketReceived(int ids[])
-    {
-        getGametableCanvas().doRemovePogs(ids, false);
-
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            // if we're the host, send it to the clients
-            send(PacketManager.makeRemovePogsPacket(ids));
-        }
-    }
-
-    public void addPogPacketReceived(Pog pog, boolean bPublicLayerPog)
-    {
-        getGametableCanvas().doAddPog(pog, bPublicLayerPog);
-
-        // update the next pog id if necessary
-        if (pog.getId() >= Pog.g_nextId)
-        {
-            Pog.g_nextId = pog.getId() + 5;
-        }
-
-        // update the next pog id if necessary
-        if (pog.getSortOrder() >= Pog.g_nextSortId)
-        {
-            Pog.g_nextSortId = pog.getSortOrder() + 1;
-        }
-
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            // if we're the host, send it to the clients
-            send(PacketManager.makeAddPogPacket(pog));
-        }
-    }
-
-    public void erasePacketReceived(Rectangle r, boolean bColorSpecific, int color, int authorID, int stateID)
-    {
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            // if we're the host, send it to the clients
-            // and give it a genuine state ID first
-            stateID = this.getNewStateId();
-            send(PacketManager.makeErasePacket(r, bColorSpecific, color, authorID, stateID));
-        }
-
-        // erase the lines
-        getGametableCanvas().doErase(r, bColorSpecific, color, authorID, stateID);
-    }
-
-    public void linesPacketReceived(LineSegment[] lines, int authorID, int stateID)
-    {
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            // if we're the host, send it to the clients
-            // and give it a genuine state ID first
-            stateID = this.getNewStateId();
-            send(PacketManager.makeLinesPacket(lines, authorID, stateID));
-        }
-
-        // add the lines to the array
-        getGametableCanvas().doAddLineSegments(lines, authorID, stateID);
-    }
-
-    public void typingPacketReceived(String playerName, boolean typing)
-    {
-        if (typing)
-        {
-            m_typing.add(playerName);
-        }
-        else
-        {
-            m_typing.remove(playerName);
-        }
-        
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            send(PacketManager.makeTypingPacket(playerName, typing));
-        }
-    }
-    
-    public void textPacketReceived(String text)
-    {
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            // if you're the host, push to all players
-            postMessage(text);
-        }
-        else
-        {
-            // otherwise, just add it
-            logMessage(text);
-        }
-    }
-
-    public void privateTextPacketReceived(String fromName, String toName, String text)
-    {
-        if (m_netStatus == NETSTATE_HOST)
-        {
-            // if you're the host, push to all players
-            postPrivateMessage(fromName, toName, text);
-        }
-        else
-        {
-            // otherwise, just add it
-            logPrivateMessage(fromName, toName, text);
-        }
-    }
-
-    public void gridModePacketReceived(int gridMode)
+    public void gridModePacketReceived(final int gridMode)
     {
         // note the new grid mode
         getGametableCanvas().setGridModeByID(gridMode);
@@ -1603,318 +1763,16 @@ public class GametableFrame extends JFrame implements ActionListener
 
         repaint();
     }
-    
-    public void deckListPacketReceived(String[] deckNames)
-    {
-    	// if we're the host, this is a packet we should never get
-    	if ( m_netStatus == NETSTATE_HOST )
-    	{
-    		throw new IllegalStateException("Host received deckListPacket.");
-    	}
-    	
-    	// set up out bogus decks to have the appropriate names
-    	m_decks.clear();
-    	
-    	for ( int i=0  ;i<deckNames.length ; i++ )
-    	{
-    		Deck bogusDeck = new Deck();
-    		bogusDeck.initPlaceholderDeck(deckNames[i]);
-    		m_decks.add(bogusDeck);
-    	}
-    }
-    
-    // makes a card pog out of the sent in card
-    public Pog makeCardPog(DeckData.Card card)
-    {
-    	// there might not be a pog associated with this card
-    	if ( card.m_cardFile.length() == 0 )
-    	{
-    		return null;
-    	}
-    	
-    	PogType newPogType = getPogLibrary().getPog("pogs" + UtilityFunctions.LOCAL_SEPARATOR + card.m_cardFile);
-    	
-    	// there could be a problem with the deck definition. It's an easy mistake
-    	// to make. So rather than freak out, we just return null.
-    	if ( newPogType == null ) 
-   		{
-    		return null;
-   		}
-    	
-    	Pog newPog = new Pog(newPogType);
-    	
-    	// make it a card pog
-    	newPog.makeCardPog(card);
-    	return newPog;
-    }
-    
-    public void requestCardsPacketReceived(Connection conn, String deckName, int numCards)
-    {
-    	if ( m_netStatus != NETSTATE_HOST )
-    	{
-    		// this shouldn't happen
-    		throw new IllegalStateException("Non-host had a call to requestCardsPacketReceived");
-    	}
-    	// the player at conn wants some cards
-    	DeckData.Card cards[] = getCards(deckName, numCards);
-    	
-    	if ( cards == null ) 
-    	{
-    		// there was a problem. Probably a race-condition thaty caused a
-    		// card request to get in after a deck was deleted. Just ignore this
-    		// packet.
-    		return;
-    	}
-    	
-    	// send that player his cards
-    	send(PacketManager.makeReceiveCardsPacket(cards), conn);
-    	
-    	// also, we need to send that player the pogs for each of those cards
-    	for ( int i=0 ; i<cards.length ; i++ )
-    	{
-    		Pog newPog = makeCardPog(cards[i]);
-    		newPog.assignUniqueId();
-    		
-    		if ( newPog != null )
-    		{
-		    	// make a pog packet, saying this pog should go to the PRIVATE LAYER,
-		    	// then send it to that player. Note that we don't add it to
-		    	// our own layer.
-		    	send(PacketManager.makeAddPogPacket(newPog, false), conn);
-    		}
-    	}
-	}
 
-    /**
-     * Finds the index of a given player.
-     * 
-     * @param player Player to find index of.
-     * @return Index of the given player, or -1.
-     */
-    public int getPlayerIndex(Player player)
+    public void grmPacketReceived(final byte grmFile[])
     {
-        return m_players.indexOf(player);
-    }
-
-    /**
-     * @return Returns the myPlayerIndex.
-     */
-    public int getMyPlayerIndex()
-    {
-        return m_myPlayerIndex;
-    }
-
-    public Player getPlayerFromConnection(Connection conn)
-    {
-        for (int i = 0; i < m_players.size(); i++)
-        {
-            Player plr = (Player)m_players.get(i);
-            if (conn == plr.getConnection())
-            {
-                return plr;
-            }
-        }
-
-        return null;
-    }
-
-    public void connectionDropped(Connection conn)
-    {
-        if (m_netStatus == NETSTATE_JOINED)
-        {
-            // we lost our connection to the host
-            logAlertMessage("Your connection to the host was lost.");
-            disconnect();
-
-            m_netStatus = NETSTATE_NONE;
-            return;
-        }
-
-        // find the player who owns that connection
-        Player dead = getPlayerFromConnection(conn);
-        if (dead != null)
-        {
-            // remove this player
-            m_players.remove(dead);
-            sendCastInfo();
-            postSystemMessage(dead.getPlayerName() + " has left the session");
-        }
-        else
-        {
-            postAlertMessage("Someone tried to log in, but was rejected.");
-        }
-    }
-
-    public void confirmHost()
-    {
-        if (m_netStatus != NETSTATE_HOST)
-        {
-            throw new IllegalStateException("confirmHost failure");
-        }
-    }
-
-    public void confirmJoined()
-    {
+        // only the host should ever get this packet. If a joiner gets it
+        // for some reason, it should ignore it.
+        // if we're offline, then sure, go ahead and load
         if (m_netStatus != NETSTATE_JOINED)
         {
-            throw new IllegalStateException("confirmJoined failure");
+            loadStateFromRawFileData(grmFile);
         }
-    }
-
-    public boolean runHostDialog()
-    {
-        JoinDialog dialog = new JoinDialog();
-        dialog.setUpForHostDlg();
-        dialog.setLocationRelativeTo(m_gametableCanvas);
-        dialog.setVisible(true);
-
-        if (!dialog.m_bAccepted)
-        {
-            // they cancelled out
-            return false;
-        }
-        return true;
-    }
-
-    private boolean runJoinDialog()
-    {
-        JoinDialog dialog = new JoinDialog();
-        dialog.setLocationRelativeTo(m_gametableCanvas);
-        dialog.setVisible(true);
-
-        if (!dialog.m_bAccepted)
-        {
-            // they cancelled out
-            return false;
-        }
-        return true;
-    }
-
-    public void updateCast(Player[] players, int ourIdx)
-    {
-        // you should only get this if you're a joiner
-        confirmJoined();
-
-        // set up the current cast
-        m_players = new ArrayList();
-        for (int i = 0; i < players.length; i++)
-        {
-            addPlayer(players[i]);
-        }
-
-        this.m_myPlayerIndex = ourIdx;
-
-        // any time the cast changes, all the undo stacks clear
-        getGametableCanvas().clearUndoStacks();
-    }
-
-    public void send(byte[] packet)
-    {
-        if (m_networkThread != null)
-        {
-            m_networkThread.send(packet);
-        }
-    }
-
-    public void send(byte[] packet, Connection connection)
-    {
-        if (m_networkThread != null)
-        {
-            m_networkThread.send(packet, connection);
-        }
-    }
-
-    public void send(byte[] packet, Player player)
-    {
-        if (player.getConnection() == null)
-        {
-            return;
-        }
-        send(packet, player.getConnection());
-    }
-
-    public void kick(Connection conn, int reason)
-    {
-        send(PacketManager.makeRejectPacket(reason), conn);
-        conn.close();
-    }
-
-    public void playerJoined(Connection connection, Player player, String password)
-    {
-        confirmHost();
-
-        if (!m_password.equals(password))
-        {
-            // rejected!
-            kick(connection, REJECT_INVALID_PASSWORD);
-            return;
-        }
-
-        // now we can associate a player with the connection
-        connection.markLoggedIn();
-        player.setConnection(connection);
-
-        // set their ID
-        player.setId(m_nextPlayerId);
-        m_nextPlayerId++;
-
-        // tell everyone about the new guy
-        postSystemMessage(player.getPlayerName() + " has joined the session");
-        addPlayer(player);
-
-        sendCastInfo();
-
-        // all the undo stacks clear
-        getGametableCanvas().clearUndoStacks();
-
-        // tell the new guy the entire state of the game
-        // lines
-        LineSegment[] lines = new LineSegment[getGametableCanvas().getPublicMap().getNumLines()];
-        for (int i = 0; i < getGametableCanvas().getPublicMap().getNumLines(); i++)
-        {
-            lines[i] = getGametableCanvas().getPublicMap().getLineAt(i);
-        }
-        send(PacketManager.makeLinesPacket(lines, -1, -1), player);
-
-        // pogs
-        for (int i = 0; i < getGametableCanvas().getPublicMap().getNumPogs(); i++)
-        {
-            Pog pog = getGametableCanvas().getPublicMap().getPog(i);
-            send(PacketManager.makeAddPogPacket(pog), player);
-        }
-
-        // finally, have the player recenter on the host's view
-        int viewCenterX = getGametableCanvas().getWidth() / 2;
-        int viewCenterY = getGametableCanvas().getHeight() / 2;
-
-        // convert to model coordinates
-        Point modelCenter = getGametableCanvas().viewToModel(viewCenterX, viewCenterY);
-        send(PacketManager.makeRecenterPacket(modelCenter.x, modelCenter.y, getGametableCanvas().m_zoom), player);
-
-        // let them know we're done sending them data from the login
-        send(PacketManager.makeLoginCompletePacket(), player);
-        
-        // tell them the decks that are in play
-        sendDeckList();
-    }
-
-    public void sendCastInfo()
-    {
-        // and we have to push this data out to everyone
-        for (int i = 0; i < m_players.size(); i++)
-        {
-            Player recipient = (Player)m_players.get(i);
-            byte[] castPacket = PacketManager.makeCastPacket(recipient);
-            send(castPacket, recipient);
-        }
-    }
-
-    public void packetReceived(Connection conn, byte[] packet)
-    {
-        // synch here. after we get the packet, but before we process it.
-        // this is all the synching we need on the comm end of things.
-        // we will also need to synch every user entry point
-        PacketManager.readPacket(conn, packet);
     }
 
     public void host()
@@ -1947,19 +1805,19 @@ public class GametableFrame extends JFrame implements ActionListener
         // clear out all players
         m_nextPlayerId = 0;
         m_players = new ArrayList();
-        Player me = new Player(m_playerName, m_characterName, m_nextPlayerId); // this means the host is always
+        final Player me = new Player(m_playerName, m_characterName, m_nextPlayerId); // this means the host is always
         // player 0
         m_nextPlayerId++;
         m_players.add(me);
         me.setHostPlayer(true);
-        this.m_myPlayerIndex = 0;
+        m_myPlayerIndex = 0;
 
         m_networkThread = new NetworkThread(m_port);
         m_networkThread.start();
         // TODO: fix hosting failure detection
 
         m_netStatus = NETSTATE_HOST;
-        String message = "Hosting on port: " + m_port;
+        final String message = "Hosting on port: " + m_port;
         logSystemMessage(message);
 
         logMessage("<a href=\"http://gametable.galactanet.com/echoip.php\">Click here to see the IP address you're hosting on.</a> (Making you click it ensures you have control over your privacy)");
@@ -1973,7 +1831,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
         // when you host, all the undo stacks clear
         getGametableCanvas().clearUndoStacks();
-        
+
         // also, all decks clear
         m_decks.clear();
         m_cards.clear();
@@ -1985,6 +1843,377 @@ public class GametableFrame extends JFrame implements ActionListener
         m_networkThread.interrupt();
         m_networkThread = null;
         disconnect();
+    }
+
+    /**
+     * Performs initialization.
+     * 
+     * @throws IOException
+     */
+    private void initialize() throws IOException
+    {
+        if (DEBUG_FOCUS)
+        {
+            final KeyboardFocusManager man = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+            man.addPropertyChangeListener(new PropertyChangeListener()
+            {
+                /*
+                 * @see java.beans.PropertyChangeListener#propertyChange(java.beans.PropertyChangeEvent)
+                 */
+                public void propertyChange(final PropertyChangeEvent e)
+                {
+                    System.out.println(e.getPropertyName() + ":\n    " + e.getOldValue() + "\n -> " + e.getNewValue());
+                }
+
+            });
+        }
+
+        setContentPane(new JPanel(new BorderLayout()));
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setTitle(GametableApp.VERSION);
+        setJMenuBar(getMainMenuBar());
+        m_noGridModeMenuItem.addActionListener(this);
+        m_squareGridModeMenuItem.addActionListener(this);
+        m_hexGridModeMenuItem.addActionListener(this);
+
+        m_chatPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        m_chatPanel.setLayout(new BorderLayout());
+
+        m_textAndEntryPanel.setLayout(new BorderLayout());
+
+        final JPanel entryPanel = new JPanel(new BorderLayout(0, 0));
+        entryPanel.add(new StyledEntryToolbar(m_textEntry), BorderLayout.NORTH);
+        entryPanel.add(m_textEntry.getComponentToAdd(), BorderLayout.SOUTH);
+        m_textAndEntryPanel.add(entryPanel, BorderLayout.SOUTH);
+
+        m_textAndEntryPanel.add(m_chatLog.getComponentToAdd(), BorderLayout.CENTER);
+
+        m_mapChatSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
+        m_mapChatSplitPane.setContinuousLayout(true);
+        m_mapChatSplitPane.setResizeWeight(1.0);
+        m_mapChatSplitPane.setBorder(null);
+
+        m_textAreaPanel.setLayout(new BorderLayout());
+
+        m_mapPogSplitPane.setContinuousLayout(true);
+        m_mapPogSplitPane.setBorder(null);
+
+        m_colorCombo.setMaximumSize(new Dimension(100, 21));
+        m_colorCombo.setFocusable(false);
+        m_toolBar.setFloatable(false);
+        m_toolBar.setRollover(true);
+        m_toolBar.setBorder(new EmptyBorder(2, 5, 2, 5));
+        m_toolBar.add(m_colorCombo, null);
+        m_toolBar.add(Box.createHorizontalStrut(5));
+
+        initializeTools();
+
+        m_toolBar.add(Box.createHorizontalStrut(5));
+
+        /*
+         * Added in order to accomodate grid unit multiplier
+         */
+        m_gridunitmultiplier = new JTextField("5", 3);
+        m_gridunitmultiplier.setMaximumSize(new Dimension(42, 21));
+        final String[] units = {
+            "ft", "m", "u"
+        };
+        m_gridunit = new JComboBox(units);
+        m_gridunit.setMaximumSize(new Dimension(42, 21));
+        m_toolBar.add(m_gridunitmultiplier);
+        m_toolBar.add(m_gridunit);
+        m_gridunitmultiplier.getDocument().addDocumentListener(new DocumentListener()
+        {
+            public void changedUpdate(final DocumentEvent e)
+            {
+                grid_multiplier = Double.parseDouble(m_gridunitmultiplier.getText());
+            }
+
+            public void insertUpdate(final DocumentEvent e)
+            {
+                grid_multiplier = Double.parseDouble(m_gridunitmultiplier.getText());
+            }
+
+            public void removeUpdate(final DocumentEvent e)
+            {
+                grid_multiplier = Double.parseDouble(m_gridunitmultiplier.getText());
+            }
+        });
+        m_gridunit.addActionListener(this);
+
+        m_showNamesCheckbox.setFocusable(false);
+        m_showNamesCheckbox.addActionListener(new ActionListener()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                m_gametableCanvas.repaint();
+            }
+        });
+        m_toolBar.add(m_showNamesCheckbox);
+
+        getContentPane().add(m_toolBar, BorderLayout.NORTH);
+
+        m_pogLibrary = new PogLibrary();
+        getGametableCanvas().init(this);
+
+        m_pogPanel = new PogPanel(m_pogLibrary, getGametableCanvas());
+        m_pogsTabbedPane.add(m_pogPanel, "Pog Library");
+        m_activePogsPanel = new ActivePogsPanel();
+        m_pogsTabbedPane.add(m_activePogsPanel, "Active Pogs");
+        m_macroPanel = new MacroPanel();
+        m_pogsTabbedPane.add(m_macroPanel, "Dice Macros");
+        m_pogsTabbedPane.setFocusable(false);
+
+        m_chatPanel.add(m_textAreaPanel, BorderLayout.CENTER);
+        m_textAreaPanel.add(m_textAndEntryPanel, BorderLayout.CENTER);
+        final JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED), new EmptyBorder(1, 1, 1, 1)));
+        panel.add(getGametableCanvas(), BorderLayout.CENTER);
+        m_mapChatSplitPane.add(panel, JSplitPane.TOP);
+        m_mapChatSplitPane.add(m_chatPanel, JSplitPane.BOTTOM);
+
+        m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.LEFT);
+        m_mapPogSplitPane.add(m_mapChatSplitPane, JSplitPane.RIGHT);
+        getContentPane().add(m_mapPogSplitPane, BorderLayout.CENTER);
+        m_status.setBorder(new EtchedBorder(EtchedBorder.RAISED));
+        getContentPane().add(m_status, BorderLayout.SOUTH);
+        updateStatus();
+
+        m_disconnectMenuItem.setEnabled(false);
+
+        final ColorComboCellRenderer renderer = new ColorComboCellRenderer();
+        m_colorCombo.setRenderer(renderer);
+
+        // load the primary map
+        getGametableCanvas().setActiveMap(getGametableCanvas().getPrivateMap());
+        PacketSourceState.beginFileLoad();
+        loadState(new File("autosavepvt.grm"));
+        PacketSourceState.endFileLoad();
+
+        getGametableCanvas().setActiveMap(getGametableCanvas().getPublicMap());
+        loadState(new File("autosave.grm"));
+        loadPrefs();
+
+        addPlayer(new Player(m_playerName, m_characterName, -1));
+        m_myPlayerIndex = 0;
+
+        m_colorCombo.addActionListener(this);
+        updateGridModeMenu();
+
+        addComponentListener(new ComponentAdapter()
+        {
+            /*
+             * @see java.awt.event.ComponentListener#componentMoved(java.awt.event.ComponentEvent)
+             */
+            public void componentMoved(final ComponentEvent e)
+            {
+                updateWindowInfo();
+            }
+
+            /*
+             * @see java.awt.event.ComponentListener#componentResized(java.awt.event.ComponentEvent)
+             */
+            public void componentResized(final ComponentEvent event)
+            {
+                updateWindowInfo();
+            }
+
+        });
+
+        addWindowListener(new WindowAdapter()
+        {
+            /*
+             * @see java.awt.event.WindowListener#windowClosed(java.awt.event.WindowEvent)
+             */
+            public void windowClosed(final WindowEvent e)
+            {
+                saveAll();
+            }
+
+            /*
+             * @see java.awt.event.WindowAdapter#windowClosing(java.awt.event.WindowEvent)
+             */
+            public void windowClosing(final WindowEvent e)
+            {
+                saveAll();
+            }
+        });
+
+        /*
+         * // change the default component traverse settings // we do this cause we don't really care about those //
+         * settings, but we want to be able to use the tab key KeyboardFocusManager focusMgr =
+         * KeyboardFocusManager.getCurrentKeyboardFocusManager(); Set set = new
+         * HashSet(focusMgr.getDefaultFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS)); set.clear(); //
+         * set.add(KeyStroke.getKeyStroke('\t', 0, false));
+         * focusMgr.setDefaultFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, set); set = new
+         * HashSet(focusMgr.getDefaultFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS)); set.clear(); //
+         * set.add(KeyStroke.getKeyStroke('\t', 0, false));
+         * focusMgr.setDefaultFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, set);
+         */
+
+        m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed SLASH"),
+            "startSlash");
+        m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed ENTER"),
+            "startText");
+        m_gametableCanvas.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+            KeyStroke.getKeyStroke("control pressed R"), "reply");
+
+        m_gametableCanvas.getActionMap().put("startSlash", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                if (m_gametableCanvas.isTextFieldFocused())
+                {
+                    return;
+                }
+
+                // only do this at the start of a line
+                if (m_textEntry.getText().length() == 0)
+                {
+                    // furthermore, only do the set text and focusing if we don't have
+                    // focus (otherwise, we end up with two slashes. One from the user typing it, and
+                    // another from us setting the text, cause our settext happens first.)
+                    if (KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() != m_textEntry)
+                    {
+                        m_textEntry.setText("/");
+                    }
+                }
+                m_textEntry.requestFocus();
+            }
+        });
+
+        m_gametableCanvas.getActionMap().put("startText", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                if (m_gametableCanvas.isTextFieldFocused())
+                {
+                    return;
+                }
+
+                if (m_textEntry.getText().length() == 0)
+                {
+                    // furthermore, only do the set text and focusing if we don't have
+                    // focus (otherwise, we end up with two slashes. One from the user typing it, and
+                    // another from us setting the text, cause our settext happens first.)
+                    if (KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() != m_textEntry)
+                    {
+                        m_textEntry.setText("");
+                    }
+                }
+                m_textEntry.requestFocus();
+            }
+        });
+
+        m_gametableCanvas.getActionMap().put("reply", new AbstractAction()
+        {
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                // we don't do this if there's already text in the entry field
+                if (m_textEntry.getText().length() == 0)
+                {
+                    // if they've never received a tell, just tell them that
+                    if (m_lastPrivateMessageSender == null)
+                    {
+                        // they've received no tells yet
+                        logAlertMessage("You cannot reply until you receive a /tell from another player.");
+                    }
+                    else
+                    {
+                        startTellTo(m_lastPrivateMessageSender);
+                    }
+                }
+                m_textEntry.requestFocus();
+            }
+        });
+
+        initializeExecutorThread();
+    }
+
+    private void initializeExecutorThread()
+    {
+        if (m_executorThread != null)
+        {
+            m_executorThread.interrupt();
+            m_executorThread = null;
+        }
+
+        // start the poll thread
+        m_executorThread = new PeriodicExecutorThread(new Runnable()
+        {
+            public void run()
+            {
+                tick();
+            }
+        });
+        m_executorThread.start();
+    }
+
+    /**
+     * Initializes the tools from the ToolManager.
+     */
+    private void initializeTools()
+    {
+        try
+        {
+            m_toolManager.initialize();
+            final int buttonSize = m_toolManager.getMaxIconSize();
+            final int numTools = m_toolManager.getNumTools();
+            m_toolButtons = new JToggleButton[numTools];
+            for (int toolId = 0; toolId < numTools; toolId++)
+            {
+                final ToolManager.Info info = m_toolManager.getToolInfo(toolId);
+                final Image im = UtilityFunctions.createDrawableImage(buttonSize, buttonSize);
+                {
+                    final Graphics g = im.getGraphics();
+                    final Image icon = info.getIcon();
+                    final int offsetX = (buttonSize - icon.getWidth(null)) / 2;
+                    final int offsetY = (buttonSize - icon.getHeight(null)) / 2;
+                    g.drawImage(info.getIcon(), offsetX, offsetY, null);
+                    g.dispose();
+                }
+
+                final JToggleButton button = new JToggleButton(new ImageIcon(im));
+                m_toolBar.add(button);
+                button.addActionListener(new ToolButtonActionListener(toolId));
+                button.setFocusable(false);
+                m_toolButtonGroup.add(button);
+                m_toolButtons[toolId] = button;
+
+                String keyInfo = "";
+                if (info.getQuickKey() != null)
+                {
+                    final String actionId = "tool" + toolId + "Action";
+                    getGametableCanvas().getActionMap().put(actionId, new ToolButtonAbstractAction(toolId));
+                    final KeyStroke keystroke = KeyStroke.getKeyStroke("ctrl " + info.getQuickKey());
+                    getGametableCanvas().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keystroke, actionId);
+                    keyInfo = " (Ctrl+" + info.getQuickKey() + ")";
+                }
+                button.setToolTipText(info.getName() + keyInfo);
+                final List prefs = info.getTool().getPreferences();
+                for (int i = 0; i < prefs.size(); i++)
+                {
+                    m_preferences.addPreference((PreferenceDescriptor)prefs.get(i));
+                }
+            }
+        }
+        catch (final IOException ioe)
+        {
+            Log.log(Log.SYS, "Failure initializing tools.");
+            Log.log(Log.SYS, ioe);
+        }
     }
 
     public void join()
@@ -2012,16 +2241,16 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             m_networkThread = new NetworkThread();
             m_networkThread.start();
-            Connection conn = new Connection(m_ipAddress, m_port);
+            final Connection conn = new Connection(m_ipAddress, m_port);
             m_networkThread.add(conn);
 
             // now that we've successfully made a connection, let the host know
             // who we are
             m_players = new ArrayList();
-            Player me = new Player(m_playerName, m_characterName, -1);
+            final Player me = new Player(m_playerName, m_characterName, -1);
             me.setConnection(conn);
             m_players.add(me);
-            this.m_myPlayerIndex = 0;
+            m_myPlayerIndex = 0;
 
             // reset game data
             getGametableCanvas().getPublicMap().setScroll(0, 0);
@@ -2047,7 +2276,7 @@ public class GametableFrame extends JFrame implements ActionListener
             m_disconnectMenuItem.setEnabled(true);
             setTitle(GametableApp.VERSION + " - " + me.getCharacterName());
         }
-        catch (Exception ex)
+        catch (final Exception ex)
         {
             Log.log(Log.SYS, ex);
             logAlertMessage("Failed to connect.");
@@ -2056,325 +2285,25 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
-    public void disconnect()
+    public void kick(final Connection conn, final int reason)
     {
-        if (m_netStatus == NETSTATE_NONE)
-        {
-            logAlertMessage("Nothing to disconnect from.");
-            return;
-        }
-
-        if (m_networkThread != null)
-        {
-            m_networkThread.interrupt();
-            m_networkThread = null;
-        }
-
-        m_hostMenuItem.setEnabled(true);
-        m_joinMenuItem.setEnabled(true);
-        m_disconnectMenuItem.setEnabled(false);
-
-        m_players = new ArrayList();
-        Player me = new Player(m_playerName, m_characterName, -1);
-        m_players.add(me);
-        this.m_myPlayerIndex = 0;
-        setTitle(GametableApp.VERSION);
-
-        // we might have disconnected during inital data recipt
-        PacketSourceState.endHostDump();
-
-        m_netStatus = NETSTATE_NONE;
-        logSystemMessage("Disconnected.");
-        updateStatus();
-    }
-    
-    public void eraseAllLines()
-    {
-        // erase with a rect big enough to nail everything
-        Rectangle toErase = new Rectangle();
-
-        toErase.x = Integer.MIN_VALUE / 2;
-        toErase.y = Integer.MIN_VALUE / 2;
-        toErase.width = Integer.MAX_VALUE;
-        toErase.height = Integer.MAX_VALUE;
-
-        // go to town
-        getGametableCanvas().erase(toErase, false, 0);
-
-        repaint();
+        send(PacketManager.makeRejectPacket(reason), conn);
+        conn.close();
     }
 
-    public void eraseAllPogs()
+    public void linesPacketReceived(final LineSegment[] lines, final int authorID, final int state)
     {
-        // make an int array of all the IDs
-        int removeArray[] = new int[getGametableCanvas().getActiveMap().getNumPogs()];
-
-        for (int i = 0; i < getGametableCanvas().getActiveMap().getNumPogs(); i++)
-        {
-            Pog pog = getGametableCanvas().getActiveMap().getPog(i);
-            removeArray[i] = pog.getId();
-        }
-
-        getGametableCanvas().removePogs(removeArray, true);
-    }
-
-    public void eraseAll()
-    {
-        eraseAllLines();
-        eraseAllPogs();
-    }
-
-    public void updateGridModeMenu()
-    {
-        if (getGametableCanvas().m_gridMode == getGametableCanvas().m_noGridMode)
-        {
-            m_noGridModeMenuItem.setState(true);
-            m_squareGridModeMenuItem.setState(false);
-            m_hexGridModeMenuItem.setState(false);
-        }
-        else if (getGametableCanvas().m_gridMode == getGametableCanvas().m_squareGridMode)
-        {
-            m_noGridModeMenuItem.setState(false);
-            m_squareGridModeMenuItem.setState(true);
-            m_hexGridModeMenuItem.setState(false);
-        }
-        else if (getGametableCanvas().m_gridMode == getGametableCanvas().m_hexGridMode)
-        {
-            m_noGridModeMenuItem.setState(false);
-            m_squareGridModeMenuItem.setState(false);
-            m_hexGridModeMenuItem.setState(true);
-        }
-    }
-
-    /**
-     * Reacquires pogs and then refreshes the pog list.
-     */
-    public void reacquirePogs()
-    {
-        m_pogLibrary.acquirePogs();
-        refreshPogList();
-    }
-
-    /**
-     * Refreshes the pog list.
-     */
-    public void refreshPogList()
-    {
-        m_pogPanel.populateChildren();
-        getGametableCanvas().repaint();
-    }
-
-    /**
-     * Reacquires pogs and then refreshes the pog list.
-     */
-    public void refreshActivePogList()
-    {
-        m_activePogsPanel.refresh();
-    }
-
-    /**
-     * Toggles between the two layers.
-     */
-    public void toggleLayer()
-    {
-        // toggle the map we're on
-        if (getGametableCanvas().isPublicMap())
-        {
-            getGametableCanvas().setActiveMap(getGametableCanvas().getPrivateMap());
-        }
-        else
-        {
-            getGametableCanvas().setActiveMap(getGametableCanvas().getPublicMap());
-        }
-
-        // if they toggled the layer, whatever tool they're using is cancelled
-        getToolManager().cancelToolAction();
-        getGametableCanvas().requestFocus();
-        refreshActivePogList();
-        repaint();
-    }
-
-    /**
-     * Invokes the whole addDieMacro dialog process.
-     */
-    public void addDieMacro()
-    {
-        NewMacroDialog dialog = new NewMacroDialog();
-        dialog.setVisible(true);
-
-        if (dialog.isAccepted())
-        {
-            // extrace the macro from the controls and add it
-            String name = dialog.getMacroName();
-            String macro = dialog.getMacroDefinition();
-            if (getMacro(name) != null)
-            {
-                int result = UtilityFunctions.yesNoDialog(GametableFrame.this, "You already have a macro named \""
-                    + name + "\", " + "are you sure you want to replace it with \"" + macro + "\"?", "Replace Macro?");
-                if (result == UtilityFunctions.YES)
-                {
-                    addMacro(name, macro);
-                }
-            }
-            else
-            {
-                addMacro(name, macro);
-            }
-        }
-    }
-
-    public ToolManager getToolManager()
-    {
-        return m_toolManager;
-    }
-
-    public void setToolSelected(int toolId)
-    {
-        m_toolButtons[toolId].setSelected(true);
-    }
-
-    public void addPlayer(Player player)
-    {
-        m_players.add(player);
-    }
-
-    public void addMacro(String name, String macro)
-    {
-        DiceMacro newMacro = new DiceMacro();
-        boolean res = newMacro.init(macro, name);
-        if (!res)
-        {
-            logAlertMessage("Error in macro");
-            return;
-        }
-        addMacro(newMacro);
-    }
-
-    public void addMacro(DiceMacro dm)
-    {
-        addMacroForced(dm);
-        m_macroPanel.refreshMacroList();
-    }
-
-    public void removeMacro(String name)
-    {
-        removeMacroForced(name);
-        m_macroPanel.refreshMacroList();
-    }
-
-    public void removeMacro(DiceMacro dm)
-    {
-        removeMacroForced(dm);
-        m_macroPanel.refreshMacroList();
-    }
-
-    private void removeMacroForced(String name)
-    {
-        DiceMacro macro = getMacro(name);
-        if (macro != null)
-        {
-            removeMacroForced(macro);
-        }
-    }
-
-    private void removeMacroForced(DiceMacro macro)
-    {
-        String name = UtilityFunctions.normalizeName(macro.getName());
-        m_macroMap.remove(name);
-    }
-
-    private void addMacroForced(DiceMacro macro)
-    {
-        removeMacroForced(macro.getName());
-        m_macroMap.put(UtilityFunctions.normalizeName(macro.getName()), macro);
-    }
-
-    public DiceMacro findMacro(String term)
-    {
-        String name = UtilityFunctions.normalizeName(term);
-        DiceMacro macro = getMacro(name);
-        if (macro == null)
-        {
-            macro = new DiceMacro();
-            if (!macro.init(term, null))
-            {
-                macro = null;
-            }
-        }
-
-        return macro;
-    }
-
-    public DiceMacro getMacro(String name)
-    {
-        String realName = UtilityFunctions.normalizeName(name);
-        return (DiceMacro)m_macroMap.get(realName);
-    }
-
-    /**
-     * @return Gets the list of macros.
-     */
-    public Collection getMacros()
-    {
-        return Collections.unmodifiableCollection(m_macroMap.values());
-    }
-
-    public void logSystemMessage(String text)
-    {
-        logMessage(SYSTEM_MESSAGE_FONT + text + END_SYSTEM_MESSAGE_FONT);
-    }
-
-    public void logAlertMessage(String text)
-    {
-        logMessage(ALERT_MESSAGE_FONT + text + END_ALERT_MESSAGE_FONT);
-    }
-
-    public void logMessage(String text)
-    {
-        m_chatLog.addText(text);
-    }
-
-    public void logPrivateMessage(String fromName, String toName, String text)
-    {
-        // when they get a private message, we format it for the chat log
-        logMessage(PRIVATE_MESSAGE_FONT + UtilityFunctions.emitUserLink(fromName) + " tells you: "
-            + END_PRIVATE_MESSAGE_FONT + text);
-
-        // we track who the last private message sender was, for
-        // reply purposes
-        m_lastPrivateMessageSender = fromName;
-    }
-
-    public void postSystemMessage(String text)
-    {
-        postMessage(SYSTEM_MESSAGE_FONT + text + END_SYSTEM_MESSAGE_FONT);
-    }
-
-    public void postAlertMessage(String text)
-    {
-        postMessage(ALERT_MESSAGE_FONT + text + END_ALERT_MESSAGE_FONT);
-    }
-
-    public void postMessage(String text)
-    {
+        int stateId = state;
         if (m_netStatus == NETSTATE_HOST)
         {
-            // if you're the host, push to all players
-            send(PacketManager.makeTextPacket(text));
+            // if we're the host, send it to the clients
+            // and give it a genuine state ID first
+            stateId = getNewStateId();
+            send(PacketManager.makeLinesPacket(lines, authorID, stateId));
+        }
 
-            // add it to your own text log
-            logMessage(text);
-        }
-        else if (m_netStatus == NETSTATE_JOINED)
-        {
-            // if you're a player, just post it to the GM
-            send(PacketManager.makeTextPacket(text));
-        }
-        else
-        {
-            // if you're offline, just add it to the log
-            logMessage(text);
-        }
+        // add the lines to the array
+        getGametableCanvas().doAddLineSegments(lines, authorID, stateId);
     }
 
     /**
@@ -2382,7 +2311,7 @@ public class GametableFrame extends JFrame implements ActionListener
      */
     public void loadMacros()
     {
-        File openFile = UtilityFunctions.doFileOpenDialog("Open", "xml", true);
+        final File openFile = UtilityFunctions.doFileOpenDialog("Open", "xml", true);
 
         if (openFile == null)
         {
@@ -2390,7 +2319,7 @@ public class GametableFrame extends JFrame implements ActionListener
             return;
         }
 
-        int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
+        final int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
             "This will load a macro file, replacing all your existing macros. Are you sure you want to do this?",
             "Confirm Load Macros");
         if (result != UtilityFunctions.YES)
@@ -2407,7 +2336,7 @@ public class GametableFrame extends JFrame implements ActionListener
                 loadMacros(m_actingFileMacros);
                 logSystemMessage("Loaded macros from " + m_actingFileMacros + ".");
             }
-            catch (SAXException saxe)
+            catch (final SAXException saxe)
             {
                 Log.log(Log.SYS, saxe);
             }
@@ -2420,27 +2349,27 @@ public class GametableFrame extends JFrame implements ActionListener
      * @param file File to load macros from.
      * @throws SAXException If an error occurs.
      */
-    public void loadMacros(File file) throws SAXException
+    public void loadMacros(final File file) throws SAXException
     {
         try
         {
-            SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
-            DiceMacroSaxHandler handler = new DiceMacroSaxHandler();
+            final SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
+            final DiceMacroSaxHandler handler = new DiceMacroSaxHandler();
             parser.parse(file, handler);
 
             // clear the state
             m_macroMap.clear();
-            for (Iterator iterator = handler.getMacros().iterator(); iterator.hasNext();)
+            for (final Iterator iterator = handler.getMacros().iterator(); iterator.hasNext();)
             {
-                DiceMacro macro = (DiceMacro)iterator.next();
+                final DiceMacro macro = (DiceMacro)iterator.next();
                 addMacro(macro);
             }
         }
-        catch (IOException ioe)
+        catch (final IOException ioe)
         {
             throw new SAXException(ioe);
         }
-        catch (ParserConfigurationException pce)
+        catch (final ParserConfigurationException pce)
         {
             throw new SAXException(pce);
         }
@@ -2448,126 +2377,265 @@ public class GametableFrame extends JFrame implements ActionListener
         m_macroPanel.refreshMacroList();
     }
 
-    public void saveMacros()
+    public void loadPrefs()
     {
-        File oldFile = m_actingFileMacros;
-        m_actingFileMacros = UtilityFunctions.doFileSaveDialog("Save As", "xml", true);
-        if (m_actingFileMacros == null)
+        final File file = new File("prefs.prf");
+        if (!file.exists())
         {
-            m_actingFileMacros = oldFile;
+            // DEFAULTS
+            m_mapChatSplitPane.setDividerLocation(0.7);
+            m_mapPogSplitPane.setDividerLocation(150);
+            m_windowSize = new Dimension(800, 600);
+            final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            m_windowPos = new Point((screenSize.width - m_windowSize.width) / 2,
+                (screenSize.height - m_windowSize.height) / 2);
+            m_bMaximized = false;
+            applyWindowInfo();
+            addMacro("d20", "d20");
+            m_showNamesCheckbox.setSelected(false);
+            m_actingFileMacros = new File("macros.xml");
+            try
+            {
+                loadMacros(m_actingFileMacros);
+            }
+            catch (final SAXException se)
+            {
+                Log.log(Log.SYS, se);
+            }
             return;
         }
 
         try
         {
-            saveMacros(m_actingFileMacros);
-            logSystemMessage("Wrote macros to " + m_actingFileMacros.getPath());
+            final FileInputStream prefFile = new FileInputStream(file);
+            final DataInputStream prefDis = new DataInputStream(prefFile);
+
+            m_playerName = prefDis.readUTF();
+            m_characterName = prefDis.readUTF();
+            m_ipAddress = prefDis.readUTF();
+            m_port = prefDis.readInt();
+            m_password = prefDis.readUTF();
+            getGametableCanvas().setPrimaryScroll(getGametableCanvas().getPublicMap(), prefDis.readInt(),
+                prefDis.readInt());
+            getGametableCanvas().setZoom(prefDis.readInt());
+
+            m_windowSize = new Dimension(prefDis.readInt(), prefDis.readInt());
+            m_windowPos = new Point(prefDis.readInt(), prefDis.readInt());
+            m_bMaximized = prefDis.readBoolean();
+            applyWindowInfo();
+
+            // divider locations
+            m_mapChatSplitPane.setDividerLocation(prefDis.readInt());
+            m_mapPogSplitPane.setDividerLocation(prefDis.readInt());
+
+            m_actingFileMacros = new File(prefDis.readUTF());
+            m_showNamesCheckbox.setSelected(prefDis.readBoolean());
+
+            prefDis.close();
+            prefFile.close();
         }
-        catch (IOException ioe)
+        catch (final FileNotFoundException ex1)
         {
-            Log.log(Log.SYS, ioe);
+            Log.log(Log.SYS, ex1);
+        }
+        catch (final IOException ex1)
+        {
+            Log.log(Log.SYS, ex1);
+        }
+
+        try
+        {
+            loadMacros(m_actingFileMacros);
+        }
+        catch (final SAXException se)
+        {
+            Log.log(Log.SYS, se);
         }
     }
 
-    public void saveMacros(File file) throws IOException
+    public void loadState(final byte saveFileData[])
     {
-        XmlSerializer out = new XmlSerializer();
-        out.startDocument(new BufferedWriter(new FileWriter(file)));
-        out.startElement(DiceMacroSaxHandler.ELEMENT_DICE_MACROS);
-        for (Iterator iterator = m_macroMap.values().iterator(); iterator.hasNext();)
+        // let it know we're receiving initial data (which we are. Just fro ma file instead of the host)
+        try
         {
-            DiceMacro macro = (DiceMacro)iterator.next();
-            macro.serialize(out);
+            // now we have to pick out the packets and send them in for processing one at a time
+            final DataInputStream walker = new DataInputStream(new ByteArrayInputStream(saveFileData));
+            int read = 0;
+            int packetNum = 0;
+            while (read < saveFileData.length)
+            {
+                final int packetLen = walker.readInt();
+                read += 4;
+
+                final byte[] packet = new byte[packetLen];
+                walker.read(packet);
+                read += packetLen;
+
+                // dispatch the packet
+                PacketManager.readPacket(null, packet);
+                packetNum++;
+            }
         }
-        out.endElement();
-        out.endDocument();
-    }
-
-    /**
-     * Sends a public message to all players.
-     * 
-     * @param text Message to send.
-     */
-    public void say(String text)
-    {
-        postMessage(SAY_MESSAGE_FONT + UtilityFunctions.emitUserLink(getMyPlayer().getCharacterName()) + ": "
-            + END_SAY_MESSAGE_FONT + text);
-    }
-
-    /**
-     * Sends a private message to the target player.
-     * 
-     * @param target Player to address message to.
-     * @param text Message to send.
-     */
-    public void tell(Player target, String text)
-    {
-        if (target.getId() == getMyPlayer().getId())
+        catch (final FileNotFoundException ex)
         {
-            m_chatLog.addText(PRIVATE_MESSAGE_FONT + "You tell yourself: " + END_PRIVATE_MESSAGE_FONT + text);
+            Log.log(Log.SYS, ex);
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+
+        repaint();
+        refreshPogList();
+    }
+
+    public void loadState(final File file)
+    {
+        if (!file.exists())
+        {
             return;
         }
 
-        String fromName = getMyPlayer().getCharacterName();
-        String toName = target.getCharacterName();
+        try
+        {
+            final FileInputStream input = new FileInputStream(file);
+            final DataInputStream infile = new DataInputStream(input);
 
-        postPrivateMessage(fromName, toName, text);
+            // get the big hunk o daya
+            final int ver = infile.readInt();
+            if (ver != COMM_VERSION)
+            {
+                // wrong version
+                throw new IOException("Invalid save file version.");
+            }
 
-        // and when you post a private message, you get told about it in your
-        // own chat log
-        m_chatLog.addText(PRIVATE_MESSAGE_FONT + "You tell " + UtilityFunctions.emitUserLink(toName) + ": "
-            + END_PRIVATE_MESSAGE_FONT + text);
+            final int len = infile.readInt();
+            final byte[] saveFileData = new byte[len];
+            infile.read(saveFileData);
+
+            PacketSourceState.beginFileLoad();
+            loadState(saveFileData);
+            PacketSourceState.endFileLoad();
+
+            input.close();
+            infile.close();
+        }
+        catch (final FileNotFoundException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
     }
 
-    public void postPrivateMessage(String fromName, String toName, String text)
+    public void loadStateFromRawFileData(final byte rawFileData[])
     {
+        final byte saveFileData[] = new byte[rawFileData.length - 8]; // a new array that lacks the first
+        // int
+        System.arraycopy(rawFileData, 8, saveFileData, 0, saveFileData.length);
+        loadState(saveFileData);
+    }
+
+    public void lockPogPacketReceived(final int id, final boolean newLock)
+    {
+        getGametableCanvas().doLockPog(id, newLock);
+
         if (m_netStatus == NETSTATE_HOST)
         {
-            // if you're the host, push to the appropriate player(s)
-            for (int i = 0; i < m_players.size(); i++)
-            {
-                Player player = (Player)m_players.get(i);
-                if (player.hasName(toName))
-                {
-                    // send the message to this player
-                    send(PacketManager.makePrivateTextPacket(fromName, toName, text), player);
-                }
-            }
-
-            // add it to your own text log if we're the right player
-            if (getMyPlayer().hasName(toName))
-            {
-                logPrivateMessage(fromName, toName, text);
-            }
-        }
-        else if (m_netStatus == NETSTATE_JOINED)
-        {
-            // if you're a player, just post it to the GM
-            send(PacketManager.makePrivateTextPacket(fromName, toName, text));
-        }
-        else
-        {
-            // if you're offline, post it to yourself if you're the
-            // person you sent it to.
-            if (getMyPlayer().hasName(toName))
-            {
-                logPrivateMessage(fromName, toName, text);
-            }
+            // if we're the host, send it to the clients
+            send(PacketManager.makeLockPogPacket(id, newLock));
         }
     }
 
-    public void startTellTo(String name)
+    public void logAlertMessage(final String text)
     {
-        m_textEntry.setText("/tell " + name + "<b> </b>");
-        m_textEntry.requestFocus();
-        m_textEntry.toggleStyle("bold");
-        m_textEntry.toggleStyle("bold");
+        logMessage(ALERT_MESSAGE_FONT + text + END_ALERT_MESSAGE_FONT);
     }
 
-    public void parseSlashCommand(String text)
+    public void loginCompletePacketReceived()
+    {
+        // this packet is never redistributed.
+        // all we do in response to this allow pog text
+        // highlights. The pogs don't know the difference between
+        // inital data and actual player changes.
+        PacketSourceState.endHostDump();
+
+        // seed our undo stack with this as the bottom rung
+        getGametableCanvas().getPublicMap().beginUndoableAction();
+        getGametableCanvas().getPublicMap().endUndoableAction(-1, -1);
+    }
+
+    public void logMessage(final String text)
+    {
+        m_chatLog.addText(text);
+    }
+
+    public void logPrivateMessage(final String fromName, final String toName, final String text)
+    {
+        // when they get a private message, we format it for the chat log
+        logMessage(PRIVATE_MESSAGE_FONT + UtilityFunctions.emitUserLink(fromName) + " tells you: "
+            + END_PRIVATE_MESSAGE_FONT + text);
+
+        // we track who the last private message sender was, for
+        // reply purposes
+        m_lastPrivateMessageSender = fromName;
+    }
+
+    public void logSystemMessage(final String text)
+    {
+        logMessage(SYSTEM_MESSAGE_FONT + text + END_SYSTEM_MESSAGE_FONT);
+    }
+
+    // makes a card pog out of the sent in card
+    public Pog makeCardPog(final DeckData.Card card)
+    {
+        // there might not be a pog associated with this card
+        if (card.m_cardFile.length() == 0)
+        {
+            return null;
+        }
+
+        final PogType newPogType = getPogLibrary().getPog("pogs" + UtilityFunctions.LOCAL_SEPARATOR + card.m_cardFile);
+
+        // there could be a problem with the deck definition. It's an easy mistake
+        // to make. So rather than freak out, we just return null.
+        if (newPogType == null)
+        {
+            return null;
+        }
+
+        final Pog newPog = new Pog(newPogType);
+
+        // make it a card pog
+        newPog.makeCardPog(card);
+        return newPog;
+    }
+
+    public void movePogPacketReceived(final int id, final int newX, final int newY)
+    {
+        getGametableCanvas().doMovePog(id, newX, newY);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if we're the host, send it to the clients
+            send(PacketManager.makeMovePogPacket(id, newX, newY));
+        }
+    }
+
+    public void packetReceived(final Connection conn, final byte[] packet)
+    {
+        // synch here. after we get the packet, but before we process it.
+        // this is all the synching we need on the comm end of things.
+        // we will also need to synch every user entry point
+        PacketManager.readPacket(conn, packet);
+    }
+
+    public void parseSlashCommand(final String text)
     {
         // get the command
-        String[] words = UtilityFunctions.breakIntoWords(text);
+        final String[] words = UtilityFunctions.breakIntoWords(text);
         if (words == null)
         {
             return;
@@ -2587,7 +2655,7 @@ public class GametableFrame extends JFrame implements ActionListener
             }
 
             // the second word is the name
-            String name = words[1];
+            final String name = words[1];
 
             // all subsequent "words" are the die roll macro
             addMacro(name, text.substring("/macro ".length() + name.length() + 1));
@@ -2606,11 +2674,11 @@ public class GametableFrame extends JFrame implements ActionListener
         }
         else if (words[0].equals("/who"))
         {
-            StringBuffer buffer = new StringBuffer();
+            final StringBuffer buffer = new StringBuffer();
             buffer.append("<b><u>Who's connected</u></b><br>");
             for (int i = 0, size = m_players.size(); i < size; ++i)
             {
-                Player player = (Player)m_players.get(i);
+                final Player player = (Player)m_players.get(i);
                 buffer.append("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
                 buffer.append(UtilityFunctions.emitUserLink(player.getCharacterName(), player.toString()));
                 buffer.append("<br>");
@@ -2640,26 +2708,26 @@ public class GametableFrame extends JFrame implements ActionListener
             // TODO: This should all probably be moved to DiceMacro somehow?
 
             // First we split the roll into terms
-            ArrayList rolls = new ArrayList();
-            ArrayList ops = new ArrayList();
-            String remaining = text.substring((words[0] + " ").length());
-            int length = remaining.length();
+            final ArrayList rolls = new ArrayList();
+            final ArrayList ops = new ArrayList();
+            final String remaining = text.substring((words[0] + " ").length());
+            final int length = remaining.length();
             int termStart = 0;
             for (int index = 0; index < length; ++index)
             {
-                char c = remaining.charAt(index);
-                boolean isLast = (index == (length - 1));
-                if (c == '+' || c == '-' || isLast)
+                final char c = remaining.charAt(index);
+                final boolean isLast = (index == (length - 1));
+                if ((c == '+') || (c == '-') || isLast)
                 {
-                    int termEnd = index + (isLast ? 1 : 0);
-                    String term = remaining.substring(termStart, termEnd).trim();
+                    final int termEnd = index + (isLast ? 1 : 0);
+                    final String term = remaining.substring(termStart, termEnd).trim();
                     if (term.length() < 1)
                     {
                         rolls.add(new DiceMacro());
                     }
                     else
                     {
-                        DiceMacro macro = findMacro(term);
+                        final DiceMacro macro = findMacro(term);
                         if (macro == null)
                         {
                             logSystemMessage("Invalid macro name or die term: " + term + ".");
@@ -2674,13 +2742,13 @@ public class GametableFrame extends JFrame implements ActionListener
                 }
             }
 
-            StringBuffer rollBuf = new StringBuffer();
-            StringBuffer resultBuf = new StringBuffer();
+            final StringBuffer rollBuf = new StringBuffer();
+            final StringBuffer resultBuf = new StringBuffer();
             int total = 0;
             boolean first = true;
             for (int i = 0; i < rolls.size(); ++i)
             {
-                DiceMacro macro = (DiceMacro)rolls.get(i);
+                final DiceMacro macro = (DiceMacro)rolls.get(i);
                 boolean negate = false;
                 if (i > 0)
                 {
@@ -2690,7 +2758,7 @@ public class GametableFrame extends JFrame implements ActionListener
                     }
                 }
 
-                DiceMacro.Result result = macro.roll();
+                final DiceMacro.Result result = macro.roll();
                 if (result == null)
                 {
                     continue;
@@ -2718,7 +2786,7 @@ public class GametableFrame extends JFrame implements ActionListener
                     resultBuf.append("- ");
                 }
                 rollBuf.append(result.roll);
-                if (macro.getName() != null && rolls.size() > 1)
+                if ((macro.getName() != null) && (rolls.size() > 1))
                 {
                     resultBuf.append('(');
                     resultBuf.append(result.result);
@@ -2735,15 +2803,15 @@ public class GametableFrame extends JFrame implements ActionListener
             if (words[0].equals("/roll"))
             {
                 // this was a public roll
-                String toPost = DiceMacro.generateOutputString(getMyPlayer().getCharacterName(), rollBuf.toString(),
-                    resultBuf.toString(), "" + total);
+                final String toPost = DiceMacro.generateOutputString(getMyPlayer().getCharacterName(), rollBuf
+                    .toString(), resultBuf.toString(), "" + total);
                 postMessage(toPost);
             }
             else
             {
                 // this was a private roll. Don't propigate it to other players
-                String toPost = DiceMacro.generatePrivateOutputString(rollBuf.toString(), resultBuf.toString(), ""
-                    + total);
+                final String toPost = DiceMacro.generatePrivateOutputString(rollBuf.toString(), resultBuf.toString(),
+                    "" + total);
                 m_chatLog.addText(toPost);
             }
         }
@@ -2761,20 +2829,20 @@ public class GametableFrame extends JFrame implements ActionListener
                 return;
             }
 
-            String name = UtilityFunctions.stitchTogetherWords(words, 1);
-            GametableMap map = m_gametableCanvas.getActiveMap();
-            List pogs = map.m_pogs;
-            StringBuffer buffer = new StringBuffer();
+            final String name = UtilityFunctions.stitchTogetherWords(words, 1);
+            final GametableMap map = m_gametableCanvas.getActiveMap();
+            final List pogs = map.m_pogs;
+            final StringBuffer buffer = new StringBuffer();
             buffer.append("<b><u>Pogs with \'" + name + "\' attribute</u></b><br>");
             int tally = 0;
             for (int i = 0, size = pogs.size(); i < size; ++i)
             {
-                Pog pog = (Pog)pogs.get(i);
-                String value = pog.getAttribute(name);
-                if (value != null && value.length() > 0)
+                final Pog pog = (Pog)pogs.get(i);
+                final String value = pog.getAttribute(name);
+                if ((value != null) && (value.length() > 0))
                 {
                     String pogText = pog.getText();
-                    if (pogText == null || pogText.length() == 0)
+                    if ((pogText == null) || (pogText.length() == 0))
                     {
                         pogText = "&lt;unknown&gt;";
                     }
@@ -2805,14 +2873,14 @@ public class GametableFrame extends JFrame implements ActionListener
             }
 
             // they have a legitimate /tell or /send
-            String toName = words[1];
+            final String toName = words[1];
 
             // see if there is a player or character with that name
             // and note the "proper" name for them (which is their player name)
             Player toPlayer = null;
             for (int i = 0; i < m_players.size(); i++)
             {
-                Player player = (Player)m_players.get(i);
+                final Player player = (Player)m_players.get(i);
                 if (player.hasName(toName))
                 {
                     toPlayer = player;
@@ -2832,8 +2900,8 @@ public class GametableFrame extends JFrame implements ActionListener
             // will have stripped a lot of whitespace if they had multiple spaces, etc.
             // indexOf(toName) will get us to the start of the player name it's being sent to
             // we then add the length of the name to get past that
-            int start = text.indexOf(toName) + toName.length();
-            String toSend = text.substring(start).trim();
+            final int start = text.indexOf(toName) + toName.length();
+            final String toSend = text.substring(start).trim();
 
             tell(toPlayer, toSend);
         }
@@ -2849,12 +2917,12 @@ public class GametableFrame extends JFrame implements ActionListener
             }
 
             // get the portion of the text after the emote command
-            int start = text.indexOf(words[0]) + words[0].length();
-            String emote = text.substring(start).trim();
+            final int start = text.indexOf(words[0]) + words[0].length();
+            final String emote = text.substring(start).trim();
 
             // simply post text that's an emote instead of a character action
-            String toPost = EMOTE_MESSAGE_FONT + UtilityFunctions.emitUserLink(getMyPlayer().getCharacterName()) + " "
-                + emote + END_EMOTE_MESSAGE_FONT;
+            final String toPost = EMOTE_MESSAGE_FONT + UtilityFunctions.emitUserLink(getMyPlayer().getCharacterName())
+                + " " + emote + END_EMOTE_MESSAGE_FONT;
             postMessage(toPost);
         }
         else if (words[0].equals("/as"))
@@ -2869,7 +2937,7 @@ public class GametableFrame extends JFrame implements ActionListener
                 logSystemMessage("Note: Underscore characters in the name you specify will be turned into spaces");
                 return;
             }
-            StringBuffer speakerName = new StringBuffer(words[1]);
+            final StringBuffer speakerName = new StringBuffer(words[1]);
 
             for (int i = 0; i < speakerName.length(); i++)
             {
@@ -2880,11 +2948,11 @@ public class GametableFrame extends JFrame implements ActionListener
             }
 
             // get the portion of the text after the emote command
-            int start = text.indexOf(words[1]) + words[1].length();
-            String toSay = text.substring(start).trim();
+            final int start = text.indexOf(words[1]) + words[1].length();
+            final String toSay = text.substring(start).trim();
 
             // simply post text that's an emote instead of a character action
-            String toPost = EMOTE_MESSAGE_FONT + speakerName + ": "  + END_EMOTE_MESSAGE_FONT + toSay;
+            final String toPost = EMOTE_MESSAGE_FONT + speakerName + ": " + END_EMOTE_MESSAGE_FONT + toSay;
             postMessage(toPost);
         }
         else if (words[0].equals("/goto"))
@@ -2895,8 +2963,8 @@ public class GametableFrame extends JFrame implements ActionListener
                 return;
             }
 
-            String name = UtilityFunctions.stitchTogetherWords(words, 1);
-            Pog pog = m_gametableCanvas.getActiveMap().getPogNamed(name);
+            final String name = UtilityFunctions.stitchTogetherWords(words, 1);
+            final Pog pog = m_gametableCanvas.getActiveMap().getPogNamed(name);
             if (pog == null)
             {
                 logAlertMessage("Unable to find pog named \"" + name + "\".");
@@ -2908,10 +2976,10 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             m_chatLog.clearText();
         }
-        else if ( words[0].equals("/deck"))
+        else if (words[0].equals("/deck"))
         {
-        	// deck commands. there are many
-        	deckCommand(words);
+            // deck commands. there are many
+            deckCommand(words);
         }
         else if (words[0].equals("//") || words[0].equals("/help"))
         {
@@ -2927,543 +2995,477 @@ public class GametableFrame extends JFrame implements ActionListener
                 + "<b>/who:</b> lists connected players<br>" + "<b>//:</b> list all slash commands");
         }
     }
-    
-    public void deckCommand(String[] words)
-    {
-    	// all deck commands go through here.
-    	if ( m_netStatus == NETSTATE_NONE )
-    	{
-        	logAlertMessage("You must be in a session to use /deck commands.");
-        	return;
-    	}
-    	
-    	// words[0] will be "/deck". IF it weren't we wouldn't be here.
-    	if ( words.length < 2 )
-    	{
-    		// they just said "/deck". give them the help text
-    		showDeckUsage();
-            return;
-    	}
-    	
-    	String command = words[1]; 
-    	
-    	if ( command.equals("create"))
-    	{
-        	if ( m_netStatus != NETSTATE_HOST )
-        	{
-            	logAlertMessage("Only the host can create a deck.");
-            	return;
-        	}
-        	
-    		// create a new deck.
-    		if ( words.length < 3 )
-    		{
-    			// not enough parameters
-        		showDeckUsage();
-        		return;
-    		}
-    		
-    		String deckFileName = words[2];
-    		String deckName;
-    		if ( words.length == 3 )
-    		{
-    			// they specified the deck, but not a name. So we
-    			// name it after the type
-    			deckName = deckFileName;
-    		}
-    		else
-    		{
-    			// they specified a name
-    			deckName = words[3];
-    		}
-        	
-        	// if the name is already in use, puke out an error
-        	if ( getDeck(deckName) != null )
-        	{
-            	logAlertMessage("Error - There is already a deck named '"+deckName+"'.");
-            	return;
-        	}
 
-        	// load up the deck
-            DeckData dd = new DeckData();
-            File deckFile = new File("decks" + UtilityFunctions.LOCAL_SEPARATOR + deckFileName + ".xml");
-            boolean result = dd.init(deckFile);
-            
-            if ( !result )
+    public void pingPacketReceived()
+    {
+        // do nothing for now
+    }
+
+    public void playerJoined(final Connection connection, final Player player, final String password)
+    {
+        confirmHost();
+
+        if (!m_password.equals(password))
+        {
+            // rejected!
+            kick(connection, REJECT_INVALID_PASSWORD);
+            return;
+        }
+
+        // now we can associate a player with the connection
+        connection.markLoggedIn();
+        player.setConnection(connection);
+
+        // set their ID
+        player.setId(m_nextPlayerId);
+        m_nextPlayerId++;
+
+        // tell everyone about the new guy
+        postSystemMessage(player.getPlayerName() + " has joined the session");
+        addPlayer(player);
+
+        sendCastInfo();
+
+        // all the undo stacks clear
+        getGametableCanvas().clearUndoStacks();
+
+        // tell the new guy the entire state of the game
+        // lines
+        final LineSegment[] lines = new LineSegment[getGametableCanvas().getPublicMap().getNumLines()];
+        for (int i = 0; i < getGametableCanvas().getPublicMap().getNumLines(); i++)
+        {
+            lines[i] = getGametableCanvas().getPublicMap().getLineAt(i);
+        }
+        send(PacketManager.makeLinesPacket(lines, -1, -1), player);
+
+        // pogs
+        for (int i = 0; i < getGametableCanvas().getPublicMap().getNumPogs(); i++)
+        {
+            final Pog pog = getGametableCanvas().getPublicMap().getPog(i);
+            send(PacketManager.makeAddPogPacket(pog), player);
+        }
+
+        // finally, have the player recenter on the host's view
+        final int viewCenterX = getGametableCanvas().getWidth() / 2;
+        final int viewCenterY = getGametableCanvas().getHeight() / 2;
+
+        // convert to model coordinates
+        final Point modelCenter = getGametableCanvas().viewToModel(viewCenterX, viewCenterY);
+        send(PacketManager.makeRecenterPacket(modelCenter.x, modelCenter.y, getGametableCanvas().m_zoom), player);
+
+        // let them know we're done sending them data from the login
+        send(PacketManager.makeLoginCompletePacket(), player);
+
+        // tell them the decks that are in play
+        sendDeckList();
+    }
+
+    public void pogDataPacketReceived(final int id, final String s, final Map toAdd, final Set toDelete)
+    {
+        getGametableCanvas().doSetPogData(id, s, toAdd, toDelete);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            m_networkThread.send(PacketManager.makePogDataPacket(id, s, toAdd, toDelete));
+        }
+    }
+
+    public void pogReorderPacketReceived(final Map changes)
+    {
+        getGametableCanvas().doPogReorder(changes);
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            m_networkThread.send(PacketManager.makePogReorderPacket(changes));
+        }
+    }
+
+    public void pogSizePacketReceived(final int id, final float size)
+    {
+        getGametableCanvas().doSetPogSize(id, size);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            m_networkThread.send(PacketManager.makePogSizePacket(id, size));
+        }
+    }
+
+    public void pointPacketReceived(final int plrIdx, final int x, final int y, final boolean bPointing)
+    {
+        // we're not interested in point packets of our own hand
+        if (plrIdx != getMyPlayerIndex())
+        {
+            final Player plr = (Player)m_players.get(plrIdx);
+            plr.setPoint(x, y);
+            plr.setPointing(bPointing);
+        }
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            send(PacketManager.makePointPacket(plrIdx, x, y, bPointing));
+        }
+
+        getGametableCanvas().repaint();
+    }
+
+    public void postAlertMessage(final String text)
+    {
+        postMessage(ALERT_MESSAGE_FONT + text + END_ALERT_MESSAGE_FONT);
+    }
+
+    public void postMessage(final String text)
+    {
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if you're the host, push to all players
+            send(PacketManager.makeTextPacket(text));
+
+            // add it to your own text log
+            logMessage(text);
+        }
+        else if (m_netStatus == NETSTATE_JOINED)
+        {
+            // if you're a player, just post it to the GM
+            send(PacketManager.makeTextPacket(text));
+        }
+        else
+        {
+            // if you're offline, just add it to the log
+            logMessage(text);
+        }
+    }
+
+    public void postPrivateMessage(final String fromName, final String toName, final String text)
+    {
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if you're the host, push to the appropriate player(s)
+            for (int i = 0; i < m_players.size(); i++)
             {
-            	logAlertMessage("Could not create the deck.");
-            	return;
+                final Player player = (Player)m_players.get(i);
+                if (player.hasName(toName))
+                {
+                    // send the message to this player
+                    send(PacketManager.makePrivateTextPacket(fromName, toName, text), player);
+                }
             }
 
-            // create a deck and add it
-            Deck deck = new Deck();
-            deck.init(dd, 0, deckName);
-            m_decks.add(deck);
-            
-            
-            // alert all players that this deck has been created
-            sendDeckList();
-            postSystemMessage(getMyPlayer().getPlayerName()+" creates a new "+deckFileName+" deck named "+deckName);
-            
-    	}
-    	else if ( command.equals("destroy"))
-    	{
-        	if ( m_netStatus != NETSTATE_HOST )
-        	{
-            	logAlertMessage("Only the host can destroy a deck.");
-            	return;
-        	}
-        	
-    		if ( words.length < 3 )
-    		{
-    			// they didn't specify a deck
-        		showDeckUsage();
-        		return;
-    		}
-    		
-    		
-    		// remove the deck named words[2]
-    		String deckName = words[2];
-    		int toRemoveIdx = getDeckIdx(deckName);
-    		
-    		if ( toRemoveIdx != -1 )
-    		{
-    			// we can successfully destroy the deck
-    			m_decks.remove(toRemoveIdx);
+            // add it to your own text log if we're the right player
+            if (getMyPlayer().hasName(toName))
+            {
+                logPrivateMessage(fromName, toName, text);
+            }
+        }
+        else if (m_netStatus == NETSTATE_JOINED)
+        {
+            // if you're a player, just post it to the GM
+            send(PacketManager.makePrivateTextPacket(fromName, toName, text));
+        }
+        else
+        {
+            // if you're offline, post it to yourself if you're the
+            // person you sent it to.
+            if (getMyPlayer().hasName(toName))
+            {
+                logPrivateMessage(fromName, toName, text);
+            }
+        }
+    }
 
-    			// tell the players
-        		clearDeck(deckName);
-    			sendDeckList();
-    	        postSystemMessage(getMyPlayer().getPlayerName()+" destroys the deck named "+deckName);
-    		}
-    		else
-    		{
-    			// we couldn't find a deck with that name
-    			logAlertMessage("There is no deck named '"+deckName+"'.");
-    		}
-    	}
-    	else if ( command.equals("shuffle") )
-    	{
-        	if ( m_netStatus != NETSTATE_HOST )
-        	{
-            	logAlertMessage("Only the host can shuffle a deck.");
-            	return;
-        	}
-        	
-        	if ( words.length < 4 )
-        	{
-        		// not enough parameters
-        		showDeckUsage();
-        		return;
-        	}
-        	
-        	String deckName = words[2];
-        	String operation = words[3];
-        	
-        	Deck deck = getDeck(deckName);
-        	if ( deck == null )
-        	{
-    			logAlertMessage("There is no deck named '"+deckName+"'.");
-    			return;
-        	}
-        	
-        	if ( operation.equals("all") )
-        	{
-        		// collect and shuffle all the cards in the deck. 
-        		clearDeck(deckName); // let the other players know about the demise of those cards
-        		deck.shuffleAll();
-    	        postSystemMessage(getMyPlayer().getPlayerName()+" collects all the cards from the "+deckName+" deck from all players and shuffles them.");
-    	        postSystemMessage(deckName+" has "+deck.cardsRemaining()+" cards.");
-        	}
-        	else if ( operation.equals("discards") )
-        	{
-        		// shuffle only the cards in the discard pile. 
-        		deck.shuffle();
-    	        postSystemMessage(getMyPlayer().getPlayerName()+" shuffles the discards back into the "+deckName+" deck.");
-    	        postSystemMessage(deckName+" has "+deck.cardsRemaining()+" cards.");
-        	}
-        	else
-        	{
-        		// the shuffle operation is illegal
-        		logAlertMessage("'"+operation+"' is not a valid type of shuffle. This parameter must be either 'all' or 'discards'.");
-        		return;
-        	}
-    	}
-    	else if ( command.equals("draw") )
-    	{
-    		// before chesking net status we check to see if the draw command was 
-    		// legally done
-    		if ( words.length < 3 )
-    		{
-    			// not enough parameters
-    			showDeckUsage();
-    			return;
-    		}
-    		
-    		// ensure that desired deck exists -- this will work even if we're not the 
-    		// host. Because we'll have "dummy" decks in place to track the names
-    		String deckName = words[2];
-    		Deck deck = getDeck(deckName);
-    		if ( deck == null )
-    		{
-    			// that deck doesn't exist
-    			logAlertMessage("There is no deck named '"+deckName+"'.");
-    			return;
-    		}
-    		
-    		int numToDraw = 1;
-    		// they optionally can specify a number of cards to draw
-    		if ( words.length >= 4 )
-    		{
-    			// numToDrawStr is never used.
-                // String numToDrawStr = words[3];
+    public void postSystemMessage(final String text)
+    {
+        postMessage(SYSTEM_MESSAGE_FONT + text + END_SYSTEM_MESSAGE_FONT);
+    }
 
-    			// note the number of cards to draw
-    			try 
-				{ 
-    				numToDraw = Integer.parseInt(words[3]);
-    				if ( numToDraw <= 0 )
-    				{
-    					// not allowed
-    					throw new Exception();
-    				}
-    			} 
-    			catch ( Exception e )
-				{
-    				// it's ok not to specify a number of cards to draw. It's not
-    				// ok to put garbage in that field
-                	logAlertMessage("'"+words[3]+"' is not a valid number of cards to draw");
-    			}
-    		}
+    public void privateTextPacketReceived(final String fromName, final String toName, final String text)
+    {
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if you're the host, push to all players
+            postPrivateMessage(fromName, toName, text);
+        }
+        else
+        {
+            // otherwise, just add it
+            logPrivateMessage(fromName, toName, text);
+        }
+    }
 
-    		drawCards(deckName, numToDraw);
-    	}
-    	else if ( command.equals("hand") )
-    	{
-    		if ( m_cards.size() == 0 )
-    		{
-    			logSystemMessage("You have no cards");
-    			return;
-    		}
-    		
-    		// show them their hand
-			logSystemMessage("You have "+m_cards.size()+" cards:");
-    		for ( int i=0 ; i<m_cards.size() ; i++ )
-    		{
-    			int cardIdx = i+1;
-    			DeckData.Card card = (DeckData.Card)m_cards.get(i); 
-       			String toPost = ""+cardIdx+": "+card.m_cardName+" ("+card.m_deckName+")";
-       			logSystemMessage(toPost);
-    		}
-    	}
-    	else if ( command.equals("discard") )
-    	{
-    		// discard the nth card from your hand
-    		// 1-indexed
-    		if ( words.length < 3 )
-    		{
-    			// note enough parameters
-    			showDeckUsage();
-    			return;
-    		}
+    /**
+     * Reacquires pogs and then refreshes the pog list.
+     */
+    public void reacquirePogs()
+    {
+        m_pogLibrary.acquirePogs();
+        refreshPogList();
+    }
 
-    		String param = words[2];
-    		
-    		// the parameter can be "all" or a number
-    		DeckData.Card discards[];
-    		if ( param.equals("all") )
-    		{
-    			// discard all cards
-    			discards = new DeckData.Card[m_cards.size()];
-    			
-    			for ( int i=0 ; i<discards.length ; i++ )
-    			{
-    				discards[i] = (DeckData.Card)m_cards.get(i);
-    			}
-    		}
-    		else
-    		{
-    			// discard the specified card
-    			int idx = -1;
-    			try
-				{
-    				idx = Integer.parseInt(param);
-    				idx--; // make it 0-indexed
-    				
-    				if ( idx < 0 )
-    				{
-    					throw new Exception();
-    				}
-    				
-    				if ( idx >= m_cards.size() )
-    				{
-    					throw new Exception();
-    				}
-				}
-    			catch ( Exception e )
-				{
-    				// they put in some illegal value for the param
-    				logAlertMessage("There is no card '"+param+"'.");
-    				return;
-				}
-    			discards = new DeckData.Card[1];
-    			discards[0] = (DeckData.Card)m_cards.get(idx);
-    		}
-    		
-    		// now we have the discards[] filled with the cards to be
-    		// removed
-    		discardCards(discards);
-    	}
-    	else if ( command.equals("decklist") )
-    	{
-    		// list off the decks
-    		// we keep "dummy" decks for joiners,
-    		// so either a host of a joiner is safe to use this code:
-    		if ( m_decks.size() == 0 )
-    		{
-    			logSystemMessage("There are no decks");
-    			return;
-    		}
-    		
-			logSystemMessage("There are "+m_decks.size()+" decks");
-    		for ( int i=0 ; i<m_decks.size() ; i++ )
-    		{
-    			Deck deck = (Deck)m_decks.get(i);
-    			logSystemMessage("---"+deck.m_name);
-    		}
-    	}
-    	else
-    	{
-    		// they selected a deck command that doesn't exist
-    		showDeckUsage();
-    	}
-    }
-    
-    public void drawCards(String deckName, int numToDraw)
+    public void receiveCards(final DeckData.Card cards[])
     {
-    	if ( m_netStatus == NETSTATE_JOINED )
-    	{
-    		// joiners send a request for cards
-        	send(PacketManager.makeRequestCardsPacket(deckName, numToDraw));
-    		return;
-    	}
-    	
-    	// if we're here, we're the host. So we simply draw the cards
-    	// and give it to ourselves.
-    	DeckData.Card drawnCards[] = getCards(deckName, numToDraw);
-    	if ( drawnCards != null )
-    	{
-    		receiveCards(drawnCards);
-    		
-    		// also, we need to add the desired cards to our own private layer
-    		for ( int i=0 ; i<drawnCards.length ; i++ )
-    		{
-    			Pog cardPog = makeCardPog(drawnCards[i]);
-    			if ( cardPog != null )
-    			{
-    				// add this pog card to our own private layer
-    				m_gametableCanvas.addCardPog(cardPog);
-    			}
-    		}
-    	}
+        if (cards.length == 0)
+        {
+            // drew 0 cards. Ignore.
+            return;
+        }
+
+        // all of these cards get added to your hand
+        for (int i = 0; i < cards.length; i++)
+        {
+            m_cards.add(cards[i]);
+            final String toPost = "You drew: " + cards[i].m_cardName + " (" + cards[i].m_deckName + ")";
+            logSystemMessage(toPost);
+        }
+
+        // make sure we're on the private layer
+        if (m_gametableCanvas.getActiveMap() != m_gametableCanvas.getPrivateMap())
+        {
+            // we call toggleLayer rather than setActiveMap because
+            // toggleLayer cleanly deals with drags in action and other
+            // interrupted actions.
+            toggleLayer();
+        }
+
+        // tell everyone that you drew some cards
+        if (cards.length == 1)
+        {
+            postSystemMessage(getMyPlayer().getPlayerName() + " draws from the " + cards[0].m_deckName + " deck.");
+        }
+        else
+        {
+            postSystemMessage(getMyPlayer().getPlayerName() + " draws " + cards.length + " cards from the "
+                + cards[0].m_deckName + " deck.");
+        }
+
     }
-    
-    public void discardCards(DeckData.Card discards[])
+
+    public void recenterPacketReceived(final int x, final int y, final int zoom)
     {
-		if ( m_netStatus == NETSTATE_JOINED )
-		{
-			// send off the discard packet
-			send(PacketManager.makeDiscardCardsPacket(getMyPlayer().getPlayerName(), discards));
-		}
-		else if ( m_netStatus == NETSTATE_HOST )
-		{
-			doDiscardCards(getMyPlayer().getPlayerName(), discards);
-		}
-		
-		// and in either case, we remove the cards from ourselves.
-		for ( int i=0 ; i<m_cards.size() ; i++ )
-		{
-			DeckData.Card handCard = (DeckData.Card)m_cards.get(i);
-			for ( int j=0 ; j<discards.length ; j++ )
-			{
-				if (handCard.equals(discards[j]))
-				{
-					// we need to dump this card
-					m_cards.remove(i);
-					i--; // to keep up with the iteration
-					break;
-				}
-			}
-		}
+        getGametableCanvas().doRecenterView(x, y, zoom);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            m_networkThread.send(PacketManager.makeRecenterPacket(x, y, zoom));
+        }
     }
-    
-    public void doDiscardCards(String playerName, DeckData.Card discards[])
+
+    public void redoPacketReceived(final int stateID)
     {
-    	if ( discards.length == 0 )
-    	{
-    		// this shouldn't happen, but let's not freak out.
-    		return;
-    	}
-    	
-    	// only the hose should get this
-    	if ( m_netStatus != NETSTATE_HOST )
-    	{
-    		throw new IllegalStateException("doDiscardCards should only be done by the host.");
-    	}
-    	
-    	// tell the decks about the discarded cards
-    	for ( int i=0 ; i<discards.length ; i++ )
-    	{
-    		String deckName = discards[i].m_deckName;
-    		Deck deck = getDeck(deckName);
-    		if ( deck == null )
-    		{
-    			// don't panic. Just ignore it. It probably means
-    			// a player discarded a card right as the host deleted the deck
-    		}
-    		else
-    		{
-    			deck.discard(discards[i]);
-    		}
-    	}
-    	
-    	// finally, remove any card pogs that are hanging around based on these cards
-    	m_gametableCanvas.removeCardPogsForCards(discards);
-    	
-    	// tell everyone about the cards that got discarded
-    	if ( discards.length == 1 )
-    	{
-    		postSystemMessage(playerName+" discards: "+discards[0].m_cardName);
-    	}
-    	else 
-    	{
-    		postSystemMessage(playerName+" discards "+discards.length+" cards.");
-    		for ( int i=0 ; i<discards.length ; i++ )
-    		{
-        		postSystemMessage("---"+discards[i].m_cardName);
-    		}
-    	}
+        getGametableCanvas().doRedo(stateID);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if we're the host, send it to the clients
+            send(PacketManager.makeRedoPacket(stateID));
+        }
+
+        repaint();
     }
-    
-    // when called, all the cards you had from a give deck disappear
-    public void clearDeck(String deckName)
+
+    /**
+     * Reacquires pogs and then refreshes the pog list.
+     */
+    public void refreshActivePogList()
     {
-    	// if you're the host, send out the packet to tell everyone to
-    	// clear their decks. If you're a joiner, don't. Either way
-    	// clear out your own hand of the offending cards
-    	if ( m_netStatus == NETSTATE_HOST )
-    	{
-    		send(PacketManager.makeClearDeckPacket(deckName));
-    	}
-    	
-    	for ( int i=0 ; i<m_cards.size() ; i++ )
-    	{
-    		DeckData.Card card = (DeckData.Card)m_cards.get(i);
-    		if ( card.m_deckName.equals(deckName))
-    		{
-    			// this card has to go.
-    			m_cards.remove(i);
-    			i--; // to keep up with the changed list
-    		}
-   		}
+        m_activePogsPanel.refresh();
     }
-    
-    public Deck getDeck(String name)
+
+    /**
+     * Refreshes the pog list.
+     */
+    public void refreshPogList()
     {
-    	int idx = getDeckIdx(name);
-    	if ( idx == -1 )
-    	{
-    		return null;
-    	}
-    	// Doesn't get here if idx == -1; no need for else
-    	// else
-    	{
-    		Deck d = (Deck)m_decks.get(idx);
-    		return d;
-    	}
+        m_pogPanel.populateChildren();
+        getGametableCanvas().repaint();
     }
-    
-    public int getDeckIdx(String name)
+
+    public void rejectPacketReceived(final int reason)
     {
-		for ( int i=0 ; i<m_decks.size() ; i++ )
-		{
-			Deck d = (Deck)m_decks.get(i);
-			if ( d.m_name.equals(name) )
-			{
-				return i;
-			}
-		}
-		return -1;
+        confirmJoined();
+
+        // you got rejected!
+        switch (reason)
+        {
+            case REJECT_INVALID_PASSWORD:
+            {
+                logAlertMessage("Invalid Password. Connection refused.");
+            }
+            break;
+
+            case REJECT_VERSION_MISMATCH:
+            {
+                logAlertMessage("The host is using a different version of the Gametable network protocol."
+                    + " Connection aborted.");
+            }
+            break;
+        }
+        disconnect();
     }
-    
-    public DeckData.Card[] getCards(String deckName, int numCards)
+
+    public void removeMacro(final DiceMacro dm)
     {
-    	// get the deck
-    	Deck deck = getDeck(deckName);
-    	if ( deck == null )
-    	{
-    		// the deck doesn't exist. There are various ways this could happen,
-    		// mostly due to split-second race conditions where the host deletes the deck while
-    		// a card request was incoming. We just return null in this edge case.
-    		return null;
-    	}
-    	
-    	if ( numCards <= 0 )
-    	{
-    		// invalid
-    		throw new IllegalArgumentException("drawCards: "+numCards);
-    	}
-    	
-    	// We can't draw more cards than there are 
-    	int remain = deck.cardsRemaining();
-    	if ( numCards > remain )
-    	{
-    		numCards = remain;
-    	}
-    	
-    	// make the return value
-    	DeckData.Card ret[] = new DeckData.Card[numCards];
-    	
-    	// draw the cards
-    	for ( int i=0 ; i<numCards ; i++ )
-    	{
-    		ret[i] = deck.drawCard();
-    	}
-    	
-    	// now that the cards are drawn, check the deck status
-    	if ( deck.cardsRemaining() == 0 )
-    	{
-    		// no more cards in the deck, alert them
-	        postSystemMessage("The "+deckName+" deck is out of cards.");
-    	}
-    	
-    	return ret;
+        removeMacroForced(dm);
+        m_macroPanel.refreshMacroList();
     }
-    
-    public void showDeckUsage()
+
+    public void removeMacro(final String name)
     {
-        logSystemMessage("/deck usage: ");
-        logSystemMessage("---/deck create [decktype] [deckname]: create a new deck. [decktype] is the name of a deck in the decks directory. It will be named [deckname]");
-        logSystemMessage("---/deck destroy [deckname]: remove the specified deck from the session.");
-        logSystemMessage("---/deck shuffle [deckname] ['all' or 'discards']: shuffle cards back in to the deck.");
-        logSystemMessage("---/deck draw [deckname] [number]: draw [number] cards from the specified deck.");
-        logSystemMessage("---/deck hand [deckname]: List off the cards (and their ids) you have from the specified deck.");
-        logSystemMessage("---/deck /discard [cardID]: Discard a card. A card's ID can be seen by using /hand.");
-        logSystemMessage("---/deck /discard all: Discard all cards that you have.");
-        logSystemMessage("---/deck decklist: Lists all the decks in play.");
+        removeMacroForced(name);
+        m_macroPanel.refreshMacroList();
     }
-    
-    void sendDeckList()
+
+    private void removeMacroForced(final DiceMacro macro)
     {
-        send(PacketManager.makeDeckListPacket(m_decks));
+        final String name = UtilityFunctions.normalizeName(macro.getName());
+        m_macroMap.remove(name);
+    }
+
+    private void removeMacroForced(final String name)
+    {
+        final DiceMacro macro = getMacro(name);
+        if (macro != null)
+        {
+            removeMacroForced(macro);
+        }
+    }
+
+    public void removePogsPacketReceived(final int ids[])
+    {
+        getGametableCanvas().doRemovePogs(ids, false);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if we're the host, send it to the clients
+            send(PacketManager.makeRemovePogsPacket(ids));
+        }
+    }
+
+    public void requestCardsPacketReceived(final Connection conn, final String deckName, final int numCards)
+    {
+        if (m_netStatus != NETSTATE_HOST)
+        {
+            // this shouldn't happen
+            throw new IllegalStateException("Non-host had a call to requestCardsPacketReceived");
+        }
+        // the player at conn wants some cards
+        final DeckData.Card cards[] = getCards(deckName, numCards);
+
+        if (cards == null)
+        {
+            // there was a problem. Probably a race-condition thaty caused a
+            // card request to get in after a deck was deleted. Just ignore this
+            // packet.
+            return;
+        }
+
+        // send that player his cards
+        send(PacketManager.makeReceiveCardsPacket(cards), conn);
+
+        // also, we need to send that player the pogs for each of those cards
+        for (int i = 0; i < cards.length; i++)
+        {
+            final Pog newPog = makeCardPog(cards[i]);
+            newPog.assignUniqueId();
+
+            if (newPog != null)
+            {
+                // make a pog packet, saying this pog should go to the PRIVATE LAYER,
+                // then send it to that player. Note that we don't add it to
+                // our own layer.
+                send(PacketManager.makeAddPogPacket(newPog, false), conn);
+            }
+        }
+    }
+
+    public void rotatePogPacketReceived(final int id, final double newAngle)
+    {
+        getGametableCanvas().doRotatePog(id, newAngle);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if we're the host, send it to the clients
+            send(PacketManager.makeRotatePogPacket(id, newAngle));
+        }
+    }
+
+    public boolean runHostDialog()
+    {
+        final JoinDialog dialog = new JoinDialog();
+        dialog.setUpForHostDlg();
+        dialog.setLocationRelativeTo(m_gametableCanvas);
+        dialog.setVisible(true);
+
+        if (!dialog.m_bAccepted)
+        {
+            // they cancelled out
+            return false;
+        }
+        return true;
+    }
+
+    private boolean runJoinDialog()
+    {
+        final JoinDialog dialog = new JoinDialog();
+        dialog.setLocationRelativeTo(m_gametableCanvas);
+        dialog.setVisible(true);
+
+        if (!dialog.m_bAccepted)
+        {
+            // they cancelled out
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 
+     */
+    private void saveAll()
+    {
+        saveState(getGametableCanvas().getPublicMap(), new File("autosave.grm"));
+        saveState(getGametableCanvas().getPrivateMap(), new File("autosavepvt.grm"));
+        savePrefs();
+    }
+
+    public void saveMacros()
+    {
+        final File oldFile = m_actingFileMacros;
+        m_actingFileMacros = UtilityFunctions.doFileSaveDialog("Save As", "xml", true);
+        if (m_actingFileMacros == null)
+        {
+            m_actingFileMacros = oldFile;
+            return;
+        }
+
+        try
+        {
+            saveMacros(m_actingFileMacros);
+            logSystemMessage("Wrote macros to " + m_actingFileMacros.getPath());
+        }
+        catch (final IOException ioe)
+        {
+            Log.log(Log.SYS, ioe);
+        }
+    }
+
+    public void saveMacros(final File file) throws IOException
+    {
+        final XmlSerializer out = new XmlSerializer();
+        out.startDocument(new BufferedWriter(new FileWriter(file)));
+        out.startElement(DiceMacroSaxHandler.ELEMENT_DICE_MACROS);
+        for (final Iterator iterator = m_macroMap.values().iterator(); iterator.hasNext();)
+        {
+            final DiceMacro macro = (DiceMacro)iterator.next();
+            macro.serialize(out);
+        }
+        out.endElement();
+        out.endDocument();
     }
 
     public void savePrefs()
     {
         try
         {
-            FileOutputStream prefFile = new FileOutputStream("prefs.prf");
-            DataOutputStream prefDos = new DataOutputStream(prefFile);
+            final FileOutputStream prefFile = new FileOutputStream("prefs.prf");
+            final DataOutputStream prefDos = new DataOutputStream(prefFile);
 
             prefDos.writeUTF(m_playerName);
             prefDos.writeUTF(m_characterName);
@@ -3492,146 +3494,51 @@ public class GametableFrame extends JFrame implements ActionListener
 
             saveMacros(m_actingFileMacros);
         }
-        catch (FileNotFoundException ex1)
+        catch (final FileNotFoundException ex1)
         {
             Log.log(Log.SYS, ex1);
         }
-        catch (IOException ex1)
+        catch (final IOException ex1)
         {
             Log.log(Log.SYS, ex1);
         }
     }
 
-    public void loadPrefs()
-    {
-        File file = new File("prefs.prf");
-        if (!file.exists())
-        {
-            // DEFAULTS
-            m_mapChatSplitPane.setDividerLocation(0.7);
-            m_mapPogSplitPane.setDividerLocation(150);
-            m_windowSize = new Dimension(800, 600);
-            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-            m_windowPos = new Point((screenSize.width - m_windowSize.width) / 2,
-                (screenSize.height - m_windowSize.height) / 2);
-            m_bMaximized = false;
-            applyWindowInfo();
-            addMacro("d20", "d20");
-            m_showNamesCheckbox.setSelected(false);
-            m_actingFileMacros = new File("macros.xml");
-            try
-            {
-                loadMacros(m_actingFileMacros);
-            }
-            catch (SAXException se)
-            {
-                Log.log(Log.SYS, se);
-            }
-            return;
-        }
-
-        try
-        {
-            FileInputStream prefFile = new FileInputStream(file);
-            DataInputStream prefDis = new DataInputStream(prefFile);
-
-            m_playerName = prefDis.readUTF();
-            m_characterName = prefDis.readUTF();
-            m_ipAddress = prefDis.readUTF();
-            m_port = prefDis.readInt();
-            m_password = prefDis.readUTF();
-            getGametableCanvas().setPrimaryScroll(getGametableCanvas().getPublicMap(), prefDis.readInt(),
-                prefDis.readInt());
-            getGametableCanvas().setZoom(prefDis.readInt());
-
-            m_windowSize = new Dimension(prefDis.readInt(), prefDis.readInt());
-            m_windowPos = new Point(prefDis.readInt(), prefDis.readInt());
-            m_bMaximized = prefDis.readBoolean();
-            applyWindowInfo();
-
-            // divider locations
-            m_mapChatSplitPane.setDividerLocation(prefDis.readInt());
-            m_mapPogSplitPane.setDividerLocation(prefDis.readInt());
-
-            m_actingFileMacros = new File(prefDis.readUTF());
-            m_showNamesCheckbox.setSelected(prefDis.readBoolean());
-
-            prefDis.close();
-            prefFile.close();
-        }
-        catch (FileNotFoundException ex1)
-        {
-            Log.log(Log.SYS, ex1);
-        }
-        catch (IOException ex1)
-        {
-            Log.log(Log.SYS, ex1);
-        }
-
-        try
-        {
-            loadMacros(m_actingFileMacros);
-        }
-        catch (SAXException se)
-        {
-            Log.log(Log.SYS, se);
-        }
-    }
-
-    /**
-     * Updates the frame size and position based on the preferences stored.
-     */
-    public void applyWindowInfo()
-    {
-        Point locCopy = new Point(m_windowPos);
-        setSize(m_windowSize);
-        m_windowPos = locCopy;
-        setLocation(locCopy);
-        if (m_bMaximized)
-        {
-            setExtendedState(MAXIMIZED_BOTH);
-        }
-        else
-        {
-            setExtendedState(NORMAL);
-        }
-    }
-
-    public void saveState(GametableMap mapToSave, File file)
+    public void saveState(final GametableMap mapToSave, final File file)
     {
         // save out all our data. The best way to do this is with packets, cause they're
         // already designed to pass data around.
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final DataOutputStream dos = new DataOutputStream(baos);
 
         try
         {
-            LineSegment[] lines = new LineSegment[mapToSave.getNumLines()];
+            final LineSegment[] lines = new LineSegment[mapToSave.getNumLines()];
             for (int i = 0; i < mapToSave.getNumLines(); i++)
             {
                 lines[i] = mapToSave.getLineAt(i);
             }
-            byte[] linesPacket = PacketManager.makeLinesPacket(lines, -1, -1);
+            final byte[] linesPacket = PacketManager.makeLinesPacket(lines, -1, -1);
             dos.writeInt(linesPacket.length);
             dos.write(linesPacket);
 
             // pogs
             for (int i = 0; i < mapToSave.getNumPogs(); i++)
             {
-                Pog pog = mapToSave.getPog(i);
-                byte[] pogsPacket = PacketManager.makeAddPogPacket(pog);
+                final Pog pog = mapToSave.getPog(i);
+                final byte[] pogsPacket = PacketManager.makeAddPogPacket(pog);
                 dos.writeInt(pogsPacket.length);
                 dos.write(pogsPacket);
             }
 
             // grid state
-            byte gridModePacket[] = PacketManager.makeGridModePacket(getGametableCanvas().getGridModeId());
+            final byte gridModePacket[] = PacketManager.makeGridModePacket(getGametableCanvas().getGridModeId());
             dos.writeInt(gridModePacket.length);
             dos.write(gridModePacket);
 
-            byte[] saveFileData = baos.toByteArray();
-            FileOutputStream output = new FileOutputStream(file);
-            DataOutputStream fileOut = new DataOutputStream(output);
+            final byte[] saveFileData = baos.toByteArray();
+            final FileOutputStream output = new FileOutputStream(file);
+            final DataOutputStream fileOut = new DataOutputStream(output);
             fileOut.writeInt(COMM_VERSION);
             fileOut.writeInt(saveFileData.length);
             fileOut.write(saveFileData);
@@ -3640,168 +3547,138 @@ public class GametableFrame extends JFrame implements ActionListener
             baos.close();
             dos.close();
         }
-        catch (IOException ex)
+        catch (final IOException ex)
         {
             Log.log(Log.SYS, ex);
             // failed to save. give up
         }
     }
 
-    public void loadState(File file)
+    /**
+     * Sends a public message to all players.
+     * 
+     * @param text Message to send.
+     */
+    public void say(final String text)
     {
-        if (!file.exists())
+        postMessage(SAY_MESSAGE_FONT + UtilityFunctions.emitUserLink(getMyPlayer().getCharacterName()) + ": "
+            + END_SAY_MESSAGE_FONT + text);
+    }
+
+    public void send(final byte[] packet)
+    {
+        if (m_networkThread != null)
+        {
+            m_networkThread.send(packet);
+        }
+    }
+
+    public void send(final byte[] packet, final Connection connection)
+    {
+        if (m_networkThread != null)
+        {
+            m_networkThread.send(packet, connection);
+        }
+    }
+
+    public void send(final byte[] packet, final Player player)
+    {
+        if (player.getConnection() == null)
         {
             return;
         }
+        send(packet, player.getConnection());
+    }
 
-        try
+    public void sendCastInfo()
+    {
+        // and we have to push this data out to everyone
+        for (int i = 0; i < m_players.size(); i++)
         {
-            FileInputStream input = new FileInputStream(file);
-            DataInputStream infile = new DataInputStream(input);
-
-            // get the big hunk o daya
-            int ver = infile.readInt();
-            if (ver != COMM_VERSION)
-            {
-                // wrong version
-                throw new IOException("Invalid save file version.");
-            }
-
-            int len = infile.readInt();
-            byte[] saveFileData = new byte[len];
-            infile.read(saveFileData);
-
-            PacketSourceState.beginFileLoad();
-            loadState(saveFileData);
-            PacketSourceState.endFileLoad();
-
-            input.close();
-            infile.close();
-        }
-        catch (FileNotFoundException ex)
-        {
-            Log.log(Log.SYS, ex);
-        }
-        catch (IOException ex)
-        {
-            Log.log(Log.SYS, ex);
+            final Player recipient = (Player)m_players.get(i);
+            final byte[] castPacket = PacketManager.makeCastPacket(recipient);
+            send(castPacket, recipient);
         }
     }
 
-    public void loadStateFromRawFileData(byte rawFileData[])
+    void sendDeckList()
     {
-        byte saveFileData[] = new byte[rawFileData.length - 8]; // a new array that lacks the first
-        // int
-        System.arraycopy(rawFileData, 8, saveFileData, 0, saveFileData.length);
-        loadState(saveFileData);
+        send(PacketManager.makeDeckListPacket(m_decks));
     }
 
-    public void loadState(byte saveFileData[])
+    public void setToolSelected(final int toolId)
     {
-        // let it know we're receiving initial data (which we are. Just fro ma file instead of the host)
-        try
-        {
-            // now we have to pick out the packets and send them in for processing one at a time
-            DataInputStream walker = new DataInputStream(new ByteArrayInputStream(saveFileData));
-            int read = 0;
-            int packetNum = 0;
-            while (read < saveFileData.length)
-            {
-                int packetLen = walker.readInt();
-                read += 4;
-
-                byte[] packet = new byte[packetLen];
-                walker.read(packet);
-                read += packetLen;
-
-                // dispatch the packet
-                PacketManager.readPacket(null, packet);
-                packetNum++;
-            }
-        }
-        catch (FileNotFoundException ex)
-        {
-            Log.log(Log.SYS, ex);
-        }
-        catch (IOException ex)
-        {
-            Log.log(Log.SYS, ex);
-        }
-
-        repaint();
-        refreshPogList();
+        m_toolButtons[toolId].setSelected(true);
     }
-    
-    public void updateStatus()
-    {
-        switch (m_netStatus) {
-            case NETSTATE_NONE:
-            {
-                m_status.setText(" Disconnected");
-            }
-            break;
-            
-            case NETSTATE_JOINED:
-            {
-                m_status.setText(" Connected: ");
-            }
-            break;
 
-            case NETSTATE_HOST:
-            {
-                m_status.setText(" Hosting: ");
-            }
-            break;
-            
-            default:
-            {
-                m_status.setText(" Unknown state; ");
-            }
-            break;
-        }
-        
-        if (m_netStatus != NETSTATE_NONE)
+    public boolean shouldShowNames()
+    {
+        return m_showNamesCheckbox.isSelected();
+    }
+
+    public void showDeckUsage()
+    {
+        logSystemMessage("/deck usage: ");
+        logSystemMessage("---/deck create [decktype] [deckname]: create a new deck. [decktype] is the name of a deck in the decks directory. It will be named [deckname]");
+        logSystemMessage("---/deck destroy [deckname]: remove the specified deck from the session.");
+        logSystemMessage("---/deck shuffle [deckname] ['all' or 'discards']: shuffle cards back in to the deck.");
+        logSystemMessage("---/deck draw [deckname] [number]: draw [number] cards from the specified deck.");
+        logSystemMessage("---/deck hand [deckname]: List off the cards (and their ids) you have from the specified deck.");
+        logSystemMessage("---/deck /discard [cardID]: Discard a card. A card's ID can be seen by using /hand.");
+        logSystemMessage("---/deck /discard all: Discard all cards that you have.");
+        logSystemMessage("---/deck decklist: Lists all the decks in play.");
+    }
+
+    public void startTellTo(final String name)
+    {
+        m_textEntry.setText("/tell " + name + "<b> </b>");
+        m_textEntry.requestFocus();
+        m_textEntry.toggleStyle("bold");
+        m_textEntry.toggleStyle("bold");
+    }
+
+    /**
+     * Sends a private message to the target player.
+     * 
+     * @param target Player to address message to.
+     * @param text Message to send.
+     */
+    public void tell(final Player target, final String text)
+    {
+        if (target.getId() == getMyPlayer().getId())
         {
-            m_status.setText(m_status.getText() + m_players.size() + " player"
-                    + (m_players.size() == 1 ? "" : "s") + " connected. ");
-            switch (m_typing.size())
-            {
-                case 0:
-                {}
-                break;
-                
-                case 1:
-                {
-                    m_status.setText(m_status.getText() + m_typing.get(0)
-                            + " is typing.");
-                }
-                break;
-                
-                case 2:
-                {
-                    m_status.setText(m_status.getText() + m_typing.get(0)
-                            + " and " + m_typing.get(1) + " are typing.");
-                }
-                break;
-                
-                default:
-                {
-                    for (int i = 0; i < m_typing.size() - 1; i++)
-                    {
-                        m_status.setText(m_status.getText() + m_typing.get(i)
-                                + ", ");
-                    }
-                    m_status.setText(m_status.getText() + " and "
-                            + m_typing.get(m_typing.size() - 1)
-                            + " are typing.");
-                }
-            }
+            m_chatLog.addText(PRIVATE_MESSAGE_FONT + "You tell yourself: " + END_PRIVATE_MESSAGE_FONT + text);
+            return;
+        }
+
+        final String fromName = getMyPlayer().getCharacterName();
+        final String toName = target.getCharacterName();
+
+        postPrivateMessage(fromName, toName, text);
+
+        // and when you post a private message, you get told about it in your
+        // own chat log
+        m_chatLog.addText(PRIVATE_MESSAGE_FONT + "You tell " + UtilityFunctions.emitUserLink(toName) + ": "
+            + END_PRIVATE_MESSAGE_FONT + text);
+    }
+
+    public void textPacketReceived(final String text)
+    {
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if you're the host, push to all players
+            postMessage(text);
+        }
+        else
+        {
+            // otherwise, just add it
+            logMessage(text);
         }
     }
 
     private void tick()
     {
-        long now = System.currentTimeMillis();
+        final long now = System.currentTimeMillis();
         long diff = now - m_lastTickTime;
         if (m_lastTickTime == 0)
         {
@@ -3811,25 +3688,25 @@ public class GametableFrame extends JFrame implements ActionListener
         tick(diff);
     }
 
-    private void tick(long ms)
+    private void tick(final long ms)
     {
         // System.out.println("tick(" + ms + ")");
-        NetworkThread thread = m_networkThread;
+        final NetworkThread thread = m_networkThread;
         if (thread != null)
         {
-            Set lostConnections = thread.getLostConnections();
+            final Set lostConnections = thread.getLostConnections();
             Iterator iterator = lostConnections.iterator();
             while (iterator.hasNext())
             {
-                Connection connection = (Connection)iterator.next();
+                final Connection connection = (Connection)iterator.next();
                 connectionDropped(connection);
             }
 
-            List packets = thread.getPackets();
+            final List packets = thread.getPackets();
             iterator = packets.iterator();
             while (iterator.hasNext())
             {
-                Packet packet = (Packet)iterator.next();
+                final Packet packet = (Packet)iterator.next();
                 packetReceived(packet.getSource(), packet.getData());
             }
 
@@ -3847,32 +3724,178 @@ public class GametableFrame extends JFrame implements ActionListener
         m_gametableCanvas.tick(ms);
     }
 
-    private void initializeExecutorThread()
+    /**
+     * Toggles between the two layers.
+     */
+    public void toggleLayer()
     {
-        if (m_executorThread != null)
+        // toggle the map we're on
+        if (getGametableCanvas().isPublicMap())
         {
-            m_executorThread.interrupt();
-            m_executorThread = null;
+            getGametableCanvas().setActiveMap(getGametableCanvas().getPrivateMap());
+        }
+        else
+        {
+            getGametableCanvas().setActiveMap(getGametableCanvas().getPublicMap());
         }
 
-        // start the poll thread
-        m_executorThread = new PeriodicExecutorThread(new Runnable()
+        // if they toggled the layer, whatever tool they're using is cancelled
+        getToolManager().cancelToolAction();
+        getGametableCanvas().requestFocus();
+        refreshActivePogList();
+        repaint();
+    }
+
+    public void typingPacketReceived(final String playerName, final boolean typing)
+    {
+        if (typing)
         {
-            public void run()
+            m_typing.add(playerName);
+        }
+        else
+        {
+            m_typing.remove(playerName);
+        }
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            send(PacketManager.makeTypingPacket(playerName, typing));
+        }
+    }
+
+    public void undoPacketReceived(final int stateID)
+    {
+        getGametableCanvas().doUndo(stateID);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if we're the host, send it to the clients
+            send(PacketManager.makeUndoPacket(stateID));
+        }
+
+        repaint();
+    }
+
+    public void updateCast(final Player[] players, final int ourIdx)
+    {
+        // you should only get this if you're a joiner
+        confirmJoined();
+
+        // set up the current cast
+        m_players = new ArrayList();
+        for (int i = 0; i < players.length; i++)
+        {
+            addPlayer(players[i]);
+        }
+
+        m_myPlayerIndex = ourIdx;
+
+        // any time the cast changes, all the undo stacks clear
+        getGametableCanvas().clearUndoStacks();
+    }
+
+    public void updateGridModeMenu()
+    {
+        if (getGametableCanvas().m_gridMode == getGametableCanvas().m_noGridMode)
+        {
+            m_noGridModeMenuItem.setState(true);
+            m_squareGridModeMenuItem.setState(false);
+            m_hexGridModeMenuItem.setState(false);
+        }
+        else if (getGametableCanvas().m_gridMode == getGametableCanvas().m_squareGridMode)
+        {
+            m_noGridModeMenuItem.setState(false);
+            m_squareGridModeMenuItem.setState(true);
+            m_hexGridModeMenuItem.setState(false);
+        }
+        else if (getGametableCanvas().m_gridMode == getGametableCanvas().m_hexGridMode)
+        {
+            m_noGridModeMenuItem.setState(false);
+            m_squareGridModeMenuItem.setState(false);
+            m_hexGridModeMenuItem.setState(true);
+        }
+    }
+
+    public void updateStatus()
+    {
+        switch (m_netStatus)
+        {
+            case NETSTATE_NONE:
             {
-                tick();
+                m_status.setText(" Disconnected");
             }
-        });
-        m_executorThread.start();
+            break;
+
+            case NETSTATE_JOINED:
+            {
+                m_status.setText(" Connected: ");
+            }
+            break;
+
+            case NETSTATE_HOST:
+            {
+                m_status.setText(" Hosting: ");
+            }
+            break;
+
+            default:
+            {
+                m_status.setText(" Unknown state; ");
+            }
+            break;
+        }
+
+        if (m_netStatus != NETSTATE_NONE)
+        {
+            m_status.setText(m_status.getText() + m_players.size() + " player" + (m_players.size() == 1 ? "" : "s")
+                + " connected. ");
+            switch (m_typing.size())
+            {
+                case 0:
+                {
+                }
+                break;
+
+                case 1:
+                {
+                    m_status.setText(m_status.getText() + m_typing.get(0) + " is typing.");
+                }
+                break;
+
+                case 2:
+                {
+                    m_status.setText(m_status.getText() + m_typing.get(0) + " and " + m_typing.get(1) + " are typing.");
+                }
+                break;
+
+                default:
+                {
+                    for (int i = 0; i < m_typing.size() - 1; i++)
+                    {
+                        m_status.setText(m_status.getText() + m_typing.get(i) + ", ");
+                    }
+                    m_status.setText(m_status.getText() + " and " + m_typing.get(m_typing.size() - 1) + " are typing.");
+                }
+            }
+        }
     }
 
     /**
-     * 
+     * Records the current state of the window.
      */
-    private void saveAll()
+    public void updateWindowInfo()
     {
-        saveState(getGametableCanvas().getPublicMap(), new File("autosave.grm"));
-        saveState(getGametableCanvas().getPrivateMap(), new File("autosavepvt.grm"));
-        savePrefs();
+        // we only update our internal size and
+        // position variables if we aren't maximized.
+        if ((getExtendedState() & MAXIMIZED_BOTH) != 0)
+        {
+            m_bMaximized = true;
+        }
+        else
+        {
+            m_bMaximized = false;
+            m_windowSize = getSize();
+            m_windowPos = getLocation();
+        }
     }
 }

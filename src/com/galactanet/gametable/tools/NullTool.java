@@ -13,6 +13,7 @@ import com.galactanet.gametable.GametableCanvas;
 import com.galactanet.gametable.Tool;
 
 
+
 /**
  * A basic non-functional implementation of Tool that other tools can subclass.
  * 
@@ -32,7 +33,7 @@ public class NullTool implements Tool
     /*
      * @see com.galactanet.gametable.Tool#activate(com.galactanet.gametable.GametableCanvas)
      */
-    public void activate(GametableCanvas canvas)
+    public void activate(final GametableCanvas canvas)
     {
     }
 
@@ -41,6 +42,18 @@ public class NullTool implements Tool
      */
     public void deactivate()
     {
+    }
+
+    public void endAction()
+    {
+    }
+
+    /*
+     * @see com.galactanet.gametable.Tool#getPreferences()
+     */
+    public List getPreferences()
+    {
+        return Collections.EMPTY_LIST;
     }
 
     /*
@@ -55,41 +68,29 @@ public class NullTool implements Tool
     /*
      * @see com.galactanet.gametable.Tool#mouseButtonPressed(int, int)
      */
-    public void mouseButtonPressed(int x, int y, int modifierMask)
-    {
-    }
-
-    /*
-     * @see com.galactanet.gametable.Tool#mouseMoved(int, int)
-     */
-    public void mouseMoved(int x, int y, int modifierMask)
+    public void mouseButtonPressed(final int x, final int y, final int modifierMask)
     {
     }
 
     /*
      * @see com.galactanet.gametable.Tool#mouseButtonReleased(int, int)
      */
-    public void mouseButtonReleased(int x, int y, int modifierMask)
+    public void mouseButtonReleased(final int x, final int y, final int modifierMask)
+    {
+    }
+
+    /*
+     * @see com.galactanet.gametable.Tool#mouseMoved(int, int)
+     */
+    public void mouseMoved(final int x, final int y, final int modifierMask)
     {
     }
 
     /*
      * @see com.galactanet.gametable.Tool#paint(java.awt.Graphics)
      */
-    public void paint(Graphics g)
+    public void paint(final Graphics g)
     {
-    }
-
-    public void endAction()
-    {
-    }
-
-    /*
-     * @see com.galactanet.gametable.Tool#getPreferences()
-     */
-    public List getPreferences()
-    {
-        return Collections.EMPTY_LIST;
     }
 
 }

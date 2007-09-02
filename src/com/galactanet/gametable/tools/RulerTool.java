@@ -35,11 +35,18 @@ public class RulerTool extends NullTool
     /*
      * @see com.galactanet.gametable.AbstractTool#activate(com.galactanet.gametable.GametableCanvas)
      */
-    public void activate(GametableCanvas canvas)
+    public void activate(final GametableCanvas canvas)
     {
         m_canvas = canvas;
         m_mouseAnchor = null;
         m_mouseFloat = null;
+    }
+
+    public void endAction()
+    {
+        m_mouseAnchor = null;
+        m_mouseFloat = null;
+        m_canvas.repaint();
     }
 
     /*
@@ -53,7 +60,7 @@ public class RulerTool extends NullTool
     /*
      * @see com.galactanet.gametable.AbstractTool#mouseButtonPressed(int, int)
      */
-    public void mouseButtonPressed(int x, int y, int modifierMask)
+    public void mouseButtonPressed(final int x, final int y, final int modifierMask)
     {
         m_mousePosition = new Point(x, y);
         m_mouseAnchor = m_mousePosition;
@@ -65,9 +72,17 @@ public class RulerTool extends NullTool
     }
 
     /*
+     * @see com.galactanet.gametable.AbstractTool#mouseButtonReleased(int, int)
+     */
+    public void mouseButtonReleased(final int x, final int y, final int modifierMask)
+    {
+        endAction();
+    }
+
+    /*
      * @see com.galactanet.gametable.AbstractTool#mouseMoved(int, int)
      */
-    public void mouseMoved(int x, int y, int modifierMask)
+    public void mouseMoved(final int x, final int y, final int modifierMask)
     {
         if (m_mouseAnchor != null)
         {
@@ -82,70 +97,49 @@ public class RulerTool extends NullTool
     }
 
     /*
-     * @see com.galactanet.gametable.AbstractTool#mouseButtonReleased(int, int)
-     */
-    public void mouseButtonReleased(int x, int y, int modifierMask)
-    {
-        endAction();
-    }
-
-    public void endAction()
-    {
-        m_mouseAnchor = null;
-        m_mouseFloat = null;
-        m_canvas.repaint();
-    }
-
-    /*
      * @see com.galactanet.gametable.AbstractTool#paint(java.awt.Graphics)
      */
-    public void paint(Graphics g)
+    public void paint(final Graphics g)
     {
         if (m_mouseAnchor != null)
         {
-            Graphics2D g2 = (Graphics2D)g.create();
+            final Graphics2D g2 = (Graphics2D)g.create();
 
             g2.addRenderingHints(UtilityFunctions.STANDARD_RENDERING_HINTS);
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            double dist = m_canvas.getGridMode().getDistance(m_mouseFloat.x, m_mouseFloat.y, m_mouseAnchor.x,
+            final double dist = m_canvas.getGridMode().getDistance(m_mouseFloat.x, m_mouseFloat.y, m_mouseAnchor.x,
                 m_mouseAnchor.y);
             double squaresDistance = m_canvas.modelToSquares(dist);
             squaresDistance = Math.round(squaresDistance * 100) / 100.0;
 
-            Color drawColor = GametableFrame.getGametableFrame().m_drawColor;
+            final Color drawColor = GametableFrame.getGametableFrame().m_drawColor;
             g2.setColor(new Color(drawColor.getRed(), drawColor.getGreen(), drawColor.getBlue(), 102));
             g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            Point drawAnchor = m_canvas.modelToDraw(m_mouseAnchor);
-            Point drawFloat = m_canvas.modelToDraw(m_mouseFloat);
+            final Point drawAnchor = m_canvas.modelToDraw(m_mouseAnchor);
+            final Point drawFloat = m_canvas.modelToDraw(m_mouseFloat);
             g2.drawLine(drawAnchor.x, drawAnchor.y, drawFloat.x, drawFloat.y);
 
             if (squaresDistance >= 0.75)
             {
-                Graphics2D g3 = (Graphics2D)g.create();
+                final Graphics2D g3 = (Graphics2D)g.create();
                 g3.setFont(Font.decode("sans-12"));
 
-                String s = squaresDistance + GametableFrame.getGametableFrame().grid_unit;
-                FontMetrics fm = g3.getFontMetrics();
-                Rectangle rect = fm.getStringBounds(s, g3).getBounds();
+                final String s = squaresDistance + GametableFrame.getGametableFrame().grid_unit;
+                final FontMetrics fm = g3.getFontMetrics();
+                final Rectangle rect = fm.getStringBounds(s, g3).getBounds();
 
                 rect.grow(3, 1);
-                
-                Point drawPoint = new Point((drawAnchor.x+drawFloat.x)/2, (drawAnchor.y+drawFloat.y)/2);
 
-                /*Point drawPoint = m_canvas.modelToDraw(m_mousePosition);
-                drawPoint.y -= rect.height + rect.y + 10;
-                Point viewPoint = m_canvas.modelToView(m_canvas.drawToModel(drawPoint));
-                if (viewPoint.y - rect.height < 0)
-                {
-                    drawPoint = m_canvas.modelToDraw(m_mousePosition);
-                    drawPoint.y -= rect.y - 24;
-                }
+                final Point drawPoint = new Point((drawAnchor.x + drawFloat.x) / 2, (drawAnchor.y + drawFloat.y) / 2);
 
-                if (viewPoint.x + rect.width >= m_canvas.getWidth())
-                {
-                    drawPoint.x -= rect.width + 10;
-                }*/
+                /*
+                 * Point drawPoint = m_canvas.modelToDraw(m_mousePosition); drawPoint.y -= rect.height + rect.y + 10;
+                 * Point viewPoint = m_canvas.modelToView(m_canvas.drawToModel(drawPoint)); if (viewPoint.y -
+                 * rect.height < 0) { drawPoint = m_canvas.modelToDraw(m_mousePosition); drawPoint.y -= rect.y - 24; }
+                 * 
+                 * if (viewPoint.x + rect.width >= m_canvas.getWidth()) { drawPoint.x -= rect.width + 10; }
+                 */
                 g3.translate(drawPoint.x, drawPoint.y);
                 g3.setColor(new Color(0x00, 0x99, 0x00, 0xAA));
                 g3.fill(rect);

@@ -18,13 +18,13 @@ import javax.swing.SwingUtilities;
 public class PeriodicExecutorThread extends Thread
 {
     private static final int INTERVAL = 25;
-    
-    private Runnable task;
+
+    private final Runnable   task;
 
     /**
      * Constructor;
      */
-    public PeriodicExecutorThread(Runnable r)
+    public PeriodicExecutorThread(final Runnable r)
     {
         super("PeriodicExecutorThread");
         setPriority(NORM_PRIORITY + 1);
@@ -43,13 +43,13 @@ public class PeriodicExecutorThread extends Thread
                 {
                     SwingUtilities.invokeLater(task);
                 }
-                catch (Throwable t)
+                catch (final Throwable t)
                 {
                     Log.log(Log.SYS, t);
                 }
             }
         }
-        catch (InterruptedException ie)
+        catch (final InterruptedException ie)
         {
             Log.log(Log.SYS, ie);
         }

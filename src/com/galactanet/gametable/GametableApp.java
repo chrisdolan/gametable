@@ -10,6 +10,7 @@ import java.awt.Toolkit;
 import javax.swing.UIManager;
 
 
+
 /**
  * TODO: comment
  * 
@@ -17,22 +18,22 @@ import javax.swing.UIManager;
  */
 public class GametableApp
 {
-    public static final String  VERSION      = "Gametable v1.3 pre-1";
-    private static final String SYS_LOG_FILE = "gt.sys.log";
-    private static final String NET_LOG_FILE = "gt.net.log";
+    private static final String NET_LOG_FILE  = "gt.net.log";
     private static final String PLAY_LOG_FILE = "gt.play.html";
+    private static final String SYS_LOG_FILE  = "gt.sys.log";
+    public static final String  VERSION       = "Gametable v1.3 pre-1";
 
     /**
      * Main method
      * 
      * @param args String[]
      */
-    static public void main(String[] args)
+    static public void main(final String[] args)
     {
         try
         {
-            System.setProperty("swing.aatext","true");
-            System.setProperty("java.protocol.handler.pkgs","com.galactanet.gametable.protocol");
+            System.setProperty("swing.aatext", "true");
+            System.setProperty("java.protocol.handler.pkgs", "com.galactanet.gametable.protocol");
             Log.initializeLog(Log.SYS, SYS_LOG_FILE);
             Log.initializeLog(Log.NET, NET_LOG_FILE);
             Log.initializeLog(Log.PLAY, PLAY_LOG_FILE);
@@ -41,7 +42,7 @@ public class GametableApp
             Toolkit.getDefaultToolkit().setDynamicLayout(true);
             new GametableFrame().setVisible(true);
         }
-        catch (Throwable t)
+        catch (final Throwable t)
         {
             Log.log(Log.SYS, t);
         }

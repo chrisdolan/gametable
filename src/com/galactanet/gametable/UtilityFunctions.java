@@ -30,13 +30,17 @@ import javax.swing.filechooser.FileFilter;
  */
 public class UtilityFunctions
 {
-    // constants
-    public static final char           UNIVERSAL_SEPARATOR      = '/';
+    public final static int            CANCEL                   = -1;
+    private static final Map           ENTITY_NAME_MAP          = getEncodingMap();
+
+    /**
+     * Simple image cache.
+     */
+    private static Map                 g_imageCache             = new HashMap();
+    static private String              lastDir                  = null;
     public static final char           LOCAL_SEPARATOR          = File.separatorChar;
 
     public final static int            NO                       = 0;
-    public final static int            YES                      = 1;
-    public final static int            CANCEL                   = -1;
 
     /**
      * The PNG signature to verify PNG data with.
@@ -45,566 +49,23 @@ public class UtilityFunctions
         (byte)(137 & 0xFF), 80, 78, 71, 13, 10, 26, 10
                                                                 };
 
-    public static final RenderingHints STANDARD_RENDERING_HINTS = getRenderingHints();
-
     private static final Random        RANDOM                   = getRandomInstance();
 
-    private static final Map           ENTITY_NAME_MAP          = getEncodingMap();
+    public static final RenderingHints STANDARD_RENDERING_HINTS = getRenderingHints();
 
-    public static int getRandom(int max)
-    {
-        return RANDOM.nextInt(max);
-    }
+    // constants
+    public static final char           UNIVERSAL_SEPARATOR      = '/';
 
-    public static String normalizeName(String in)
-    {
-        in = in.trim();
-        in = in.toLowerCase();
-        int len = in.length();
-        StringBuffer out = new StringBuffer(len);
-        for (int i = 0; i < len; ++i)
-        {
-            char c = in.charAt(i);
-            if (Character.isJavaIdentifierPart(c))
-            {
-                out.append(c);
-            }
-        }
-
-        return out.toString();
-    }
-
-    public static String getBodyContent(String html)
-    {
-        int end = html.lastIndexOf("</body>");
-        int start = html.indexOf("<body") + "<body".length();
-        start = html.indexOf('>', start) + 1;
-        return html.substring(start, end).trim();
-    }
-
-    public static byte[] loadFileToArray(String filename)
-    {
-        File file = new File(filename);
-        return loadFileToArray(file);
-    }
-
-    public static byte[] loadFileToArray(File file)
-    {
-        if (!file.exists())
-        {
-            return null;
-        }
-
-        try
-        {
-            DataInputStream infile = new DataInputStream(new FileInputStream(file));
-            byte[] buffer = new byte[1024];
-            ByteArrayOutputStream fileData = new ByteArrayOutputStream();
-            while (true)
-            {
-                int bytesRead = infile.read(buffer);
-                if (bytesRead > 0)
-                {
-                    fileData.write(buffer, 0, bytesRead);
-                }
-                else
-                {
-                    break;
-                }
-            }
-            return fileData.toByteArray();
-        }
-        catch (IOException ex)
-        {
-            Log.log(Log.SYS, ex);
-            return null;
-        }
-    }
-
-    public static File doFileOpenDialog(String title, String extension, boolean filterFiles)
-    {
-        JFileChooser chooser = new JFileChooser();
-
-        prepareFileDialog(chooser, title, filterFiles, extension);
-
-        int returnVal = chooser.showOpenDialog(null);
-        if (returnVal == JFileChooser.APPROVE_OPTION)
-        {
-            lastDir = chooser.getSelectedFile().getParent();
-            return chooser.getSelectedFile();
-        }
-
-        return null;
-    }
-
-    public static File doFileSaveDialog(String title, String extension, boolean filterFiles)
-    {
-        JFileChooser chooser = new JFileChooser();
-
-        prepareFileDialog(chooser, title, filterFiles, extension);
-
-        int returnVal = chooser.showSaveDialog(null);
-        if (returnVal == JFileChooser.APPROVE_OPTION)
-        {
-            lastDir = chooser.getSelectedFile().getParent();
-            return chooser.getSelectedFile();
-        }
-
-        return null;
-    }
-
-    static private void prepareFileDialog(JFileChooser chooser, String title, boolean filter, final String extension)
-    {
-        if (lastDir != null)
-        {
-            chooser.setCurrentDirectory(new File(lastDir));
-        }
-
-        chooser.setDialogTitle(title);
-
-        if (filter)
-        {
-            chooser.setFileFilter(new FileFilter()
-            {
-                public boolean accept(File file)
-                {
-                    if (file.getName().endsWith(extension) || file.isDirectory())
-                    {
-                        return true;
-                    }
-                    return false;
-                }
-
-                public String getDescription()
-                {
-                    return (extension + " files");
-                }
-            });
-        }
-
-    }
-
-    static private String lastDir = null;
-
-    public static int yesNoCancelDialog(Component parent, String msg, String title)
-    {
-        int ret = JOptionPane.showConfirmDialog(parent, msg, title, JOptionPane.YES_NO_CANCEL_OPTION,
-            JOptionPane.INFORMATION_MESSAGE);
-        switch (ret)
-        {
-            case JOptionPane.YES_OPTION:
-            {
-                return YES;
-            }
-            case JOptionPane.NO_OPTION:
-            {
-                return NO;
-            }
-            default:
-            {
-                return CANCEL;
-            }
-        }
-    }
-
-    public static int yesNoDialog(Component parent, String msg, String title)
-    {
-        int ret = JOptionPane.showConfirmDialog(parent, msg, title, JOptionPane.YES_NO_OPTION);
-        switch (ret)
-        {
-            default:
-            {
-                return YES;
-            }
-            case JOptionPane.NO_OPTION:
-            {
-                return NO;
-            }
-        }
-    }
-
-    public static void msgBox(Component parent, String msg)
-    {
-        msgBox(parent, msg, "Error!");
-    }
-
-    public static void msgBox(Component parent, String msg, String title)
-    {
-        JOptionPane.showMessageDialog(parent, msg, title, JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    /**
-     * Gets the canonical/absolute file of the given file.
-     * 
-     * @param file File to canonicalize.
-     * @return Canonicalized file.
-     */
-    public static File getCanonicalFile(File file)
-    {
-        try
-        {
-            return file.getCanonicalFile();
-        }
-        catch (IOException ioe)
-        {
-            return file.getAbsoluteFile();
-        }
-    }
-
-    /**
-     * Converts the filename to use UNIVERSAL_SEPERATOR.
-     * 
-     * @param path Path to canonicalize.
-     * @return Canonicalized Path.
-     */
-    public static String getUniversalPath(String path)
-    {
-        StringBuffer buffer = new StringBuffer();
-        for (int i = 0, size = path.length(); i < size; ++i)
-        {
-            char c = path.charAt(i);
-            if (c == '/' || c == '\\')
-            {
-                buffer.append(UNIVERSAL_SEPARATOR);
-            }
-            else
-            {
-                buffer.append(c);
-            }
-        }
-
-        return buffer.toString();
-    }
-
-    /**
-     * Converts the filename to use File.seperatorChar.
-     * 
-     * @param path Path to canonicalize.
-     * @return Canonicalized Path.
-     */
-    public static String getLocalPath(String path)
-    {
-        StringBuffer buffer = new StringBuffer();
-        for (int i = 0, size = path.length(); i < size; ++i)
-        {
-            char c = path.charAt(i);
-            if (c == '/' || c == '\\')
-            {
-                buffer.append(LOCAL_SEPARATOR);
-            }
-            else
-            {
-                buffer.append(c);
-            }
-        }
-
-        return buffer.toString();
-    }
-
-    /**
-     * Gets the child path relative to the parent path.
-     * 
-     * @param parent Parent path.
-     * @param child Child path.
-     * @return The relative path.
-     */
-    public static String getRelativePath(File parent, File child)
-    {
-        String parentPath = getLocalPath(getCanonicalFile(parent).getPath());
-        if (parentPath.charAt(parentPath.length() - 1) != LOCAL_SEPARATOR)
-        {
-            parentPath = parentPath + LOCAL_SEPARATOR;
-        }
-        String childPath = getLocalPath(getCanonicalFile(child).getPath());
-
-        return new String(childPath.substring(parentPath.length()));
-    }
-
-    /**
-     * Checks to see whether one file is an ancestor of another.
-     * 
-     * @param ancestor The potential ancestor File.
-     * @param child The child file.
-     * @return True if ancestor is an ancestor of child.
-     */
-    public static boolean isAncestorFile(File ancestor, File child)
-    {
-        File parent = child.getParentFile();
-        if (parent == null)
-        {
-            return false;
-        }
-
-        if (parent.equals(ancestor))
-        {
-            return true;
-        }
-
-        boolean b = isAncestorFile(ancestor, parent);
-        return b;
-    }
-
-    /**
-     * Checks the given binary date to see if it is a valid PNG file. It does this by checking the PNG signature.
-     * 
-     * @param data binary data to check
-     * @return true if the binary data is a valid PNG file, false otherwise.
-     */
-    public static boolean isPngData(byte[] data)
-    {
-        for (int i = 0; i < PNG_SIGNATURE.length; i++)
-        {
-            if (data[i] != PNG_SIGNATURE[i])
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Simple image cache.
-     */
-    private static Map g_imageCache = new HashMap();
-
-    /**
-     * Gets an image, caching it if possible.
-     * 
-     * @param name Name of image to get.
-     * @return Image retrieved, or null.
-     */
-    public static Image getCachedImage(String name)
-    {
-        Image image = (Image)g_imageCache.get(name);
-        if (image == null)
-        {
-            image = getImage(name);
-            if (image == null)
-            {
-                return null;
-            }
-            g_imageCache.put(name, image);
-        }
-        return image;
-    }
-
-    /**
-     * Removes an image from the image cache.
-     * 
-     * @param name Name of the image to remove.
-     */
-    public static void removeCachedImage(String name)
-    {
-        g_imageCache.remove(name);
-    }
-
-    public static Image getImage(String name)
-    {
-        Image img = getImageFromJar(name);
-        if (img == null)
-        {
-            // couldn't find it in the jar. Try the local directory
-            img = loadAndWait(GametableFrame.getGametableFrame().getGametableCanvas(), name);
-        }
-
-        return img;
-    }
-
-    public static Image createDrawableImage(int width, int height)
-    {
-        return GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration()
-            .createCompatibleImage(width, height, Transparency.TRANSLUCENT);
-    }
-
-    private static Image getImageFromJar(String name)
-    {
-        URL imageUrl = GametableFrame.getGametableFrame().getGametableCanvas().getClass().getResource("/" + name);
-        if (imageUrl == null)
-        {
-            return null;
-        }
-
-        Image image = null;
-        try
-        {
-            image = Toolkit.getDefaultToolkit().createImage(imageUrl);
-            if (image == null)
-            {
-                return null;
-            }
-
-            MediaTracker tracker = new MediaTracker(GametableFrame.getGametableFrame().getGametableCanvas());
-            tracker.addImage(image, 0);
-            tracker.waitForAll();
-        }
-        catch (Exception e)
-        {
-            Log.log(Log.SYS, e);
-            return null;
-        }
-
-        if (image.getWidth(null) < 1 || image.getHeight(null) < 1)
-        {
-            // Log.log(Log.SYS, "JAR invalid file? " + name + " " + image.getWidth(null) + " x " +
-            // image.getHeight(null));
-            return null;
-        }
-
-        return image;
-    }
-
-    private static Image loadAndWait(Component component, String name)
-    {
-        MediaTracker tracker = new MediaTracker(component);
-        Image image = loadImage(name, tracker);
-
-        if (image == null)
-        {
-            return null;
-        }
-
-        try
-        {
-            tracker.waitForAll(); // ignore exceptions
-        }
-        catch (Exception e)
-        {
-            Log.log(Log.SYS, e);
-            return null;
-        }
-
-        if (image.getWidth(null) < 1 || image.getHeight(null) < 1)
-        {
-            // Log.log(Log.SYS, "FS invalid file? " + name + " " + image.getWidth(null) + " x " +
-            // image.getHeight(null));
-            return null;
-        }
-
-        tracker = null;
-        return image;
-    }
-
-    public static Image getScaledInstance(Image image, float scale)
-    {
-        if (image == null)
-        {
-            return null;
-        }
-
-        waitForImage(image);
-
-        int width = Math.round(image.getWidth(null) * scale);
-        int height = Math.round(image.getHeight(null) * scale);
-
-        return getScaledInstance(image, width, height);
-    }
-
-    public static Image getScaledInstance(Image image, int width, int height)
-    {
-        if (image == null)
-        {
-            return null;
-        }
-
-        // TODO: Option for SMOOTH vs FAST?
-        Image scaledImage;
-        scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
-        if (scaledImage == null)
-        {
-            return null;
-        }
-
-        waitForImage(scaledImage);
-
-        return scaledImage;
-    }
-
-    private static void waitForImage(Image image)
-    {
-        MediaTracker tracker = new MediaTracker(GametableFrame.getGametableFrame());
-        tracker.addImage(image, 0);
-        try
-        {
-            tracker.waitForAll();
-        }
-        catch (Exception e)
-        {
-            Log.log(Log.SYS, e);
-        }
-    }
-
-    private static Image loadImage(String name, MediaTracker tracker)
-    {
-        Image image = null;
-        try
-        {
-            image = Toolkit.getDefaultToolkit().createImage(name);
-            if (image == null)
-            {
-                return null;
-            }
-            tracker.addImage(image, 0);
-        }
-        catch (Exception e)
-        {
-            Log.log(Log.SYS, e);
-        }
-        return image;
-    }
-
-    public static String getLine(DataInputStream in)
-    {
-        try
-        {
-            boolean bFoundContent = false;
-            StringBuffer buffer = new StringBuffer();
-            int count = 0;
-            while (true)
-            {
-                // ready an empty string. If we have tl leave early, we'll return an empty string
-
-                char ch = (char)(in.readByte());
-                if (ch == '\r' || ch == '\n')
-                {
-                    // if it's just a blank line, then press on
-                    // but if we've already had valid characters,
-                    // then don't
-                    if (bFoundContent)
-                    {
-                        // it's the end of the line!
-                        return buffer.toString();
-                    }
-                }
-                else
-                {
-                    // it's a non-CR character.
-                    bFoundContent = true;
-                    buffer.append(ch);
-                }
-
-                count++;
-                if (count > 300)
-                {
-                    return buffer.toString();
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            Log.log(Log.SYS, e);
-            return null;
-        }
-    }
+    public final static int            YES                      = 1;
 
     /**
      * @param line String to break into words.
      * @return An array of words found in the string.
      */
-    public static String[] breakIntoWords(String line)
+    public static String[] breakIntoWords(final String line)
     {
         boolean bDone = false;
-        List words = new ArrayList();
+        final List words = new ArrayList();
         int start = 0;
         int end;
         while (!bDone)
@@ -630,7 +91,7 @@ public class UtilityFunctions
             return null;
         }
 
-        String[] ret = new String[words.size()];
+        final String[] ret = new String[words.size()];
         for (int i = 0; i < ret.length; i++)
         {
             ret[i] = (String)words.get(i);
@@ -639,62 +100,120 @@ public class UtilityFunctions
         return ret;
     }
 
-    public static String stitchTogetherWords(String[] words)
+    /**
+     * @param source Component to get coordinates relative from.
+     * @param destination Component to get coordinates relative to.
+     * @param sourcePoint Source-relative coordinates to convert.
+     * @return destination-relative coordinates of the given source-relative coordinates.
+     */
+    public static Point convertCoordinates(final Component source, final Component destination, final Point sourcePoint)
     {
-        return stitchTogetherWords(words, 0, words.length);
+        return getComponentCoordinates(destination, getScreenCoordinates(source, sourcePoint));
     }
 
-    public static String stitchTogetherWords(String[] words, int offset)
+    public static Image createDrawableImage(final int width, final int height)
     {
-        return stitchTogetherWords(words, offset, words.length - offset);
+        return GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration()
+            .createCompatibleImage(width, height, Transparency.TRANSLUCENT);
     }
 
-    public static String stitchTogetherWords(String[] words, int offset, int length)
+    public static File doFileOpenDialog(final String title, final String extension, final boolean filterFiles)
     {
-        StringBuffer retVal = new StringBuffer();
-        if (length > words.length - offset)
+        final JFileChooser chooser = new JFileChooser();
+
+        prepareFileDialog(chooser, title, filterFiles, extension);
+
+        final int returnVal = chooser.showOpenDialog(null);
+        if (returnVal == JFileChooser.APPROVE_OPTION)
         {
-            length = words.length - offset;
+            lastDir = chooser.getSelectedFile().getParent();
+            return chooser.getSelectedFile();
         }
 
-        for (int i = offset, max = offset + length; i < max; ++i)
+        return null;
+    }
+
+    public static File doFileSaveDialog(final String title, final String extension, final boolean filterFiles)
+    {
+        final JFileChooser chooser = new JFileChooser();
+
+        prepareFileDialog(chooser, title, filterFiles, extension);
+
+        final int returnVal = chooser.showSaveDialog(null);
+        if (returnVal == JFileChooser.APPROVE_OPTION)
         {
-            retVal.append(words[i]);
-            if (i < (max - 1))
+            lastDir = chooser.getSelectedFile().getParent();
+            return chooser.getSelectedFile();
+        }
+
+        return null;
+    }
+
+    public static String emitUserLink(final String name)
+    {
+        return emitUserLink(name, name);
+    }
+
+    public static String emitUserLink(final String name, final String text)
+    {
+        try
+        {
+            final URL url = new URL("gtuser", urlEncode(name), "/");
+
+            return "<a class=\"user\" href=\"" + url + "\">" + text + "</a>";
+        }
+        catch (final MalformedURLException e)
+        {
+            Log.log(Log.SYS, e);
+            return "<a class=\"user\">" + text + "</a>";
+        }
+    }
+
+    public static String getBodyContent(final String html)
+    {
+        final int end = html.lastIndexOf("</body>");
+        int start = html.indexOf("<body") + "<body".length();
+        start = html.indexOf('>', start) + 1;
+        return html.substring(start, end).trim();
+    }
+
+    /**
+     * Gets an image, caching it if possible.
+     * 
+     * @param name Name of image to get.
+     * @return Image retrieved, or null.
+     */
+    public static Image getCachedImage(final String name)
+    {
+        Image image = (Image)g_imageCache.get(name);
+        if (image == null)
+        {
+            image = getImage(name);
+            if (image == null)
             {
-                retVal.append(' ');
+                return null;
             }
+            g_imageCache.put(name, image);
         }
-
-        return retVal.toString();
+        return image;
     }
 
     /**
-     * @param component Component to get screen coordinates of.
-     * @return The absolute screen coordinates of this component.
+     * Gets the canonical/absolute file of the given file.
+     * 
+     * @param file File to canonicalize.
+     * @return Canonicalized file.
      */
-    public static Point getScreenPosition(Component component)
+    public static File getCanonicalFile(final File file)
     {
-        Point retVal = new Point(component.getX(), component.getY());
-
-        Container container = component.getParent();
-        if (container != null)
+        try
         {
-            Point parentPos = getScreenPosition(container);
-            return new Point(retVal.x + parentPos.x, retVal.y + parentPos.y);
+            return file.getCanonicalFile();
         }
-        return retVal;
-    }
-
-    /**
-     * @param component Component that componentPoint is relative to.
-     * @param componentPoint Point to convert to screen coordinates, relative to the given component.
-     * @return The screen-relative coordinates of componentPoint.
-     */
-    public static Point getScreenCoordinates(Component component, Point componentPoint)
-    {
-        Point screenPos = getScreenPosition(component);
-        return new Point(componentPoint.x + screenPos.x, componentPoint.y + screenPos.y);
+        catch (final IOException ioe)
+        {
+            return file.getAbsoluteFile();
+        }
     }
 
     /**
@@ -702,26 +221,15 @@ public class UtilityFunctions
      * @param screenPoint Screen-relative coordinates to convert.
      * @return Component-relative coordinates of the given screen coordinates.
      */
-    public static Point getComponentCoordinates(Component component, Point screenPoint)
+    public static Point getComponentCoordinates(final Component component, final Point screenPoint)
     {
-        Point screenPos = getScreenPosition(component);
+        final Point screenPos = getScreenPosition(component);
         return new Point(screenPoint.x - screenPos.x, screenPoint.y - screenPos.y);
-    }
-
-    /**
-     * @param source Component to get coordinates relative from.
-     * @param destination Component to get coordinates relative to.
-     * @param sourcePoint Source-relative coordinates to convert.
-     * @return destination-relative coordinates of the given source-relative coordinates.
-     */
-    public static Point convertCoordinates(Component source, Component destination, Point sourcePoint)
-    {
-        return getComponentCoordinates(destination, getScreenCoordinates(source, sourcePoint));
     }
 
     private static Map getEncodingMap()
     {
-        Map retVal = new HashMap();
+        final Map retVal = new HashMap();
         retVal.put(new Character('\''), "apos");
         retVal.put(new Character('\"'), "quot");
         retVal.put(new Character('<'), "lt");
@@ -731,23 +239,127 @@ public class UtilityFunctions
         return Collections.unmodifiableMap(retVal);
     }
 
-    /**
-     * @return The standard set of rendering hits for the app.
-     */
-    private static RenderingHints getRenderingHints()
+    public static Image getImage(final String name)
     {
-        RenderingHints retVal = new RenderingHints(null);
+        Image img = getImageFromJar(name);
+        if (img == null)
+        {
+            // couldn't find it in the jar. Try the local directory
+            img = loadAndWait(GametableFrame.getGametableFrame().getGametableCanvas(), name);
+        }
 
-        retVal.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
-        retVal.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-        retVal.put(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
-        retVal.put(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
-        retVal.put(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
-        retVal.put(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-        retVal.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-        retVal.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        return img;
+    }
 
-        return retVal;
+    private static Image getImageFromJar(final String name)
+    {
+        final URL imageUrl = GametableFrame.getGametableFrame().getGametableCanvas().getClass().getResource("/" + name);
+        if (imageUrl == null)
+        {
+            return null;
+        }
+
+        Image image = null;
+        try
+        {
+            image = Toolkit.getDefaultToolkit().createImage(imageUrl);
+            if (image == null)
+            {
+                return null;
+            }
+
+            final MediaTracker tracker = new MediaTracker(GametableFrame.getGametableFrame().getGametableCanvas());
+            tracker.addImage(image, 0);
+            tracker.waitForAll();
+        }
+        catch (final Exception e)
+        {
+            Log.log(Log.SYS, e);
+            return null;
+        }
+
+        if ((image.getWidth(null) < 1) || (image.getHeight(null) < 1))
+        {
+            // Log.log(Log.SYS, "JAR invalid file? " + name + " " + image.getWidth(null) + " x " +
+            // image.getHeight(null));
+            return null;
+        }
+
+        return image;
+    }
+
+    public static String getLine(final DataInputStream in)
+    {
+        try
+        {
+            boolean bFoundContent = false;
+            final StringBuffer buffer = new StringBuffer();
+            int count = 0;
+            while (true)
+            {
+                // ready an empty string. If we have tl leave early, we'll return an empty string
+
+                final char ch = (char)(in.readByte());
+                if ((ch == '\r') || (ch == '\n'))
+                {
+                    // if it's just a blank line, then press on
+                    // but if we've already had valid characters,
+                    // then don't
+                    if (bFoundContent)
+                    {
+                        // it's the end of the line!
+                        return buffer.toString();
+                    }
+                }
+                else
+                {
+                    // it's a non-CR character.
+                    bFoundContent = true;
+                    buffer.append(ch);
+                }
+
+                count++;
+                if (count > 300)
+                {
+                    return buffer.toString();
+                }
+            }
+        }
+        catch (final Exception e)
+        {
+            Log.log(Log.SYS, e);
+            return null;
+        }
+    }
+
+    /**
+     * Converts the filename to use File.seperatorChar.
+     * 
+     * @param path Path to canonicalize.
+     * @return Canonicalized Path.
+     */
+    public static String getLocalPath(final String path)
+    {
+        final StringBuffer buffer = new StringBuffer();
+        for (int i = 0, size = path.length(); i < size; ++i)
+        {
+            final char c = path.charAt(i);
+            if ((c == '/') || (c == '\\'))
+            {
+                buffer.append(LOCAL_SEPARATOR);
+            }
+            else
+            {
+                buffer.append(c);
+            }
+        }
+
+        return buffer.toString();
+    }
+
+    public static int getRandom(final int max)
+    {
+        return RANDOM.nextInt(max);
     }
 
     /**
@@ -761,7 +373,7 @@ public class UtilityFunctions
         {
             rand = SecureRandom.getInstance("SHA1PRNG");
         }
-        catch (NoSuchAlgorithmException e)
+        catch (final NoSuchAlgorithmException e)
         {
             Log.log(Log.SYS, e);
             rand = new Random();
@@ -770,15 +382,184 @@ public class UtilityFunctions
         return rand;
     }
 
-    public static void launchBrowser(String url)
+    /**
+     * Gets the child path relative to the parent path.
+     * 
+     * @param parent Parent path.
+     * @param child Child path.
+     * @return The relative path.
+     */
+    public static String getRelativePath(final File parent, final File child)
     {
-        String osName = System.getProperty("os.name");
+        String parentPath = getLocalPath(getCanonicalFile(parent).getPath());
+        if (parentPath.charAt(parentPath.length() - 1) != LOCAL_SEPARATOR)
+        {
+            parentPath = parentPath + LOCAL_SEPARATOR;
+        }
+        final String childPath = getLocalPath(getCanonicalFile(child).getPath());
+
+        return new String(childPath.substring(parentPath.length()));
+    }
+
+    /**
+     * @return The standard set of rendering hits for the app.
+     */
+    private static RenderingHints getRenderingHints()
+    {
+        final RenderingHints retVal = new RenderingHints(null);
+
+        retVal.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
+        retVal.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+        retVal.put(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
+        retVal.put(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+        retVal.put(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+        retVal.put(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        retVal.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        retVal.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        return retVal;
+    }
+
+    public static Image getScaledInstance(final Image image, final float scale)
+    {
+        if (image == null)
+        {
+            return null;
+        }
+
+        waitForImage(image);
+
+        final int width = Math.round(image.getWidth(null) * scale);
+        final int height = Math.round(image.getHeight(null) * scale);
+
+        return getScaledInstance(image, width, height);
+    }
+
+    public static Image getScaledInstance(final Image image, final int width, final int height)
+    {
+        if (image == null)
+        {
+            return null;
+        }
+
+        // TODO: Option for SMOOTH vs FAST?
+        Image scaledImage;
+        scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        if (scaledImage == null)
+        {
+            return null;
+        }
+
+        waitForImage(scaledImage);
+
+        return scaledImage;
+    }
+
+    /**
+     * @param component Component that componentPoint is relative to.
+     * @param componentPoint Point to convert to screen coordinates, relative to the given component.
+     * @return The screen-relative coordinates of componentPoint.
+     */
+    public static Point getScreenCoordinates(final Component component, final Point componentPoint)
+    {
+        final Point screenPos = getScreenPosition(component);
+        return new Point(componentPoint.x + screenPos.x, componentPoint.y + screenPos.y);
+    }
+
+    /**
+     * @param component Component to get screen coordinates of.
+     * @return The absolute screen coordinates of this component.
+     */
+    public static Point getScreenPosition(final Component component)
+    {
+        final Point retVal = new Point(component.getX(), component.getY());
+
+        final Container container = component.getParent();
+        if (container != null)
+        {
+            final Point parentPos = getScreenPosition(container);
+            return new Point(retVal.x + parentPos.x, retVal.y + parentPos.y);
+        }
+        return retVal;
+    }
+
+    /**
+     * Converts the filename to use UNIVERSAL_SEPERATOR.
+     * 
+     * @param path Path to canonicalize.
+     * @return Canonicalized Path.
+     */
+    public static String getUniversalPath(final String path)
+    {
+        final StringBuffer buffer = new StringBuffer();
+        for (int i = 0, size = path.length(); i < size; ++i)
+        {
+            final char c = path.charAt(i);
+            if ((c == '/') || (c == '\\'))
+            {
+                buffer.append(UNIVERSAL_SEPARATOR);
+            }
+            else
+            {
+                buffer.append(c);
+            }
+        }
+
+        return buffer.toString();
+    }
+
+    /**
+     * Checks to see whether one file is an ancestor of another.
+     * 
+     * @param ancestor The potential ancestor File.
+     * @param child The child file.
+     * @return True if ancestor is an ancestor of child.
+     */
+    public static boolean isAncestorFile(final File ancestor, final File child)
+    {
+        final File parent = child.getParentFile();
+        if (parent == null)
+        {
+            return false;
+        }
+
+        if (parent.equals(ancestor))
+        {
+            return true;
+        }
+
+        final boolean b = isAncestorFile(ancestor, parent);
+        return b;
+    }
+
+    /**
+     * Checks the given binary date to see if it is a valid PNG file. It does this by checking the PNG signature.
+     * 
+     * @param data binary data to check
+     * @return true if the binary data is a valid PNG file, false otherwise.
+     */
+    public static boolean isPngData(final byte[] data)
+    {
+        for (int i = 0; i < PNG_SIGNATURE.length; i++)
+        {
+            if (data[i] != PNG_SIGNATURE[i])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static void launchBrowser(final String url)
+    {
+        final String osName = System.getProperty("os.name");
         try
         {
             if (osName.startsWith("Mac OS"))
             {
-                Class fileMgr = Class.forName("com.apple.eio.FileManager");
-                Method openURL = fileMgr.getDeclaredMethod("openURL", new Class[] {
+                final Class fileMgr = Class.forName("com.apple.eio.FileManager");
+                final Method openURL = fileMgr.getDeclaredMethod("openURL", new Class[] {
                     String.class
                 });
                 openURL.invoke(null, new Object[] {
@@ -792,11 +573,11 @@ public class UtilityFunctions
             else
             {
                 // assume Unix or Linux
-                String[] browsers = {
+                final String[] browsers = {
                     "firefox", "opera", "konqueror", "epiphany", "mozilla", "netscape"
                 };
                 String browser = null;
-                for (int count = 0; count < browsers.length && browser == null; count++)
+                for (int count = 0; (count < browsers.length) && (browser == null); count++)
                 {
                     if (Runtime.getRuntime().exec(new String[] {
                         "which", browsers[count]
@@ -816,9 +597,223 @@ public class UtilityFunctions
                 });
             }
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             Log.log(Log.NET, e);
+        }
+    }
+
+    private static Image loadAndWait(final Component component, final String name)
+    {
+        MediaTracker tracker = new MediaTracker(component);
+        final Image image = loadImage(name, tracker);
+
+        if (image == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            tracker.waitForAll(); // ignore exceptions
+        }
+        catch (final Exception e)
+        {
+            Log.log(Log.SYS, e);
+            return null;
+        }
+
+        if ((image.getWidth(null) < 1) || (image.getHeight(null) < 1))
+        {
+            // Log.log(Log.SYS, "FS invalid file? " + name + " " + image.getWidth(null) + " x " +
+            // image.getHeight(null));
+            return null;
+        }
+
+        tracker = null;
+        return image;
+    }
+
+    public static byte[] loadFileToArray(final File file)
+    {
+        if (!file.exists())
+        {
+            return null;
+        }
+
+        try
+        {
+            final DataInputStream infile = new DataInputStream(new FileInputStream(file));
+            final byte[] buffer = new byte[1024];
+            final ByteArrayOutputStream fileData = new ByteArrayOutputStream();
+            while (true)
+            {
+                final int bytesRead = infile.read(buffer);
+                if (bytesRead > 0)
+                {
+                    fileData.write(buffer, 0, bytesRead);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            return fileData.toByteArray();
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
+    public static byte[] loadFileToArray(final String filename)
+    {
+        final File file = new File(filename);
+        return loadFileToArray(file);
+    }
+
+    private static Image loadImage(final String name, final MediaTracker tracker)
+    {
+        Image image = null;
+        try
+        {
+            image = Toolkit.getDefaultToolkit().createImage(name);
+            if (image == null)
+            {
+                return null;
+            }
+            tracker.addImage(image, 0);
+        }
+        catch (final Exception e)
+        {
+            Log.log(Log.SYS, e);
+        }
+        return image;
+    }
+
+    public static void msgBox(final Component parent, final String msg)
+    {
+        msgBox(parent, msg, "Error!");
+    }
+
+    public static void msgBox(final Component parent, final String msg, final String title)
+    {
+        JOptionPane.showMessageDialog(parent, msg, title, JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public static String normalizeName(final String name)
+    {
+        final String in = name.trim().toLowerCase();
+        final int len = in.length();
+        final StringBuffer out = new StringBuffer(len);
+        for (int i = 0; i < len; ++i)
+        {
+            final char c = in.charAt(i);
+            if (Character.isJavaIdentifierPart(c))
+            {
+                out.append(c);
+            }
+        }
+
+        return out.toString();
+    }
+
+    static private void prepareFileDialog(final JFileChooser chooser, final String title, final boolean filter,
+        final String extension)
+    {
+        if (lastDir != null)
+        {
+            chooser.setCurrentDirectory(new File(lastDir));
+        }
+
+        chooser.setDialogTitle(title);
+
+        if (filter)
+        {
+            chooser.setFileFilter(new FileFilter()
+            {
+                public boolean accept(final File file)
+                {
+                    if (file.getName().endsWith(extension) || file.isDirectory())
+                    {
+                        return true;
+                    }
+                    return false;
+                }
+
+                public String getDescription()
+                {
+                    return (extension + " files");
+                }
+            });
+        }
+
+    }
+
+    /**
+     * Removes an image from the image cache.
+     * 
+     * @param name Name of the image to remove.
+     */
+    public static void removeCachedImage(final String name)
+    {
+        g_imageCache.remove(name);
+    }
+
+    public static String stitchTogetherWords(final String[] words)
+    {
+        return stitchTogetherWords(words, 0, words.length);
+    }
+
+    public static String stitchTogetherWords(final String[] words, final int offset)
+    {
+        return stitchTogetherWords(words, offset, words.length - offset);
+    }
+
+    public static String stitchTogetherWords(final String[] words, final int offset, final int l)
+    {
+        final StringBuffer retVal = new StringBuffer();
+        int realLength = l;
+        if (realLength > words.length - offset)
+        {
+            realLength = words.length - offset;
+        }
+
+        for (int i = offset, max = offset + realLength; i < max; ++i)
+        {
+            retVal.append(words[i]);
+            if (i < (max - 1))
+            {
+                retVal.append(' ');
+            }
+        }
+
+        return retVal.toString();
+    }
+
+    /**
+     * Decodes the given string using the URL decoding method.
+     * 
+     * @param in String to decode.
+     * @return Decoded string.
+     */
+    public static String urlDecode(final String in)
+    {
+        try
+        {
+            return URLDecoder.decode(in, "UTF-8");
+        }
+        catch (final UnsupportedEncodingException e)
+        {
+            try
+            {
+                return URLDecoder.decode(in, "ASCII");
+            }
+            catch (final UnsupportedEncodingException e2)
+            {
+                return null;
+            }
         }
     }
 
@@ -828,80 +823,49 @@ public class UtilityFunctions
      * @param in String to encode.
      * @return Encoded string.
      */
-    public static String urlEncode(String in)
+    public static String urlEncode(final String in)
     {
         try
         {
             return URLEncoder.encode(in, "UTF-8");
         }
-        catch (UnsupportedEncodingException e)
+        catch (final UnsupportedEncodingException e)
         {
             try
             {
                 return URLEncoder.encode(in, "ASCII");
             }
-            catch (UnsupportedEncodingException e2)
+            catch (final UnsupportedEncodingException e2)
             {
                 return null;
             }
         }
     }
 
-    /**
-     * Decodes the given string using the URL decoding method.
-     * 
-     * @param in String to decode.
-     * @return Decoded string.
-     */
-    public static String urlDecode(String in)
+    private static void waitForImage(final Image image)
     {
+        final MediaTracker tracker = new MediaTracker(GametableFrame.getGametableFrame());
+        tracker.addImage(image, 0);
         try
         {
-            return URLDecoder.decode(in, "UTF-8");
+            tracker.waitForAll();
         }
-        catch (UnsupportedEncodingException e)
-        {
-            try
-            {
-                return URLDecoder.decode(in, "ASCII");
-            }
-            catch (UnsupportedEncodingException e2)
-            {
-                return null;
-            }
-        }
-    }
-
-    public static String emitUserLink(String name)
-    {
-        return emitUserLink(name, name);
-    }
-
-    public static String emitUserLink(String name, String text)
-    {
-        try
-        {
-            URL url = new URL("gtuser", urlEncode(name), "/");
-
-            return "<a class=\"user\" href=\"" + url + "\">" + text + "</a>";
-        }
-        catch (MalformedURLException e)
+        catch (final Exception e)
         {
             Log.log(Log.SYS, e);
-            return "<a class=\"user\">" + text + "</a>";
         }
     }
 
-    public static String xmlEncode(String str)
+    public static String xmlEncode(final String str)
     {
-        StringWriter out = new StringWriter();
-        StringReader in = new StringReader(str);
+        final StringWriter out = new StringWriter();
+        final StringReader in = new StringReader(str);
 
         try
         {
             UtilityFunctions.xmlEncode(out, in);
         }
-        catch (IOException ioe)
+        catch (final IOException ioe)
         {
             Log.log(Log.SYS, ioe);
             return null;
@@ -910,18 +874,18 @@ public class UtilityFunctions
         return out.toString();
     }
 
-    public static void xmlEncode(Writer out, Reader in) throws IOException
+    public static void xmlEncode(final Writer out, final Reader in) throws IOException
     {
         while (true)
         {
-            int i = in.read();
+            final int i = in.read();
             if (i < 0)
             {
                 break;
             }
 
-            char c = (char)i;
-            String entity = (String)ENTITY_NAME_MAP.get(new Character(c));
+            final char c = (char)i;
+            final String entity = (String)ENTITY_NAME_MAP.get(new Character(c));
             if (entity != null)
             {
                 out.write('&');
@@ -931,6 +895,43 @@ public class UtilityFunctions
             else
             {
                 out.write(c);
+            }
+        }
+    }
+
+    public static int yesNoCancelDialog(final Component parent, final String msg, final String title)
+    {
+        final int ret = JOptionPane.showConfirmDialog(parent, msg, title, JOptionPane.YES_NO_CANCEL_OPTION,
+            JOptionPane.INFORMATION_MESSAGE);
+        switch (ret)
+        {
+            case JOptionPane.YES_OPTION:
+            {
+                return YES;
+            }
+            case JOptionPane.NO_OPTION:
+            {
+                return NO;
+            }
+            default:
+            {
+                return CANCEL;
+            }
+        }
+    }
+
+    public static int yesNoDialog(final Component parent, final String msg, final String title)
+    {
+        final int ret = JOptionPane.showConfirmDialog(parent, msg, title, JOptionPane.YES_NO_OPTION);
+        switch (ret)
+        {
+            default:
+            {
+                return YES;
+            }
+            case JOptionPane.NO_OPTION:
+            {
+                return NO;
             }
         }
     }

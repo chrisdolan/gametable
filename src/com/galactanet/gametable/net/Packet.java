@@ -12,13 +12,13 @@ package com.galactanet.gametable.net;
  */
 public class Packet
 {
-    private byte[]     data;
-    private Connection source;
+    private final byte[]     data;
+    private final Connection source;
 
     /**
      * Constructor
      */
-    public Packet(byte[] dat, Connection src)
+    public Packet(final byte[] dat, final Connection src)
     {
         data = dat;
         source = src;

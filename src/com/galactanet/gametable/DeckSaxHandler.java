@@ -22,13 +22,13 @@ public class DeckSaxHandler extends DefaultHandler
 {
     // --- Constants -------------------------------------------------------------------------------------------------
 
-    public static final String ELEMENT_CARDS  = "deck";
-    public static final String ELEMENT_CARD   = "card";
+    public static final String ATTRIBUTE_DESC = "desc";
+    public static final String ATTRIBUTE_FILE = "file";
 
     public static final String ATTRIBUTE_NAME = "name";
-    public static final String ATTRIBUTE_FILE = "file";
-    public static final String ATTRIBUTE_DESC = "desc";
     public static final String ATTRIBUTE_QTY  = "qty";
+    public static final String ELEMENT_CARD   = "card";
+    public static final String ELEMENT_CARDS  = "deck";
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
@@ -56,12 +56,15 @@ public class DeckSaxHandler extends DefaultHandler
     {
     }
 
-    /**
-     * Initter.
+    /*
+     * @see org.xml.sax.ContentHandler#characters(char[], int, int)
      */
-    public void init(DeckData dd)
+    public void characters(final char[] ch, final int start, final int length) throws SAXException
     {
-        m_deckData = dd;
+        if (accum != null)
+        {
+            accum.append(ch, start, length);
+        }
     }
 
     // --- Methods ---------------------------------------------------------------------------------------------------
@@ -69,12 +72,46 @@ public class DeckSaxHandler extends DefaultHandler
     // --- ContentHandler implementation ---
 
     /*
+     * @see org.xml.sax.helpers.DefaultHandler#endElement(java.lang.String, java.lang.String, java.lang.String)
+     */
+    public void endElement(final String uri, final String localName, final String qName) throws SAXException
+    {
+    }
+
+    /*
+     * @see org.xml.sax.ErrorHandler#error(org.xml.sax.SAXParseException)
+     */
+    public void error(final SAXParseException exception) throws SAXException
+    {
+        Log.log(Log.SYS, "ERROR: Line: " + exception.getLineNumber() + ", Column: " + exception.getColumnNumber());
+        Log.log(Log.SYS, exception);
+    }
+
+    /*
+     * @see org.xml.sax.ErrorHandler#fatalError(org.xml.sax.SAXParseException)
+     */
+    public void fatalError(final SAXParseException exception) throws SAXException
+    {
+        throw exception;
+    }
+
+    /**
+     * Initter.
+     */
+    public void init(final DeckData dd)
+    {
+        m_deckData = dd;
+    }
+
+    /*
      * @see org.xml.sax.ContentHandler#setDocumentLocator(org.xml.sax.Locator)
      */
-    public void setDocumentLocator(Locator l)
+    public void setDocumentLocator(final Locator l)
     {
         locator = l;
     }
+
+    // --- ErrorHandler Implementation ---
 
     /*
      * @see org.xml.sax.helpers.DefaultHandler#startDocument()
@@ -88,10 +125,11 @@ public class DeckSaxHandler extends DefaultHandler
      * @see org.xml.sax.helpers.DefaultHandler#startElement(java.lang.String, java.lang.String, java.lang.String,
      *      org.xml.sax.Attributes)
      */
-    public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
+    public void startElement(final String uri, final String localName, final String qName, final Attributes attributes)
+        throws SAXException
     {
-        String name = qName;
-        if (name == null || name.length() == 0)
+        final String name = qName;
+        if ((name == null) || (name.length() == 0))
         {
             // it is not allowed for the name to not exist
             fatalError(new SAXParseException("name field not specified in card field", locator));
@@ -103,9 +141,9 @@ public class DeckSaxHandler extends DefaultHandler
         else if (name.equals(ELEMENT_CARD))
         {
             // make a card. This will receive all the data
-            DeckData.Card card = DeckData.createBlankCard();
+            final DeckData.Card card = DeckData.createBlankCard();
 
-            String cardName = attributes.getValue(ATTRIBUTE_NAME);
+            final String cardName = attributes.getValue(ATTRIBUTE_NAME);
             if (cardName == null)
             {
                 card.m_cardName = "";
@@ -115,7 +153,7 @@ public class DeckSaxHandler extends DefaultHandler
                 card.m_cardName = cardName;
             }
 
-            String cardFile = attributes.getValue(ATTRIBUTE_FILE);
+            final String cardFile = attributes.getValue(ATTRIBUTE_FILE);
             if (cardFile == null)
             {
                 card.m_cardFile = "";
@@ -125,7 +163,7 @@ public class DeckSaxHandler extends DefaultHandler
                 card.m_cardFile = cardFile;
             }
 
-            String cardDesc = attributes.getValue(ATTRIBUTE_DESC);
+            final String cardDesc = attributes.getValue(ATTRIBUTE_DESC);
             if (cardDesc == null)
             {
                 card.m_cardDesc = "";
@@ -135,14 +173,14 @@ public class DeckSaxHandler extends DefaultHandler
                 card.m_cardDesc = cardDesc;
             }
 
-            String qtyStr = attributes.getValue(ATTRIBUTE_QTY);
+            final String qtyStr = attributes.getValue(ATTRIBUTE_QTY);
 
             int qty = 0;
             try
             {
                 qty = Integer.parseInt(qtyStr);
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 // there was a problem parsing the int. this is not allowed
                 error(new SAXParseException("invalid or missing " + ATTRIBUTE_QTY + " field", locator));
@@ -161,48 +199,11 @@ public class DeckSaxHandler extends DefaultHandler
     }
 
     /*
-     * @see org.xml.sax.helpers.DefaultHandler#endElement(java.lang.String, java.lang.String, java.lang.String)
-     */
-    public void endElement(String uri, String localName, String qName) throws SAXException
-    {
-    }
-
-    /*
-     * @see org.xml.sax.ContentHandler#characters(char[], int, int)
-     */
-    public void characters(char[] ch, int start, int length) throws SAXException
-    {
-        if (accum != null)
-        {
-            accum.append(ch, start, length);
-        }
-    }
-
-    // --- ErrorHandler Implementation ---
-
-    /*
      * @see org.xml.sax.ErrorHandler#warning(org.xml.sax.SAXParseException)
      */
-    public void warning(SAXParseException exception) throws SAXException
+    public void warning(final SAXParseException exception) throws SAXException
     {
         Log.log(Log.SYS, "WARNING: Line: " + exception.getLineNumber() + ", Column: " + exception.getColumnNumber());
         Log.log(Log.SYS, exception);
-    }
-
-    /*
-     * @see org.xml.sax.ErrorHandler#error(org.xml.sax.SAXParseException)
-     */
-    public void error(SAXParseException exception) throws SAXException
-    {
-        Log.log(Log.SYS, "ERROR: Line: " + exception.getLineNumber() + ", Column: " + exception.getColumnNumber());
-        Log.log(Log.SYS, exception);
-    }
-
-    /*
-     * @see org.xml.sax.ErrorHandler#fatalError(org.xml.sax.SAXParseException)
-     */
-    public void fatalError(SAXParseException exception) throws SAXException
-    {
-        throw exception;
     }
 }

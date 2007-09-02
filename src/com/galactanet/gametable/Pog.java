@@ -23,10 +23,18 @@ public class Pog implements Comparable
 {
     // --- Constants -------------------------------------------------------------------------------------------------
 
-    /**
-     * Background color for pog text.
-     */
-    private static final Color COLOR_BACKGROUND           = new Color(255, 255, 64, 192);
+    private static class Attribute
+    {
+        public boolean changed = true;
+        public String  name;
+        public String  value;
+
+        public Attribute(final String n, final String v)
+        {
+            name = n;
+            value = v;
+        }
+    }
 
     /**
      * Background color for pog text.
@@ -34,14 +42,14 @@ public class Pog implements Comparable
     private static final Color COLOR_ATTRIBUTE_BACKGROUND = new Color(64, 255, 64, 192);
 
     /**
+     * Background color for pog text.
+     */
+    private static final Color COLOR_BACKGROUND           = new Color(255, 255, 64, 192);
+
+    /**
      * Background color for changed pog text.
      */
     private static final Color COLOR_CHANGED_BACKGROUND   = new Color(238, 156, 0, 192);
-
-    /**
-     * Font to use for displaying pog text.
-     */
-    private static final Font  FONT_TEXT                  = Font.decode("sansserif-bold-12");
 
     /**
      * Font to use for displaying attribute names.
@@ -55,256 +63,112 @@ public class Pog implements Comparable
 
     // --- Types -----------------------------------------------------------------------------------------------------
 
-    private static class Attribute
-    {
-        public String  name;
-        public String  value;
-        public boolean changed = true;
-
-        public Attribute(String n, String v)
-        {
-            name = n;
-            value = v;
-        }
-    }
+    /**
+     * Font to use for displaying pog text.
+     */
+    private static final Font  FONT_TEXT                  = Font.decode("sansserif-bold-12");
 
     // --- Static Members --------------------------------------------------------------------------------------------
 
     /**
      * Unique global Id for pogs.
      */
-    public static int       g_nextId               = 10;
+    public static int          g_nextId                   = 10;
 
     /**
      * Global min sort id for pogs.
      */
-    public static long      g_nextSortId           = 0;
+    public static long         g_nextSortId               = 0;
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
-    /**
-     * The PogType of this Pog.
-     */
-    private PogType         m_pogType;
-
-    /**
-     * Lame handle to canvas.
-     */
-    private GametableCanvas m_canvas;
-
-    /**
-     * Position of the pog on the map in map coordinates.
-     */
-    private Point           m_position             = new Point(0, 0);
-
-    /**
-     * The primary label for the Pog.
-     */
-    private String          m_text                 = "";
-
-    /**
-     * The unique id of this pog.
-     */
-    private int             m_id                   = 0;
-
-    /**
-     * The sort order for this pog.
-     */
-    private long            m_sortOrder            = 0;
-
-    /**
-     * Scale for this pog.
-     */
-    private float           m_scale                = 1f;
-    
-    private double          m_angle                = 0.;
-
-    /**
-     * Is this pog tinted?
-     */
-    private boolean         m_bTinted              = false;
-    
-    /**
-     * Locked state for this pog.
-     */
-    private boolean         m_locked               = false;
-
-    /**
-     * True if this pog is notifying the world that it's text had changed.
-     */
-    private boolean         m_bTextChangeNotifying = false;
+    private double             m_angle                    = 0.;
 
     /**
      * Name/value pairs of the attributes assigned to this pog.
      */
-    private Map             m_attributes           = new TreeMap();
-    
-    // null in most cases. If it's not null, it's a 
-    // card in a deck
-    private DeckData.Card 		m_card;
+    private final Map          m_attributes               = new TreeMap();
 
     // a special kind of hack-ish value that will cause a pog
     // to set itself to not be loaded if the values for it are
     // too out of whack to be correct. This is to prevent bad saves caused
     // by other bugs from permanantly destroying a map.
-    public boolean          m_bStillborn           = false;
+    public boolean             m_bStillborn               = false;
+
+    /**
+     * True if this pog is notifying the world that it's text had changed.
+     */
+    private boolean            m_bTextChangeNotifying     = false;
+
+    /**
+     * Is this pog tinted?
+     */
+    private boolean            m_bTinted                  = false;
+
+    /**
+     * Lame handle to canvas.
+     */
+    private GametableCanvas    m_canvas;
+
+    // null in most cases. If it's not null, it's a
+    // card in a deck
+    private DeckData.Card      m_card;
+
+    /**
+     * The unique id of this pog.
+     */
+    private int                m_id                       = 0;
+
+    /**
+     * Locked state for this pog.
+     */
+    private boolean            m_locked                   = false;
+
+    /**
+     * The PogType of this Pog.
+     */
+    private PogType            m_pogType;
+
+    /**
+     * Position of the pog on the map in map coordinates.
+     */
+    private Point              m_position                 = new Point(0, 0);
+
+    /**
+     * Scale for this pog.
+     */
+    private float              m_scale                    = 1f;
+
+    /**
+     * The sort order for this pog.
+     */
+    private long               m_sortOrder                = 0;
+
+    /**
+     * The primary label for the Pog.
+     */
+    private String             m_text                     = "";
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
-    public Pog(DataInputStream dis) throws IOException
+    public Pog(final DataInputStream dis) throws IOException
     {
         initFromPacket(dis);
     }
 
-    public Pog(PogType type)
-    {
-        init(GametableFrame.getGametableFrame().getGametableCanvas(), type);
-    }
-
-    public Pog(Pog toCopy)
+    public Pog(final Pog toCopy)
     {
         init(toCopy);
+    }
+
+    public Pog(final PogType type)
+    {
+        init(GametableFrame.getGametableFrame().getGametableCanvas(), type);
     }
 
     // --- Methods ---------------------------------------------------------------------------------------------------
 
     // --- Initialization ---
-
-    private void initFromPacket(DataInputStream dis) throws IOException
-    {
-        String filename = UtilityFunctions.getLocalPath(dis.readUTF());
-        PogLibrary lib = GametableFrame.getGametableFrame().getPogLibrary();
-        filename = UtilityFunctions.getRelativePath(lib.getLocation(), new File(filename));
-
-        int x = dis.readInt();
-        int y = dis.readInt();
-        m_position = new Point(x, y);
-        int size = dis.readInt();
-        m_id = dis.readInt();
-        m_sortOrder = dis.readLong();
-        m_text = dis.readUTF();
-        // boolean underlay =
-        dis.readBoolean();
-        m_scale = dis.readFloat();
-        m_angle = dis.readDouble();
-        m_locked = dis.readBoolean();
-        
-        // read in the card info, if any
-        boolean bCardExists = dis.readBoolean();
-        if ( bCardExists )
-        {
-        	m_card = DeckData.createBlankCard();
-        	m_card.read(dis);
-        }
-        else
-        {
-        	// no card 
-        	m_card = null;
-        }
-
-        
-        int numAttributes = dis.readInt();
-        m_attributes.clear();
-        for (int i = 0; i < numAttributes; i++)
-        {
-            String key = dis.readUTF();
-            String value = dis.readUTF();
-            setAttribute(key, value);
-        }
-
-        // special case psuedo-hack check
-        // through reasons unclear to me, sometimes a pog will get
-        // a size of around 2 billion. A more typical size would
-        // be around 1.
-        if (size > 100 || m_scale > 100.0)
-        {
-            m_bStillborn = true;
-            return;
-        }
-
-        stopDisplayPogDataChange();
-
-        PogType type = lib.getPog(filename);
-        if (type == null)
-        {
-            type = lib.createPlaceholder(filename, size);
-        }
-        init(GametableFrame.getGametableFrame().getGametableCanvas(), type);
-    }
-
-    private void init(Pog orig)
-    {
-        m_position = orig.m_position;
-        m_pogType = orig.m_pogType;
-        m_canvas = orig.m_canvas;
-        m_scale = orig.m_scale;
-        m_angle = orig.m_angle;
-        m_text = orig.m_text;
-
-        if ( orig.m_card == null )
-        {
-        	m_card = orig.m_card;
-        }
-        else
-        {
-        	m_card = DeckData.createBlankCard();
-        	m_card.copy(orig.m_card);
-        }
-        
-        for (Iterator iterator = orig.m_attributes.values().iterator(); iterator.hasNext();)
-        {
-            Attribute attribute = (Attribute)iterator.next();
-            setAttribute(attribute.name, attribute.value);
-        }
-        stopDisplayPogDataChange();
-    }
-
-    private void init(GametableCanvas canvas, PogType type)
-    {
-        m_pogType = type;
-        m_canvas = canvas;
-    }
-    
-    /************************** CARD POG STUFF *******************************/
-    public void makeCardPog(DeckData.Card card)
-    {
-    	// note the card info. We copy it, so we aren't affected
-    	// by future changes to this card instance.
-    	m_card = card.makeCopy();
-    	
-    	/*
-    	Commented out because these attributes become
-    	really annoying in play. They pop up whenever the
-    	mouse is over the card and it's irritating.
-    	// set the appropriate attributes
-    	if ( card.m_cardName.length() > 0 )
-    	{
-    		m_text = card.m_cardName;
-    	}
-    	if ( card.m_cardDesc.length() > 0 )
-    	{
-    		setAttribute("Desc", card.m_cardDesc);
-    	}
-    	if ( card.m_deckName.length() > 0 )
-    	{
-    		setAttribute("Deck", card.m_deckName);
-    	}
-    	*/
-    }
-    
-    public boolean isCardPog()
-    {
-    	if ( m_card == null )
-    	{
-    		return false;
-    	}
-    	return true;
-    }
-    
-    public DeckData.Card getCard()
-    {
-    	return m_card;
-    }
 
     public void assignUniqueId()
     {
@@ -312,349 +176,17 @@ public class Pog implements Comparable
         m_sortOrder = g_nextSortId++;
     }
 
-    // --- Accessors ---
-
-    public int getId()
-    {
-        return m_id;
-    }
-
-    public long getSortOrder()
-    {
-        return m_sortOrder;
-    }
-
-    public boolean isTinted()
-    {
-        return m_bTinted;
-    }
-    
-    public boolean isLocked()
-    {
-        return m_locked;
-    }
-
-    public String getFilename()
-    {
-        return m_pogType.getFilename();
-    }
-
-    public PogType getPogType()
-    {
-        return m_pogType;
-    }
-
-    public int getWidth()
-    {
-        if (m_scale == 1f)
-        {
-            return m_pogType.getWidth(m_angle);
-        }
-
-        return Math.round(m_pogType.getWidth(m_angle) * m_scale);
-    }
-
-    public int getHeight()
-    {
-        if (m_scale == 1f)
-        {
-            return m_pogType.getHeight(m_angle);
-        }
-
-        return Math.round(m_pogType.getHeight(m_angle) * m_scale);
-    }
-
-    public boolean isUnderlay()
-    {
-        return m_pogType.isUnderlay();
-    }
-
-    public boolean isUnknown()
-    {
-        return m_pogType.isUnknown();
-    }
-
-    public int getHeightForZoomLevel()
-    {
-        int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
-        double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
-        int imgSizeY = (int)(ratio * getHeight());
-        return imgSizeY;
-    }
-
-    public int getWidthForZoomLevel()
-    {
-        int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
-        double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
-        int imgSizeX = (int)(ratio * getWidth());
-        return imgSizeX;
-    }
-
-    public int getX()
-    {
-        return getPosition().x;
-    }
-
-    public int getY()
-    {
-        return getPosition().y;
-    }
-
-    public int getFaceSize()
-    {
-        if (m_scale == 1f)
-        {
-            return m_pogType.getFaceSize();
-        }
-
-        return Math.max(Math.round(Math.max(m_pogType.getWidth(m_angle), m_pogType.getHeight(m_angle)) * m_scale
-            / GametableCanvas.BASE_SQUARE_SIZE), 1);
-    }
-    
-    public double getAngle()
-    {
-        return m_angle;
-    }
-
-    public boolean testHit(Point modelPoint)
-    {
-        return m_pogType.testHit(modelToPog(modelPoint), m_angle);
-    }
-
-    public boolean testHit(int modelX, int modelY)
-    {
-        return testHit(new Point(modelX, modelY));
-    }
-
-    public Point getPosition()
-    {
-        return m_position;
-    }
-
-    public String getText()
-    {
-        return m_text;
-    }
-
-    public String getAttribute(String name)
-    {
-        String normalizedName = UtilityFunctions.normalizeName(name);
-        Attribute a = (Attribute)m_attributes.get(normalizedName);
-        if (a == null)
-        {
-            return null;
-        }
-        return a.value;
-    }
-
-    public Set getAttributeNames()
-    {
-        Set s = new HashSet();
-        for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
-        {
-            Attribute attribute = (Attribute)iterator.next();
-            s.add(attribute.name);
-        }
-        return Collections.unmodifiableSet(s);
-    }
-
-    public boolean hasAttributes()
-    {
-        return !m_attributes.isEmpty();
-    }
-
-    // --- Setters ---
-
-    public void setAttribute(String name, String value)
-    {
-        String normalizedName = UtilityFunctions.normalizeName(name);
-        m_attributes.put(normalizedName, new Attribute(name, value));
-        displayPogDataChange();
-    }
-
-    public void removeAttribute(String name)
-    {
-        String normalizedName = UtilityFunctions.normalizeName(name);
-        m_attributes.remove(normalizedName);
-    }
-
-    public void setSortOrder(long order)
-    {
-        m_sortOrder = order;
-    }
-
-    public void setTinted(boolean b)
-    {
-        m_bTinted = b;
-    }
-    
-    public void setLocked(boolean b)
-    {
-        m_locked = b;
-    }
-
-    public void setPosition(Point pos)
-    {
-        m_position = pos;
-    }
-
-    public void setPosition(int x, int y)
-    {
-        setPosition(new Point(x, y));
-    }
-
-    public void setText(String text)
-    {
-        m_text = text;
-        displayPogDataChange();
-    }
-
-    public void setFaceSize(float faceSize)
-    {
-        if (faceSize <= 0)
-        {
-            m_scale = 1;
-            return;
-        }
-
-        float targetDimension = GametableCanvas.BASE_SQUARE_SIZE * faceSize;
-        float maxDimension = Math.max(getPogType().getWidth(m_angle), getPogType().getHeight(m_angle));
-        if (maxDimension == 0)
-        {
-            throw new ArithmeticException("Zero sized pog dimension: " + this);
-        }
-        m_scale = targetDimension / maxDimension;
-    }
-
-    public void setAngle(double angle)
-    {
-        m_angle = angle;
-    }
-    
-    /**
-     * @return A vector to adjust the drag position when snapping for odd-sized pogs.
-     */
-    public Point getSnapDragAdjustment()
-    {
-        Point adjustment = new Point();
-        int width = getWidth();
-        int height = getHeight();
-
-        if (width < height)
-        {
-            adjustment.x = -(height - width) / 2;
-        }
-        else if (width > height)
-        {
-            adjustment.y = -(width - height) / 2;
-        }
-
-        return adjustment;
-    }
-
-    // --- Drawing ---
-
-    public void drawScaled(Graphics g, int x, int y)
-    {
-        // we have to work with ratios, cause the pog could be large or huge, gargantuan, etc.
-        float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
-            / (float)GametableCanvas.BASE_SQUARE_SIZE;
-        m_pogType.drawScaled(g, x, y, scale * m_scale, m_angle);
-    }
-
-    public void drawGhostlyToCanvas(Graphics g)
-    {
-        Graphics2D g2 = (Graphics2D)g.create();
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-        drawToCanvas(g2);
-        g2.dispose();
-    }
-
-    public void drawToCanvas(Graphics g)
-    {
-        // convert our model coordinates to draw coordinates
-        Point drawCoords = m_canvas.modelToDraw(getPosition());
-        float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
-            / (float)GametableCanvas.BASE_SQUARE_SIZE;
-
-        m_pogType.drawScaled(g, drawCoords.x, drawCoords.y, scale * m_scale, m_angle);
-
-        // if we're tinted, draw tinted
-        if (m_bTinted)
-        {
-            m_pogType.drawTint(g, drawCoords.x, drawCoords.y, scale * m_scale, Color.GREEN, m_angle);
-        }
-    }
-
-    public void drawTextToCanvas(Graphics gr, boolean bForceTextInBounds)
-    {
-        drawTextToCanvas(gr, bForceTextInBounds, false);
-    }
-
-    public void drawTextToCanvas(Graphics gr, boolean bForceTextInBounds, boolean drawAttributes)
-    {
-        drawStringToCanvas(gr, bForceTextInBounds, COLOR_BACKGROUND, drawAttributes);
-        stopDisplayPogDataChange();
-    }
-
-    public void drawChangedTextToCanvas(Graphics g)
-    {
-        if (!m_bTextChangeNotifying)
-        {
-            return;
-        }
-        drawStringToCanvas(g, true, COLOR_CHANGED_BACKGROUND);
-    }
-
-    // --- Miscellany ---
-
-    public void writeToPacket(DataOutputStream dos) throws IOException
-    {
-        dos.writeUTF(getFilename());
-        dos.writeInt(getX());
-        dos.writeInt(getY());
-        dos.writeInt(getPogType().getFaceSize());
-        dos.writeInt(m_id);
-        dos.writeLong(m_sortOrder);
-        dos.writeUTF(m_text);
-        dos.writeBoolean(isUnderlay());
-        dos.writeFloat(m_scale);
-        dos.writeDouble(m_angle);
-        dos.writeBoolean(m_locked);
-        
-        // write out the card info, if any
-        if ( m_card != null )
-        {
-        	dos.writeBoolean(true); // we have a valid card
-        	m_card.write(dos);
-        }
-        else
-        {
-        	dos.writeBoolean(false); // no card info
-        }
-        
-        dos.writeInt(m_attributes.size());
-        for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
-        {
-            Attribute attribute = (Attribute)iterator.next();
-            dos.writeUTF(attribute.name);
-            dos.writeUTF(attribute.value);
-        }
-    }
-
-    // --- Comparable Implementation ---
-
     /*
      * @see java.lang.Comparable#compareTo(java.lang.Object)
      */
-    public int compareTo(Object o)
+    public int compareTo(final Object o)
     {
-        if (this.equals(o))
+        if (equals(o))
         {
             return 0;
         }
 
-        Pog pog = (Pog)o;
+        final Pog pog = (Pog)o;
         long diff = m_sortOrder - pog.getSortOrder();
         if (diff == 0)
         {
@@ -663,41 +195,6 @@ public class Pog implements Comparable
 
         return (diff < 0 ? -1 : (diff > 0 ? 1 : 0));
     }
-
-    // --- Object Implementation ---
-
-    /*
-     * @see java.lang.Object#hashCode()
-     */
-    public int hashCode()
-    {
-        return m_id;
-    }
-
-    /*
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-        {
-            return true;
-        }
-
-        Pog pog = (Pog)obj;
-        return (pog.getId() == m_id);
-    }
-
-    /*
-     * @see java.lang.Object#toString()
-     */
-    public String toString()
-    {
-        return "[Pog name: " + getFilename() + " (" + getId() + " - " + getSortOrder() + ") pos: " + getPosition()
-            + " size: " + getFaceSize() + "]";
-    }
-
-    // --- Private Helpers ---
 
     private void displayPogDataChange()
     {
@@ -716,49 +213,141 @@ public class Pog implements Comparable
         m_bTextChangeNotifying = true;
     }
 
-    private void stopDisplayPogDataChange()
+    private void drawAttributes(final Graphics g, final int x, final int y, final boolean onlyChanged)
     {
-        m_bTextChangeNotifying = false;
-        for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
+        int numAttributes = 0;
+        if (onlyChanged)
         {
-            Attribute attribute = (Attribute)iterator.next();
-            attribute.changed = false;
+            for (final Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
+            {
+                final Attribute attribute = (Attribute)iterator.next();
+                if (attribute.changed)
+                {
+                    numAttributes++;
+                }
+            }
         }
+        else
+        {
+            numAttributes = m_attributes.size();
+        }
+
+        if (numAttributes < 1)
+        {
+            return;
+        }
+
+        final Graphics2D g2 = (Graphics2D)g.create();
+        final FontMetrics nameMetrics = g2.getFontMetrics(FONT_ATTRIBUTE_NAME);
+        final FontMetrics valueMetrics = g2.getFontMetrics(FONT_ATTRIBUTE_VALUE);
+        int height = 0;
+        int width = 0;
+        for (final Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
+        {
+            final Attribute attribute = (Attribute)iterator.next();
+            if (onlyChanged && !attribute.changed)
+            {
+                continue;
+            }
+
+            final Rectangle nameBounds = nameMetrics.getStringBounds(attribute.name + ": ", g2).getBounds();
+            final Rectangle valueBounds = valueMetrics.getStringBounds(attribute.value, g2).getBounds();
+            final int attrWidth = nameBounds.width + valueBounds.width;
+            if (attrWidth > width)
+            {
+                width = attrWidth;
+            }
+            final int attrHeight = Math.max(nameBounds.height, valueBounds.height);
+            height += attrHeight;
+        }
+
+        final int PADDING = 3;
+        final int SPACE = PADDING * 2;
+        height += SPACE;
+        width += SPACE;
+
+        int drawX = x - width / 2;
+        int drawY = y;
+        g2.setColor(COLOR_ATTRIBUTE_BACKGROUND);
+        g2.fillRect(drawX, drawY, width, height);
+        g2.setColor(Color.BLACK);
+        g2.drawRect(drawX, drawY, width - 1, height - 1);
+
+        drawX += PADDING;
+        drawY += PADDING;
+        for (final Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
+        {
+            final Attribute attribute = (Attribute)iterator.next();
+            if (onlyChanged && !attribute.changed)
+            {
+                continue;
+            }
+
+            final String nameString = attribute.name + ": ";
+            final String valueString = attribute.value;
+            final Rectangle nameBounds = nameMetrics.getStringBounds(nameString, g2).getBounds();
+            final Rectangle valueBounds = valueMetrics.getStringBounds(valueString, g2).getBounds();
+            final int baseline = Math.max(-nameBounds.y, -valueBounds.y);
+            g2.setFont(FONT_ATTRIBUTE_NAME);
+            g2.drawString(nameString, drawX, drawY + baseline);
+            g2.setFont(FONT_ATTRIBUTE_VALUE);
+            g2.drawString(attribute.value, drawX + nameBounds.width, drawY + baseline);
+            drawY += Math.max(nameBounds.height, valueBounds.height);
+        }
+
+        g2.dispose();
     }
 
-    private Point modelToPog(Point modelPoint)
+    public void drawChangedTextToCanvas(final Graphics g)
     {
-        int x = modelPoint.x - m_position.x;
-        x = Math.round(x / m_scale);
-        int y = modelPoint.y - m_position.y;
-        y = Math.round(y / m_scale);
-
-        return new Point(x, y);
+        if (!m_bTextChangeNotifying)
+        {
+            return;
+        }
+        drawStringToCanvas(g, true, COLOR_CHANGED_BACKGROUND);
     }
 
-    private void drawStringToCanvas(Graphics gr, boolean bForceTextInBounds, Color backgroundColor)
+    public void drawGhostlyToCanvas(final Graphics g)
+    {
+        final Graphics2D g2 = (Graphics2D)g.create();
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+        drawToCanvas(g2);
+        g2.dispose();
+    }
+
+    public void drawScaled(final Graphics g, final int x, final int y)
+    {
+        // we have to work with ratios, cause the pog could be large or huge, gargantuan, etc.
+        final float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
+            / (float)GametableCanvas.BASE_SQUARE_SIZE;
+        m_pogType.drawScaled(g, x, y, scale * m_scale, m_angle);
+    }
+
+    // --- Accessors ---
+
+    private void drawStringToCanvas(final Graphics gr, final boolean bForceTextInBounds, final Color backgroundColor)
     {
         drawStringToCanvas(gr, bForceTextInBounds, backgroundColor, false);
     }
 
-    private void drawStringToCanvas(Graphics gr, boolean bForceTextInBounds, Color backgroundColor,
+    private void drawStringToCanvas(final Graphics gr, final boolean bForceTextInBounds, final Color backgroundColor,
         boolean drawAttributes)
     {
         if (m_text == null)
         {
             m_text = "";
         }
-        Graphics2D g = (Graphics2D)gr.create();
+        final Graphics2D g = (Graphics2D)gr.create();
         g.setFont(FONT_TEXT);
-        FontMetrics metrics = g.getFontMetrics();
-        Rectangle stringBounds = metrics.getStringBounds(m_text, g).getBounds();
+        final FontMetrics metrics = g.getFontMetrics();
+        final Rectangle stringBounds = metrics.getStringBounds(m_text, g).getBounds();
 
-        int totalWidth = stringBounds.width + 6;
-        int totalHeight = stringBounds.height + 1;
+        final int totalWidth = stringBounds.width + 6;
+        final int totalHeight = stringBounds.height + 1;
 
-        Point pogDrawCoords = m_canvas.modelToDraw(getPosition());
-        int viewWidth = getHeightForZoomLevel();
-        Rectangle backgroundRect = new Rectangle();
+        final Point pogDrawCoords = m_canvas.modelToDraw(getPosition());
+        final int viewWidth = getHeightForZoomLevel();
+        final Rectangle backgroundRect = new Rectangle();
         backgroundRect.x = pogDrawCoords.x + (viewWidth - totalWidth) / 2;
         backgroundRect.y = pogDrawCoords.y - totalHeight - 4;
         backgroundRect.width = totalWidth;
@@ -793,8 +382,9 @@ public class Pog implements Comparable
             g.setColor(backgroundColor);
             g.fill(backgroundRect);
 
-            int stringX = backgroundRect.x + (backgroundRect.width - stringBounds.width) / 2;
-            int stringY = backgroundRect.y + (backgroundRect.height - stringBounds.height) / 2 + metrics.getAscent();
+            final int stringX = backgroundRect.x + (backgroundRect.width - stringBounds.width) / 2;
+            final int stringY = backgroundRect.y + (backgroundRect.height - stringBounds.height) / 2
+                + metrics.getAscent();
 
             g.setColor(Color.BLACK);
             g.drawString(m_text, stringX, stringY);
@@ -807,89 +397,487 @@ public class Pog implements Comparable
         g.dispose();
     }
 
-    private void drawAttributes(Graphics g, int x, int y, boolean onlyChanged)
+    public void drawTextToCanvas(final Graphics gr, final boolean bForceTextInBounds)
     {
-        int numAttributes = 0;
-        if (onlyChanged)
+        drawTextToCanvas(gr, bForceTextInBounds, false);
+    }
+
+    public void drawTextToCanvas(final Graphics gr, final boolean bForceTextInBounds, final boolean drawAttributes)
+    {
+        drawStringToCanvas(gr, bForceTextInBounds, COLOR_BACKGROUND, drawAttributes);
+        stopDisplayPogDataChange();
+    }
+
+    public void drawToCanvas(final Graphics g)
+    {
+        // convert our model coordinates to draw coordinates
+        final Point drawCoords = m_canvas.modelToDraw(getPosition());
+        final float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
+            / (float)GametableCanvas.BASE_SQUARE_SIZE;
+
+        m_pogType.drawScaled(g, drawCoords.x, drawCoords.y, scale * m_scale, m_angle);
+
+        // if we're tinted, draw tinted
+        if (m_bTinted)
         {
-            for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
-            {
-                Attribute attribute = (Attribute)iterator.next();
-                if (attribute.changed)
-                {
-                    numAttributes++;
-                }
-            }
+            m_pogType.drawTint(g, drawCoords.x, drawCoords.y, scale * m_scale, Color.GREEN, m_angle);
+        }
+    }
+
+    /*
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    public boolean equals(final Object obj)
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+
+        final Pog pog = (Pog)obj;
+        return (pog.getId() == m_id);
+    }
+
+    public double getAngle()
+    {
+        return m_angle;
+    }
+
+    public String getAttribute(final String name)
+    {
+        final String normalizedName = UtilityFunctions.normalizeName(name);
+        final Attribute a = (Attribute)m_attributes.get(normalizedName);
+        if (a == null)
+        {
+            return null;
+        }
+        return a.value;
+    }
+
+    public Set getAttributeNames()
+    {
+        final Set s = new HashSet();
+        for (final Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
+        {
+            final Attribute attribute = (Attribute)iterator.next();
+            s.add(attribute.name);
+        }
+        return Collections.unmodifiableSet(s);
+    }
+
+    public DeckData.Card getCard()
+    {
+        return m_card;
+    }
+
+    public int getFaceSize()
+    {
+        if (m_scale == 1f)
+        {
+            return m_pogType.getFaceSize();
+        }
+
+        return Math.max(Math.round(Math.max(m_pogType.getWidth(m_angle), m_pogType.getHeight(m_angle)) * m_scale
+            / GametableCanvas.BASE_SQUARE_SIZE), 1);
+    }
+
+    public String getFilename()
+    {
+        return m_pogType.getFilename();
+    }
+
+    public int getHeight()
+    {
+        if (m_scale == 1f)
+        {
+            return m_pogType.getHeight(m_angle);
+        }
+
+        return Math.round(m_pogType.getHeight(m_angle) * m_scale);
+    }
+
+    public int getHeightForZoomLevel()
+    {
+        final int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
+        final double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
+        final int imgSizeY = (int)(ratio * getHeight());
+        return imgSizeY;
+    }
+
+    public int getId()
+    {
+        return m_id;
+    }
+
+    public PogType getPogType()
+    {
+        return m_pogType;
+    }
+
+    public Point getPosition()
+    {
+        return m_position;
+    }
+
+    /**
+     * @return A vector to adjust the drag position when snapping for odd-sized pogs.
+     */
+    public Point getSnapDragAdjustment()
+    {
+        final Point adjustment = new Point();
+        final int width = getWidth();
+        final int height = getHeight();
+
+        if (width < height)
+        {
+            adjustment.x = -(height - width) / 2;
+        }
+        else if (width > height)
+        {
+            adjustment.y = -(width - height) / 2;
+        }
+
+        return adjustment;
+    }
+
+    public long getSortOrder()
+    {
+        return m_sortOrder;
+    }
+
+    public String getText()
+    {
+        return m_text;
+    }
+
+    public int getWidth()
+    {
+        if (m_scale == 1f)
+        {
+            return m_pogType.getWidth(m_angle);
+        }
+
+        return Math.round(m_pogType.getWidth(m_angle) * m_scale);
+    }
+
+    public int getWidthForZoomLevel()
+    {
+        final int size = GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom);
+        final double ratio = (double)size / (double)GametableCanvas.BASE_SQUARE_SIZE;
+        final int imgSizeX = (int)(ratio * getWidth());
+        return imgSizeX;
+    }
+
+    public int getX()
+    {
+        return getPosition().x;
+    }
+
+    // --- Setters ---
+
+    public int getY()
+    {
+        return getPosition().y;
+    }
+
+    public boolean hasAttributes()
+    {
+        return !m_attributes.isEmpty();
+    }
+
+    /*
+     * @see java.lang.Object#hashCode()
+     */
+    public int hashCode()
+    {
+        return m_id;
+    }
+
+    private void init(final GametableCanvas canvas, final PogType type)
+    {
+        m_pogType = type;
+        m_canvas = canvas;
+    }
+
+    private void init(final Pog orig)
+    {
+        m_position = orig.m_position;
+        m_pogType = orig.m_pogType;
+        m_canvas = orig.m_canvas;
+        m_scale = orig.m_scale;
+        m_angle = orig.m_angle;
+        m_text = orig.m_text;
+
+        if (orig.m_card == null)
+        {
+            m_card = orig.m_card;
         }
         else
         {
-            numAttributes = m_attributes.size();
+            m_card = DeckData.createBlankCard();
+            m_card.copy(orig.m_card);
         }
 
-        if (numAttributes < 1)
+        for (final Iterator iterator = orig.m_attributes.values().iterator(); iterator.hasNext();)
         {
+            final Attribute attribute = (Attribute)iterator.next();
+            setAttribute(attribute.name, attribute.value);
+        }
+        stopDisplayPogDataChange();
+    }
+
+    private void initFromPacket(final DataInputStream dis) throws IOException
+    {
+        String filename = UtilityFunctions.getLocalPath(dis.readUTF());
+        final PogLibrary lib = GametableFrame.getGametableFrame().getPogLibrary();
+        filename = UtilityFunctions.getRelativePath(lib.getLocation(), new File(filename));
+
+        final int x = dis.readInt();
+        final int y = dis.readInt();
+        m_position = new Point(x, y);
+        final int size = dis.readInt();
+        m_id = dis.readInt();
+        m_sortOrder = dis.readLong();
+        m_text = dis.readUTF();
+        // boolean underlay =
+        dis.readBoolean();
+        m_scale = dis.readFloat();
+        m_angle = dis.readDouble();
+        m_locked = dis.readBoolean();
+
+        // read in the card info, if any
+        final boolean bCardExists = dis.readBoolean();
+        if (bCardExists)
+        {
+            m_card = DeckData.createBlankCard();
+            m_card.read(dis);
+        }
+        else
+        {
+            // no card
+            m_card = null;
+        }
+
+        final int numAttributes = dis.readInt();
+        m_attributes.clear();
+        for (int i = 0; i < numAttributes; i++)
+        {
+            final String key = dis.readUTF();
+            final String value = dis.readUTF();
+            setAttribute(key, value);
+        }
+
+        // special case psuedo-hack check
+        // through reasons unclear to me, sometimes a pog will get
+        // a size of around 2 billion. A more typical size would
+        // be around 1.
+        if ((size > 100) || (m_scale > 100.0))
+        {
+            m_bStillborn = true;
             return;
         }
 
-        Graphics2D g2 = (Graphics2D)g.create();
-        FontMetrics nameMetrics = g2.getFontMetrics(FONT_ATTRIBUTE_NAME);
-        FontMetrics valueMetrics = g2.getFontMetrics(FONT_ATTRIBUTE_VALUE);
-        int height = 0;
-        int width = 0;
-        for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
-        {
-            Attribute attribute = (Attribute)iterator.next();
-            if (onlyChanged && !attribute.changed)
-            {
-                continue;
-            }
+        stopDisplayPogDataChange();
 
-            Rectangle nameBounds = nameMetrics.getStringBounds(attribute.name + ": ", g2).getBounds();
-            Rectangle valueBounds = valueMetrics.getStringBounds(attribute.value, g2).getBounds();
-            int attrWidth = nameBounds.width + valueBounds.width;
-            if (attrWidth > width)
-            {
-                width = attrWidth;
-            }
-            int attrHeight = Math.max(nameBounds.height, valueBounds.height);
-            height += attrHeight;
+        PogType type = lib.getPog(filename);
+        if (type == null)
+        {
+            type = lib.createPlaceholder(filename, size);
+        }
+        init(GametableFrame.getGametableFrame().getGametableCanvas(), type);
+    }
+
+    public boolean isCardPog()
+    {
+        if (m_card == null)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    public boolean isLocked()
+    {
+        return m_locked;
+    }
+
+    public boolean isTinted()
+    {
+        return m_bTinted;
+    }
+
+    public boolean isUnderlay()
+    {
+        return m_pogType.isUnderlay();
+    }
+
+    public boolean isUnknown()
+    {
+        return m_pogType.isUnknown();
+    }
+
+    // --- Drawing ---
+
+    /** ************************ CARD POG STUFF ****************************** */
+    public void makeCardPog(final DeckData.Card card)
+    {
+        // note the card info. We copy it, so we aren't affected
+        // by future changes to this card instance.
+        m_card = card.makeCopy();
+
+        /*
+         * Commented out because these attributes become really annoying in play. They pop up whenever the mouse is over
+         * the card and it's irritating. // set the appropriate attributes if ( card.m_cardName.length() > 0 ) { m_text =
+         * card.m_cardName; } if ( card.m_cardDesc.length() > 0 ) { setAttribute("Desc", card.m_cardDesc); } if (
+         * card.m_deckName.length() > 0 ) { setAttribute("Deck", card.m_deckName); }
+         */
+    }
+
+    private Point modelToPog(final Point modelPoint)
+    {
+        int x = modelPoint.x - m_position.x;
+        x = Math.round(x / m_scale);
+        int y = modelPoint.y - m_position.y;
+        y = Math.round(y / m_scale);
+
+        return new Point(x, y);
+    }
+
+    public void removeAttribute(final String name)
+    {
+        final String normalizedName = UtilityFunctions.normalizeName(name);
+        m_attributes.remove(normalizedName);
+    }
+
+    public void setAngle(final double angle)
+    {
+        m_angle = angle;
+    }
+
+    public void setAttribute(final String name, final String value)
+    {
+        final String normalizedName = UtilityFunctions.normalizeName(name);
+        m_attributes.put(normalizedName, new Attribute(name, value));
+        displayPogDataChange();
+    }
+
+    public void setFaceSize(final float faceSize)
+    {
+        if (faceSize <= 0)
+        {
+            m_scale = 1;
+            return;
         }
 
-        final int PADDING = 3;
-        final int SPACE = PADDING * 2;
-        height += SPACE;
-        width += SPACE;
-
-        int drawX = x - width / 2;
-        int drawY = y;
-        g2.setColor(COLOR_ATTRIBUTE_BACKGROUND);
-        g2.fillRect(drawX, drawY, width, height);
-        g2.setColor(Color.BLACK);
-        g2.drawRect(drawX, drawY, width - 1, height - 1);
-
-        drawX += PADDING;
-        drawY += PADDING;
-        for (Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
+        final float targetDimension = GametableCanvas.BASE_SQUARE_SIZE * faceSize;
+        final float maxDimension = Math.max(getPogType().getWidth(m_angle), getPogType().getHeight(m_angle));
+        if (maxDimension == 0)
         {
-            Attribute attribute = (Attribute)iterator.next();
-            if (onlyChanged && !attribute.changed)
-            {
-                continue;
-            }
+            throw new ArithmeticException("Zero sized pog dimension: " + this);
+        }
+        m_scale = targetDimension / maxDimension;
+    }
 
-            String nameString = attribute.name + ": ";
-            String valueString = attribute.value;
-            Rectangle nameBounds = nameMetrics.getStringBounds(nameString, g2).getBounds();
-            Rectangle valueBounds = valueMetrics.getStringBounds(valueString, g2).getBounds();
-            int baseline = Math.max(-nameBounds.y, -valueBounds.y);
-            g2.setFont(FONT_ATTRIBUTE_NAME);
-            g2.drawString(nameString, drawX, drawY + baseline);
-            g2.setFont(FONT_ATTRIBUTE_VALUE);
-            g2.drawString(attribute.value, drawX + nameBounds.width, drawY + baseline);
-            drawY += Math.max(nameBounds.height, valueBounds.height);
+    // --- Miscellany ---
+
+    public void setLocked(final boolean b)
+    {
+        m_locked = b;
+    }
+
+    // --- Comparable Implementation ---
+
+    public void setPosition(final int x, final int y)
+    {
+        setPosition(new Point(x, y));
+    }
+
+    // --- Object Implementation ---
+
+    public void setPosition(final Point pos)
+    {
+        m_position = pos;
+    }
+
+    public void setSortOrder(final long order)
+    {
+        m_sortOrder = order;
+    }
+
+    public void setText(final String text)
+    {
+        m_text = text;
+        displayPogDataChange();
+    }
+
+    // --- Private Helpers ---
+
+    public void setTinted(final boolean b)
+    {
+        m_bTinted = b;
+    }
+
+    private void stopDisplayPogDataChange()
+    {
+        m_bTextChangeNotifying = false;
+        for (final Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
+        {
+            final Attribute attribute = (Attribute)iterator.next();
+            attribute.changed = false;
+        }
+    }
+
+    public boolean testHit(final int modelX, final int modelY)
+    {
+        return testHit(new Point(modelX, modelY));
+    }
+
+    public boolean testHit(final Point modelPoint)
+    {
+        return m_pogType.testHit(modelToPog(modelPoint), m_angle);
+    }
+
+    /*
+     * @see java.lang.Object#toString()
+     */
+    public String toString()
+    {
+        return "[Pog name: " + getFilename() + " (" + getId() + " - " + getSortOrder() + ") pos: " + getPosition()
+            + " size: " + getFaceSize() + "]";
+    }
+
+    public void writeToPacket(final DataOutputStream dos) throws IOException
+    {
+        dos.writeUTF(getFilename());
+        dos.writeInt(getX());
+        dos.writeInt(getY());
+        dos.writeInt(getPogType().getFaceSize());
+        dos.writeInt(m_id);
+        dos.writeLong(m_sortOrder);
+        dos.writeUTF(m_text);
+        dos.writeBoolean(isUnderlay());
+        dos.writeFloat(m_scale);
+        dos.writeDouble(m_angle);
+        dos.writeBoolean(m_locked);
+
+        // write out the card info, if any
+        if (m_card != null)
+        {
+            dos.writeBoolean(true); // we have a valid card
+            m_card.write(dos);
+        }
+        else
+        {
+            dos.writeBoolean(false); // no card info
         }
 
-        g2.dispose();
+        dos.writeInt(m_attributes.size());
+        for (final Iterator iterator = m_attributes.values().iterator(); iterator.hasNext();)
+        {
+            final Attribute attribute = (Attribute)iterator.next();
+            dos.writeUTF(attribute.name);
+            dos.writeUTF(attribute.value);
+        }
     }
 
 }

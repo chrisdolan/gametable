@@ -2,9 +2,14 @@
  * GridMode.java: GameTable is in the Public Domain.
  */
 
+
 package com.galactanet.gametable;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Point;
+
+
 
 /**
  * 
@@ -12,25 +17,12 @@ import java.awt.*;
  */
 public class SquareGridMode extends GridMode
 {
-	public SquareGridMode()
-	{
-	}
-	
-	public void init(GametableCanvas canvas)
-	{
-		super.init(canvas);
-	}
-
-    public Point snapPointEx(Point modelPointIn, boolean bSnapForPog, int pogSize)
+    public SquareGridMode()
     {
-        // snapping for a pog or not is irrelevant in square mode.
-        int x = getGridSnap(modelPointIn.x);
-        int y = getGridSnap(modelPointIn.y);
-        return new Point(x, y);
     }
-    
-    // draws the lines to the canvas. Assumes there is a properly offset graphics object passed in 
-    public void drawLines(Graphics g, int topLeftX, int topLeftY, int width, int height)
+
+    // draws the lines to the canvas. Assumes there is a properly offset graphics object passed in
+    public void drawLines(final Graphics g, final int topLeftX, final int topLeftY, final int width, final int height)
     {
         if (m_canvas.m_zoom == 4)
         {
@@ -49,8 +41,8 @@ public class SquareGridMode extends GridMode
         // mode,
         // we have to make our "tiling square size" twice as wide.
 
-        int tilingSquareX = m_canvas.m_squareSize;
-        int tilingSquareY = m_canvas.m_squareSize;
+        final int tilingSquareX = m_canvas.m_squareSize;
+        final int tilingSquareY = m_canvas.m_squareSize;
 
         int qx = Math.abs(topLeftX) / tilingSquareX;
         if (topLeftX < 0)
@@ -66,10 +58,10 @@ public class SquareGridMode extends GridMode
             qy = -qy;
         }
 
-        int linesXOffset = qx * tilingSquareX;
-        int linesYOffset = qy * tilingSquareY;
-        int vLines = width / tilingSquareX + 2;
-        int hLines = height / tilingSquareY + 2;
+        final int linesXOffset = qx * tilingSquareX;
+        final int linesYOffset = qy * tilingSquareY;
+        final int vLines = width / tilingSquareX + 2;
+        final int hLines = height / tilingSquareY + 2;
 
         g.setColor(Color.GRAY);
 
@@ -78,14 +70,27 @@ public class SquareGridMode extends GridMode
         {
             for (int i = 0; i < vLines; i++)
             {
-                g.drawLine(i * m_canvas.m_squareSize + linesXOffset, topLeftY, i * m_canvas.m_squareSize + linesXOffset, height
-                    + topLeftY);
+                g.drawLine(i * m_canvas.m_squareSize + linesXOffset, topLeftY,
+                    i * m_canvas.m_squareSize + linesXOffset, height + topLeftY);
             }
             for (int i = 0; i < hLines; i++)
             {
-                g.drawLine(topLeftX, i * m_canvas.m_squareSize + linesYOffset, width + topLeftX, i * m_canvas.m_squareSize
-                    + linesYOffset);
+                g.drawLine(topLeftX, i * m_canvas.m_squareSize + linesYOffset, width + topLeftX, i
+                    * m_canvas.m_squareSize + linesYOffset);
             }
         }
+    }
+
+    public void init(final GametableCanvas canvas)
+    {
+        super.init(canvas);
+    }
+
+    public Point snapPointEx(final Point modelPointIn, final boolean bSnapForPog, final int pogSize)
+    {
+        // snapping for a pog or not is irrelevant in square mode.
+        final int x = getGridSnap(modelPointIn.x);
+        final int y = getGridSnap(modelPointIn.y);
+        return new Point(x, y);
     }
 }

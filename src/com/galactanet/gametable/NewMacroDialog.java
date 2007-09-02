@@ -25,16 +25,20 @@ import javax.swing.*;
  */
 public class NewMacroDialog extends JDialog implements FocusListener
 {
-    private JButton    m_ok          = new JButton();
-    private JButton    m_cancel      = new JButton();
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 7635834691550405596L;
+    private final JLabel      dieHelpLabel1    = new JLabel();
+    private final JLabel      dieHelpLabel2    = new JLabel();
 
-    private boolean    m_bAccepted;
-    private JTextField m_nameEntry   = new JTextField();
-    private JTextField m_rollEntry   = new JTextField();
-    private JLabel     nameLabel     = new JLabel();
-    private JLabel     dieLabel      = new JLabel();
-    private JLabel     dieHelpLabel1 = new JLabel();
-    private JLabel     dieHelpLabel2 = new JLabel();
+    private final JLabel      dieLabel         = new JLabel();
+    private boolean           m_bAccepted;
+    private final JButton     m_cancel         = new JButton();
+    private final JTextField  m_nameEntry      = new JTextField();
+    private final JButton     m_ok             = new JButton();
+    private final JTextField  m_rollEntry      = new JTextField();
+    private final JLabel      nameLabel        = new JLabel();
 
     public NewMacroDialog()
     {
@@ -42,7 +46,7 @@ public class NewMacroDialog extends JDialog implements FocusListener
         {
             initialize();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             Log.log(Log.SYS, e);
         }
@@ -51,15 +55,46 @@ public class NewMacroDialog extends JDialog implements FocusListener
         pack();
 
         // center yourself
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        Dimension frameSize = getSize();
+        final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        final Dimension frameSize = getSize();
         if (frameSize.height > screenSize.height)
+        {
             frameSize.height = screenSize.height;
+        }
         if (frameSize.width > screenSize.width)
+        {
             frameSize.width = screenSize.width;
+        }
         setLocation((screenSize.width - frameSize.width) / 2, (screenSize.height - frameSize.height) / 2);
 
         m_nameEntry.requestFocus();
+    }
+
+    public void focusGained(final FocusEvent e)
+    {
+        // only interested in JTextFields
+        if (!(e.getSource() instanceof JTextField))
+        {
+            return;
+        }
+
+        final JTextField focused = (JTextField)e.getSource();
+        focused.setSelectionStart(0);
+        focused.setSelectionEnd(focused.getText().length());
+    }
+
+    public void focusLost(final FocusEvent e)
+    {
+    }
+
+    public String getMacroDefinition()
+    {
+        return m_rollEntry.getText();
+    }
+
+    public String getMacroName()
+    {
+        return m_nameEntry.getText();
     }
 
     private void initialize()
@@ -74,7 +109,7 @@ public class NewMacroDialog extends JDialog implements FocusListener
             /*
              * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
              */
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 if (m_rollEntry.getText().length() > 0)
                 {
@@ -90,7 +125,7 @@ public class NewMacroDialog extends JDialog implements FocusListener
             /*
              * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
              */
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 dispose();
             }
@@ -103,10 +138,10 @@ public class NewMacroDialog extends JDialog implements FocusListener
 
         final int PADDING = 5;
 
-        Box outmostBox = Box.createHorizontalBox();
+        final Box outmostBox = Box.createHorizontalBox();
         getContentPane().add(outmostBox, BorderLayout.CENTER);
         outmostBox.add(Box.createHorizontalStrut(PADDING));
-        Box outerBox = Box.createVerticalBox();
+        final Box outerBox = Box.createVerticalBox();
         outmostBox.add(outerBox);
         outmostBox.add(Box.createHorizontalStrut(PADDING));
 
@@ -121,7 +156,7 @@ public class NewMacroDialog extends JDialog implements FocusListener
         outerBox.add(Box.createVerticalStrut(PADDING * 2));
 
         panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        Box nextBox = Box.createVerticalBox();
+        final Box nextBox = Box.createVerticalBox();
         nextBox.add(dieLabel);
         nextBox.add(dieHelpLabel1);
         nextBox.add(dieHelpLabel2);
@@ -147,24 +182,7 @@ public class NewMacroDialog extends JDialog implements FocusListener
         setModal(true);
     }
 
-    public void focusGained(FocusEvent e)
-    {
-        // only interested in JTextFields
-        if (!(e.getSource() instanceof JTextField))
-        {
-            return;
-        }
-
-        JTextField focused = (JTextField)e.getSource();
-        focused.setSelectionStart(0);
-        focused.setSelectionEnd(focused.getText().length());
-    }
-
-    public void focusLost(FocusEvent e)
-    {
-    }
-    
-    public void initializeValues(String name, String definition)
+    public void initializeValues(final String name, final String definition)
     {
         m_nameEntry.setText(name);
         m_rollEntry.setText(definition);
@@ -173,15 +191,5 @@ public class NewMacroDialog extends JDialog implements FocusListener
     public boolean isAccepted()
     {
         return m_bAccepted;
-    }
-
-    public String getMacroName()
-    {
-        return m_nameEntry.getText();
-    }
-
-    public String getMacroDefinition()
-    {
-        return m_rollEntry.getText();
     }
 }

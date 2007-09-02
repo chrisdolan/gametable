@@ -25,22 +25,26 @@ import javax.swing.*;
  */
 public class JoinDialog extends JDialog implements FocusListener
 {
-    boolean    m_bAccepted;
-    JTextField m_plrNameEntry    = new JTextField();
-    JTextField m_charNameEntry   = new JTextField();
-    JLabel     jLabel2           = new JLabel();
-    JLabel     jLabel3           = new JLabel();
-    JTextField m_portEntry       = new JTextField();
-    JLabel     jLabel1           = new JLabel();
-    JTextField m_passwordEntry   = new JTextField();
-    JLabel     jLabel4           = new JLabel();
+    /**
+     * 
+     */
+    private static final long serialVersionUID  = -7877135247158193423L;
+    JLabel                    jLabel1           = new JLabel();
+    JLabel                    jLabel2           = new JLabel();
+    JLabel                    jLabel3           = new JLabel();
+    JLabel                    jLabel4           = new JLabel();
+    boolean                   m_bAccepted;
+    JButton                   m_cancel          = new JButton();
+    JTextField                m_charNameEntry   = new JTextField();
+    JLabel                    m_enterHostLabel  = new JLabel();
+    CardLayout                m_hostPanelLayout = new CardLayout(0, 0);
+    JPanel                    m_hostPanel       = new JPanel(m_hostPanelLayout);
 
-    JButton    m_ok              = new JButton();
-    JButton    m_cancel          = new JButton();
-    JTextField m_textEntry       = new JTextField();
-    JLabel     m_enterHostLabel  = new JLabel();
-    CardLayout m_hostPanelLayout = new CardLayout(0, 0);
-    JPanel     m_hostPanel       = new JPanel(m_hostPanelLayout);
+    JButton                   m_ok              = new JButton();
+    JTextField                m_passwordEntry   = new JTextField();
+    JTextField                m_plrNameEntry    = new JTextField();
+    JTextField                m_portEntry       = new JTextField();
+    JTextField                m_textEntry       = new JTextField();
 
     public JoinDialog()
     {
@@ -48,7 +52,7 @@ public class JoinDialog extends JDialog implements FocusListener
         {
             initialize();
         }
-        catch (RuntimeException e)
+        catch (final RuntimeException e)
         {
             Log.log(Log.SYS, e);
         }
@@ -57,6 +61,35 @@ public class JoinDialog extends JDialog implements FocusListener
         pack();
 
         m_ok.requestFocus();
+    }
+
+    public void focusGained(final FocusEvent e)
+    {
+        // only interested in JTextFields
+        if (!(e.getSource() instanceof JTextField))
+        {
+            return;
+        }
+
+        final JTextField focused = (JTextField)e.getSource();
+        focused.setSelectionStart(0);
+        focused.setSelectionEnd(focused.getText().length());
+    }
+
+    public void focusLost(final FocusEvent e)
+    {
+    }
+
+    private void getPort()
+    {
+        try
+        {
+            GametableFrame.getGametableFrame().m_port = Integer.parseInt(m_portEntry.getText());
+        }
+        catch (final NumberFormatException ex)
+        {
+            GametableFrame.getGametableFrame().m_port = GametableFrame.DEFAULT_PORT;
+        }
     }
 
     private void initialize()
@@ -71,7 +104,7 @@ public class JoinDialog extends JDialog implements FocusListener
             /*
              * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
              */
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_bAccepted = true;
 
@@ -92,7 +125,7 @@ public class JoinDialog extends JDialog implements FocusListener
             /*
              * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
              */
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 dispose();
             }
@@ -107,10 +140,10 @@ public class JoinDialog extends JDialog implements FocusListener
 
         final int PADDING = 5;
 
-        Box outmostBox = Box.createHorizontalBox();
+        final Box outmostBox = Box.createHorizontalBox();
         getContentPane().add(outmostBox, BorderLayout.CENTER);
         outmostBox.add(Box.createHorizontalStrut(PADDING));
-        Box outerBox = Box.createVerticalBox();
+        final Box outerBox = Box.createVerticalBox();
         outmostBox.add(outerBox);
         outmostBox.add(Box.createHorizontalStrut(PADDING));
 
@@ -200,34 +233,5 @@ public class JoinDialog extends JDialog implements FocusListener
     public void setUpForJoinDlg()
     {
         m_hostPanelLayout.show(m_hostPanel, "join");
-    }
-
-    private void getPort()
-    {
-        try
-        {
-            GametableFrame.getGametableFrame().m_port = Integer.parseInt(m_portEntry.getText());
-        }
-        catch (NumberFormatException ex)
-        {
-            GametableFrame.getGametableFrame().m_port = GametableFrame.DEFAULT_PORT;
-        }
-    }
-
-    public void focusGained(FocusEvent e)
-    {
-        // only interested in JTextFields
-        if (!(e.getSource() instanceof JTextField))
-        {
-            return;
-        }
-
-        JTextField focused = (JTextField)e.getSource();
-        focused.setSelectionStart(0);
-        focused.setSelectionEnd(focused.getText().length());
-    }
-
-    public void focusLost(FocusEvent e)
-    {
     }
 }

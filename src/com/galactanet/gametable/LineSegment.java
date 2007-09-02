@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+
 /**
  * TODO: comment
  * 
@@ -23,150 +24,72 @@ import java.util.List;
  */
 public class LineSegment
 {
-    private Point m_start = new Point();
-    private Point m_end   = new Point();
     private Color m_color;
+    private Point m_end   = new Point();
+    private Point m_start = new Point();
 
-
-
-    public LineSegment(Point start, Point end, Color color)
+    public LineSegment(final DataInputStream dis) throws IOException
     {
-        m_start = new Point(start);
-        m_end = new Point(end);
-        m_color = color;
+        initFromPacket(dis);
     }
-    
-    public LineSegment(LineSegment in)
+
+    public LineSegment(final LineSegment in)
     {
         m_start = new Point(in.m_start);
         m_end = new Point(in.m_end);
         m_color = in.m_color;
     }
 
-    public LineSegment(DataInputStream dis) throws IOException
+    public LineSegment(final Point start, final Point end, final Color color)
     {
-        initFromPacket(dis);
+        m_start = new Point(start);
+        m_end = new Point(end);
+        m_color = color;
     }
 
-    public Color getColor()
+    private void addLineSegment(final List vector, final Point start, final Point end)
     {
-        return m_color;
+        final LineSegment ls = new LineSegment(start, end, m_color);
+        vector.add(ls);
     }
 
-    public void writeToPacket(DataOutputStream dos) throws IOException
+    protected Point confirmOnRectEdge(final Point p, final Rectangle r)
     {
-        dos.writeInt(m_start.x);
-        dos.writeInt(m_start.y);
-        dos.writeInt(m_end.x);
-        dos.writeInt(m_end.y);
-        dos.writeInt(m_color.getRGB());
+        // garbage in, garbage out
+        if (p == null)
+        {
+            return null;
+        }
+
+        // if the point is within the rect than that counts
+        if (r.contains(p))
+        {
+            return p;
+        }
+
+        // return the point if it's on the edge. null if it isn't
+        if ((p.x == r.x) || (p.x == r.x + r.width))
+        {
+            if ((p.y > r.y) && (p.y < r.y + r.height))
+            {
+                return p;
+            }
+        }
+
+        if ((p.y == r.y) || (p.y == r.y + r.height))
+        {
+            if ((p.x > r.x) && (p.x < r.x + r.width))
+            {
+                return p;
+            }
+        }
+
+        return null;
     }
 
-    public void initFromPacket(DataInputStream dis) throws IOException
+    public LineSegment[] crop(final Point start, final Point end)
     {
-        m_start.x = dis.readInt();
-        m_start.y = dis.readInt();
-        m_end.x = dis.readInt();
-        m_end.y = dis.readInt();
-        int col = dis.readInt();
-        m_color = new Color(col);
-    }
-    
-    public LineSegment getPortionInsideRect(Point start, Point end)
-    {
-        Rectangle r = new Rectangle();
-        int x = start.x;
-        int y = start.y;
-        int width = end.x - start.x;
-        int height = end.y - start.y;
-        if (width < 0)
-        {
-            x += width;
-            width = -width;
-        }
-        if (height < 0)
-        {
-            y += height;
-            height = -height;
-        }
-        r.setBounds(x, y, width, height);
-
-        if (r.contains(m_start) && r.contains(m_end))
-        {
-            // totally inside. we are unaffected
-        	// return a copy of ourselves
-            return new LineSegment(this);
-        }
-
-        // find the intersections (There are 4 possibles. one for each side of the rect)
-        Point intersections[] = new Point[4];
-        intersections[0] = getIntersection(r.x, true);
-        intersections[1] = getIntersection(r.x + r.width, true);
-        intersections[2] = getIntersection(r.y, false);
-        intersections[3] = getIntersection(r.y + r.height, false);
-
-        boolean bFoundNonNull = false;
-        for ( int i=0 ; i<4 ; i++ )
-        {
-        	intersections[i] = confirmOnRectEdge(intersections[i], r);
-        	if ( intersections[i] != null )
-        	{
-        		bFoundNonNull = true;
-        	}
-        }
-
-        // first off, if we didn't intersect the rect at all, we have no part at all
-        // (We checked for "completely inside rect" above
-        if (!bFoundNonNull)
-        {
-        	return null;
-        }
-
-        // we can have no more than 2 intersections.
-        Point validIntersection1 = null;
-        Point validIntersection2 = null;
-        for ( int i=0 ; i<4 ; i++ )
-        {
-        	if ( intersections[i] != null )
-        	{
-        		if ( validIntersection1 == null )
-        		{
-        			validIntersection1 = intersections[i];
-        		}
-        		else
-        		{
-        			validIntersection2 = intersections[i];
-        		}
-        	}
-        }
-        
-        // did we find 2 intersections? Cause if we did, we're done
-        if ( validIntersection2 != null )
-        {
-        	// we found 2 intersections. Make a LineSegment out of them and we're golden
-        	return new LineSegment(validIntersection1, validIntersection2, m_color);
-        }
-        
-        // if we're here, it means we found exactly 1 intersection. That means our start or end point
-        // is inside the rect. 
-        if ( r.contains(m_start) )
-        {
-        	return new LineSegment(validIntersection1, m_start, m_color);
-        }
-
-        if ( r.contains(m_end) )
-        {
-        	return new LineSegment(validIntersection1, m_end, m_color);
-        }
-
-        // it should be impossible to get here. 
-        System.out.println("invalid end to LineSegment.getPortionInsideRect");
-        return null; // defensive coding return
-    }    
-
-    public LineSegment[] crop(Point start, Point end)
-    {
-        Rectangle r = new Rectangle();
+        final Rectangle r = new Rectangle();
         int x = start.x;
         int y = start.y;
         int width = end.x - start.x;
@@ -218,10 +141,10 @@ public class LineSegment
         }
 
         // now we can start making some lines
-        List returnLines = new ArrayList();
+        final List returnLines = new ArrayList();
 
         // first off, if we didn't intersect the rect at all, it's just us
-        if (leftInt == null && rightInt == null && topInt == null && bottomInt == null)
+        if ((leftInt == null) && (rightInt == null) && (topInt == null) && (bottomInt == null))
         {
             returnLines.add(this);
         }
@@ -250,8 +173,8 @@ public class LineSegment
             return null;
         }
 
-        Object[] objArray = returnLines.toArray();
-        LineSegment[] ret = new LineSegment[objArray.length];
+        final Object[] objArray = returnLines.toArray();
+        final LineSegment[] ret = new LineSegment[objArray.length];
         for (int i = 0; i < objArray.length; i++)
         {
             ret[i] = (LineSegment)(objArray[i]);
@@ -259,128 +182,26 @@ public class LineSegment
         return ret;
     }
 
-    private void addLineSegment(List vector, Point start, Point end)
-    {
-        LineSegment ls = new LineSegment(start, end, m_color);
-        vector.add(ls);
-    }
-
-    protected Point confirmOnRectEdge(Point p, Rectangle r)
-    {
-        // garbage in, garbage out
-        if (p == null)
-        {
-            return null;
-        }
-
-        // if the point is within the rect than that counts
-        if (r.contains(p))
-        {
-            return p;
-        }
-
-        // return the point if it's on the edge. null if it isn't
-        if (p.x == r.x || p.x == r.x + r.width)
-        {
-            if (p.y > r.y && p.y < r.y + r.height)
-            {
-                return p;
-            }
-        }
-
-        if (p.y == r.y || p.y == r.y + r.height)
-        {
-            if (p.x > r.x && p.x < r.x + r.width)
-            {
-                return p;
-            }
-        }
-
-        return null;
-    }
-
-    // returns the intersection of this line segment with
-    // a given pure vertical or horizontal. pos is either the x or the y,
-    // depending on the boolean sent with it.
-    // returns null if there is no intersection
-    public Point getIntersection(int pos, boolean bIsVertical)
-    {
-        if (bIsVertical)
-        {
-            if (m_start.x < pos && m_end.x < pos)
-            {
-                // completely on one side of it.
-                return null;
-            }
-            if (m_start.x > pos && m_end.x > pos)
-            {
-                // completely on the other side of it.
-                return null;
-            }
-            if (m_end.x == m_start.x)
-            {
-                // we're parallel to it so we don't intersect at all
-                return null;
-            }
-
-            // if we're here, we cross the line
-            double ratio = ((double)(pos - m_start.x)) / (double)(m_end.x - m_start.x);
-            double intersectX = pos;
-            double intersectY = m_start.y + ratio * (m_end.y - m_start.y);
-            Point ret = new Point();
-            ret.x = (int)intersectX;
-            ret.y = (int)intersectY;
-            return ret;
-        }
-
-        if (m_start.y < pos && m_end.y < pos)
-        {
-            // completely on one side of it.
-            return null;
-        }
-        if (m_start.y > pos && m_end.y > pos)
-        {
-            // completely on the other side of it.
-            return null;
-        }
-        if (m_end.y == m_start.y)
-        {
-            // we're parallel to it so we don't intersect at all
-            return null;
-        }
-
-        // if we're here, we cross the line
-        double ratio = ((double)(pos - m_start.y)) / (double)(m_end.y - m_start.y);
-        double intersectY = pos;
-        double intersectX = m_start.x + ratio * (m_end.x - m_start.x);
-        Point ret = new Point();
-        ret.x = (int)intersectX;
-        ret.y = (int)intersectY;
-        return ret;
-    }
-
-    public void draw(Graphics g, GametableCanvas canvas)
+    public void draw(final Graphics g, final GametableCanvas canvas)
     {
         /*
-         * Graphics2D g2d = (Graphics2D)g; g2d.setStroke(new
-         * BasicStroke(canvas.getLineStrokeWidth()));
+         * Graphics2D g2d = (Graphics2D)g; g2d.setStroke(new BasicStroke(canvas.getLineStrokeWidth()));
          */
 
         // convert to draw coordinates
-        Point drawStart = canvas.modelToDraw(m_start.x, m_start.y);
-        Point drawEnd = canvas.modelToDraw(m_end.x, m_end.y);
+        final Point drawStart = canvas.modelToDraw(m_start.x, m_start.y);
+        final Point drawEnd = canvas.modelToDraw(m_end.x, m_end.y);
 
         // don't draw if we're not touching the viewport at any point
 
         // get the draw coords of the top-left of the viewable area
         // and of the lower right
-        Point portalDrawTL = new Point(canvas.getActiveMap().getScrollX(), canvas.getActiveMap().getScrollY());
-        Point portalDrawBR = new Point(canvas.getActiveMap().getScrollX() + canvas.getWidth(), canvas.getActiveMap()
-            .getScrollY()
+        final Point portalDrawTL = new Point(canvas.getActiveMap().getScrollX(), canvas.getActiveMap().getScrollY());
+        final Point portalDrawBR = new Point(canvas.getActiveMap().getScrollX() + canvas.getWidth(), canvas
+            .getActiveMap().getScrollY()
             + canvas.getHeight());
-        Rectangle portalRect = new Rectangle((int)portalDrawTL.getX(), (int)portalDrawTL.getY(), (int)portalDrawBR
-            .getX()
-            - (int)portalDrawTL.getX(), (int)portalDrawBR.getY() - (int)portalDrawTL.getY());
+        final Rectangle portalRect = new Rectangle((int)portalDrawTL.getX(), (int)portalDrawTL.getY(),
+            (int)portalDrawBR.getX() - (int)portalDrawTL.getX(), (int)portalDrawBR.getY() - (int)portalDrawTL.getY());
 
         // now we can start comparing to see if the line is in the rect at all
         boolean bDrawLine = false;
@@ -403,24 +224,24 @@ public class LineSegment
             // if both ends of the line are on the outside of one of the walls of the visible
             // area, it can't possibly be onscrene. For instance, if both endpoints'
             // x-values are less than the wall's left side, it can't be on screen.
-            if (drawStart.getX() < portalRect.getX() && drawEnd.getX() < portalRect.getX())
+            if ((drawStart.getX() < portalRect.getX()) && (drawEnd.getX() < portalRect.getX()))
             {
                 // the line segment is entirely on the left. don't draw it
                 return;
             }
-            if (drawStart.getX() > portalRect.getX() + portalRect.getWidth()
-                && drawEnd.getX() > portalRect.getX() + portalRect.getWidth())
+            if ((drawStart.getX() > portalRect.getX() + portalRect.getWidth())
+                && (drawEnd.getX() > portalRect.getX() + portalRect.getWidth()))
             {
                 // the line segment is entirely on the right. don't draw it
                 return;
             }
-            if (drawStart.getY() < portalRect.getY() && drawEnd.getY() < portalRect.getY())
+            if ((drawStart.getY() < portalRect.getY()) && (drawEnd.getY() < portalRect.getY()))
             {
                 // the line segment is entirely above. don't draw it
                 return;
             }
-            if (drawStart.getY() > portalRect.getY() + portalRect.getHeight()
-                && drawEnd.getY() > portalRect.getY() + portalRect.getHeight())
+            if ((drawStart.getY() > portalRect.getY() + portalRect.getHeight())
+                && (drawEnd.getY() > portalRect.getY() + portalRect.getHeight()))
             {
                 // the line segment is entirely below. don't draw it
                 return;
@@ -446,11 +267,11 @@ public class LineSegment
 
         g.setColor(m_color);
 
-        int width = canvas.getLineStrokeWidth();
-        int halfWidth = width / 2;
+        final int width = canvas.getLineStrokeWidth();
+        final int halfWidth = width / 2;
 
-        int dx = Math.abs(m_end.x - m_start.x);
-        int dy = Math.abs(m_end.y - m_start.y);
+        final int dx = Math.abs(m_end.x - m_start.x);
+        final int dy = Math.abs(m_end.y - m_start.y);
 
         int nudgeX = 0;
         int nudgeY = 0;
@@ -478,5 +299,181 @@ public class LineSegment
             x2 += nudgeX;
             y2 += nudgeY;
         }
+    }
+
+    public Color getColor()
+    {
+        return m_color;
+    }
+
+    // returns the intersection of this line segment with
+    // a given pure vertical or horizontal. pos is either the x or the y,
+    // depending on the boolean sent with it.
+    // returns null if there is no intersection
+    public Point getIntersection(final int pos, final boolean bIsVertical)
+    {
+        if (bIsVertical)
+        {
+            if ((m_start.x < pos) && (m_end.x < pos))
+            {
+                // completely on one side of it.
+                return null;
+            }
+            if ((m_start.x > pos) && (m_end.x > pos))
+            {
+                // completely on the other side of it.
+                return null;
+            }
+            if (m_end.x == m_start.x)
+            {
+                // we're parallel to it so we don't intersect at all
+                return null;
+            }
+
+            // if we're here, we cross the line
+            final double ratio = ((double)(pos - m_start.x)) / (double)(m_end.x - m_start.x);
+            final double intersectX = pos;
+            final double intersectY = m_start.y + ratio * (m_end.y - m_start.y);
+            final Point ret = new Point();
+            ret.x = (int)intersectX;
+            ret.y = (int)intersectY;
+            return ret;
+        }
+
+        if ((m_start.y < pos) && (m_end.y < pos))
+        {
+            // completely on one side of it.
+            return null;
+        }
+        if ((m_start.y > pos) && (m_end.y > pos))
+        {
+            // completely on the other side of it.
+            return null;
+        }
+        if (m_end.y == m_start.y)
+        {
+            // we're parallel to it so we don't intersect at all
+            return null;
+        }
+
+        // if we're here, we cross the line
+        final double ratio = ((double)(pos - m_start.y)) / (double)(m_end.y - m_start.y);
+        final double intersectY = pos;
+        final double intersectX = m_start.x + ratio * (m_end.x - m_start.x);
+        final Point ret = new Point();
+        ret.x = (int)intersectX;
+        ret.y = (int)intersectY;
+        return ret;
+    }
+
+    public LineSegment getPortionInsideRect(final Point start, final Point end)
+    {
+        final Rectangle r = new Rectangle();
+        int x = start.x;
+        int y = start.y;
+        int width = end.x - start.x;
+        int height = end.y - start.y;
+        if (width < 0)
+        {
+            x += width;
+            width = -width;
+        }
+        if (height < 0)
+        {
+            y += height;
+            height = -height;
+        }
+        r.setBounds(x, y, width, height);
+
+        if (r.contains(m_start) && r.contains(m_end))
+        {
+            // totally inside. we are unaffected
+            // return a copy of ourselves
+            return new LineSegment(this);
+        }
+
+        // find the intersections (There are 4 possibles. one for each side of the rect)
+        final Point intersections[] = new Point[4];
+        intersections[0] = getIntersection(r.x, true);
+        intersections[1] = getIntersection(r.x + r.width, true);
+        intersections[2] = getIntersection(r.y, false);
+        intersections[3] = getIntersection(r.y + r.height, false);
+
+        boolean bFoundNonNull = false;
+        for (int i = 0; i < 4; i++)
+        {
+            intersections[i] = confirmOnRectEdge(intersections[i], r);
+            if (intersections[i] != null)
+            {
+                bFoundNonNull = true;
+            }
+        }
+
+        // first off, if we didn't intersect the rect at all, we have no part at all
+        // (We checked for "completely inside rect" above
+        if (!bFoundNonNull)
+        {
+            return null;
+        }
+
+        // we can have no more than 2 intersections.
+        Point validIntersection1 = null;
+        Point validIntersection2 = null;
+        for (int i = 0; i < 4; i++)
+        {
+            if (intersections[i] != null)
+            {
+                if (validIntersection1 == null)
+                {
+                    validIntersection1 = intersections[i];
+                }
+                else
+                {
+                    validIntersection2 = intersections[i];
+                }
+            }
+        }
+
+        // did we find 2 intersections? Cause if we did, we're done
+        if (validIntersection2 != null)
+        {
+            // we found 2 intersections. Make a LineSegment out of them and we're golden
+            return new LineSegment(validIntersection1, validIntersection2, m_color);
+        }
+
+        // if we're here, it means we found exactly 1 intersection. That means our start or end point
+        // is inside the rect.
+        if (r.contains(m_start))
+        {
+            return new LineSegment(validIntersection1, m_start, m_color);
+        }
+
+        if (r.contains(m_end))
+        {
+            return new LineSegment(validIntersection1, m_end, m_color);
+        }
+
+        // it should be impossible to get here.
+        System.out.println("invalid end to LineSegment.getPortionInsideRect");
+        return null; // defensive coding return
+    }
+
+    public void initFromPacket(final DataInputStream dis) throws IOException
+    {
+        m_start.x = dis.readInt();
+        m_start.y = dis.readInt();
+        m_end.x = dis.readInt();
+        m_end.y = dis.readInt();
+        final int col = dis.readInt();
+        m_color = new Color(col);
+    }
+
+    public void writeToPacket(final DataOutputStream dos) throws IOException
+    {
+        dos.writeInt(m_start.x);
+        dos.writeInt(m_start.y);
+        dos.writeInt(m_end.x);
+        dos.writeInt(m_end.y);
+        dos.writeInt(m_color.getRGB());
     }
 }

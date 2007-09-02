@@ -33,16 +33,16 @@ public class PointerTool extends NullTool
 {
     private class DeletePogAttributeActionListener implements ActionListener
     {
-        private String key;
+        private final String key;
 
-        DeletePogAttributeActionListener(String name)
+        DeletePogAttributeActionListener(final String name)
         {
             key = name;
         }
 
-        public void actionPerformed(ActionEvent e)
+        public void actionPerformed(final ActionEvent e)
         {
-            Set toDelete = new HashSet();
+            final Set toDelete = new HashSet();
             toDelete.add(key);
             m_canvas.setPogData(m_menuPog.getId(), null, null, toDelete);
         }
@@ -50,16 +50,16 @@ public class PointerTool extends NullTool
 
     private class EditPogAttributeActionListener implements ActionListener
     {
-        private String key;
+        private final String key;
 
-        EditPogAttributeActionListener(String name)
+        EditPogAttributeActionListener(final String name)
         {
             key = name;
         }
 
-        public void actionPerformed(ActionEvent e)
+        public void actionPerformed(final ActionEvent e)
         {
-            SetPogAttributeDialog dialog = new SetPogAttributeDialog();
+            final SetPogAttributeDialog dialog = new SetPogAttributeDialog();
             dialog.loadValues(key, m_menuPog.getAttribute(key));
             dialog.setLocationRelativeTo(m_canvas);
             dialog.setVisible(true);
@@ -67,13 +67,13 @@ public class PointerTool extends NullTool
             {
                 return;
             }
-            
-            String name = dialog.getName();
-            String value = dialog.getValue();
-            Set toDelete = new HashSet();
+
+            final String name = dialog.getName();
+            final String value = dialog.getValue();
+            final Set toDelete = new HashSet();
             toDelete.add(key);
-            Map toAdd = new HashMap();
-            if (name != null && name.length() > 0)
+            final Map toAdd = new HashMap();
+            if ((name != null) && (name.length() > 0))
             {
                 toAdd.put(name, value);
             }
@@ -81,34 +81,34 @@ public class PointerTool extends NullTool
         }
     }
 
-    private static final String PREF_DRAG = "com.galactanet.gametable.tools.PointerTool.drag";
+    private static final String PREF_DRAG   = "com.galactanet.gametable.tools.PointerTool.drag";
+
+    private static final List   PREFERENCES = createPreferenceList();
 
     /**
      * @return The static, unmodifiable list of preferences for this tool.
      */
     private static final List createPreferenceList()
     {
-        List retVal = new ArrayList();
+        final List retVal = new ArrayList();
         retVal.add(new PreferenceDescriptor(PREF_DRAG, "Drag map when not over Pog", PreferenceDescriptor.TYPE_FLAG,
             Boolean.TRUE));
         return Collections.unmodifiableList(retVal);
     }
 
-    private static final List PREFERENCES = createPreferenceList();
+    private GametableCanvas m_canvas;
+    private boolean         m_clicked = true;
+    private Pog             m_ghostPog;
+    private Pog             m_grabbedPog;
+    private Point           m_grabOffset;
+    private Pog             m_lastPogMousedOver;
+    private Pog             m_menuPog = null;
+    private Point           m_mousePosition;
+    private boolean         m_snapping;
 
-    private GametableCanvas   m_canvas;
-    private Pog               m_grabbedPog;
-    private Pog               m_ghostPog;
-    private boolean           m_snapping;
-    private Point             m_grabOffset;
-    private Point             m_mousePosition;
-    private boolean           m_clicked   = true;
-    private Point             m_startScroll;
-    private Point             m_startMouse;
+    private Point           m_startMouse;
 
-    private Pog               m_lastPogMousedOver;
-
-    private Pog               m_menuPog   = null;
+    private Point           m_startScroll;
 
     /**
      * Constructor
@@ -120,7 +120,7 @@ public class PointerTool extends NullTool
     /*
      * @see com.galactanet.gametable.AbstractTool#activate(com.galactanet.gametable.GametableCanvas)
      */
-    public void activate(GametableCanvas canvas)
+    public void activate(final GametableCanvas canvas)
     {
         m_canvas = canvas;
         m_grabbedPog = null;
@@ -129,6 +129,47 @@ public class PointerTool extends NullTool
         m_mousePosition = null;
         m_startScroll = null;
         m_startMouse = null;
+    }
+
+    public void endAction()
+    {
+        m_grabbedPog = null;
+        m_ghostPog = null;
+        m_grabOffset = null;
+        m_startScroll = null;
+        m_startMouse = null;
+        hoverCursorCheck();
+        m_canvas.repaint();
+    }
+
+    /*
+     * @see com.galactanet.gametable.Tool#getPreferences()
+     */
+    public List getPreferences()
+    {
+        return PREFERENCES;
+    }
+
+    private void hoverCursorCheck()
+    {
+        if (GametableFrame.getGametableFrame().getPreferences().getBooleanValue(PREF_DRAG))
+        {
+            final Pog pog = m_canvas.getActiveMap().getPogAt(m_mousePosition);
+            if (pog != null)
+            {
+                m_canvas.setToolCursor(0);
+            }
+            else
+            {
+                m_canvas.setToolCursor(1);
+            }
+
+            if (m_lastPogMousedOver != pog)
+            {
+                m_canvas.repaint();
+            }
+            m_lastPogMousedOver = pog;
+        }
     }
 
     /*
@@ -142,7 +183,7 @@ public class PointerTool extends NullTool
     /*
      * @see com.galactanet.gametable.AbstractTool#mouseButtonPressed(int, int)
      */
-    public void mouseButtonPressed(int x, int y, int modifierMask)
+    public void mouseButtonPressed(final int x, final int y, final int modifierMask)
     {
         m_clicked = true;
         m_mousePosition = new Point(x, y);
@@ -163,49 +204,9 @@ public class PointerTool extends NullTool
     }
 
     /*
-     * @see com.galactanet.gametable.AbstractTool#mouseMoved(int, int)
-     */
-    public void mouseMoved(int x, int y, int modifierMask)
-    {
-        setSnapping(modifierMask);
-        m_mousePosition = new Point(x, y);
-        if (m_grabbedPog != null && !m_grabbedPog.isLocked())
-        {
-            m_clicked = false;
-            if (m_snapping)
-            {
-                Point adjustment = m_ghostPog.getSnapDragAdjustment();
-                m_ghostPog.setPosition(m_mousePosition.x + m_grabOffset.x + adjustment.x, m_mousePosition.y
-                    + m_grabOffset.y + adjustment.y);
-                m_canvas.snapPogToGrid(m_ghostPog);
-            }
-            else
-            {
-                m_ghostPog.setPosition(m_mousePosition.x + m_grabOffset.x, m_mousePosition.y + m_grabOffset.y);
-            }
-            m_canvas.repaint();
-        }
-        else if (m_startScroll != null)
-        {
-            Point mousePosition = m_canvas.modelToView(x, y);
-            Point viewDelta = new Point(m_startMouse.x - mousePosition.x, m_startMouse.y - mousePosition.y);
-            Point modelDelta = m_canvas.drawToModel(viewDelta);
-            m_canvas.scrollMapTo(m_startScroll.x + modelDelta.x, m_startScroll.y + modelDelta.y);
-        }
-        else if (m_grabbedPog != null && m_grabbedPog.isLocked())
-        {
-            m_clicked = false;
-        }
-        else
-        {
-            hoverCursorCheck();
-        }
-    }
-
-    /*
      * @see com.galactanet.gametable.AbstractTool#mouseButtonReleased(int, int)
      */
-    public void mouseButtonReleased(int x, int y, int modifierMask)
+    public void mouseButtonReleased(final int x, final int y, final int modifierMask)
     {
         if (m_grabbedPog != null)
         {
@@ -230,21 +231,72 @@ public class PointerTool extends NullTool
         endAction();
     }
 
+    /*
+     * @see com.galactanet.gametable.AbstractTool#mouseMoved(int, int)
+     */
+    public void mouseMoved(final int x, final int y, final int modifierMask)
+    {
+        setSnapping(modifierMask);
+        m_mousePosition = new Point(x, y);
+        if ((m_grabbedPog != null) && !m_grabbedPog.isLocked())
+        {
+            m_clicked = false;
+            if (m_snapping)
+            {
+                final Point adjustment = m_ghostPog.getSnapDragAdjustment();
+                m_ghostPog.setPosition(m_mousePosition.x + m_grabOffset.x + adjustment.x, m_mousePosition.y
+                    + m_grabOffset.y + adjustment.y);
+                m_canvas.snapPogToGrid(m_ghostPog);
+            }
+            else
+            {
+                m_ghostPog.setPosition(m_mousePosition.x + m_grabOffset.x, m_mousePosition.y + m_grabOffset.y);
+            }
+            m_canvas.repaint();
+        }
+        else if (m_startScroll != null)
+        {
+            final Point mousePosition = m_canvas.modelToView(x, y);
+            final Point viewDelta = new Point(m_startMouse.x - mousePosition.x, m_startMouse.y - mousePosition.y);
+            final Point modelDelta = m_canvas.drawToModel(viewDelta);
+            m_canvas.scrollMapTo(m_startScroll.x + modelDelta.x, m_startScroll.y + modelDelta.y);
+        }
+        else if ((m_grabbedPog != null) && m_grabbedPog.isLocked())
+        {
+            m_clicked = false;
+        }
+        else
+        {
+            hoverCursorCheck();
+        }
+    }
+
+    /*
+     * @see com.galactanet.gametable.AbstractTool#paint(java.awt.Graphics)
+     */
+    public void paint(final Graphics g)
+    {
+        if ((m_ghostPog != null) && m_canvas.isPointVisible(m_mousePosition))
+        {
+            m_ghostPog.drawGhostlyToCanvas(g);
+        }
+    }
+
     /**
      * Pops up a pog context menu.
      * 
      * @param x X location of mouse.
      * @param y Y location of mouse.
      */
-    private void popupContextMenu(int x, int y)
+    private void popupContextMenu(final int x, final int y)
     {
         m_menuPog = m_grabbedPog;
-        JPopupMenu menu = new JPopupMenu("Pog");
+        final JPopupMenu menu = new JPopupMenu("Pog");
         menu.add(new JMenuItem("Cancel"));
         JMenuItem item = new JMenuItem(m_menuPog.isLocked() ? "Unlock" : "Lock");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.lockPog(m_menuPog.getId(), !m_menuPog.isLocked());
                 System.out.println(m_menuPog.isLocked());
@@ -254,9 +306,9 @@ public class PointerTool extends NullTool
         item = new JMenuItem("Set Name...");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
-                String s = (String)JOptionPane.showInputDialog(GametableFrame.getGametableFrame(),
+                final String s = (String)JOptionPane.showInputDialog(GametableFrame.getGametableFrame(),
                     "Enter new name for this Pog:", "Set Pog Name", JOptionPane.PLAIN_MESSAGE, null, null, m_menuPog
                         .getText());
 
@@ -271,18 +323,18 @@ public class PointerTool extends NullTool
         item = new JMenuItem("Set Attribute...");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
-                SetPogAttributeDialog dialog = new SetPogAttributeDialog();
+                final SetPogAttributeDialog dialog = new SetPogAttributeDialog();
                 dialog.setLocationRelativeTo(m_canvas);
                 dialog.setVisible(true);
-                String name = dialog.getName();
-                String value = dialog.getValue();
-                if (name == null || name.length() == 0)
+                final String name = dialog.getName();
+                final String value = dialog.getValue();
+                if ((name == null) || (name.length() == 0))
                 {
                     return;
                 }
-                Map toAdd = new HashMap();
+                final Map toAdd = new HashMap();
                 toAdd.put(name, value);
                 m_canvas.setPogData(m_menuPog.getId(), null, toAdd, null);
             }
@@ -290,13 +342,13 @@ public class PointerTool extends NullTool
         menu.add(item);
         if (m_menuPog.getAttributeNames().size() > 0)
         {
-            JMenu editMenu = new JMenu("Edit Attribute");
+            final JMenu editMenu = new JMenu("Edit Attribute");
 
-            JMenu removeMenu = new JMenu("Remove Attribute");
-            Set nameSet = m_grabbedPog.getAttributeNames();
-            for (Iterator iterator = nameSet.iterator(); iterator.hasNext();)
+            final JMenu removeMenu = new JMenu("Remove Attribute");
+            final Set nameSet = m_grabbedPog.getAttributeNames();
+            for (final Iterator iterator = nameSet.iterator(); iterator.hasNext();)
             {
-                String key = (String)iterator.next();
+                final String key = (String)iterator.next();
                 item = new JMenuItem(key);
                 item.addActionListener(new DeletePogAttributeActionListener(key));
                 removeMenu.add(item);
@@ -309,11 +361,11 @@ public class PointerTool extends NullTool
             menu.add(removeMenu);
         }
 
-        JMenu sizeMenu = new JMenu("Face Size");
+        final JMenu sizeMenu = new JMenu("Face Size");
         item = new JMenuItem("Reset");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.setPogSize(m_menuPog.getId(), -1);
             }
@@ -323,7 +375,7 @@ public class PointerTool extends NullTool
         item = new JMenuItem("0.5 squares");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.setPogSize(m_menuPog.getId(), 0.5f);
             }
@@ -333,7 +385,7 @@ public class PointerTool extends NullTool
         item = new JMenuItem("1 squares");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.setPogSize(m_menuPog.getId(), 1);
             }
@@ -343,7 +395,7 @@ public class PointerTool extends NullTool
         item = new JMenuItem("2 squares");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.setPogSize(m_menuPog.getId(), 2);
             }
@@ -353,7 +405,7 @@ public class PointerTool extends NullTool
         item = new JMenuItem("3 squares");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.setPogSize(m_menuPog.getId(), 3);
             }
@@ -363,7 +415,7 @@ public class PointerTool extends NullTool
         item = new JMenuItem("4 squares");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.setPogSize(m_menuPog.getId(), 4);
             }
@@ -373,7 +425,7 @@ public class PointerTool extends NullTool
         item = new JMenuItem("6 squares");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.setPogSize(m_menuPog.getId(), 6);
             }
@@ -382,11 +434,11 @@ public class PointerTool extends NullTool
 
         menu.add(sizeMenu);
 
-        JMenu rotateMenu = new JMenu("Rotation");
+        final JMenu rotateMenu = new JMenu("Rotation");
         item = new JMenuItem("0");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.rotatePog(m_menuPog.getId(), 0);
             }
@@ -396,7 +448,7 @@ public class PointerTool extends NullTool
         item = new JMenuItem("60");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.rotatePog(m_menuPog.getId(), 60);
             }
@@ -406,17 +458,17 @@ public class PointerTool extends NullTool
         item = new JMenuItem("90");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.rotatePog(m_menuPog.getId(), 90);
             }
         });
-        
+
         rotateMenu.add(item);
         item = new JMenuItem("120");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.rotatePog(m_menuPog.getId(), 120);
             }
@@ -426,7 +478,7 @@ public class PointerTool extends NullTool
         item = new JMenuItem("180");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.rotatePog(m_menuPog.getId(), 180);
             }
@@ -436,7 +488,7 @@ public class PointerTool extends NullTool
         item = new JMenuItem("240");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.rotatePog(m_menuPog.getId(), 240);
             }
@@ -446,17 +498,17 @@ public class PointerTool extends NullTool
         item = new JMenuItem("270");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.rotatePog(m_menuPog.getId(), 270);
             }
         });
         rotateMenu.add(item);
-        
+
         item = new JMenuItem("300");
         item.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent e)
+            public void actionPerformed(final ActionEvent e)
             {
                 m_canvas.rotatePog(m_menuPog.getId(), 300);
             }
@@ -465,38 +517,8 @@ public class PointerTool extends NullTool
 
         menu.add(rotateMenu);
 
-        Point mousePosition = m_canvas.modelToView(x, y);
+        final Point mousePosition = m_canvas.modelToView(x, y);
         menu.show(m_canvas, mousePosition.x, mousePosition.y);
-    }
-
-    public void endAction()
-    {
-        m_grabbedPog = null;
-        m_ghostPog = null;
-        m_grabOffset = null;
-        m_startScroll = null;
-        m_startMouse = null;
-        hoverCursorCheck();
-        m_canvas.repaint();
-    }
-
-    /*
-     * @see com.galactanet.gametable.AbstractTool#paint(java.awt.Graphics)
-     */
-    public void paint(Graphics g)
-    {
-        if (m_ghostPog != null && m_canvas.isPointVisible(m_mousePosition))
-        {
-            m_ghostPog.drawGhostlyToCanvas(g);
-        }
-    }
-
-    /*
-     * @see com.galactanet.gametable.Tool#getPreferences()
-     */
-    public List getPreferences()
-    {
-        return PREFERENCES;
     }
 
     /**
@@ -504,7 +526,7 @@ public class PointerTool extends NullTool
      * 
      * @param modifierMask the set of modifiers passed into the event.
      */
-    private void setSnapping(int modifierMask)
+    private void setSnapping(final int modifierMask)
     {
         if ((modifierMask & MODIFIER_CTRL) > 0)
         {
@@ -513,28 +535,6 @@ public class PointerTool extends NullTool
         else
         {
             m_snapping = true;
-        }
-    }
-
-    private void hoverCursorCheck()
-    {
-        if (GametableFrame.getGametableFrame().getPreferences().getBooleanValue(PREF_DRAG))
-        {
-            Pog pog = m_canvas.getActiveMap().getPogAt(m_mousePosition);
-            if (pog != null)
-            {
-                m_canvas.setToolCursor(0);
-            }
-            else
-            {
-                m_canvas.setToolCursor(1);
-            }
-
-            if (m_lastPogMousedOver != pog)
-            {
-                m_canvas.repaint();
-            }
-            m_lastPogMousedOver = pog;
         }
     }
 }

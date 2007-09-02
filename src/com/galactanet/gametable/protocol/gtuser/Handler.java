@@ -10,15 +10,17 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 
+
+
 /**
  * Placeholder to enable the gtuser protocol.
- *
+ * 
  * @author iffy
  */
 public class Handler extends URLStreamHandler
 {
     /**
-     * Constructor 
+     * Constructor
      */
     public Handler()
     {
@@ -27,7 +29,7 @@ public class Handler extends URLStreamHandler
     /*
      * @see java.net.URLStreamHandler#openConnection(java.net.URL)
      */
-    protected URLConnection openConnection(URL u) throws IOException
+    protected URLConnection openConnection(final URL u) throws IOException
     {
         return null;
     }

@@ -13,6 +13,7 @@ import javax.swing.JList;
 import javax.swing.ListCellRenderer;
 
 
+
 /**
  * TODO: comment
  * 
@@ -20,22 +21,24 @@ import javax.swing.ListCellRenderer;
  */
 public class ColorComboCellRenderer extends JLabel implements ListCellRenderer
 {
-    private ImageIcon[] m_icons;
-    private ImageIcon[] m_selectedIcons;
-
-
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 4720853422440583368L;
+    private final ImageIcon[] m_icons;
+    private final ImageIcon[] m_selectedIcons;
 
     public ColorComboCellRenderer()
     {
-        int width = 79;
-        int height = 17;
+        final int width = 79;
+        final int height = 17;
 
         m_icons = new ImageIcon[GametableFrame.COLORS.length];
         m_selectedIcons = new ImageIcon[GametableFrame.COLORS.length];
 
         for (int i = 0; i < m_icons.length; i++)
         {
-            Color col = new Color(GametableFrame.COLORS[i].intValue());
+            final Color col = new Color(GametableFrame.COLORS[i].intValue());
             Image img = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice()
                 .getDefaultConfiguration().createCompatibleImage(width, height, Transparency.BITMASK);
             createImage(width, height);
@@ -56,22 +59,21 @@ public class ColorComboCellRenderer extends JLabel implements ListCellRenderer
     }
 
     /**
-     * This is the only method defined by ListCellRenderer. We just reconfigure the JLabel each time
-     * we're called.
+     * This is the only method defined by ListCellRenderer. We just reconfigure the JLabel each time we're called.
      * 
      * @param value Value to display.
      * @param index Cell Index.
      * @param isSelected Is the cell selected.
      * @param cellHasFocus The list and cell have the focus.
      */
-    public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected,
-        boolean cellHasFocus)
+    public Component getListCellRendererComponent(final JList list, final Object value, final int index,
+        final boolean isSelected, final boolean cellHasFocus)
     {
 
         setText(value.toString());
 
         // find the color needed
-        int col = ((Integer)value).intValue();
+        final int col = ((Integer)value).intValue();
         int idx = -1;
         for (int i = 0; i < GametableFrame.COLORS.length; i++)
         {
