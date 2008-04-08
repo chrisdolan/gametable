@@ -211,6 +211,8 @@ public class GametableFrame extends JFrame implements ActionListener
     private MacroPanel              m_macroPanel             = null;
     private final JSplitPane        m_mapChatSplitPane       = new JSplitPane();
     private final JSplitPane        m_mapPogSplitPane        = new JSplitPane();
+    private final JPanel            m_canvasPane             = new JPanel(new BorderLayout());
+
     // which player I am
     private int                     m_myPlayerIndex;
 
@@ -229,6 +231,11 @@ public class GametableFrame extends JFrame implements ActionListener
     public String                   m_playerName             = System.getProperty("user.name");
 
     private List                    m_players                = new ArrayList();
+
+    private JFrame                  pogWindow                = null;
+    private JFrame                  chatWindow               = null;
+    private boolean                 b_pogWindowDocked        = true;
+    private boolean                 b_chatWindowDocked       = true;
 
     private PogLibrary              m_pogLibrary             = null;
     private PogPanel                m_pogPanel               = null;
@@ -379,7 +386,15 @@ public class GametableFrame extends JFrame implements ActionListener
 
     public void addPogPacketReceived(final Pog pog, final boolean bPublicLayerPog)
     {
-        getGametableCanvas().doAddPog(pog, bPublicLayerPog);
+
+        // getGametableCanvas().doAddPog(pog, bPublicLayerPog);
+        /*
+         * Changed by Rizban Changed to publish to active map rather than public map. For some reason, all saved pogs
+         * are saved with data saying they are on the public map, regardless of which map they were on when saved. TODO:
+         * Check to see if there is a reason for saving pogs with this information, if not, remove all instances.
+         */
+        getGametableCanvas().doAddPog(pog,
+            (getGametableCanvas().getActiveMap() == getGametableCanvas().getPublicMap() ? true : false));
 
         // update the next pog id if necessary
         if (pog.getId() >= Pog.g_nextId)
@@ -1305,6 +1320,16 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    private JMenu getWindowMenu()
+    {
+        final JMenu menu = new JMenu("Window");
+
+        menu.add(getPogWindowMenuItem());
+        menu.add(getChatWindowMenuItem());
+
+        return menu;
+    }
+
     public DiceMacro getMacro(final String name)
     {
         final String realName = UtilityFunctions.normalizeName(name);
@@ -1327,7 +1352,17 @@ public class GametableFrame extends JFrame implements ActionListener
         menuBar.add(getNetworkMenu());
         menuBar.add(getMapMenu());
         menuBar.add(getDiceMenu());
+        menuBar.add(getWindowMenu());
         menuBar.add(getHelpMenu());
+
+        return menuBar;
+    }
+
+    private JMenuBar getNewWindowMenuBar()
+    {
+        final JMenuBar menuBar = new JMenuBar();
+        menuBar.add(getFileMenu());
+        menuBar.add(getWindowMenu());
 
         return menuBar;
     }
@@ -1459,7 +1494,7 @@ public class GametableFrame extends JFrame implements ActionListener
                     if (m_actingFilePrivate != null)
                     {
                         // we have to pretend we're not connected while loading. We
-                        // don't want these packets to be propagatet to other players
+                        // don't want these packets to be propagated to other players
                         final int oldStatus = m_netStatus;
                         m_netStatus = NETSTATE_NONE;
                         PacketSourceState.beginFileLoad();
@@ -1524,6 +1559,14 @@ public class GametableFrame extends JFrame implements ActionListener
     }
 
     /**
+     * @return The deck panel.
+     */
+    public JFrame getPogWindow()
+    {
+        return pogWindow;
+    }
+
+    /**
      * @return The preferences object.
      */
     public Preferences getPreferences()
@@ -1539,7 +1582,42 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             public void actionPerformed(final ActionEvent e)
             {
+                if (pogWindow != null)
+                {
+                    pogWindow.dispose();
+                }
                 dispose();
+                System.exit(0);
+            }
+        });
+
+        return item;
+    }
+
+    private JMenuItem getPogWindowMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("Un/Dock Pog Window");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl P"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                dockPogWindow();
+            }
+        });
+
+        return item;
+    }
+
+    private JMenuItem getChatWindowMenuItem()
+    {
+        final JMenuItem item = new JMenuItem("Un/Dock Chat Window");
+        item.setAccelerator(KeyStroke.getKeyStroke("ctrl L"));
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                dockChatWindow();
             }
         });
 
@@ -1956,8 +2034,10 @@ public class GametableFrame extends JFrame implements ActionListener
 
         getContentPane().add(m_toolBar, BorderLayout.NORTH);
 
-        m_pogLibrary = new PogLibrary();
         getGametableCanvas().init(this);
+        m_pogLibrary = new PogLibrary();
+
+        // pogWindow
 
         m_pogPanel = new PogPanel(m_pogLibrary, getGametableCanvas());
         m_pogsTabbedPane.add(m_pogPanel, "Pog Library");
@@ -1967,12 +2047,13 @@ public class GametableFrame extends JFrame implements ActionListener
         m_pogsTabbedPane.add(m_macroPanel, "Dice Macros");
         m_pogsTabbedPane.setFocusable(false);
 
+        // chatWindow
+        
         m_chatPanel.add(m_textAreaPanel, BorderLayout.CENTER);
         m_textAreaPanel.add(m_textAndEntryPanel, BorderLayout.CENTER);
-        final JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED), new EmptyBorder(1, 1, 1, 1)));
-        panel.add(getGametableCanvas(), BorderLayout.CENTER);
-        m_mapChatSplitPane.add(panel, JSplitPane.TOP);
+        m_canvasPane.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED), new EmptyBorder(1, 1, 1, 1)));
+        m_canvasPane.add(getGametableCanvas(), BorderLayout.CENTER);
+        m_mapChatSplitPane.add(m_canvasPane, JSplitPane.TOP);
         m_mapChatSplitPane.add(m_chatPanel, JSplitPane.BOTTOM);
 
         m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.LEFT);
@@ -2307,6 +2388,168 @@ public class GametableFrame extends JFrame implements ActionListener
     }
 
     /**
+     * Docks or undocks the Pog Panel from from the main Gametable frame
+     */
+    private void dockPogWindow()
+    {
+        if (!b_pogWindowDocked)
+        {
+            if (pogWindow != null)
+            {
+                pogWindow.setVisible(false);
+            }
+
+            pogWindow.getContentPane().remove(m_pogsTabbedPane);
+            if (b_chatWindowDocked)
+            {
+                GametableFrame.getGametableFrame().getContentPane().remove(m_mapChatSplitPane);
+            }
+            else
+            {
+                GametableFrame.getGametableFrame().getContentPane().remove(m_canvasPane);
+            }
+            GametableFrame.getGametableFrame().getContentPane().validate();
+            GametableFrame.getGametableFrame().getContentPane().validate();
+            GametableFrame.getGametableFrame().m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.LEFT);
+            if (b_chatWindowDocked)
+            {
+                GametableFrame.getGametableFrame().m_mapPogSplitPane.add(m_mapChatSplitPane, JSplitPane.RIGHT);
+            }
+            else
+            {
+                GametableFrame.getGametableFrame().m_mapPogSplitPane.add(m_canvasPane, JSplitPane.RIGHT);
+            }
+            GametableFrame.getGametableFrame().getContentPane().add(m_mapPogSplitPane, BorderLayout.CENTER);
+            GametableFrame.getGametableFrame().getContentPane().validate();
+            repaint();
+
+            b_pogWindowDocked = true;
+        }
+        else
+        {
+            if (pogWindow == null)
+            {
+                pogWindow = new JFrame();
+                pogWindow.setTitle("Pog Window");
+                pogWindow.setSize(195, 500);
+                pogWindow.setLocation(0, 80);
+                pogWindow.setFocusable(true);
+                pogWindow.setAlwaysOnTop(false);
+            }
+            pogWindow.setJMenuBar(getNewWindowMenuBar());
+
+            GametableFrame.getGametableFrame().getContentPane().remove(m_mapPogSplitPane);
+            if (b_chatWindowDocked)
+            {
+                GametableFrame.getGametableFrame().getContentPane().remove(m_mapChatSplitPane);
+            }
+            else
+            {
+                GametableFrame.getGametableFrame().getContentPane().remove(m_canvasPane);
+            }
+            GametableFrame.getGametableFrame().getContentPane().validate();
+            if (b_chatWindowDocked)
+            {
+                GametableFrame.getGametableFrame().getContentPane().add(m_mapChatSplitPane, BorderLayout.CENTER);                
+            }
+            else
+            {
+                GametableFrame.getGametableFrame().getContentPane().add(m_canvasPane, BorderLayout.CENTER);
+            }
+            GametableFrame.getGametableFrame().getContentPane().validate();
+            repaint();
+            pogWindow.getContentPane().add(m_pogsTabbedPane);
+            pogWindow.setVisible(true);
+
+            b_pogWindowDocked = false;
+        }
+    }
+
+    /**
+     * Docks or undocks the Pog Panel from from the main Gametable frame
+     */
+    private void dockChatWindow()
+    {
+        if (!b_chatWindowDocked)
+        {
+            if (chatWindow != null)
+            {
+                chatWindow.setVisible(false);
+            }
+
+            chatWindow.getContentPane().remove(m_chatPanel);
+            if (b_pogWindowDocked)
+            {
+                GametableFrame.getGametableFrame().getContentPane().remove(m_mapPogSplitPane);
+                GametableFrame.getGametableFrame().getContentPane().remove(m_canvasPane);
+            }
+            else
+            {
+                GametableFrame.getGametableFrame().getContentPane().remove(m_canvasPane);
+            }
+            GametableFrame.getGametableFrame().getContentPane().validate();
+            GametableFrame.getGametableFrame().m_mapChatSplitPane.add(m_canvasPane, JSplitPane.TOP);
+            GametableFrame.getGametableFrame().m_mapChatSplitPane.add(m_chatPanel, JSplitPane.BOTTOM);
+            if (b_pogWindowDocked)
+            {
+                GametableFrame.getGametableFrame().m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.LEFT);
+                GametableFrame.getGametableFrame().m_mapPogSplitPane.add(m_mapChatSplitPane, JSplitPane.RIGHT);
+                GametableFrame.getGametableFrame().getContentPane().add(m_mapPogSplitPane, BorderLayout.CENTER);
+            }
+            else
+            {
+                GametableFrame.getGametableFrame().getContentPane().add(m_mapChatSplitPane, BorderLayout.CENTER);
+            }
+            GametableFrame.getGametableFrame().getContentPane().validate();
+            repaint();
+
+            b_chatWindowDocked = true;
+        }
+        else
+        {
+            if (chatWindow == null)
+            {
+                chatWindow = new JFrame();
+                chatWindow.setTitle("Chat Window");
+                chatWindow.setSize(800, 200);
+                chatWindow.setLocation(195, 600);
+                chatWindow.setFocusable(true);
+                chatWindow.setAlwaysOnTop(true);
+            }
+            chatWindow.setJMenuBar(getNewWindowMenuBar());
+
+            if (b_pogWindowDocked)
+            {
+                GametableFrame.getGametableFrame().getContentPane().remove(m_mapPogSplitPane);
+            }
+            else
+            {
+                GametableFrame.getGametableFrame().getContentPane().remove(m_canvasPane);
+            }
+            GametableFrame.getGametableFrame().getContentPane().remove(m_mapChatSplitPane);
+            GametableFrame.getGametableFrame().getContentPane().remove(m_chatPanel);
+            GametableFrame.getGametableFrame().getContentPane().validate();
+
+            if (b_pogWindowDocked)
+            {
+                GametableFrame.getGametableFrame().m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.LEFT);
+                GametableFrame.getGametableFrame().m_mapPogSplitPane.add(m_canvasPane, JSplitPane.RIGHT);
+                GametableFrame.getGametableFrame().getContentPane().add(m_mapPogSplitPane, BorderLayout.CENTER);
+            }
+            else
+            {
+                GametableFrame.getGametableFrame().getContentPane().add(m_canvasPane, BorderLayout.CENTER);
+            }
+            GametableFrame.getGametableFrame().getContentPane().validate();
+            repaint();
+            chatWindow.getContentPane().add(m_chatPanel);
+            chatWindow.setVisible(true);
+
+            b_chatWindowDocked = false;
+        }
+    }
+
+    /**
      * Pops up a dialog to load macros from a file.
      */
     public void loadMacros()
@@ -2455,7 +2698,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
     public void loadState(final byte saveFileData[])
     {
-        // let it know we're receiving initial data (which we are. Just fro ma file instead of the host)
+        // let it know we're receiving initial data (which we are. Just from a file instead of the host)
         try
         {
             // now we have to pick out the packets and send them in for processing one at a time
@@ -2501,7 +2744,7 @@ public class GametableFrame extends JFrame implements ActionListener
             final FileInputStream input = new FileInputStream(file);
             final DataInputStream infile = new DataInputStream(input);
 
-            // get the big hunk o daya
+            // get the big hunk o data
             final int ver = infile.readInt();
             if (ver != COMM_VERSION)
             {
@@ -3383,6 +3626,17 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             // if we're the host, send it to the clients
             send(PacketManager.makeRotatePogPacket(id, newAngle));
+        }
+    }
+
+    public void flipPogPacketReceived(final int id, final int flipH, final int flipV)
+    {
+        getGametableCanvas().doFlipPog(id, flipH, flipV);
+
+        if (m_netStatus == NETSTATE_HOST)
+        {
+            // if we're the host, send it to the clients
+            send(PacketManager.makeFlipPogPacket(id, flipH, flipV));
         }
     }
 

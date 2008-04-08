@@ -1,18 +1,11 @@
-/*
- * EraseTool.java: GameTable is in the Public Domain.
- */
-
-
 package com.galactanet.gametable.tools;
+
 
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.galactanet.gametable.GametableCanvas;
-import com.galactanet.gametable.GametableMap;
-import com.galactanet.gametable.LineSegment;
-import com.galactanet.gametable.Pog;
+import com.galactanet.gametable.*;
 
 
 
@@ -37,6 +30,8 @@ public class PublishTool extends NullTool
     private GametableMap    m_from;
     private Point           m_mouseAnchor;
     private Point           m_mouseFloat;
+    
+    //private int             m_color = (GametableFrame.getGametableFrame().m_drawColor).getRGB();
 
     // private boolean m_bEraseColor;
 
@@ -109,7 +104,7 @@ public class PublishTool extends NullTool
     }
 
     /*
-     * @see com.galactanet.gametable.AbstractTool#mouseButtonReleased(int, int)
+     * @see com.galactanet.gametable.AbstractTool#mouseButtonReleased(int, int, int)
      */
     public void mouseButtonReleased(final int x, final int y, final int modifierMask)
     {
@@ -121,7 +116,7 @@ public class PublishTool extends NullTool
             for (int i = 0; i < m_from.getNumPogs(); i++)
             {
                 final Pog pog = m_from.getPog(i);
-                if (pog.isTinted())
+                if (pog.isTinted() & !pog.isLocked())
                 {
                     // this pog gets copied
                     final Pog newPog = new Pog(pog);
@@ -176,10 +171,11 @@ public class PublishTool extends NullTool
                 for (int i = 0; i < m_from.getNumPogs(); i++)
                 {
                     final Pog pog = m_from.getPog(i);
-                    if (pog.isTinted())
+                    if (pog.isTinted() & !pog.isLocked())
                     {
                         m_canvas.removePog(pog.getId(), false);
-                        i--;
+                        //i--; // causing me an infinite loop for some reason.
+                        if (!((m_canvas.getNetStatus() == 2) && m_canvas.isPublicMap())) { i--; }
                     }
                 }
 
@@ -190,6 +186,12 @@ public class PublishTool extends NullTool
         }
         endAction();
     }
+
+    /*
+     * public final static int       NETSTATE_HOST            = 1;
+     * public final static int       NETSTATE_JOINED          = 2;
+     * public final static int       NETSTATE_NONE            = 0;
+     */
 
     /*
      * @see com.galactanet.gametable.AbstractTool#mouseMoved(int, int)
@@ -239,7 +241,7 @@ public class PublishTool extends NullTool
             br.y += size;
             final Rectangle pogRect = createRectangle(tl, br);
 
-            if (selRect.intersects(pogRect))
+            if (selRect.intersects(pogRect) & !pog.isLocked())
             {
                 // this pog will be sent
                 pog.setTinted(true);

@@ -15,7 +15,7 @@ import com.galactanet.gametable.UtilityFunctions;
 
 
 /**
- * Map tool for erasing lines.
+ * Map tool for drawing boxes.
  * 
  * @author iffy
  */

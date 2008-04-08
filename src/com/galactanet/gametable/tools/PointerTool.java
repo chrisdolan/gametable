@@ -18,6 +18,8 @@ import javax.swing.JPopupMenu;
 
 import com.galactanet.gametable.GametableCanvas;
 import com.galactanet.gametable.GametableFrame;
+import com.galactanet.gametable.GametableMap;
+import com.galactanet.gametable.GridMode;
 import com.galactanet.gametable.Pog;
 import com.galactanet.gametable.SetPogAttributeDialog;
 import com.galactanet.gametable.prefs.PreferenceDescriptor;
@@ -31,6 +33,8 @@ import com.galactanet.gametable.prefs.PreferenceDescriptor;
  */
 public class PointerTool extends NullTool
 {
+    GridMode                   m_gridMode;
+    
     private class DeletePogAttributeActionListener implements ActionListener
     {
         private final String key;
@@ -97,6 +101,8 @@ public class PointerTool extends NullTool
     }
 
     private GametableCanvas m_canvas;
+    private GametableMap    m_from;
+    private GametableMap    m_to;
     private boolean         m_clicked = true;
     private Pog             m_ghostPog;
     private Pog             m_grabbedPog;
@@ -212,7 +218,7 @@ public class PointerTool extends NullTool
         {
             if (m_clicked)
             {
-                popupContextMenu(x, y);
+                popupContextMenu(x, y, modifierMask);
             }
             else
             {
@@ -220,7 +226,11 @@ public class PointerTool extends NullTool
                 if (!m_canvas.isPointVisible(m_mousePosition))
                 {
                     // they removed this pog
-                    m_canvas.removePog(m_grabbedPog.getId());
+                    if (!m_grabbedPog.isLocked())
+                    {
+                        //If pog not locked, do remove
+                        m_canvas.removePog(m_grabbedPog.getId());
+                    }                    
                 }
                 else
                 {
@@ -288,235 +298,329 @@ public class PointerTool extends NullTool
      * @param x X location of mouse.
      * @param y Y location of mouse.
      */
-    private void popupContextMenu(final int x, final int y)
+    private void popupContextMenu(final int x, final int y, final int modifierMask)
     {
         m_menuPog = m_grabbedPog;
         final JPopupMenu menu = new JPopupMenu("Pog");
-        menu.add(new JMenuItem("Cancel"));
-        JMenuItem item = new JMenuItem(m_menuPog.isLocked() ? "Unlock" : "Lock");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_canvas.lockPog(m_menuPog.getId(), !m_menuPog.isLocked());
-                System.out.println(m_menuPog.isLocked());
-            }
-        });
-        menu.add(item);
-        item = new JMenuItem("Set Name...");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
-            {
-                final String s = (String)JOptionPane.showInputDialog(GametableFrame.getGametableFrame(),
-                    "Enter new name for this Pog:", "Set Pog Name", JOptionPane.PLAIN_MESSAGE, null, null, m_menuPog
-                        .getText());
+        if ((modifierMask & MODIFIER_SHIFT) > 0) // holding shift
+        {   
+            final int xLocation;
+            final int yLocation;
+            final int pogSize = m_menuPog.getFaceSize();
+            final int tempSize = pogSize;
+            final int m_gridModeId = m_canvas.getGridModeId();
 
-                if (s != null)
-                {
-                    m_canvas.setPogData(m_menuPog.getId(), s, null, null);
-                }
-
-            }
-        });
-        menu.add(item);
-        item = new JMenuItem("Set Attribute...");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
+            if (m_gridModeId == 1) //square mode
             {
-                final SetPogAttributeDialog dialog = new SetPogAttributeDialog();
-                dialog.setLocationRelativeTo(m_canvas);
-                dialog.setVisible(true);
-                final String name = dialog.getName();
-                final String value = dialog.getValue();
-                if ((name == null) || (name.length() == 0))
-                {
-                    return;
-                }
-                final Map toAdd = new HashMap();
-                toAdd.put(name, value);
-                m_canvas.setPogData(m_menuPog.getId(), null, toAdd, null);
+                xLocation =  (m_menuPog.getX() / 64) + ( ((tempSize % 2 == 0) ? pogSize - 1 : pogSize) / 2);
+                yLocation = ((m_menuPog.getY() / 64) + ( ((tempSize % 2 == 0) ? pogSize - 1 : pogSize) / 2)) * -1;
             }
-        });
-        menu.add(item);
-        if (m_menuPog.getAttributeNames().size() > 0)
-        {
-            final JMenu editMenu = new JMenu("Edit Attribute");
-
-            final JMenu removeMenu = new JMenu("Remove Attribute");
-            final Set nameSet = m_grabbedPog.getAttributeNames();
-            for (final Iterator iterator = nameSet.iterator(); iterator.hasNext();)
+            else if (m_gridModeId == 2) //hex mode - needs work to get it to display appropriate numbers
             {
-                final String key = (String)iterator.next();
-                item = new JMenuItem(key);
-                item.addActionListener(new DeletePogAttributeActionListener(key));
-                removeMenu.add(item);
-
-                item = new JMenuItem(key);
-                item.addActionListener(new EditPogAttributeActionListener(key));
-                editMenu.add(item);
+                xLocation = m_menuPog.getX();
+                yLocation = m_menuPog.getY() * -1;
             }
-            menu.add(editMenu);
-            menu.add(removeMenu);
+            else //no grid
+            {
+                xLocation = m_menuPog.getX();
+                yLocation = m_menuPog.getY() * -1;
+            }
+            
+            menu.add(new JMenuItem("X: " + xLocation));
+            menu.add(new JMenuItem("Y: " + yLocation));
         }
-
-        final JMenu sizeMenu = new JMenu("Face Size");
-        item = new JMenuItem("Reset");
-        item.addActionListener(new ActionListener()
+        else
         {
-            public void actionPerformed(final ActionEvent e)
+            menu.add(new JMenuItem("Cancel"));
+            JMenuItem item = new JMenuItem(m_menuPog.isLocked() ? "Unlock" : "Lock");
+            item.addActionListener(new ActionListener()
             {
-                m_canvas.setPogSize(m_menuPog.getId(), -1);
-            }
-        });
-        sizeMenu.add(item);
-
-        item = new JMenuItem("0.5 squares");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
+                public void actionPerformed(final ActionEvent e)
+                {
+                    m_canvas.lockPog(m_menuPog.getId(), !m_menuPog.isLocked());
+                    //System.out.println(m_menuPog.isLocked());
+                }
+            });
+            menu.add(item);
+            item = new JMenuItem(m_canvas.isPublicMap() ? "Unpublish" : "Publish");
+            item.addActionListener(new ActionListener()
             {
-                m_canvas.setPogSize(m_menuPog.getId(), 0.5f);
-            }
-        });
-        sizeMenu.add(item);
+                public void actionPerformed(final ActionEvent e)
+                {
+                    final Pog pog = m_menuPog;
+                    if (m_canvas.isPublicMap())
+                    {
+                        m_from = m_canvas.getPublicMap();
+                        m_to = m_canvas.getPrivateMap();
+                    }
+                    else
+                    {
+                        m_from = m_canvas.getPrivateMap();
+                        m_to = m_canvas.getPublicMap();
+                    }
 
-        item = new JMenuItem("1 squares");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
+                    // this pog gets copied
+                    final Pog newPog = new Pog(pog);
+                    newPog.assignUniqueId();
+                    m_canvas.setActiveMap(m_to);
+                    m_canvas.addPog(newPog);
+                    m_canvas.lockPog(newPog.getId(), pog.isLocked());
+                    m_canvas.setActiveMap(m_from);
+
+                    if ((modifierMask & MODIFIER_CTRL) == 0) // not holding control
+                    {
+                        // remove the pogs that we moved
+                        m_canvas.removePog(pog.getId(), false);
+                    }
+                }
+            });
+            menu.add(item);
+            item = new JMenuItem("Set Name...");
+            item.addActionListener(new ActionListener()
             {
-                m_canvas.setPogSize(m_menuPog.getId(), 1);
-            }
-        });
-        sizeMenu.add(item);
+                public void actionPerformed(final ActionEvent e)
+                {
+                    final String s = (String)JOptionPane.showInputDialog(GametableFrame.getGametableFrame(),
+                        "Enter new name for this Pog:", "Set Pog Name", JOptionPane.PLAIN_MESSAGE, null, null, m_menuPog.getText());
 
-        item = new JMenuItem("2 squares");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
+                    if (s != null)
+                    {
+                        m_canvas.setPogData(m_menuPog.getId(), s, null, null);
+                    }
+
+                }
+            });
+            menu.add(item);
+            item = new JMenuItem("Set Attribute...");
+            item.addActionListener(new ActionListener()
             {
-                m_canvas.setPogSize(m_menuPog.getId(), 2);
-            }
-        });
-        sizeMenu.add(item);
-
-        item = new JMenuItem("3 squares");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
+                public void actionPerformed(final ActionEvent e)
+                {
+                    final SetPogAttributeDialog dialog = new SetPogAttributeDialog();
+                    dialog.setLocationRelativeTo(m_canvas);
+                    dialog.setVisible(true);
+                    final String name = dialog.getName();
+                    final String value = dialog.getValue();
+                    if ((name == null) || (name.length() == 0))
+                    {
+                        return;
+                    }
+                    final Map toAdd = new HashMap();
+                    toAdd.put(name, value);
+                    m_canvas.setPogData(m_menuPog.getId(), null, toAdd, null);
+                }
+            });
+            menu.add(item);
+            if (m_menuPog.getAttributeNames().size() > 0)
             {
-                m_canvas.setPogSize(m_menuPog.getId(), 3);
-            }
-        });
-        sizeMenu.add(item);
+                final JMenu editMenu = new JMenu("Edit Attribute");
 
-        item = new JMenuItem("4 squares");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
+                final JMenu removeMenu = new JMenu("Remove Attribute");
+                final Set nameSet = m_grabbedPog.getAttributeNames();
+                for (final Iterator iterator = nameSet.iterator(); iterator.hasNext();)
+                {
+                    final String key = (String)iterator.next();
+                    item = new JMenuItem(key);
+                    item.addActionListener(new DeletePogAttributeActionListener(key));
+                    removeMenu.add(item);
+
+                    item = new JMenuItem(key);
+                    item.addActionListener(new EditPogAttributeActionListener(key));
+                    editMenu.add(item);
+                }
+                menu.add(editMenu);
+                menu.add(removeMenu);
+            }
+
+            final JMenu sizeMenu = new JMenu("Face Size");
+            item = new JMenuItem("Reset");
+            item.addActionListener(new ActionListener()
             {
-                m_canvas.setPogSize(m_menuPog.getId(), 4);
-            }
-        });
-        sizeMenu.add(item);
+                public void actionPerformed(final ActionEvent e)
+                {
+                    m_canvas.setPogSize(m_menuPog.getId(), -1);
+                }
+            });
+            sizeMenu.add(item);
 
-        item = new JMenuItem("6 squares");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_canvas.setPogSize(m_menuPog.getId(), 6);
-            }
-        });
-        sizeMenu.add(item);
+            item = new JMenuItem("0.5 squares");
+            item.addActionListener(new ActionListener()
+             {
+                public void actionPerformed(final ActionEvent e)
+                {
+                    m_canvas.setPogSize(m_menuPog.getId(), 0.5f);
+                }
+             });
+             sizeMenu.add(item);
 
-        menu.add(sizeMenu);
+             item = new JMenuItem("1 squares");
+             item.addActionListener(new ActionListener()
+             {
+                 public void actionPerformed(final ActionEvent e)
+                 {
+                     m_canvas.setPogSize(m_menuPog.getId(), 1);
+                 }
+                   });
+             sizeMenu.add(item);
 
-        final JMenu rotateMenu = new JMenu("Rotation");
-        item = new JMenuItem("0");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_canvas.rotatePog(m_menuPog.getId(), 0);
-            }
-        });
-        rotateMenu.add(item);
+             item = new JMenuItem("2 squares");
+             item.addActionListener(new ActionListener()
+             {
+                 public void actionPerformed(final ActionEvent e)
+                 {
+                     m_canvas.setPogSize(m_menuPog.getId(), 2);
+                 }
+             });
+             sizeMenu.add(item);
 
-        item = new JMenuItem("60");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_canvas.rotatePog(m_menuPog.getId(), 60);
-            }
-        });
-        rotateMenu.add(item);
+             item = new JMenuItem("3 squares");
+             item.addActionListener(new ActionListener()
+             {
+                 public void actionPerformed(final ActionEvent e)
+                 {
+                     m_canvas.setPogSize(m_menuPog.getId(), 3);
+                 }
+             });
+             sizeMenu.add(item);
 
-        item = new JMenuItem("90");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_canvas.rotatePog(m_menuPog.getId(), 90);
-            }
-        });
+             item = new JMenuItem("4 squares");
+             item.addActionListener(new ActionListener()
+             {
+                 public void actionPerformed(final ActionEvent e)
+                 {
+                     m_canvas.setPogSize(m_menuPog.getId(), 4);
+                 }
+             });
+             sizeMenu.add(item);
 
-        rotateMenu.add(item);
-        item = new JMenuItem("120");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_canvas.rotatePog(m_menuPog.getId(), 120);
-            }
-        });
-        rotateMenu.add(item);
+             item = new JMenuItem("6 squares");
+             item.addActionListener(new ActionListener()
+             {
+                 public void actionPerformed(final ActionEvent e)
+                 {
+                     m_canvas.setPogSize(m_menuPog.getId(), 6);
+                 }
+             });
+             sizeMenu.add(item);
 
-        item = new JMenuItem("180");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_canvas.rotatePog(m_menuPog.getId(), 180);
-            }
-        });
-        rotateMenu.add(item);
+             menu.add(sizeMenu);
 
-        item = new JMenuItem("240");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_canvas.rotatePog(m_menuPog.getId(), 240);
-            }
-        });
-        rotateMenu.add(item);
+              final JMenu rotateMenu = new JMenu("Rotation");
+              item = new JMenuItem("0");
+              item.addActionListener(new ActionListener()
+              {
+                  public void actionPerformed(final ActionEvent e)
+                  {
+                      m_canvas.rotatePog(m_menuPog.getId(), 0);
+                  }
+              });
+              rotateMenu.add(item);
 
-        item = new JMenuItem("270");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_canvas.rotatePog(m_menuPog.getId(), 270);
-            }
-        });
-        rotateMenu.add(item);
+              item = new JMenuItem("60");
+              item.addActionListener(new ActionListener()
+              {
+                  public void actionPerformed(final ActionEvent e)
+                  {
+                      m_canvas.rotatePog(m_menuPog.getId(), 60);
+                  }
+              });
+              rotateMenu.add(item);
 
-        item = new JMenuItem("300");
-        item.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_canvas.rotatePog(m_menuPog.getId(), 300);
-            }
-        });
-        rotateMenu.add(item);
+              item = new JMenuItem("90");
+              item.addActionListener(new ActionListener()
+              {
+                  public void actionPerformed(final ActionEvent e)
+                  {
+                      m_canvas.rotatePog(m_menuPog.getId(), 90);
+                  }
+              });
 
-        menu.add(rotateMenu);
+              rotateMenu.add(item);
+              item = new JMenuItem("120");
+              item.addActionListener(new ActionListener()
+              {
+                  public void actionPerformed(final ActionEvent e)
+                  {
+                      m_canvas.rotatePog(m_menuPog.getId(), 120);
+                  }
+              });
+              rotateMenu.add(item);
 
+              item = new JMenuItem("180");
+              item.addActionListener(new ActionListener()
+              {
+                  public void actionPerformed(final ActionEvent e)
+                  {
+                      m_canvas.rotatePog(m_menuPog.getId(), 180);
+                  }
+              });
+              rotateMenu.add(item);
+
+              item = new JMenuItem("240");
+              item.addActionListener(new ActionListener()
+              {
+                  public void actionPerformed(final ActionEvent e)
+                  {
+                      m_canvas.rotatePog(m_menuPog.getId(), 240);
+                  }
+              });
+              rotateMenu.add(item);
+
+              item = new JMenuItem("270");
+              item.addActionListener(new ActionListener()
+              {
+                  public void actionPerformed(final ActionEvent e)
+                  {
+                      m_canvas.rotatePog(m_menuPog.getId(), 270);
+                  }
+              });
+              rotateMenu.add(item);
+
+              item = new JMenuItem("300");
+              item.addActionListener(new ActionListener()
+              {
+                  public void actionPerformed(final ActionEvent e)
+                  {
+                      m_canvas.rotatePog(m_menuPog.getId(), 300);
+                  }
+              });
+              rotateMenu.add(item);
+
+              menu.add(rotateMenu);
+              
+              final JMenu flipMenu = new JMenu("Flip");
+              item = new JMenuItem("Reset");
+              item.addActionListener(new ActionListener()
+              {
+                  public void actionPerformed(final ActionEvent e)
+                  {
+                      m_canvas.flipPog(m_menuPog.getId(), 0, 0);
+                  }
+              });
+              flipMenu.add(item);
+
+              item = new JMenuItem("Vertical");
+              item.addActionListener(new ActionListener()
+              {
+                  public void actionPerformed(final ActionEvent e)
+                  {
+                      m_canvas.flipPog(m_menuPog.getId(), (m_menuPog.getFlipH() == 0 ? 1 : m_menuPog.getFlipH()), (m_menuPog.getFlipV() == 0 ? -1 : -(m_menuPog.getFlipV())));
+                  }
+              });
+              flipMenu.add(item);
+
+              item = new JMenuItem("Horizontal");
+              item.addActionListener(new ActionListener()
+              {
+                  public void actionPerformed(final ActionEvent e)
+                  {
+                      m_canvas.flipPog(m_menuPog.getId(), (m_menuPog.getFlipH() == 0 ? -1 : -(m_menuPog.getFlipH())), (m_menuPog.getFlipV() == 0 ? 1 : m_menuPog.getFlipV()));
+                  }
+              });
+              flipMenu.add(item);
+
+              menu.add(flipMenu);
+        }
         final Point mousePosition = m_canvas.modelToView(x, y);
         menu.show(m_canvas, mousePosition.x, mousePosition.y);
     }

@@ -119,6 +119,9 @@ public class PacketManager
     // Pog rotated
     public static final int PACKET_ROTATEPOG          = 27;
 
+    // Pog flipped
+    public static final int PACKET_FLIPPOG            = 30;
+
     // Packet with text to go to the text log
     public static final int PACKET_TEXT               = 2;
 
@@ -948,6 +951,28 @@ public class PacketManager
         }
     }
 
+    /* *********************** FLIPPOG PACKET ********************************* */
+    public static byte[] makeFlipPogPacket(final int id, final int left, final int right)
+    {
+        try
+        {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_FLIPPOG); // type
+            dos.writeInt(id);
+            dos.writeInt(left);
+            dos.writeInt(right);
+
+            return baos.toByteArray();
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
     public static byte[] makeTextPacket(final String text)
     {
         try
@@ -1013,7 +1038,8 @@ public class PacketManager
         try
         {
             final boolean bPublicLayerPog = dis.readBoolean(); // layer. true = public. false = private
-
+            //System.out.println(bPublicLayerPog);
+            
             final Pog pog = new Pog(dis);
             if (pog.m_bStillborn)
             {
@@ -1379,6 +1405,12 @@ public class PacketManager
                 case PACKET_ROTATEPOG:
                 {
                     readRotatePogPacket(dis);
+                }
+                break;
+
+                case PACKET_FLIPPOG:
+                {
+                    readFlipPogPacket(dis);
                 }
                 break;
 
@@ -1928,6 +1960,24 @@ public class PacketManager
             // tell the model
             final GametableFrame gtFrame = GametableFrame.getGametableFrame();
             gtFrame.rotatePogPacketReceived(id, newAngle);
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+
+    public static void readFlipPogPacket(final DataInputStream dis)
+    {
+        try
+        {
+            final int id = dis.readInt();
+            final int flipH = dis.readInt();
+            final int flipV = dis.readInt();
+
+            // tell the model
+            final GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.flipPogPacketReceived(id, flipH, flipV);
         }
         catch (final IOException ex)
         {

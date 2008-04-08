@@ -29,15 +29,17 @@ import com.galactanet.gametable.tools.NullTool;
  */
 public class GametableCanvas extends JComponent implements MouseListener, MouseMotionListener, MouseWheelListener
 {
-    // the size of a square at max zoom level (0)
-    public final static int    BASE_SQUARE_SIZE       = 64;
-    public final static int    GRID_MODE_HEX          = 2;
     // grid modes
     public final static int    GRID_MODE_NONE         = 0;
     public final static int    GRID_MODE_SQUARES      = 1;
+    public final static int    GRID_MODE_HEX          = 2;
+
+    // the size of a square at max zoom level (0)
+    public final static int    BASE_SQUARE_SIZE       = 64;
+
+    public final static int    NUM_ZOOM_LEVELS        = 5;
 
     private static final float KEYBOARD_SCROLL_FACTOR = 0.5f;
-
     private static final int   KEYBOARD_SCROLL_TIME   = 300;
 
     private static final Font  MAIN_FONT              = Font.decode("sans-12");
@@ -46,8 +48,6 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
      */
     private static final Tool  NULL_TOOL              = new NullTool();
 
-    public final static int    NUM_ZOOM_LEVELS        = 5;
-
     /**
      * This is the color used to overlay on top of the public layer when the user is on the private layer. It's white
      * with 50% alpha
@@ -55,96 +55,24 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     private static final Color OVERLAY_COLOR          = new Color(255, 255, 255, 128);
 
     /**
-     * 
+     *
      */
     private static final long  serialVersionUID       = 6250860728974514790L;
 
-    public static void drawDottedLine(final Graphics g, final int x, final int y, final int x2, final int y2)
-    {
-        final Graphics2D g2d = (Graphics2D)g;
-        final Stroke oldStroke = g2d.getStroke();
-        g2d.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1f, new float[] {
-            2f
-        }, 0f));
-        g.drawLine(x, y, x2, y2);
-        g2d.setStroke(oldStroke);
-    }
+    private Image              m_mapBackground;
 
-    public static void drawDottedRect(final Graphics g, final int ix, final int iy, final int iWidth, final int iHeight)
-    {
-        final Graphics2D g2d = (Graphics2D)g;
-        final Stroke oldStroke = g2d.getStroke();
-        g2d.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1f, new float[] {
-            2f
-        }, 0f));
-
-        int x = ix;
-        int y = iy;
-        int width = iWidth;
-        int height = iHeight;
-        if (width < 0)
-        {
-            x += width;
-            width = -width;
-        }
-        if (height < 0)
-        {
-            y += height;
-            height = -height;
-        }
-        g.drawRect(x, y, width, height);
-        g2d.setStroke(oldStroke);
-    }
-
-    public static int getSquareSizeForZoom(final int level)
-    {
-        int ret = BASE_SQUARE_SIZE;
-        switch (level)
-        {
-            case 0:
-            {
-                ret = BASE_SQUARE_SIZE;
-            }
-            break;
-
-            case 1:
-            {
-                ret = (BASE_SQUARE_SIZE / 4) * 3;
-            }
-            break;
-
-            case 2:
-            {
-                ret = BASE_SQUARE_SIZE / 2;
-            }
-            break;
-
-            case 3:
-            {
-                ret = BASE_SQUARE_SIZE / 4;
-            }
-            break;
-
-            case 4:
-            {
-                ret = BASE_SQUARE_SIZE / 8;
-            }
-            break;
-        }
-
-        return ret;
-    }
-
+    // this is the map (or layer) that all players share
+    private final GametableMap m_publicMap            = new GametableMap(true);
+    // this is the map (or layer) that is private to a specific player
+    private final GametableMap m_privateMap           = new GametableMap(false);
     // this points to whichever map is presently active
     private GametableMap       m_activeMap;
 
-    private int                m_activeToolId   = -1;
+    private int                m_activeToolId         = -1;
+
     private boolean            m_bAltKeyDown;
-
     private boolean            m_bControlKeyDown;
-
     private boolean            m_bMouseOnView;
-
     private boolean            m_bShiftKeyDown;
 
     // misc flags
@@ -156,14 +84,13 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     private GametableFrame     m_gametableFrame;
 
     GridMode                   m_gridMode;
-
-    HexGridMode                m_hexGridMode    = new HexGridMode();
-    private Image              m_mapBackground;
+    SquareGridMode             m_squareGridMode       = new SquareGridMode();
+    HexGridMode                m_hexGridMode          = new HexGridMode();
+    GridMode                   m_noGridMode           = new GridMode();
 
     private Point              m_mouseModelFloat;
 
     private boolean            m_newPogIsBeingDragged;
-    GridMode                   m_noGridMode     = new GridMode();
     private Pog                m_pogMouseOver;
     private Image              m_pointingImage;
     /**
@@ -171,31 +98,22 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
      */
     private int                m_previousToolId;
 
-    private final GametableMap m_privateMap     = new GametableMap(false);
-    // this is the map (or layer) that all players share
-    private final GametableMap m_publicMap      = new GametableMap(true);
     /**
      * true if the current mouse action was initiated with a right-click
      */
     private boolean            m_rightClicking;
+    private Point              m_startScroll;
     private boolean            m_scrolling;
-
     private long               m_scrollTime;
-
     private long               m_scrollTimeTotal;
-
-    SquareGridMode             m_squareGridMode = new SquareGridMode();
 
     /**
      * This is the number of screen pixels that are used per model pixel. It's never less than 1
      */
-    public int                 m_zoom           = 1;
+    public int                 m_zoom                 = 1;
 
     // the size of a square at the current zoom level
-    public int                 m_squareSize     = getSquareSizeForZoom(m_zoom);
-
-    private Point              m_startScroll;
-
+    public int                 m_squareSize           = getSquareSizeForZoom(m_zoom);
     
     /**
      * Constructor.
@@ -233,6 +151,360 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         initializeKeys();
 
         m_activeMap = m_publicMap;
+    }
+
+    /**
+     * Initializes all the keys for the canvas.
+     */
+    private void initializeKeys()
+    {
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed SPACE"), "startPointing");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released SPACE"), "stopPointing");
+
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("shift pressed SHIFT"), "shiftDown");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released SHIFT"), "shiftUp");
+
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("control pressed CONTROL"), "controlDown");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released CONTROL"), "controlUp");
+
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("alt pressed ALT"), "altDown");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released ALT"), "altUp");
+
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed SUBTRACT"), "zoomIn");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed MINUS"), "zoomIn");
+
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed ADD"), "zoomOut");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed PLUS"), "zoomOut");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed EQUALS"), "zoomOut");
+
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed UP"), "scrollUp");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed KP_UP"), "scrollUp");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed DOWN"), "scrollDown");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed KP_DOWN"), "scrollDown");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed LEFT"), "scrollLeft");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed KP_LEFT"), "scrollLeft");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed RIGHT"), "scrollRight");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed KP_RIGHT"), "scrollRight");
+
+        getActionMap().put("startPointing", new AbstractAction()
+        {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = -1053248611112843772L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                if (isTextFieldFocused())
+                {
+                    return;
+                }
+
+                if (!m_bMouseOnView || getActiveTool().isBeingUsed())
+                {
+                    // no pointing if the mouse is outside the view area, or the active tool is
+                    // being used.
+                    return;
+                }
+
+                // we're only interested in doing this if they aren't already
+                // holding the space key.
+                if (m_bSpaceKeyDown == false)
+                {
+                    m_bSpaceKeyDown = true;
+
+                    pointAt(m_mouseModelFloat);
+                }
+            }
+        });
+
+        getActionMap().put("stopPointing", new AbstractAction()
+        {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = -8422918377090083512L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                m_bSpaceKeyDown = false;
+                pointAt(null);
+            }
+        });
+
+        getActionMap().put("shiftDown", new AbstractAction()
+        {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = 3881440237209743033L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                if (isTextFieldFocused())
+                {
+                    return;
+                }
+
+                m_bShiftKeyDown = true;
+                repaint();
+            }
+        });
+
+        getActionMap().put("shiftUp", new AbstractAction()
+        {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = 4458628987043121905L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                m_bShiftKeyDown = false;
+                repaint();
+            }
+        });
+
+        getActionMap().put("controlDown", new AbstractAction()
+        {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = 7483132144245136048L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                m_bControlKeyDown = true;
+                repaint();
+            }
+        });
+
+        getActionMap().put("controlUp", new AbstractAction()
+        {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = -3685986269044575610L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                m_bControlKeyDown = false;
+                repaint();
+            }
+        });
+
+        getActionMap().put("altDown", new AbstractAction()
+        {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = 1008551504896354075L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                m_bAltKeyDown = true;
+                repaint();
+            }
+        });
+
+        getActionMap().put("altUp", new AbstractAction()
+        {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = -5789160422348881793L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                if (m_bAltKeyDown)
+                {
+                    m_bAltKeyDown = false;
+                    repaint();
+                }
+            }
+        });
+
+        getActionMap().put("zoomIn", new AbstractAction()
+        {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = -6378089523552259896L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                if (isTextFieldFocused())
+                {
+                    return;
+                }
+
+                centerZoom(1);
+            }
+        });
+
+        getActionMap().put("zoomOut", new AbstractAction()
+        {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = 3489902228064051594L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                if (isTextFieldFocused())
+                {
+                    return;
+                }
+
+                centerZoom(-1);
+            }
+        });
+
+        getActionMap().put("scrollUp", new AbstractAction()
+        {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = 3255081196222471923L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                if (isTextFieldFocused())
+                {
+                    return;
+                }
+
+                if (m_scrolling)
+                {
+                    return;
+                }
+
+                final GametableMap map = getActiveMap();
+                final Point p = drawToModel(map.getScrollX(), map.getScrollY()
+                    - Math.round(getHeight() * KEYBOARD_SCROLL_FACTOR));
+                smoothScrollTo(p.x, p.y);
+            }
+        });
+
+        getActionMap().put("scrollDown", new AbstractAction()
+        {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = 2041156257507421225L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                if (isTextFieldFocused())
+                {
+                    return;
+                }
+
+                if (m_scrolling)
+                {
+                    return;
+                }
+
+                final GametableMap map = getActiveMap();
+                final Point p = drawToModel(map.getScrollX(), map.getScrollY()
+                    + Math.round(getHeight() * KEYBOARD_SCROLL_FACTOR));
+                smoothScrollTo(p.x, p.y);
+            }
+        });
+
+        getActionMap().put("scrollLeft", new AbstractAction()
+        {
+            /**
+             * 
+             */
+            private static final long serialVersionUID = -2772860909080008403L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                if (isTextFieldFocused())
+                {
+                    return;
+                }
+
+                if (m_scrolling)
+                {
+                    return;
+                }
+
+                final GametableMap map = getActiveMap();
+                final Point p = drawToModel(map.getScrollX() - Math.round(getWidth() * KEYBOARD_SCROLL_FACTOR), map
+                    .getScrollY());
+                smoothScrollTo(p.x, p.y);
+            }
+        });
+
+        getActionMap().put("scrollRight", new AbstractAction()
+        {
+            /**
+             *
+             */
+            private static final long serialVersionUID = -4782758632637647018L;
+
+            /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(final ActionEvent e)
+            {
+                if (isTextFieldFocused())
+                {
+                    return;
+                }
+
+                if (m_scrolling)
+                {
+                    return;
+                }
+
+                final GametableMap map = getActiveMap();
+                final Point p = drawToModel(map.getScrollX() + Math.round(getWidth() * KEYBOARD_SCROLL_FACTOR), map
+                    .getScrollY());
+                smoothScrollTo(p.x, p.y);
+            }
+        });
     }
 
     public void addCardPog(final Pog toAdd)
@@ -530,6 +802,23 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         repaint();
     }
 
+    public void doFlipPog(final int id, final int flipH, final int flipV)
+    {
+        final Pog toFlip = getActiveMap().getPogByID(id);
+        if (toFlip == null)
+        {
+            return;
+        }
+
+        toFlip.setFlip(flipH, flipV);
+
+        // this pog moves to the end of the array
+        getActiveMap().removePog(toFlip);
+        getActiveMap().addPog(toFlip);
+
+        repaint();
+    }
+
     public void doSetPogData(final int id, final String s, final Map toAdd, final Set toDelete)
     {
         final Pog pog = getActiveMap().getPogByID(id);
@@ -740,8 +1029,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     public int getModifierFlags()
     {
-        return ((m_bControlKeyDown ? Tool.MODIFIER_CTRL : 0) | (m_bSpaceKeyDown ? Tool.MODIFIER_SPACE : 0) | (m_bShiftKeyDown ? Tool.MODIFIER_SHIFT
-            : 0));
+        return ((m_bControlKeyDown ? Tool.MODIFIER_CTRL : 0) | (m_bSpaceKeyDown ? Tool.MODIFIER_SPACE : 0) | (m_bShiftKeyDown ? Tool.MODIFIER_SHIFT : 0) | (m_bShiftKeyDown ? Tool.MODIFIER_ALT : 0));
     }
 
     private Point getPogDragMousePosition()
@@ -755,6 +1043,45 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
     private PogPanel getPogPanel()
     {
         return m_gametableFrame.getPogPanel();
+    }
+
+    public static int getSquareSizeForZoom(final int level)
+    {
+        int ret = BASE_SQUARE_SIZE;
+        switch (level)
+        {
+            case 0:
+            {
+                ret = BASE_SQUARE_SIZE;
+            }
+            break;
+
+            case 1:
+            {
+                ret = (BASE_SQUARE_SIZE / 4) * 3;
+            }
+            break;
+
+            case 2:
+            {
+                ret = BASE_SQUARE_SIZE / 2;
+            }
+            break;
+
+            case 3:
+            {
+                ret = BASE_SQUARE_SIZE / 4;
+            }
+            break;
+
+            case 4:
+            {
+                ret = BASE_SQUARE_SIZE / 8;
+            }
+            break;
+        }
+
+        return ret;
     }
 
     public GametableMap getPrivateMap()
@@ -779,363 +1106,12 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         // set up the grid modes
         m_squareGridMode.init(this);
         m_hexGridMode.init(this);
+        m_noGridMode.init(this);
         m_gridMode = m_squareGridMode;
 
         addMouseWheelListener(this);
         setZoom(0);
         setActiveTool(0);
-    }
-
-    /**
-     * Initializes all the keys for the canvas.
-     */
-    private void initializeKeys()
-    {
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed SPACE"), "startPointing");
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released SPACE"), "stopPointing");
-
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("shift pressed SHIFT"), "shiftDown");
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released SHIFT"), "shiftUp");
-
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("control pressed CONTROL"), "controlDown");
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released CONTROL"), "controlUp");
-
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("alt pressed ALT"), "altDown");
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released ALT"), "altUp");
-
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed SUBTRACT"), "zoomIn");
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed MINUS"), "zoomIn");
-
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed ADD"), "zoomOut");
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed PLUS"), "zoomOut");
-        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed EQUALS"), "zoomOut");
-
-        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed UP"), "scrollUp");
-        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed KP_UP"), "scrollUp");
-        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed DOWN"), "scrollDown");
-        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed KP_DOWN"), "scrollDown");
-        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed LEFT"), "scrollLeft");
-        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed KP_LEFT"), "scrollLeft");
-        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed RIGHT"), "scrollRight");
-        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed KP_RIGHT"), "scrollRight");
-
-        getActionMap().put("startPointing", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = -1053248611112843772L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                if (isTextFieldFocused())
-                {
-                    return;
-                }
-
-                if (!m_bMouseOnView || getActiveTool().isBeingUsed())
-                {
-                    // no pointing if the mouse is outside the view area, or the active tool is
-                    // being used.
-                    return;
-                }
-
-                // we're only interested in doing this if they aren't already
-                // holding the space key.
-                if (m_bSpaceKeyDown == false)
-                {
-                    m_bSpaceKeyDown = true;
-
-                    pointAt(m_mouseModelFloat);
-                }
-            }
-        });
-
-        getActionMap().put("stopPointing", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = -8422918377090083512L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_bSpaceKeyDown = false;
-                pointAt(null);
-            }
-        });
-
-        getActionMap().put("shiftDown", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = 3881440237209743033L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                if (isTextFieldFocused())
-                {
-                    return;
-                }
-
-                m_bShiftKeyDown = true;
-                repaint();
-            }
-        });
-
-        getActionMap().put("shiftUp", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = 4458628987043121905L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_bShiftKeyDown = false;
-                repaint();
-            }
-        });
-
-        getActionMap().put("controlDown", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = 7483132144245136048L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_bControlKeyDown = true;
-                repaint();
-            }
-        });
-
-        getActionMap().put("controlUp", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = -3685986269044575610L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_bControlKeyDown = false;
-                repaint();
-            }
-        });
-
-        getActionMap().put("altDown", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = 1008551504896354075L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                m_bAltKeyDown = true;
-            }
-        });
-
-        getActionMap().put("altUp", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = -5789160422348881793L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                if (m_bAltKeyDown)
-                {
-                    m_bAltKeyDown = false;
-                }
-            }
-        });
-
-        getActionMap().put("zoomIn", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = -6378089523552259896L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                if (isTextFieldFocused())
-                {
-                    return;
-                }
-
-                centerZoom(1);
-            }
-        });
-
-        getActionMap().put("zoomOut", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = 3489902228064051594L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                if (isTextFieldFocused())
-                {
-                    return;
-                }
-
-                centerZoom(-1);
-            }
-        });
-
-        getActionMap().put("scrollUp", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = 3255081196222471923L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                if (isTextFieldFocused())
-                {
-                    return;
-                }
-
-                if (m_scrolling)
-                {
-                    return;
-                }
-
-                final GametableMap map = getActiveMap();
-                final Point p = drawToModel(map.getScrollX(), map.getScrollY()
-                    - Math.round(getHeight() * KEYBOARD_SCROLL_FACTOR));
-                smoothScrollTo(p.x, p.y);
-            }
-        });
-
-        getActionMap().put("scrollDown", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = 2041156257507421225L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                if (isTextFieldFocused())
-                {
-                    return;
-                }
-
-                if (m_scrolling)
-                {
-                    return;
-                }
-
-                final GametableMap map = getActiveMap();
-                final Point p = drawToModel(map.getScrollX(), map.getScrollY()
-                    + Math.round(getHeight() * KEYBOARD_SCROLL_FACTOR));
-                smoothScrollTo(p.x, p.y);
-            }
-        });
-
-        getActionMap().put("scrollLeft", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = -2772860909080008403L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                if (isTextFieldFocused())
-                {
-                    return;
-                }
-
-                if (m_scrolling)
-                {
-                    return;
-                }
-
-                final GametableMap map = getActiveMap();
-                final Point p = drawToModel(map.getScrollX() - Math.round(getWidth() * KEYBOARD_SCROLL_FACTOR), map
-                    .getScrollY());
-                smoothScrollTo(p.x, p.y);
-            }
-        });
-
-        getActionMap().put("scrollRight", new AbstractAction()
-        {
-            /**
-             * 
-             */
-            private static final long serialVersionUID = -4782758632637647018L;
-
-            /*
-             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-             */
-            public void actionPerformed(final ActionEvent e)
-            {
-                if (isTextFieldFocused())
-                {
-                    return;
-                }
-
-                if (m_scrolling)
-                {
-                    return;
-                }
-
-                final GametableMap map = getActiveMap();
-                final Point p = drawToModel(map.getScrollX() + Math.round(getWidth() * KEYBOARD_SCROLL_FACTOR), map
-                    .getScrollY());
-                smoothScrollTo(p.x, p.y);
-            }
-        });
     }
 
     private boolean isPointing()
@@ -1692,6 +1668,14 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         removePogs(removeArray, bDiscardCards);
     }
 
+    /*
+    * Pass the ability to check NetStatus up the chain of object calls
+    */
+    public int getNetStatus ( )
+    {
+        return m_gametableFrame.getNetStatus();
+    }
+
     public void removePogs(final int ids[], final boolean bDiscardCards)
     {
         if (isPublicMap())
@@ -1742,6 +1726,22 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         }
     }
 
+    public void flipPog(final int id, final int flipH, final int flipV)
+    {
+        if (isPublicMap())
+        {
+            m_gametableFrame.send(PacketManager.makeFlipPogPacket(id, flipH, flipV));
+
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
+            {
+                doFlipPog(id, flipH, flipV);
+            }
+        }
+        else
+        {
+            doFlipPog(id, flipH, flipV);
+        }
+    }
     public void scrollMapTo(final int modelX, final int modelY)
     {
         final Point target = modelToDraw(modelX, modelY);
@@ -1995,5 +1995,42 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         final int modelY = (int)(squaresY * BASE_SQUARE_SIZE);
 
         return new Point(modelX, modelY);
+    }
+
+    public static void drawDottedRect(final Graphics g, final int ix, final int iy, final int iWidth, final int iHeight)
+    {
+        final Graphics2D g2d = (Graphics2D)g;
+        final Stroke oldStroke = g2d.getStroke();
+        g2d.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1f, new float[] {
+            2f
+        }, 0f));
+
+        int x = ix;
+        int y = iy;
+        int width = iWidth;
+        int height = iHeight;
+        if (width < 0)
+        {
+            x += width;
+            width = -width;
+        }
+        if (height < 0)
+        {
+            y += height;
+            height = -height;
+        }
+        g.drawRect(x, y, width, height);
+        g2d.setStroke(oldStroke);
+    }
+
+    public static void drawDottedLine(final Graphics g, final int x, final int y, final int x2, final int y2)
+    {
+        final Graphics2D g2d = (Graphics2D)g;
+        final Stroke oldStroke = g2d.getStroke();
+        g2d.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1f, new float[] {
+            2f
+        }, 0f));
+        g.drawLine(x, y, x2, y2);
+        g2d.setStroke(oldStroke);
     }
 }

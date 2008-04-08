@@ -87,6 +87,12 @@ public class Pog implements Comparable
     /**
      * Name/value pairs of the attributes assigned to this pog.
      */
+    private int                 m_flipH                   = 0;
+    private int                 m_flipV                   = 0;
+    
+    /**
+     * Name/value pairs of the attributes assigned to this pog.
+     */
     private final Map          m_attributes               = new TreeMap();
 
     // a special kind of hack-ish value that will cause a pog
@@ -320,7 +326,7 @@ public class Pog implements Comparable
         // we have to work with ratios, cause the pog could be large or huge, gargantuan, etc.
         final float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
             / (float)GametableCanvas.BASE_SQUARE_SIZE;
-        m_pogType.drawScaled(g, x, y, scale * m_scale, m_angle);
+        m_pogType.drawScaled(g, x, y, scale * m_scale, m_angle, m_flipH, m_flipV);
     }
 
     // --- Accessors ---
@@ -415,7 +421,7 @@ public class Pog implements Comparable
         final float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
             / (float)GametableCanvas.BASE_SQUARE_SIZE;
 
-        m_pogType.drawScaled(g, drawCoords.x, drawCoords.y, scale * m_scale, m_angle);
+        m_pogType.drawScaled(g, drawCoords.x, drawCoords.y, scale * m_scale, m_angle, m_flipH, m_flipV);
 
         // if we're tinted, draw tinted
         if (m_bTinted)
@@ -441,6 +447,16 @@ public class Pog implements Comparable
     public double getAngle()
     {
         return m_angle;
+    }
+
+    public int getFlipH()
+    {
+        return m_flipH;
+    }
+
+    public int getFlipV()
+    {
+        return m_flipV;
     }
 
     public String getAttribute(final String name)
@@ -606,6 +622,8 @@ public class Pog implements Comparable
         m_canvas = orig.m_canvas;
         m_scale = orig.m_scale;
         m_angle = orig.m_angle;
+        m_flipH = orig.m_flipH;
+        m_flipV = orig.m_flipV;
         m_text = orig.m_text;
 
         if (orig.m_card == null)
@@ -641,32 +659,67 @@ public class Pog implements Comparable
         m_text = dis.readUTF();
         // boolean underlay =
         dis.readBoolean();
-        m_scale = dis.readFloat();
-        m_angle = dis.readDouble();
-        m_locked = dis.readBoolean();
-
-        // read in the card info, if any
-        final boolean bCardExists = dis.readBoolean();
-        if (bCardExists)
-        {
-            m_card = DeckData.createBlankCard();
-            m_card.read(dis);
+        try {
+            m_scale = dis.readFloat();
         }
-        else
+        catch(IOException exp)
         {
-            // no card
+            m_scale = 1f;
+        }
+        
+        try {
+            m_angle = dis.readDouble();
+        }
+        catch(IOException exp)
+        {
+            m_angle = 0.;
+        }
+        try {
+            m_flipH = dis.readInt();
+            m_flipV = dis.readInt();
+        }
+        catch(IOException exp)
+        {
+            m_flipH = 0;
+            m_flipV = 0;
+        }
+        
+        try {
+            m_locked = dis.readBoolean();
+        }
+        catch(IOException exp)
+        {
+            m_locked = false;
+        }
+        
+        try {
+         // read in the card info, if any
+            final boolean bCardExists = dis.readBoolean();
+            if (bCardExists)
+            {
+                m_card = DeckData.createBlankCard();
+                m_card.read(dis);
+            }
+            else
+            {
+                // no card
+                m_card = null;
+            }
+
+            final int numAttributes = dis.readInt();
+            m_attributes.clear();
+            for (int i = 0; i < numAttributes; i++)
+            {
+                final String key = dis.readUTF();
+                final String value = dis.readUTF();
+                setAttribute(key, value);
+            }
+        }
+        catch(IOException exp)
+        {
             m_card = null;
         }
-
-        final int numAttributes = dis.readInt();
-        m_attributes.clear();
-        for (int i = 0; i < numAttributes; i++)
-        {
-            final String key = dis.readUTF();
-            final String value = dis.readUTF();
-            setAttribute(key, value);
-        }
-
+        
         // special case psuedo-hack check
         // through reasons unclear to me, sometimes a pog will get
         // a size of around 2 billion. A more typical size would
@@ -727,10 +780,21 @@ public class Pog implements Comparable
 
         /*
          * Commented out because these attributes become really annoying in play. They pop up whenever the mouse is over
-         * the card and it's irritating. // set the appropriate attributes if ( card.m_cardName.length() > 0 ) { m_text =
-         * card.m_cardName; } if ( card.m_cardDesc.length() > 0 ) { setAttribute("Desc", card.m_cardDesc); } if (
-         * card.m_deckName.length() > 0 ) { setAttribute("Deck", card.m_deckName); }
+         * the card and it's irritating. 
          */
+        // set the appropriate attributes
+        if ( card.m_cardName.length() > 0 )
+        {
+            m_text = card.m_cardName;
+        }
+        if ( card.m_cardDesc.length() > 0 )
+        {
+            setAttribute("Desc", card.m_cardDesc);
+        }
+        if ( card.m_deckName.length() > 0 )
+        {
+            setAttribute("Deck", card.m_deckName);
+        }
     }
 
     private Point modelToPog(final Point modelPoint)
@@ -754,7 +818,13 @@ public class Pog implements Comparable
         m_angle = angle;
     }
 
-    public void setAttribute(final String name, final String value)
+    public void setFlip(final int flipH, final int flipV)
+    {
+        m_flipH = flipH;
+        m_flipV = flipV;
+    }
+
+   public void setAttribute(final String name, final String value)
     {
         final String normalizedName = UtilityFunctions.normalizeName(name);
         m_attributes.put(normalizedName, new Attribute(name, value));
@@ -858,6 +928,8 @@ public class Pog implements Comparable
         dos.writeBoolean(isUnderlay());
         dos.writeFloat(m_scale);
         dos.writeDouble(m_angle);
+        dos.writeInt(m_flipH);
+        dos.writeInt(m_flipV);
         dos.writeBoolean(m_locked);
 
         // write out the card info, if any

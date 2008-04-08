@@ -146,9 +146,9 @@ public class PogType
      * @param x X position to draw at.
      * @param y Y position to draw at.
      */
-    public void draw(final Graphics g, final int x, final int y, final double angle)
+    public void draw(final Graphics g, final int x, final int y, final double angle, final int flipH, final int flipV)
     {
-        g.drawImage(rotate(m_image, angle), x, y, null);
+        g.drawImage(rotate(flip(m_image, flipH, flipV), angle), x, y, null);
     }
 
     /**
@@ -158,9 +158,9 @@ public class PogType
      * @param x X position to draw at.
      * @param y Y position to draw at.
      */
-    public void drawGhostly(final Graphics g, final int x, final int y, final double angle)
+    public void drawGhostly(final Graphics g, final int x, final int y, final double angle, final int flipH, final int flipV)
     {
-        drawTranslucent(g, x, y, 0.5f, angle);
+        drawTranslucent(g, x, y, 0.5f, angle, flipH, flipV);
     }
 
     /**
@@ -184,7 +184,7 @@ public class PogType
      * @param y Y position to draw at.
      * @param scale What scale to draw the pog at.
      */
-    public void drawScaled(final Graphics g, final int x, final int y, final float scale, final double angle)
+    public void drawScaled(final Graphics g, final int x, final int y, final float scale, final double angle, final int flipH, final int flipV)
     {
         if (FAST_SCALING)
         {
@@ -197,12 +197,12 @@ public class PogType
             }
             else
             {
-                g.drawImage(rotate(m_image, angle), x, y, drawWidth, drawHeight, null);
+                g.drawImage(rotate(flip(m_image, flipH, flipV), angle), x, y, drawWidth, drawHeight, null);
             }
         }
         else
         {
-            g.drawImage(rotate(getScaledImage(scale), angle), x, y, null);
+            g.drawImage(rotate(flip(getScaledImage(scale), flipH, flipV), angle), x, y, null);
         }
     }
 
@@ -232,11 +232,11 @@ public class PogType
      * @param y Y position to draw at.
      * @param opacity 0 for fully transparent - 1 for fully opaque.
      */
-    public void drawTranslucent(final Graphics g, final int x, final int y, final float opacity, final double angle)
+    public void drawTranslucent(final Graphics g, final int x, final int y, final float opacity, final double angle, final int flipH, final int flipV)
     {
         final Graphics2D g2 = (Graphics2D)g.create();
         g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
-        draw(g2, x, y, angle);
+        draw(g2, x, y, angle, flipH, flipV);
         g2.dispose();
     }
 
@@ -368,7 +368,7 @@ public class PogType
     /**
      * Initializes the hit map from the source image.
      */
-    private void initializeHitMap(final double angle)
+    private void initializeHitMap(final double angle, final int flipH, final int flipV)
     // TODO get the hit detection to work
     {
         if ((m_image == null) || (getWidth(angle) < 0) || (getHeight(angle) < 0))
@@ -382,7 +382,7 @@ public class PogType
             final Graphics2D g = bufferedImage.createGraphics();
             g.setColor(new Color(0xff00ff));
             g.fillRect(0, 0, getWidth(angle), getHeight(angle));
-            draw(g, 0, 0, angle);
+            draw(g, 0, 0, angle, flipH, flipV);
             g.dispose();
         }
 
@@ -479,7 +479,7 @@ public class PogType
         }
 
         // prepare the hit map
-        initializeHitMap(0);
+        initializeHitMap(0, 0, 0);
     }
 
     private Image rotate(final Image i, final double angle)
@@ -506,6 +506,29 @@ public class PogType
         {
             final Dimension bounds = new Dimension(returnedImage.getWidth(null), returnedImage.getHeight(null));
             m_iconcache.put(Double.valueOf(angle), bounds);
+            // m_iconcache.put(Double.valueOf(angle),returnedImage);
+        }
+
+        return returnedImage;
+    }
+
+    private Image flip(final Image i, final int flipH, final int flipV)
+    {
+        if (flipH == 0 && flipV == 0)
+        {
+            return i;
+        }
+
+        final BufferedImage bufferedImage = toBufferedImage(i);
+        final AffineTransform tx = AffineTransform.getScaleInstance(flipH, flipV);
+        tx.translate((flipH >= 0 ? 1 : (flipH * bufferedImage.getWidth())), (flipV >= 0 ? 1 : (flipV * bufferedImage.getHeight())));
+        AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
+        final Image returnedImage = Toolkit.getDefaultToolkit().createImage(op.filter(bufferedImage, null).getSource());
+
+        if (!m_iconcache.containsKey(Double.valueOf(0)))
+        {
+            final Dimension bounds = new Dimension(returnedImage.getWidth(null), returnedImage.getHeight(null));
+            m_iconcache.put(Double.valueOf(0), bounds);
             // m_iconcache.put(Double.valueOf(angle),returnedImage);
         }
 
@@ -545,20 +568,20 @@ public class PogType
         // if we are unknown, then let's just go with it.
         if (m_hitMap == null)
         {
-            initializeHitMap(angle);
+            initializeHitMap(angle, 0, 0);
             if (m_hitMap == null)
             {
-                initializeHitMap(0);
+                initializeHitMap(0, 0, 0);
                 return true;
             }
         }
 
         // otherwise, let's see if they hit an actual pixel
         // TODO buggy?
-        initializeHitMap(angle);
+        initializeHitMap(angle, 0, 0);
         final int idx = x + (y * getWidth(angle));
         final boolean value = m_hitMap.get(idx);
-        initializeHitMap(0);
+        initializeHitMap(0, 0, 0);
         return value;
     }
 

@@ -354,7 +354,7 @@ public class ChatLogPane extends JEditorPane
             }
         });
 
-        addText("<br>Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>.");
+        addText("<br>Welcome to <a href=\"http://gametable.mornproductions.com/forum/\">" + GametableApp.VERSION + "</a>.");
     }
 
     public void addText(final String text)
