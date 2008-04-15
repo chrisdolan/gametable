@@ -1050,7 +1050,8 @@ public class GametableFrame extends JFrame implements ActionListener
             public void actionPerformed(final ActionEvent e)
             {
                 UtilityFunctions.msgBox(GametableFrame.this, GametableApp.VERSION
-                    + " by Andy Weir and David Ghandehari", "Version");
+                    + " by Michael Rumm and the Gametable Community\n"
+                    + "Orignal program by Andy Weir and David Ghandehari", "Version");
             }
         });
         return item;
@@ -2047,7 +2048,7 @@ public class GametableFrame extends JFrame implements ActionListener
         m_macroPanel = new MacroPanel();
         m_pogsTabbedPane.add(m_macroPanel, "Dice Macros");
         m_pogsTabbedPane.setFocusable(false);
-        
+
         m_chatPanel.add(m_textAreaPanel, BorderLayout.CENTER);
         m_textAreaPanel.add(m_textAndEntryPanel, BorderLayout.CENTER);
         m_canvasPane.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.LOWERED), new EmptyBorder(1, 1, 1, 1)));
