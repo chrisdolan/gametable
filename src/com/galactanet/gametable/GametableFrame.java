@@ -99,7 +99,7 @@ public class GametableFrame extends JFrame implements ActionListener
      * The version of the communications protocol used by this build. This needs to change whenever an incompatibility
      * arises between versions.
      */
-    public final static int       COMM_VERSION             = 14;
+    public final static int       COMM_VERSION             = 15;
 
     private final static boolean  DEBUG_FOCUS              = false;
 
@@ -389,9 +389,10 @@ public class GametableFrame extends JFrame implements ActionListener
 
         // getGametableCanvas().doAddPog(pog, bPublicLayerPog);
         /*
-         * Changed by Rizban Changed to publish to active map rather than public map. For some reason, all saved pogs
-         * are saved with data saying they are on the public map, regardless of which map they were on when saved. TODO:
-         * Check to see if there is a reason for saving pogs with this information, if not, remove all instances.
+         * Changed by Rizban Changed to publish to active map rather than public map. 
+         * TODO: For some reason, all saved pogs are saved with data saying they are on the 
+         * public map, regardless of which map they were on when saved. Check to see if there 
+         *  is a reason for saving pogs with this information, if not, remove all instances.
          */
         getGametableCanvas().doAddPog(pog,
             (getGametableCanvas().getActiveMap() == getGametableCanvas().getPublicMap() ? true : false));
@@ -2046,8 +2047,6 @@ public class GametableFrame extends JFrame implements ActionListener
         m_macroPanel = new MacroPanel();
         m_pogsTabbedPane.add(m_macroPanel, "Dice Macros");
         m_pogsTabbedPane.setFocusable(false);
-
-        // chatWindow
         
         m_chatPanel.add(m_textAreaPanel, BorderLayout.CENTER);
         m_textAreaPanel.add(m_textAndEntryPanel, BorderLayout.CENTER);

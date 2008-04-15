@@ -67,7 +67,6 @@ public class CircleTool extends NullTool
      */
     public void mouseButtonPressed(final int x, final int y, final int modifierMask)
     {
-        // TODO: move m_drawColor into some more reasonable access point
         m_mousePosition = new Point(x, y);
         m_mouseAnchor = m_mousePosition;
         if ((modifierMask & MODIFIER_CTRL) == 0)
@@ -90,7 +89,7 @@ public class CircleTool extends NullTool
         {
             m_rad = m_mouseAnchor.distance(m_mouseFloat.x, m_mouseFloat.y);
             // TODO With this loop, all circles are composed of the same number of segments regardless of size. 
-            //Maybe make theta increment dependent on radius?
+            // Maybe make theta increment dependent on radius?
             for (double theta = 0; theta < 2 * Math.PI; theta += .1)
             {
                 m_penAsset.addPoint((int)(m_mouseAnchor.x + Math.cos(theta) * m_rad), (int)(m_mouseAnchor.y + Math.sin(theta) * m_rad));
@@ -114,11 +113,6 @@ public class CircleTool extends NullTool
      */
     public void mouseMoved(final int x, final int y, final int modifierMask)
     {
-        // if (m_penAsset != null)
-        // {
-        // m_penAsset.addPoint(x, y);
-        // m_canvas.repaint();
-        // }
         if (m_mouseAnchor != null)
         {
             m_mousePosition = new Point(x, y);
