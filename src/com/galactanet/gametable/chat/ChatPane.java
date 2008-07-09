@@ -37,6 +37,7 @@ import javax.swing.border.LineBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import com.galactanet.gametable.GametableApp;
 import com.galactanet.gametable.util.FontStringSizeEvaluator;
 import com.galactanet.gametable.util.IntPair;
 import com.galactanet.gametable.util.StringSizeEvaluator;
@@ -168,6 +169,7 @@ public class ChatPane extends JComponent implements ChatModel.Listener, Scrollab
 
                 StringSizeEvaluator se;
                 final String sub = text.substring(drawnUpTo, end);
+                boolean underline = false;
                 if (span != null)
                 {
                     final Font spanFont = span.getSource().getFont(defaultFont);
@@ -183,6 +185,7 @@ public class ChatPane extends JComponent implements ChatModel.Listener, Scrollab
                     {
                         gcImage.setColor(defaultTextColor);
                     }
+                    underline = (span.getSource().getUnderlined() == Boolean.TRUE);
                 }
                 else
                 {
@@ -191,8 +194,13 @@ public class ChatPane extends JComponent implements ChatModel.Listener, Scrollab
                     se = defaultSizeEvaluator;
                 }
 
-                gcImage.drawString(sub, x, y + gcImage.getFontMetrics().getMaxAscent());
+                int baseline = y + gcImage.getFontMetrics().getMaxAscent();
                 final IntPair size = se.getStringSize(sub, 0, sub.length());
+                if (underline)
+                {
+                    gcImage.drawLine(x, baseline, x + size.getX(), baseline);
+                }
+                gcImage.drawString(sub, x, baseline);
                 if (size.getY() > lineHeight)
                 {
                     lineHeight = size.getY();
@@ -267,7 +275,7 @@ public class ChatPane extends JComponent implements ChatModel.Listener, Scrollab
     // private Point mousePosition = new Point(0, 0);
     private ChatModel         model                           = new ChatModel();
     private JScrollPane       scrollPane;
-    private boolean           jumpToBottom;
+    private boolean           jumpToBottom                    = true;
 
     // private SelectionInfo mSelection;
 
@@ -293,10 +301,13 @@ public class ChatPane extends JComponent implements ChatModel.Listener, Scrollab
             defaultFont = new Font(Font.SERIF, Font.PLAIN, 14);
         }
 
+        model.setDefaultFont(defaultFont);
+        model.receiveLine("Welcome to <a href=\"http://gametable.mornproductions.com/forum/\">" + GametableApp.VERSION
+            + "</a>.");
+        model.addListener(this);
+
         setBackground(defaultBackgroundColor);
         setForeground(defaultTextColor);
-        model.addListener(this);
-        model.setDefaultFont(defaultFont);
         initializeEventHandlers();
     }
 

@@ -271,6 +271,7 @@ public class GtmlParser
     {
         reset();
         boolean wasWhitespace = true;
+        char quoteCharacter = '"';
         for (int i = 0, len = text.length(); i < len; ++i)
         {
             final char c = text.charAt(i);
@@ -405,8 +406,9 @@ public class GtmlParser
 
                 case STATE_TAG_OPEN_ATTRIBUTE_VALUE:
                 {
-                    if (c == '"')
+                    if (c == '"' || c == '\'')
                     {
+                        quoteCharacter = c;
                         if (nameBuffer.length() == 0)
                         {
                             state = STATE_TAG_OPEN_ATTRIBUTE_QUOTED_VALUE;
@@ -469,7 +471,7 @@ public class GtmlParser
 
                 case STATE_TAG_OPEN_ATTRIBUTE_QUOTED_VALUE:
                 {
-                    if (c == '"')
+                    if (c == quoteCharacter)
                     {
                         if (nameBuffer.length() == 0)
                         {
@@ -597,6 +599,12 @@ public class GtmlParser
         else if (tagName.equals("a"))
         {
             final String href = (String)tagAttributes.get("href");
+            final String className = (String)tagAttributes.get("class");
+            if (className == null)
+            {
+                source.setUnderlined(true);
+                source.setTextColor(parseColor("#03F"));
+            }
             if (href != null)
             {
                 if (href.startsWith("http"))

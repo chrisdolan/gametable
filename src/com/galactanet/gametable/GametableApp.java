@@ -21,7 +21,7 @@ public class GametableApp
     private static final String NET_LOG_FILE  = "gt.net.log";
     private static final String PLAY_LOG_FILE = "gt.play.html";
     private static final String SYS_LOG_FILE  = "gt.sys.log";
-    public static final String  VERSION       = "Gametable 2.0.RC2";
+    public static final String  VERSION       = "Gametable 2.0.RC2-chat";
 
     /**
      * Main method
