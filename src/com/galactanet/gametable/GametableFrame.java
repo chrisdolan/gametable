@@ -5,15 +5,65 @@
 
 package com.galactanet.gametable;
 
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.KeyboardFocusManager;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.*;
-import java.util.*;
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
-import javax.swing.*;
+import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.ButtonGroup;
+import javax.swing.ImageIcon;
+import javax.swing.JCheckBox;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextField;
+import javax.swing.JToggleButton;
+import javax.swing.JToolBar;
+import javax.swing.KeyStroke;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -26,6 +76,7 @@ import javax.xml.parsers.SAXParserFactory;
 
 import org.xml.sax.SAXException;
 
+import com.galactanet.gametable.chat.ChatPane;
 import com.galactanet.gametable.net.Connection;
 import com.galactanet.gametable.net.NetworkThread;
 import com.galactanet.gametable.net.Packet;
@@ -144,7 +195,8 @@ public class GametableFrame extends JFrame implements ActionListener
     public final static int       REJECT_INVALID_PASSWORD  = 0;
     public final static int       REJECT_VERSION_MISMATCH  = 1;
     public final static String    SAY_MESSAGE_FONT         = "<font color=\"#007744\">";
-    private final static boolean  SEND_PINGS               = false;
+    private final static boolean  SEND_PINGS               = true;
+    private final static boolean  USE_NEW_CHAT_PANE        = true;
 
     /**
      * 
@@ -177,7 +229,8 @@ public class GametableFrame extends JFrame implements ActionListener
     // all the cards you have
     private final List              m_cards                  = new ArrayList();
     public String                   m_characterName          = DEFAULT_CHARACTER_NAME;
-    private final ChatLogPane       m_chatLog                = new ChatLogPane();
+    private final ChatLogPane       m_chatLog                = (USE_NEW_CHAT_PANE ? null : new ChatLogPane());
+    private final ChatPane          m_newChatLog             = (USE_NEW_CHAT_PANE ? new ChatPane() : null);
 
     private final JPanel            m_chatPanel              = new JPanel();
 
@@ -1966,8 +2019,15 @@ public class GametableFrame extends JFrame implements ActionListener
         entryPanel.add(m_textEntry.getComponentToAdd(), BorderLayout.SOUTH);
         m_textAndEntryPanel.add(entryPanel, BorderLayout.SOUTH);
 
-        m_textAndEntryPanel.add(m_chatLog.getComponentToAdd(), BorderLayout.CENTER);
-
+        if (USE_NEW_CHAT_PANE)
+        {
+            m_textAndEntryPanel.add(m_newChatLog.getComponentToAdd(), BorderLayout.CENTER);
+        }
+        else
+        {
+            m_textAndEntryPanel.add(m_chatLog.getComponentToAdd(), BorderLayout.CENTER);
+        }
+        
         m_mapChatSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
         m_mapChatSplitPane.setContinuousLayout(true);
         m_mapChatSplitPane.setResizeWeight(1.0);
@@ -2812,7 +2872,11 @@ public class GametableFrame extends JFrame implements ActionListener
 
     public void logMessage(final String text)
     {
-        m_chatLog.addText(text);
+        if (USE_NEW_CHAT_PANE) {
+            m_newChatLog.getModel().receiveLine(text);
+        } else {
+            m_chatLog.addText(text);
+        }
     }
 
     public void logPrivateMessage(final String fromName, final String toName, final String text)
@@ -3052,10 +3116,10 @@ public class GametableFrame extends JFrame implements ActionListener
             }
             else
             {
-                // this was a private roll. Don't propigate it to other players
+                // this was a private roll. Don't propagate it to other players
                 final String toPost = DiceMacro.generatePrivateOutputString(rollBuf.toString(), resultBuf.toString(),
                     "" + total);
-                m_chatLog.addText(toPost);
+                logMessage(toPost);
             }
         }
         else if (words[0].equals("/poglist"))
@@ -3217,7 +3281,11 @@ public class GametableFrame extends JFrame implements ActionListener
         }
         else if (words[0].equals("/clearlog"))
         {
-            m_chatLog.clearText();
+            if (USE_NEW_CHAT_PANE) {
+                m_newChatLog.getModel().clear();
+            } else {
+                m_chatLog.clearText();
+            }
         }
         else if (words[0].equals("/deck"))
         {
@@ -3901,7 +3969,7 @@ public class GametableFrame extends JFrame implements ActionListener
     {
         if (target.getId() == getMyPlayer().getId())
         {
-            m_chatLog.addText(PRIVATE_MESSAGE_FONT + "You tell yourself: " + END_PRIVATE_MESSAGE_FONT + text);
+            logMessage(PRIVATE_MESSAGE_FONT + "You tell yourself: " + END_PRIVATE_MESSAGE_FONT + text);
             return;
         }
 
@@ -3912,7 +3980,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
         // and when you post a private message, you get told about it in your
         // own chat log
-        m_chatLog.addText(PRIVATE_MESSAGE_FONT + "You tell " + UtilityFunctions.emitUserLink(toName) + ": "
+        logMessage(PRIVATE_MESSAGE_FONT + "You tell " + UtilityFunctions.emitUserLink(toName) + ": "
             + END_PRIVATE_MESSAGE_FONT + text);
     }
 
