@@ -5,7 +5,7 @@
 
     <!-- project specific properties -->
     <property name="projectdisplayname" value="GameTable" />
-    <property name="version" value="1.2" />
+    <property name="version" value="2.0-chat" />
     <property name="projectname" value="gametable" />
     <property name="entrypoint" value="com.galactanet.gametable.GametableApp" />
     <property name="icon" value="icon.png" />
@@ -90,8 +90,7 @@
         <copy file="${jar.preopt.dest}" tofile="${jar.dest}" />
     </target>
 
-    <target name="dist0" depends="distclean,build">
-
+    <target name="dist0" depends="distclean,build" description="Packages ${projectdisplayname} for intermediate drop.">
         <!-- Create the distribution directory -->
         <mkdir dir="${dist}" />
 
@@ -124,7 +123,7 @@
         </zip>
     </target>
 
-    <target name="release" depends="distclean,build">
+    <target name="release" depends="distclean,build" description="Packages ${projectdisplayname} for release.">
         <!-- Create the distribution directory -->
         <mkdir dir="${dist}" />
 
@@ -157,7 +156,7 @@
         </zip>
     </target>
 
-    <target name="run" depends="build" description="Exectutes ${projectdisplayname}.">
+    <target name="run" depends="build" description="Executes ${projectdisplayname}.">
         <path id="path.runtime">
             <fileset dir="lib">
                 <include name="**/*.jar" />
