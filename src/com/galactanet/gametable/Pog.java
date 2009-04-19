@@ -429,6 +429,25 @@ public class Pog implements Comparable
             m_pogType.drawTint(g, drawCoords.x, drawCoords.y, scale * m_scale, Color.GREEN, m_angle);
         }
     }
+    
+    /** 
+     * Returns a rectangle identifying the space taken by the Pog
+     * @return 
+     */
+    public Rectangle getBounds(GametableCanvas canvas)
+    {
+        final Point drawCoords = m_canvas.modelToDraw(getPosition());
+        final float scale = 
+            m_scale * GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom) / 
+            GametableCanvas.BASE_SQUARE_SIZE;
+        
+        final int drawWidth = Math.round(m_pogType.getWidth(m_angle) * scale);
+        final int drawHeight = Math.round(m_pogType.getHeight(m_angle) * scale);
+        
+        return new Rectangle(
+            drawCoords.x, drawCoords.y,
+            drawWidth, drawHeight);
+    }
 
     /*
      * @see java.lang.Object#equals(java.lang.Object)

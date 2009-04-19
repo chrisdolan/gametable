@@ -88,9 +88,53 @@ public class SquareGridMode extends GridMode
 
     public Point snapPointEx(final Point modelPointIn, final boolean bSnapForPog, final int pogSize)
     {
-        // snapping for a pog or not is irrelevant in square mode.
-        final int x = getGridSnap(modelPointIn.x);
-        final int y = getGridSnap(modelPointIn.y);
-        return new Point(x, y);
+        int x = getGridSnap(modelPointIn.x);
+        int y = getGridSnap(modelPointIn.y);
+        // Use old behavior when we're dealing with a pog.
+        if( bSnapForPog )
+        {
+            return new Point(x, y);
+        }
+        // Otherwise allow center snapping as well.
+        Point closest = null;
+        final Point candidates[] = new Point[5];
+        int foo = GametableCanvas.BASE_SQUARE_SIZE/2;
+        candidates[0] = new Point( x, y ); // Me
+        candidates[1] = new Point( x-foo, y-foo ); // Nearby center
+        candidates[2] = new Point( x+foo, y-foo ); // Nearby center
+        candidates[3] = new Point( x-foo, y+foo ); // Nearby center
+        candidates[4] = new Point( x+foo, y+foo ); // Nearby center
+        closest = getClosestPoint(modelPointIn, candidates);
+        if (closest == null)
+        {
+            System.out.println("Error snapping to point");
+            return new Point(x, y);
+        }
+        return closest;
+    }
+
+    private double pointDistance(final Point p1, final Point p2)
+    {
+        final int dx = p1.x - p2.x;
+        final int dy = p1.y - p2.y;
+        final double dist = Math.sqrt(dx * dx + dy * dy);
+        return dist;
+    }
+
+    private Point getClosestPoint(final Point target, final Point candidates[])
+    {
+        double minDist = -1.0;
+        Point winner = null;
+        for (int i = 0; i < candidates.length; i++)
+        {
+            final double distance = pointDistance(target, candidates[i]);
+            if ((minDist == -1.0) || (distance < minDist))
+            {
+                minDist = distance;
+                winner = candidates[i];
+            }
+        }
+
+        return winner;
     }
 }

@@ -7,9 +7,13 @@ package com.galactanet.gametable;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
+import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -1348,6 +1352,17 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
     public void paintComponent(final Graphics graphics)
     {
+        paintComponent(graphics, getWidth(), getHeight());
+    }
+    
+    /**
+     * Paint the component to the specified graphics, without limiting to the component's size
+     * @param graphics
+     * @param width
+     * @param height
+     */
+    private void paintComponent(final Graphics graphics, int width, int height)
+    {
         final Graphics2D g = (Graphics2D)graphics.create();
         g.addRenderingHints(UtilityFunctions.STANDARD_RENDERING_HINTS);
         g.setFont(MAIN_FONT);
@@ -1361,17 +1376,17 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         {
             // they are on the public map. Draw the public map as normal,
             g.setColor(Color.WHITE);
-            g.fillRect(0, 0, getWidth(), getHeight());
-            paintMap(g, m_publicMap);
+            g.fillRect(0, 0, width, height);
+            paintMap(g, m_publicMap, width, height);
         }
         else
         {
             // they're on the private map. First, draw the public map as normal.
             // Then draw a 50% alpha sheet over it. then draw the private map
-            paintMap(g, getPublicMap());
+            paintMap(g, getPublicMap(), width, height);
 
             g.setColor(OVERLAY_COLOR); // OVERLAY_COLOR is white with 50% alpha
-            g.fillRect(0, 0, getWidth(), getHeight());
+            g.fillRect(0, 0, width, height);
 
             /*
              * Graphics2D g2 = (Graphics2D)g.create();
@@ -1380,19 +1395,89 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
              */
 
             // now draw the private layer
-            paintMap(g, m_privateMap);
+            paintMap(g, m_privateMap, width, height);
         }
         g.dispose();
     }
+    
+    /**
+     * export the map to a jpeg image
+     * @param mapToExport instance of the map that should be exported.  If null will use the active map
+     * @param outputFile file where to save the result
+     * @throws IOException if file saving causes an error
+     */
+    public void exportMap(GametableMap mapToExport, File outputFile) throws IOException
+    {
+        if (mapToExport == null)
+            mapToExport = getActiveMap();
+        
+        Rectangle mapBounds = getMapBounds(mapToExport);
 
-    public void paintMap(final Graphics g, final GametableMap mapToDraw)
+        int squareSize = GametableCanvas.getSquareSizeForZoom(m_zoom);
+        mapBounds.grow(squareSize, squareSize);
+        
+        BufferedImage image = new BufferedImage(mapBounds.width, mapBounds.height, BufferedImage.TYPE_INT_RGB);        
+        Graphics g = image.getGraphics();
+        
+        int sx = mapToExport.getScrollX();
+        int sy = mapToExport.getScrollY();
+        
+        mapToExport.setScroll(mapBounds.x, mapBounds.y);
+        
+        paintComponent(g, mapBounds.width, mapBounds.height);
+        
+        mapToExport.setScroll(sx, sy);
+   
+        ImageIO.write(image, "jpg", outputFile);
+    }
+    
+    /**
+     * Calculate the bounds used by the specified map
+     * @param map map to calculate
+     * @return coordinates of the space used by the map
+     */
+    public Rectangle getMapBounds(final GametableMap map)
+    {
+        Rectangle bounds = null;
+        
+        // lines
+        for (int i = 0; i < map.getNumLines(); i++)
+        {
+            final LineSegment ls = map.getLineAt(i);
+            Rectangle r = ls.getBounds(this);
+            
+            if (bounds == null)
+                bounds = r;
+            else
+                bounds.add(r);
+        }
+    
+        // pogs
+        for (int i = 0; i < map.getNumPogs(); i++)
+        {
+            final Pog pog = map.getPog(i);
+            Rectangle r = pog.getBounds(this);
+            
+            if (bounds == null)
+                bounds = r;
+            else
+                bounds.add(r);
+        }
+        
+        if (bounds == null)
+            bounds = new Rectangle(0, 0, 1, 1);
+        
+        return bounds;
+    }
+
+    public void paintMap(final Graphics g, final GametableMap mapToDraw, int width, int height)
     {
         g.translate(-mapToDraw.getScrollX(), -mapToDraw.getScrollY());
 
         // we don't draw the matte if we're on the private map)
         if (mapToDraw != m_privateMap)
         {
-            drawMatte(g, mapToDraw.getScrollX(), mapToDraw.getScrollY(), getWidth(), getHeight());
+            drawMatte(g, mapToDraw.getScrollX(), mapToDraw.getScrollY(), width, height);
         }
 
         // draw all the underlays here
@@ -1428,7 +1513,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         // we don't draw the grid if we're on the private map)
         if (mapToDraw != m_privateMap)
         {
-            m_gridMode.drawLines(g, mapToDraw.getScrollX(), mapToDraw.getScrollY(), getWidth(), getHeight());
+            m_gridMode.drawLines(g, mapToDraw.getScrollX(), mapToDraw.getScrollY(), width, height);
         }
 
         // lines

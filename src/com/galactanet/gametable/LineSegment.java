@@ -86,6 +86,22 @@ public class LineSegment
 
         return null;
     }
+    
+    /** 
+     * Returns a rectangle identifying the space taken by the LineSegment
+     * @return 
+     */
+    public Rectangle getBounds(GametableCanvas canvas)
+    {
+        final Point drawStart = canvas.modelToDraw(m_start.x, m_start.y);
+        final Point drawEnd = canvas.modelToDraw(m_end.x, m_end.y);
+        
+        return new Rectangle(
+            Math.min(drawEnd.x, drawStart.x),
+            Math.min(drawEnd.y, drawStart.y),
+            Math.abs(drawEnd.x - drawStart.x),
+            Math.abs(drawEnd.y - drawStart.y));
+    }
 
     public LineSegment[] crop(final Point start, final Point end)
     {

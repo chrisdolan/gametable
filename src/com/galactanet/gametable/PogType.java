@@ -578,10 +578,14 @@ public class PogType
 
         // otherwise, let's see if they hit an actual pixel
         // TODO buggy?
-        initializeHitMap(angle, 0, 0);
+        if (m_hitMap == null)
+        {
+            return false;
+        }
+        //initializeHitMap(angle, 0, 0);
         final int idx = x + (y * getWidth(angle));
         final boolean value = m_hitMap.get(idx);
-        initializeHitMap(0, 0, 0);
+        //initializeHitMap(0, 0, 0);
         return value;
     }
 

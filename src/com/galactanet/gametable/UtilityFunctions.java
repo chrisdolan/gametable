@@ -143,6 +143,28 @@ public class UtilityFunctions
         if (returnVal == JFileChooser.APPROVE_OPTION)
         {
             lastDir = chooser.getSelectedFile().getParent();
+
+            System.out.println(chooser.getSelectedFile());
+            
+            //ensure file extension is .grm
+            String ext = "";
+            String filename = "";
+            String f = chooser.getSelectedFile().getName();
+            int i = f.lastIndexOf(".");
+            if (i > 0 && i < f.length() - 1)
+            {
+               ext = f.substring(i + 1).toLowerCase();
+            }
+            if (ext.equals(""))
+            {
+                filename = f + ".grm";
+            }
+            else
+            {
+                filename = f.replaceAll("." + ext, ".grm");
+            }
+            File saveFile = new File(lastDir + "/" + filename);
+            chooser.setSelectedFile(saveFile);
             return chooser.getSelectedFile();
         }
 

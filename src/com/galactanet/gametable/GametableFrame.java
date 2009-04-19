@@ -51,6 +51,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -70,6 +71,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.filechooser.FileFilter;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -87,19 +89,53 @@ import com.galactanet.gametable.prefs.Preferences;
 
 /**
  * The main Gametable Frame class.
+ * This class handles the display of the application objects and the response to user input.
+ * The Main Content Pane contains the following control hierarchy:
+ * MainContentPane:
+ *  |- m_toolBar
+ *  |- m_mapPogSplitPane
+ *  |- m_status
+ *  
+ *  m_toolBar
+ *  |- m_colorCombo
+ *  |- buttons in the toolbar
+ *  
+ *  m_mapPogSplitPane
+ *  |- m_pogsTabbedPane
+ *  |   |- m_pogPanel
+ *  |   |- m_activePogsPanel
+ *  |   |- m_macroPanel
+ *  |- m_mapChatSplitPlane
+ *      |- m_canvasPane
+ *      |   |- m_gametableCanvas
+ *      |- m_chatPanel
+ *          |-m_textAreaPanel
+ *              |- m_textAndEntryPanel
+ *              |- m_newChatLog
+ *              |- entryPanel
+ *                 |- StyledEntryToolbar
+ *                     |- m_textEntry
  * 
  * @author sephalon
  */
 public class GametableFrame extends JFrame implements ActionListener
 {
+    /**
+     * This class provides a mechanism to store the active tool in the gametable canvas
+     */
     class ToolButtonAbstractAction extends AbstractAction
     {
         /**
          * 
          */
         private static final long serialVersionUID = 6185807427550145052L;
-        int                       m_id;
-
+       
+        int                       m_id;     // Which user triggers this action
+        
+        /**
+         * Constructor
+         * @param id Id from the control triggering this action
+         */
         ToolButtonAbstractAction(final int id)
         {
             m_id = id;
@@ -109,12 +145,16 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             if (getFocusOwner() instanceof JTextField)
             {
-                return;
+                return;     // A JTextField is not an active tool.
+                            // No need to save the active tool in the gametable canvas
             }
-            getGametableCanvas().setActiveTool(m_id);
+            getGametableCanvas().setActiveTool(m_id); // In any other case, save the active tool in the gametable canvas
         }
     }
 
+    /**
+     * Action listener for tool buttons.
+     */
     class ToolButtonActionListener implements ActionListener
     {
         int m_id;
@@ -133,8 +173,9 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
-    public final static String    ALERT_MESSAGE_FONT       = "<b><font color=\"#FF0000\">";
-
+    /**
+     * Array of standard colors used
+     */
     public final static Integer[] COLORS                   = {
         new Integer(new Color(0, 0, 0).getRGB()), new Integer(new Color(198, 198, 198).getRGB()),
         new Integer(new Color(0, 0, 255).getRGB()), new Integer(new Color(0, 255, 0).getRGB()),
@@ -168,33 +209,45 @@ public class GametableFrame extends JFrame implements ActionListener
      * Default server for when there is no prefs file.
      */
     private static final String   DEFAULT_SERVER           = "localhost";
-    public final static String    DIEROLL_MESSAGE_FONT     = "<b><font color=\"#990022\">";
 
-    public final static String    EMOTE_MESSAGE_FONT       = "<font color=\"#004477\">";
+    /**
+     * Xml strings with a font definitions, standard tags for messages
+     */
+    public final static String    ALERT_MESSAGE_FONT       = "<b><font color=\"#FF0000\">";
     public final static String    END_ALERT_MESSAGE_FONT   = "</b></font>";
 
+    public final static String    DIEROLL_MESSAGE_FONT     = "<b><font color=\"#990022\">";
     public final static String    END_DIEROLL_MESSAGE_FONT = "</b></font>";
 
+    public final static String    EMOTE_MESSAGE_FONT       = "<font color=\"#004477\">";
     public final static String    END_EMOTE_MESSAGE_FONT   = "</font>";
 
+    public final static String    PRIVATE_MESSAGE_FONT     = "<font color=\"#009900\">";
     public final static String    END_PRIVATE_MESSAGE_FONT = "</font>";
+
+    public final static String    SAY_MESSAGE_FONT         = "<font color=\"#007744\">";
     public final static String    END_SAY_MESSAGE_FONT     = "</font>";
 
+    public final static String    SYSTEM_MESSAGE_FONT      = "<font color=\"#666600\">";
     public final static String    END_SYSTEM_MESSAGE_FONT  = "</font>";
 
     /**
      * The global gametable instance.
      */
     private static GametableFrame g_gametableFrame;
+    
+    /**
+     * Constants for Net status
+     */
     public final static int       NETSTATE_HOST            = 1;
     public final static int       NETSTATE_JOINED          = 2;
     public final static int       NETSTATE_NONE            = 0;
 
     public final static int       PING_INTERVAL            = 2500;
-    public final static String    PRIVATE_MESSAGE_FONT     = "<font color=\"#009900\">";
+
     public final static int       REJECT_INVALID_PASSWORD  = 0;
     public final static int       REJECT_VERSION_MISMATCH  = 1;
-    public final static String    SAY_MESSAGE_FONT         = "<font color=\"#007744\">";
+
     private final static boolean  SEND_PINGS               = true;
     private final static boolean  USE_NEW_CHAT_PANE        = true;
 
@@ -203,49 +256,47 @@ public class GametableFrame extends JFrame implements ActionListener
      */
     private static final long     serialVersionUID         = -1997597054204909759L;
 
-    // font colors
-    public final static String    SYSTEM_MESSAGE_FONT      = "<font color=\"#666600\">";
-
     /**
      * @return The global GametableFrame instance.
      */
     public static GametableFrame getGametableFrame()
     {
-        return g_gametableFrame;
+        return g_gametableFrame; // TODO: This could always return this, making g_gametableFrame unnecessary
     }
 
     public double                   grid_multiplier          = 5.0;
     public String                   grid_unit                = "ft";
-    public File                     m_actingFileMacros;
 
-    public File                     m_actingFilePrivate;
     // The current file path used by save and open.
     // NULL if unset.
-    // one for the public map, one for the private map
+    private static File             m_mapExportSaveFolder = null;
+
+    // files for the public map, the private map, and the die macros
+    public File                     m_actingFileMacros;
+    public File                     m_actingFilePrivate;
     public File                     m_actingFilePublic;
-    private ActivePogsPanel         m_activePogsPanel        = null;
-    private boolean                 m_bMaximized;
+
+    
+    private boolean                 m_bMaximized;   // Is the frame maximized?
 
     // all the cards you have
     private final List              m_cards                  = new ArrayList();
-    public String                   m_characterName          = DEFAULT_CHARACTER_NAME;
-    private final ChatLogPane       m_chatLog                = (USE_NEW_CHAT_PANE ? null : new ChatLogPane());
-    private final ChatPane          m_newChatLog             = (USE_NEW_CHAT_PANE ? new ChatPane() : null);
+    public String                   m_characterName          = DEFAULT_CHARACTER_NAME; // The character name
+    
+    
 
-    private final JPanel            m_chatPanel              = new JPanel();
 
-    private final JComboBox         m_colorCombo             = new JComboBox(COLORS);
 
     // only valid if this client is the host
-    private final List              m_decks                  = new ArrayList();
+    private final List              m_decks                  = new ArrayList(); // List of decks
 
     private JMenuItem               m_disconnectMenuItem;
 
     public Color                    m_drawColor              = Color.BLACK;
 
     private PeriodicExecutorThread  m_executorThread;
-    private final GametableCanvas   m_gametableCanvas        = new GametableCanvas();
-    JComboBox                       m_gridunit;
+ 
+    JComboBox                       m_gridunit;             // ComboBox for grid units
     /*
      * Added variables below in order to accomodate grid unit multiplier
      */
@@ -261,10 +312,10 @@ public class GametableFrame extends JFrame implements ActionListener
     public String                   m_lastPrivateMessageSender;
     private long                    m_lastTickTime           = 0;
     private final Map               m_macroMap               = new TreeMap();
-    private MacroPanel              m_macroPanel             = null;
-    private final JSplitPane        m_mapChatSplitPane       = new JSplitPane();
-    private final JSplitPane        m_mapPogSplitPane        = new JSplitPane();
-    private final JPanel            m_canvasPane             = new JPanel(new BorderLayout());
+    
+    
+ 
+   
 
     // which player I am
     private int                     m_myPlayerIndex;
@@ -291,22 +342,22 @@ public class GametableFrame extends JFrame implements ActionListener
     private boolean                 b_chatWindowDocked       = true;
 
     private PogLibrary              m_pogLibrary             = null;
-    private PogPanel                m_pogPanel               = null;
-    private final JTabbedPane       m_pogsTabbedPane         = new JTabbedPane();
+    
+    
 
     public int                      m_port                   = DEFAULT_PORT;
     private final Preferences       m_preferences            = new Preferences();
 
     private final JCheckBox         m_showNamesCheckbox      = new JCheckBox("Show pog names");
     private final JCheckBoxMenuItem m_squareGridModeMenuItem = new JCheckBoxMenuItem("Square Grid");
-    private final JLabel            m_status                 = new JLabel(" ");
+    
 
-    private final JPanel            m_textAndEntryPanel      = new JPanel();
-    private final JPanel            m_textAreaPanel          = new JPanel();
-    private final ChatLogEntryPane  m_textEntry              = new ChatLogEntryPane(this);
+    
+ 
+ 
     private JCheckBoxMenuItem       m_togglePrivateMapMenuItem;
 
-    private final JToolBar          m_toolBar                = new JToolBar();
+    
 
     private final ButtonGroup       m_toolButtonGroup        = new ButtonGroup();
 
@@ -317,6 +368,34 @@ public class GametableFrame extends JFrame implements ActionListener
     // window size and position
     private Point                   m_windowPos;
     private Dimension               m_windowSize;
+    
+    
+    // Controls in the Frame
+    // The toolbar goes at the top of the pane
+    private final JToolBar          m_toolBar                = new JToolBar(); // The main toolbar
+    private final JComboBox         m_colorCombo             = new JComboBox(COLORS); // Combo box for colore
+    
+    // The map-pog split pane goes in the center
+    private final JSplitPane        m_mapPogSplitPane        = new JSplitPane();    // Split between Pog pane and map pane
+    private final JTabbedPane       m_pogsTabbedPane         = new JTabbedPane();   // The Pog pane is tabbed
+    private PogPanel                m_pogPanel               = null;                // one tab is the Pog Panel
+    private ActivePogsPanel         m_activePogsPanel        = null;                // another tab is the Active Pogs Panel
+    private MacroPanel              m_macroPanel             = null;                // the last tab is the macro panel
+    
+    private final JSplitPane        m_mapChatSplitPane       = new JSplitPane();    // The map pane is really a split between the map
+                                                                                    // and the chat pane
+    private final JPanel            m_canvasPane             = new JPanel(new BorderLayout()); // This is the pane containing the map
+    private final GametableCanvas   m_gametableCanvas        = new GametableCanvas(); // This is the map
+    private final JPanel            m_chatPanel              = new JPanel(); // Panel for chat
+    private final JPanel            m_textAreaPanel          = new JPanel();
+    private final JPanel            m_textAndEntryPanel      = new JPanel();
+    private final ChatLogPane       m_chatLog                = (USE_NEW_CHAT_PANE ? null : new ChatLogPane()); // This seems like always is null?
+    private final ChatPane          m_newChatLog             = (USE_NEW_CHAT_PANE ? new ChatPane() : null); //This is always set to a new ChatPane
+    private final ChatLogEntryPane  m_textEntry              = new ChatLogEntryPane(this);
+    
+    // The status goes at the bottom of the pane
+    private final JLabel            m_status                 = new JLabel(" "); // Status Bar
+    
 
     /**
      * Construct the frame
@@ -327,7 +406,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
         try
         {
-            initialize();
+            initialize(); // Create the menu, controls, etc.
         }
         catch (final Exception e)
         {
@@ -335,6 +414,9 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    /**
+     * actionPerformed is an event handler for some of the controls in the frame
+     */
     public void actionPerformed(final ActionEvent e)
     {
         /*
@@ -342,55 +424,80 @@ public class GametableFrame extends JFrame implements ActionListener
          */
         if (e.getSource() == m_gridunit)
         {
+            // If the event is triggered by the grid unit drop down,
+            // get the selected unit
             grid_unit = (String)(m_gridunit.getSelectedItem());
         }
 
         if (e.getSource() == m_colorCombo)
         {
+            // If the event is triggered by the color drow down,
+            // Get the selected color
             final Integer col = (Integer)m_colorCombo.getSelectedItem();
             m_drawColor = new Color(col.intValue());
         }
         else if (e.getSource() == m_noGridModeMenuItem)
         {
+            // If the event is triggered by the "No Grid Mode" menu item then
+            // remove the grid from the canvas
+            // Set the Gametable canvas in "No Grid" mode
             getGametableCanvas().m_gridMode = getGametableCanvas().m_noGridMode;
             send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_NONE));
+            // Check an uncheck menu items
             updateGridModeMenu();
+            // Repaint the canvas
             getGametableCanvas().repaint();
+            // Notify other players
             postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
         }
         else if (e.getSource() == m_squareGridModeMenuItem)
         {
+            // If the event is triggered by the "Square Grid Mode" menu item, 
+            // adjust the canvas accordingly
+            // Set the Gametable canvas in "Square Grid mode"
             getGametableCanvas().m_gridMode = getGametableCanvas().m_squareGridMode;
             send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_SQUARES));
+            // Check and uncheck menu items
             updateGridModeMenu();
+            // Repaint the canvas
             getGametableCanvas().repaint();
+            // Notify other players
             postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
         }
         else if (e.getSource() == m_hexGridModeMenuItem)
         {
+            // If the event is triggered by the "Hex Grid Mode" menu item,
+            // adjust the canvas accordingly
+            // Set the Gametable canvas in "Hex Grid Mode"
             getGametableCanvas().m_gridMode = getGametableCanvas().m_hexGridMode;
             send(PacketManager.makeGridModePacket(GametableCanvas.GRID_MODE_HEX));
+            // Check and uncheck menu items
             updateGridModeMenu();
+            // Repaint the canvas
             getGametableCanvas().repaint();
+            // Notify other players
             postSystemMessage(getMyPlayer().getPlayerName() + " changes the grid mode.");
         }
     }
 
     /**
-     * Invokes the whole addDieMacro dialog process.
+     * Invokes the addDieMacro dialog process.
      */
     public void addDieMacro()
     {
+        // Create and display add macro dialog
         final NewMacroDialog dialog = new NewMacroDialog();
         dialog.setVisible(true);
 
+        // If the user accepted the dialog (closed with Ok)
         if (dialog.isAccepted())
         {
-            // extrace the macro from the controls and add it
+            // extract the macro from the controls and add it
             final String name = dialog.getMacroName();
             final String macro = dialog.getMacroDefinition();
-            if (getMacro(name) != null)
+            if (getMacro(name) != null) // if there is a macro with that name
             {
+                // Confirm that the macro will be replaced
                 final int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
                     "You already have a macro named \"" + name + "\", " + "are you sure you want to replace it with \""
                         + macro + "\"?", "Replace Macro?");
@@ -399,7 +506,7 @@ public class GametableFrame extends JFrame implements ActionListener
                     addMacro(name, macro);
                 }
             }
-            else
+            else // if there is no macro with that name, then add it.
             {
                 addMacro(name, macro);
             }
@@ -408,35 +515,58 @@ public class GametableFrame extends JFrame implements ActionListener
 
     // --- Menus ---
 
+    /**
+     * adds a macro and refresh the list of available macros in the screen
+     */
     public void addMacro(final DiceMacro dm)
     {
-        addMacroForced(dm);
-        m_macroPanel.refreshMacroList();
+        addMacroForced(dm); // adds the macro to the collection of macros
+        m_macroPanel.refreshMacroList(); // refresh the display of macro list
     }
 
+    /**
+     * creates and adds a macro, given its name and code
+     * @param name name of the macro
+     * @param macro macro content, the code of the macro
+     */
     public void addMacro(final String name, final String macro)
     {
-        final DiceMacro newMacro = new DiceMacro();
-        boolean res = newMacro.init(macro, name);
-        if (!res)
+        final DiceMacro newMacro = new DiceMacro(); // creates a macro object
+        boolean res = newMacro.init(macro, name); // initializes the macro with its name and code
+        if (!res) // if the macro creation failed, log the error and exit
         {
             logAlertMessage("Error in macro");
             return;
         }
-        addMacro(newMacro);
+        addMacro(newMacro); //add the macro to the collection
     }
 
+    /**
+     * adds a macro to the collection, replacing any macro with the same name
+     * @param macro macro being added
+     */
     private void addMacroForced(final DiceMacro macro)
     {
-        removeMacroForced(macro.getName());
-        m_macroMap.put(UtilityFunctions.normalizeName(macro.getName()), macro);
+        removeMacroForced(macro.getName()); // remove any macro with the same name
+        m_macroMap.put(UtilityFunctions.normalizeName(macro.getName()), macro); // store the macro in the macro map making
+                                                                                // sure conforms to java identifier rules, this is
+                                                                                // it eliminates special characters from the name
     }
 
+    /**
+     * adds a player to the player list
+     * @param player
+     */
     public void addPlayer(final Player player)
     {
         m_players.add(player);
     }
 
+    /**
+     * handles a new pog packet
+     * @param pog the Pog received
+     * @param bPublicLayerPog currently ignored
+     */
     public void addPogPacketReceived(final Pog pog, final boolean bPublicLayerPog)
     {
 
@@ -447,6 +577,7 @@ public class GametableFrame extends JFrame implements ActionListener
          * public map, regardless of which map they were on when saved. Check to see if there 
          *  is a reason for saving pogs with this information, if not, remove all instances.
          */
+        // add the pog to the canvas indicating if the active map is the public map
         getGametableCanvas().doAddPog(pog,
             (getGametableCanvas().getActiveMap() == getGametableCanvas().getPublicMap() ? true : false));
 
@@ -476,19 +607,22 @@ public class GametableFrame extends JFrame implements ActionListener
     {
         final Point locCopy = new Point(m_windowPos);
         setSize(m_windowSize);
-        m_windowPos = locCopy;
+        m_windowPos = locCopy; // this copy and use of a local variable seems unnecessary
         setLocation(locCopy);
-        if (m_bMaximized)
+        if (m_bMaximized) // if the preferences says the screen should be maximized
         {
-            setExtendedState(MAXIMIZED_BOTH);
+            setExtendedState(MAXIMIZED_BOTH); // Maximize screen
         }
         else
         {
-            setExtendedState(NORMAL);
+            setExtendedState(NORMAL); // Otherwise, set the screen to normal
         }
     }
 
-    // when called, all the cards you had from a give deck disappear
+    /**
+     * clear all cards of a given deck
+     * @param deckName name of the deck whose cards will be deleted
+     */
     public void clearDeck(final String deckName)
     {
         // if you're the host, send out the packet to tell everyone to
@@ -499,19 +633,23 @@ public class GametableFrame extends JFrame implements ActionListener
             send(PacketManager.makeClearDeckPacket(deckName));
         }
 
-        for (int i = 0; i < m_cards.size(); i++)
+        for (int i = 0; i < m_cards.size(); i++) //for each card
         {
             final DeckData.Card card = (DeckData.Card)m_cards.get(i);
-            if (card.m_deckName.equals(deckName))
+            if (card.m_deckName.equals(deckName)) // if it belongs to the deck to erase
             {
                 // this card has to go.
-                m_cards.remove(i);
+                m_cards.remove(i); // remove the card
                 i--; // to keep up with the changed list
             }
         }
     }
 
-    public void confirmHost()
+    /**
+     * grumpy function that throws an exception if we are not the host of a network game
+     * @throws IllegalStateException
+     */
+    public void confirmHost() throws IllegalStateException
     {
         if (m_netStatus != NETSTATE_HOST)
         {
@@ -520,8 +658,12 @@ public class GametableFrame extends JFrame implements ActionListener
     }
 
     // --- MenuItems ---
-
-    public void confirmJoined()
+    
+    /**
+     * throws an exception is the current status is not NETSTATE_JOINED
+     * @throws IllegalStateException
+     */
+    public void confirmJoined() throws IllegalStateException
     {
         if (m_netStatus != NETSTATE_JOINED)
         {
@@ -529,36 +671,46 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    /**
+     * handles a drop of the network connection
+     * @param conn network connection
+     */
     public void connectionDropped(final Connection conn)
     {
-        if (m_netStatus == NETSTATE_JOINED)
+        if (m_netStatus == NETSTATE_JOINED) // if we were connected before
         {
             // we lost our connection to the host
             logAlertMessage("Your connection to the host was lost.");
-            disconnect();
+            disconnect(); // do any disconnection processing
 
-            m_netStatus = NETSTATE_NONE;
+            m_netStatus = NETSTATE_NONE; // change the status to reflect we are not connected
             return;
         }
 
         // find the player who owns that connection
         final Player dead = getPlayerFromConnection(conn);
-        if (dead != null)
+        if (dead != null) // if we found the player
         {
             // remove this player
             m_players.remove(dead);
-            sendCastInfo();
+            sendCastInfo(); //send updated list of players
+            // notify other users
             postSystemMessage(dead.getPlayerName() + " has left the session");
         }
-        else
+        else // if we didn't find the player then the connection failed while login in
         {
             postAlertMessage("Someone tried to log in, but was rejected.");
         }
     }
 
+    /**
+     * interprets and execute the deck commands
+     * @param words array of words in the deck command
+     */
     public void deckCommand(final String[] words)
     {
-        // all deck commands go through here.
+        // we need to be in a network game to issue deck commands
+        // otherwise log the error and exit
         if (m_netStatus == NETSTATE_NONE)
         {
             logAlertMessage("You must be in a session to use /deck commands.");
@@ -568,23 +720,24 @@ public class GametableFrame extends JFrame implements ActionListener
         // words[0] will be "/deck". IF it weren't we wouldn't be here.
         if (words.length < 2)
         {
-            // they just said "/deck". give them the help text
+            // they just said "/deck". give them the help text and return
             showDeckUsage();
             return;
         }
 
-        final String command = words[1];
+        final String command = words[1]; // since words[0] is the word "deck" we are interested in the
+                                         // next word, that's why we take words[1]
 
-        if (command.equals("create"))
+        if (command.equals("create")) // create a new deck
         {
-            if (m_netStatus != NETSTATE_HOST)
+            if (m_netStatus != NETSTATE_HOST) // verify that we are the host of the network game
             {
                 logAlertMessage("Only the host can create a deck.");
                 return;
             }
 
             // create a new deck.
-            if (words.length < 3)
+            if (words.length < 3) // we were expecting the deck name
             {
                 // not enough parameters
                 showDeckUsage();
@@ -612,7 +765,7 @@ public class GametableFrame extends JFrame implements ActionListener
                 return;
             }
 
-            // load up the deck
+            // create the deck stored in an xml file
             final DeckData dd = new DeckData();
             final File deckFile = new File("decks" + UtilityFunctions.LOCAL_SEPARATOR + deckFileName + ".xml");
             boolean result = dd.init(deckFile);
@@ -634,7 +787,7 @@ public class GametableFrame extends JFrame implements ActionListener
                 + deckName);
 
         }
-        else if (command.equals("destroy"))
+        else if (command.equals("destroy")) // remove a deck
         {
             if (m_netStatus != NETSTATE_HOST)
             {
@@ -651,9 +804,9 @@ public class GametableFrame extends JFrame implements ActionListener
 
             // remove the deck named words[2]
             final String deckName = words[2];
-            final int toRemoveIdx = getDeckIdx(deckName);
+            final int toRemoveIdx = getDeckIdx(deckName); // get the position of the deck in the deck list
 
-            if (toRemoveIdx != -1)
+            if (toRemoveIdx != -1) // if we found the deck
             {
                 // we can successfully destroy the deck
                 m_decks.remove(toRemoveIdx);
@@ -669,9 +822,9 @@ public class GametableFrame extends JFrame implements ActionListener
                 logAlertMessage("There is no deck named '" + deckName + "'.");
             }
         }
-        else if (command.equals("shuffle"))
+        else if (command.equals("shuffle")) // shuffle the deck
         {
-            if (m_netStatus != NETSTATE_HOST)
+            if (m_netStatus != NETSTATE_HOST) // only if you are the host
             {
                 logAlertMessage("Only the host can shuffle a deck.");
                 return;
@@ -687,9 +840,11 @@ public class GametableFrame extends JFrame implements ActionListener
             final String deckName = words[2];
             final String operation = words[3];
 
+            // first get the deck
             final Deck deck = getDeck(deckName);
             if (deck == null)
             {
+                // and report the error if not found
                 logAlertMessage("There is no deck named '" + deckName + "'.");
                 return;
             }
@@ -719,7 +874,7 @@ public class GametableFrame extends JFrame implements ActionListener
                 return;
             }
         }
-        else if (command.equals("draw"))
+        else if (command.equals("draw")) // draw a card from the deck
         {
             // before chesking net status we check to see if the draw command was
             // legally done
@@ -768,7 +923,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
             drawCards(deckName, numToDraw);
         }
-        else if (command.equals("hand"))
+        else if (command.equals("hand")) // this shows the cards in our hand
         {
             if (m_cards.size() == 0)
             {
@@ -776,17 +931,20 @@ public class GametableFrame extends JFrame implements ActionListener
                 return;
             }
 
-            // show them their hand
+            
             logSystemMessage("You have " + m_cards.size() + " cards:");
-            for (int i = 0; i < m_cards.size(); i++)
+            
+            for (int i = 0; i < m_cards.size(); i++) // for each card
             {
                 final int cardIdx = i + 1;
-                final DeckData.Card card = (DeckData.Card)m_cards.get(i);
+                final DeckData.Card card = (DeckData.Card)m_cards.get(i); // get the card
+                // craft a message
                 final String toPost = "" + cardIdx + ": " + card.m_cardName + " (" + card.m_deckName + ")";
+                // log the message
                 logSystemMessage(toPost);
             }
         }
-        else if (command.equals("discard"))
+        else if (command.equals("discard")) // discard a card
         {
             // discard the nth card from your hand
             // 1-indexed
@@ -820,12 +978,12 @@ public class GametableFrame extends JFrame implements ActionListener
                     idx = Integer.parseInt(param);
                     idx--; // make it 0-indexed
 
-                    if (idx < 0)
+                    if (idx < 0) // we can't discard a card with a negative index
                     {
                         throw new Exception();
                     }
 
-                    if (idx >= m_cards.size())
+                    if (idx >= m_cards.size()) // we can't discard a card higher than what we have
                     {
                         throw new Exception();
                     }
@@ -869,6 +1027,10 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    /**
+     * handles the reception of a list of decks
+     * @param deckNames array of string with the names of decks received
+     */
     public void deckListPacketReceived(final String[] deckNames)
     {
         // if we're the host, this is a packet we should never get
@@ -888,25 +1050,33 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    /**
+     * remove cards from our deck
+     * @param discards array of cards to discard
+     */
     public void discardCards(final DeckData.Card discards[])
     {
         if (m_netStatus == NETSTATE_JOINED)
         {
-            // send off the discard packet
+            // if we are not the host we have bogus decks, so we send a package to
+            // notify of the discards. It will be processed by the host
             send(PacketManager.makeDiscardCardsPacket(getMyPlayer().getPlayerName(), discards));
         }
         else if (m_netStatus == NETSTATE_HOST)
         {
+            // we are the host, so we can process the discard of the cards
             doDiscardCards(getMyPlayer().getPlayerName(), discards);
         }
 
         // and in either case, we remove the cards from ourselves.
-        for (int i = 0; i < m_cards.size(); i++)
+        // TODO: This is a very expensive algorithm, it would be better to get
+        // to the card to remove directly by index or something like that.
+        for (int i = 0; i < m_cards.size(); i++) // for each card we have
         {
-            final DeckData.Card handCard = (DeckData.Card)m_cards.get(i);
-            for (int j = 0; j < discards.length; j++)
+            final DeckData.Card handCard = (DeckData.Card)m_cards.get(i); 
+            for (int j = 0; j < discards.length; j++) // compare with each card to discard
             {
-                if (handCard.equals(discards[j]))
+                if (handCard.equals(discards[j])) // if they are the same
                 {
                     // we need to dump this card
                     m_cards.remove(i);
@@ -917,6 +1087,9 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    /**
+     * disconnect from the network game, if connected
+     */
     public void disconnect()
     {
         if (m_netStatus == NETSTATE_NONE)
@@ -927,21 +1100,23 @@ public class GametableFrame extends JFrame implements ActionListener
 
         if (m_networkThread != null)
         {
+            // stop the network thread
             m_networkThread.interrupt();
             m_networkThread = null;
         }
 
-        m_hostMenuItem.setEnabled(true);
-        m_joinMenuItem.setEnabled(true);
-        m_disconnectMenuItem.setEnabled(false);
+        m_hostMenuItem.setEnabled(true); // enable the menu item to host a game
+        m_joinMenuItem.setEnabled(true); // enable the menu item to join an existing game
+        m_disconnectMenuItem.setEnabled(false); // disable the menu item to disconnect from the game 
 
+        // make me the only player in the game
         m_players = new ArrayList();
         final Player me = new Player(m_playerName, m_characterName, -1);
         m_players.add(me);
         m_myPlayerIndex = 0;
         setTitle(GametableApp.VERSION);
 
-        // we might have disconnected during inital data recipt
+        // we might have disconnected during initial data receipt
         PacketSourceState.endHostDump();
 
         m_netStatus = NETSTATE_NONE;
@@ -949,15 +1124,20 @@ public class GametableFrame extends JFrame implements ActionListener
         updateStatus();
     }
 
+    /**
+     * discards cards from a deck
+     * @param playerName who is discarding the cards
+     * @param discards array of cards to discard
+     */
     public void doDiscardCards(final String playerName, final DeckData.Card discards[])
     {
-        if (discards.length == 0)
+        if (discards.length == 0) // nothing to discard
         {
             // this shouldn't happen, but let's not freak out.
             return;
         }
 
-        // only the hose should get this
+        // only the host should get this
         if (m_netStatus != NETSTATE_HOST)
         {
             throw new IllegalStateException("doDiscardCards should only be done by the host.");
@@ -997,6 +1177,12 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    /**
+     * draw cards from a deck. Non-host players request it from the host. The
+     * host is the one that actually draws from the deck
+     * @param deckName deck to draw cards from
+     * @param numToDraw how many cards are requested
+     */
     public void drawCards(final String deckName, final int numToDraw)
     {
         if (m_netStatus == NETSTATE_JOINED)
@@ -1026,12 +1212,18 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    /**
+     * erases everything from the game canvas
+     */
     public void eraseAll()
     {
         eraseAllLines();
         eraseAllPogs();
     }
 
+    /**
+     * erases the canvas
+     */
     public void eraseAllLines()
     {
         // erase with a rect big enough to nail everything
@@ -1048,6 +1240,9 @@ public class GametableFrame extends JFrame implements ActionListener
         repaint();
     }
 
+    /**
+     * erases all pogs, also clearing the array of active pogs
+     */
     public void eraseAllPogs()
     {
         // make an int array of all the IDs
@@ -1062,6 +1257,14 @@ public class GametableFrame extends JFrame implements ActionListener
         getGametableCanvas().removePogs(removeArray, true);
     }
 
+    /**
+     * handles a packet to erase part of the canvas
+     * @param r the area to erase
+     * @param bColorSpecific erase it by painting it on a color
+     * @param color color to erase the area
+     * @param authorID who request the erase operation
+     * @param state 
+     */
     public void erasePacketReceived(final Rectangle r, final boolean bColorSpecific, final int color,
         final int authorID, final int state)
     {
@@ -1078,30 +1281,40 @@ public class GametableFrame extends JFrame implements ActionListener
         getGametableCanvas().doErase(r, bColorSpecific, color, authorID, stateId);
     }
 
+    /**
+     * return a macro by name. If not found, then create a new one
+     * @param term name of the macro to return
+     * @return an existing macro or a newly created one if not found
+     */
     public DiceMacro findMacro(final String term)
     {
-        final String name = UtilityFunctions.normalizeName(term);
+        final String name = UtilityFunctions.normalizeName(term); // remove special characters from the name
         DiceMacro macro = getMacro(name);
-        if (macro == null)
+        if (macro == null) // if no macro by that name
         {
-            macro = new DiceMacro();
-            if (!macro.init(term, null))
+            macro = new DiceMacro(); // create a new macro
+            if (!macro.init(term, null)) // assign the name to it, but no macro code
             {
-                macro = null;
+                macro = null; // if something went wrong, return null
             }
         }
 
         return macro;
     }
 
+    /**
+     * creates the "About" menu item
+     * @return the menu item
+     */
     private JMenuItem getAboutMenuItem()
     {
-        final JMenuItem item = new JMenuItem("About");
-        item.setAccelerator(KeyStroke.getKeyStroke("F1"));
-        item.addActionListener(new ActionListener()
+        final JMenuItem item = new JMenuItem("About"); // creates a menu item with the "About" label
+        item.setAccelerator(KeyStroke.getKeyStroke("F1")); // assign a shortcut
+        item.addActionListener(new ActionListener() // when the user selects it this is what happens
         {
             public void actionPerformed(final ActionEvent e)
             {
+                // show the about message
                 UtilityFunctions.msgBox(GametableFrame.this, GametableApp.VERSION
                     + " by Michael Rumm and the Gametable Community\n"
                     + "Orignal program by Andy Weir and David Ghandehari", "Version");
@@ -1110,6 +1323,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /**
+     * creates the "Add macro" menu item
+     * @return the menu item
+     */
     private JMenuItem getAddDiceMenuItem()
     {
         final JMenuItem item = new JMenuItem("Add macro...");
@@ -1117,12 +1334,18 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             public void actionPerformed(final ActionEvent e)
             {
-                addDieMacro();
+                addDieMacro(); // this calls the function to add a new macro
             }
         });
         return item;
     }
 
+    /**
+     * get a number of cards from a deck
+     * @param deckName name of the deck to draw from
+     * @param num number of cards to draw
+     * @return array with the cards drawn
+     */
     public DeckData.Card[] getCards(final String deckName, final int num)
     {
         int numCards = num;
@@ -1169,6 +1392,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return ret;
     }
 
+    /**
+     * creates the "Clear Map" menu item
+     * @return the new menu item
+     */
     private JMenuItem getClearMapMenuItem()
     {
         final JMenuItem item = new JMenuItem("Clear Map");
@@ -1176,6 +1403,7 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             public void actionPerformed(final ActionEvent e)
             {
+                // confirm the erase operation
                 final int res = UtilityFunctions.yesNoDialog(GametableFrame.this,
                     "This will clear all lines, pogs, and underlays on the entire layer. Are you sure?", "Clear Map");
                 if (res == UtilityFunctions.YES)
@@ -1190,6 +1418,11 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /**
+     * gets a deck by name or null if it doesn't exist
+     * @param name name of the deck to get
+     * @return the requested deck or null if it doesn't exist
+     */
     public Deck getDeck(final String name)
     {
         final int idx = getDeckIdx(name);
@@ -1205,6 +1438,11 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    /**
+     * gets the position in the list of decks of a deck with a given name or -1 if not found
+     * @param name name of the deck to locate
+     * @return the position of the deck in the list or -1 if not found
+     */
     public int getDeckIdx(final String name)
     {
         for (int i = 0; i < m_decks.size(); i++)
@@ -1218,6 +1456,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return -1;
     }
 
+    /**
+     * creates the menu item "Delete macro"
+     * @return the new menu item
+     */
     private JMenuItem getDeleteDiceMenuItem()
     {
         final JMenuItem item = new JMenuItem("Delete macro...");
@@ -1238,6 +1480,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /** 
+     * creates the "Dice" menu 
+     * @return the new menu
+     */
     private JMenu getDiceMenu()
     {
         final JMenu menu = new JMenu("Dice");
@@ -1249,6 +1495,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return menu;
     }
 
+    /**
+     * creates the "Disconnect" menu item
+     * @return the new menu item
+     */
     private JMenuItem getDisconnectMenuItem()
     {
         if (m_disconnectMenuItem == null)
@@ -1266,6 +1516,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return m_disconnectMenuItem;
     }
 
+    /**
+     * creates the "Edit" menu
+     * @return the new menu
+     */
     private JMenu getEditMenu()
     {
         final JMenu menu = new JMenu("Edit");
@@ -1275,6 +1529,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return menu;
     }
 
+    /**
+     * Builds and returns the File Menu
+     * @return the file menu just built
+     */
     private JMenu getFileMenu()
     {
         final JMenu menu = new JMenu("File");
@@ -1296,6 +1554,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return m_gametableCanvas;
     }
 
+    /**
+     * creates the "Grid Mode" menu
+     * @return the new menu
+     */
     private JMenu getGridModeMenu()
     {
         final JMenu menu = new JMenu("Grid Mode");
@@ -1306,6 +1568,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return menu;
     }
 
+    /**
+     * creates the "Help" menu
+     * @return the new menu
+     */
     private JMenu getHelpMenu()
     {
         final JMenu menu = new JMenu("Help");
@@ -1313,6 +1579,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return menu;
     }
 
+    /**
+     * creates the "host" menu item
+     * @return the new menu item
+     */
     private JMenuItem getHostMenuItem()
     {
         if (m_hostMenuItem == null)
@@ -1322,7 +1592,7 @@ public class GametableFrame extends JFrame implements ActionListener
             {
                 public void actionPerformed(final ActionEvent e)
                 {
-                    host();
+                    host(); // this displays the dialog to host a game
                 }
             });
 
@@ -1331,6 +1601,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return m_hostMenuItem;
     }
 
+    /**
+     * creates the "Join" menu item
+     * @return the new menu item
+     */
     private JMenuItem getJoinMenuItem()
     {
         if (m_joinMenuItem == null)
@@ -1340,7 +1614,7 @@ public class GametableFrame extends JFrame implements ActionListener
             {
                 public void actionPerformed(final ActionEvent e)
                 {
-                    join();
+                    join(); // this displays the dialog to join a game
                 }
             });
             m_joinMenuItem = item;
@@ -1348,6 +1622,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return m_joinMenuItem;
     }
 
+    /**
+     * creates the "list players" menu item
+     * @return the new menu item
+     */
     private JMenuItem getListPlayersMenuItem()
     {
         final JMenuItem item = new JMenuItem("List Players");
@@ -1356,7 +1634,7 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             public void actionPerformed(final ActionEvent e)
             {
-                parseSlashCommand("/who");
+                parseSlashCommand("/who"); // selecting this menu item is the same as issuing the command /who
             }
         });
         return item;
@@ -1399,6 +1677,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return Collections.unmodifiableCollection(m_macroMap.values());
     }
 
+    /**
+     * Builds and returns the main menu bar
+     * @return The menu bar just built
+     */
     private JMenuBar getMainMenuBar()
     {
         final JMenuBar menuBar = new JMenuBar();
@@ -1413,6 +1695,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return menuBar;
     }
 
+    /** 
+     * Builds and return the window menu
+     * @return the menu bar just built
+     */
     private JMenuBar getNewWindowMenuBar()
     {
         final JMenuBar menuBar = new JMenuBar();
@@ -1422,6 +1708,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return menuBar;
     }
 
+    /**
+     * bulds and returns the "Map" menu
+     * @return the menu just built
+     */
     private JMenu getMapMenu()
     {
         final JMenu menu = new JMenu("Map");
@@ -1429,10 +1719,135 @@ public class GametableFrame extends JFrame implements ActionListener
         menu.add(getRecenterAllPlayersMenuItem());
         menu.add(getGridModeMenu());
         menu.add(getTogglePrivateMapMenuItem());
+        menu.add(getExportMapMenuItem());
 
         return menu;
     }
 
+    /**
+     * Get the "Export Map" menu item
+     * @return JMenuItem
+     */
+    private JMenuItem getExportMapMenuItem()
+    {
+        JMenuItem item = new JMenuItem("Export Map");
+        item.addActionListener(new ActionListener() {
+           /*
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            public void actionPerformed(ActionEvent e)
+            {
+              exportMap();
+            }
+        });
+
+      return item;
+    }
+
+    /**
+     * Export map to JPeg file
+     */
+    private void exportMap()
+    {
+        File out = getMapExportFile();
+        if (out == null)
+            return;
+
+        try
+        {
+            m_gametableCanvas.exportMap(null, out);
+        }
+        catch (IOException e)
+        {
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Failed saving JPeg File", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Ask the user to choose a file name for the exported map
+     * @return File object or null if the user did not choose
+     */
+    private File getMapExportFile()
+    {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Export Map to JPeg File...");  // no external resource for text
+        if (m_mapExportSaveFolder != null)
+        {
+            chooser.setSelectedFile(m_mapExportSaveFolder);
+        }
+
+        FileFilter filter = new FileFilter()
+        {
+            /*
+             * @see javax.swing.filechooser.FileFilter#accept(java.io.File)
+             */
+            public boolean accept(File f)
+            {
+                String fileName = f.getPath().toLowerCase();
+                return f.isDirectory() || fileName.endsWith(".jpeg") || fileName.endsWith(".jpg");
+            }
+
+            /*
+             * @see javax.swing.filechooser.FileFilter#getDescription()
+             */
+            public String getDescription()
+            {
+                return "JPeg Files (*.jpg, *.jpeg)";
+            }
+        };
+
+        chooser.setFileFilter(filter);
+
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+        {
+            return null;
+        }
+
+        // Add extension to file name if user did not do so
+        File out = chooser.getSelectedFile();
+        String fileName = out.getAbsolutePath().toLowerCase();
+
+        if (!(fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")))
+        {
+            out = new File(out.getAbsolutePath() + ".jpg");
+        }
+
+        // If file exists, confirm before overwrite
+        if (out.exists())
+        {
+            if (JOptionPane.showConfirmDialog(this,
+                "Do you want to overwrite " + out.getName() + "?",
+                "The specified file already exist",
+                JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION)
+            {
+                return null;
+            }
+        }
+
+        if (out.exists() && !out.canWrite())
+        {
+            JOptionPane.showMessageDialog(this,
+                "Gametable does not have write access to " + out.getName(),
+                "Cannot Export Map",
+                JOptionPane.ERROR_MESSAGE);
+
+            return null;
+        }
+
+        // Figure out path name and keep it for next open of dialog
+        String pathName = out.getAbsolutePath();
+        int idx = pathName.lastIndexOf(File.separator);
+        if (idx > -1)
+        {
+            pathName = pathName.substring(0, idx) + File.separator + ".";
+        }
+
+        m_mapExportSaveFolder = new File(pathName);
+
+        return out;
+    }
+    
     /**
      * @return The player representing this client.
      */
@@ -1465,6 +1880,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return m_netStatus;
     }
 
+    /**
+     * builds and return the "Network" menu
+     * @return the newly built menu
+     */
     private JMenu getNetworkMenu()
     {
         final JMenu menu = new JMenu("Network");
@@ -1477,15 +1896,22 @@ public class GametableFrame extends JFrame implements ActionListener
     }
 
     /**
-     * TODO: comment
+     * gets and id for a state
      * 
-     * @return
+     * @return the next id number
      */
     public int getNewStateId()
     {
         return m_nextStateId++;
     }
 
+    /**
+     * Builds and returns the menu item for opening a new map
+     * The function includes defining the action listener and the actions it will
+     * perform when this item is called.
+     * 
+     * @return the File/Open menu item.
+     */
     private JMenuItem getOpenMapMenuItem()
     {
         final JMenuItem item = new JMenuItem("Open Map...");
@@ -1564,6 +1990,11 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /**
+     * gets the player associated with a connection
+     * @param conn connection to use to find the player
+     * @return the player object associated with the connection
+     */
     public Player getPlayerFromConnection(final Connection conn)
     {
         for (int i = 0; i < m_players.size(); i++)
@@ -1628,7 +2059,11 @@ public class GametableFrame extends JFrame implements ActionListener
     {
         return m_preferences;
     }
-
+    
+    /**
+     * build and returns the "Quit" menu item
+     * @return the newly built menu item
+     */
     private JMenuItem getQuitMenuItem()
     {
         final JMenuItem item = new JMenuItem("Quit");
@@ -1637,7 +2072,7 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             public void actionPerformed(final ActionEvent e)
             {
-                if (pogWindow != null)
+                if (pogWindow != null) // close the pog window
                 {
                     pogWindow.dispose();
                 }
@@ -1649,6 +2084,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /**
+     * builds and return the "Undock Pog Window" menu item
+     * @return the menu item just built
+     */
     private JMenuItem getPogWindowMenuItem()
     {
         final JMenuItem item = new JMenuItem("Un/Dock Pog Window");
@@ -1664,6 +2103,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /** 
+     * builds and return the "Undock Chat Window"
+     * @return the menu item 
+     */
     private JMenuItem getChatWindowMenuItem()
     {
         final JMenuItem item = new JMenuItem("Un/Dock Chat Window");
@@ -1679,6 +2122,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /**
+     * builds and returns the "Recenter all Player" menu item
+     * @return a menu item
+     */
     private JMenuItem getRecenterAllPlayersMenuItem()
     {
         final JMenuItem item = new JMenuItem("Recenter all Players");
@@ -1686,6 +2133,7 @@ public class GametableFrame extends JFrame implements ActionListener
         {
             public void actionPerformed(final ActionEvent e)
             {
+                // confirm the operation
                 final int result = UtilityFunctions.yesNoDialog(GametableFrame.this,
                     "This will recenter everyone's map view to match yours, "
                         + "and will set their zoom levels to match yours. Are you sure you want to do this?",
@@ -1706,6 +2154,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /**
+     * builds and returns the "Redo" menu item
+     * @return a menu item
+     */
     private JMenuItem getRedoMenuItem()
     {
         final JMenuItem item = new JMenuItem("Redo");
@@ -1721,6 +2173,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /**
+     * builds and return the "Save macro as" menu item
+     * @return a menu item
+     */
     private JMenuItem getSaveAsDiceMenuItem()
     {
         final JMenuItem item = new JMenuItem("Save macros as...");
@@ -1734,6 +2190,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /**
+     * builds and returns the "Save map as" menu item
+     * @return the menu item
+     */
     public JMenuItem getSaveAsMapMenuItem()
     {
         final JMenuItem item = new JMenuItem("Save Map As...");
@@ -1764,6 +2224,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /**
+     * builds and returns the "save macros" menu item
+     * @return the menu item
+     */
     private JMenuItem getSaveDiceMenuItem()
     {
         final JMenuItem item = new JMenuItem("Save macros...");
@@ -1784,6 +2248,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /**
+     * builds and returns the "save map" menu item
+     * @return the menu item
+     */
     public JMenuItem getSaveMapMenuItem()
     {
         final JMenuItem item = new JMenuItem("Save Map");
@@ -1827,6 +2295,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /**
+     * builds and returns the "Scan for pogs" menu item
+     * @return the menu item
+     */
     private JMenuItem getScanForPogsMenuItem()
     {
         final JMenuItem item = new JMenuItem("Scan for Pogs");
@@ -1842,6 +2314,10 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+    /**
+     * builds and returns the "Edit private map" menu item
+     * @return the menu item
+     */
     private JMenuItem getTogglePrivateMapMenuItem()
     {
         if (m_togglePrivateMapMenuItem == null)
@@ -1862,11 +2338,19 @@ public class GametableFrame extends JFrame implements ActionListener
         return m_togglePrivateMapMenuItem;
     }
 
+    /**
+     * gets the tools manager
+     * @return the tool manager
+     */
     public ToolManager getToolManager()
     {
         return m_toolManager;
     }
 
+    /**
+     * gets and returns the "Undo" menu item
+     * @return the menu item
+     */
     private JMenuItem getUndoMenuItem()
     {
         final JMenuItem item = new JMenuItem("Undo");
@@ -1882,11 +2366,16 @@ public class GametableFrame extends JFrame implements ActionListener
         return item;
     }
 
+
+    /**
+     * handles a "grid mode" packet
+     * @param gridMode grid mode
+     */
     public void gridModePacketReceived(final int gridMode)
     {
         // note the new grid mode
         getGametableCanvas().setGridModeByID(gridMode);
-        updateGridModeMenu();
+        updateGridModeMenu(); // sets the appropriate checks in the menu
 
         if (m_netStatus == NETSTATE_HOST)
         {
@@ -1894,9 +2383,13 @@ public class GametableFrame extends JFrame implements ActionListener
             send(PacketManager.makeGridModePacket(gridMode));
         }
 
-        repaint();
+        repaint(); // repaint the canvas
     }
 
+    /**
+     * handles the reception of a "grm" packet
+     * @param grmFile
+     */
     public void grmPacketReceived(final byte grmFile[])
     {
         // only the host should ever get this packet. If a joiner gets it
@@ -1908,19 +2401,26 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    /**
+     * attempt to host a network name by prompting details of the game session
+     */
     public void host()
     {
         host(false);
     }
 
+    /**
+     * host a game
+     * @param force if force do not ask for details, otherwise display the host dialog
+     */
     public void host(boolean force)
     {
-        if (m_netStatus == NETSTATE_HOST)
+        if (m_netStatus == NETSTATE_HOST) // if we are already the host
         {
             logAlertMessage("You are already hosting.");
             return;
         }
-        if (m_netStatus == NETSTATE_JOINED)
+        if (m_netStatus == NETSTATE_JOINED) // if we are connected to a game and not hosting
         {
             logAlertMessage("You can not host until you disconnect from the game you joined.");
             return;
@@ -1939,7 +2439,7 @@ public class GametableFrame extends JFrame implements ActionListener
         m_nextPlayerId = 0;
         m_players = new ArrayList();
         final Player me = new Player(m_playerName, m_characterName, m_nextPlayerId); // this means the host is always
-        // player 0
+                                                                                     // player 0
         m_nextPlayerId++;
         m_players.add(me);
         me.setHostPlayer(true);
@@ -1949,7 +2449,7 @@ public class GametableFrame extends JFrame implements ActionListener
         m_networkThread.start();
         // TODO: fix hosting failure detection
 
-        m_netStatus = NETSTATE_HOST;
+        m_netStatus = NETSTATE_HOST; // our status is now hosting
         final String message = "Hosting on port: " + m_port;
         logSystemMessage(message);
 
@@ -1957,9 +2457,9 @@ public class GametableFrame extends JFrame implements ActionListener
 
         Log.log(Log.NET, message);
 
-        m_hostMenuItem.setEnabled(false);
-        m_joinMenuItem.setEnabled(false);
-        m_disconnectMenuItem.setEnabled(true);
+        m_hostMenuItem.setEnabled(false); // disable the host menu item
+        m_joinMenuItem.setEnabled(false); // disable the join menu item
+        m_disconnectMenuItem.setEnabled(true); // enable the disconnect menu item
         setTitle(GametableApp.VERSION + " - " + me.getCharacterName());
 
         // when you host, all the undo stacks clear
@@ -1970,6 +2470,9 @@ public class GametableFrame extends JFrame implements ActionListener
         m_cards.clear();
     }
 
+    /**
+     * handles a failure in the host thread
+     */
     public void hostThreadFailed()
     {
         logAlertMessage("Failed to host.");
@@ -1979,18 +2482,20 @@ public class GametableFrame extends JFrame implements ActionListener
     }
 
     /**
-     * Performs initialization.
+     * Performs initialization. This draws all the controls in the Frame and sets up listener to react
+     * to user actions.
      * 
      * @throws IOException
      */
     private void initialize() throws IOException
     {
-        if (DEBUG_FOCUS)
+        if (DEBUG_FOCUS) // if debugging
         {
             final KeyboardFocusManager man = KeyboardFocusManager.getCurrentKeyboardFocusManager();
             man.addPropertyChangeListener(new PropertyChangeListener()
             {
                 /*
+                 * If debugging,show changes to properties in the console
                  * @see java.beans.PropertyChangeListener#propertyChange(java.beans.PropertyChangeEvent)
                  */
                 public void propertyChange(final PropertyChangeEvent e)
@@ -2001,17 +2506,21 @@ public class GametableFrame extends JFrame implements ActionListener
             });
         }
 
-        setContentPane(new JPanel(new BorderLayout()));
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setTitle(GametableApp.VERSION);
-        setJMenuBar(getMainMenuBar());
-        m_noGridModeMenuItem.addActionListener(this);
+        setContentPane(new JPanel(new BorderLayout())); // Set the main UI object with a Border Layout
+        setDefaultCloseOperation(EXIT_ON_CLOSE);        // Ensure app ends with this frame is closed
+        setTitle(GametableApp.VERSION);                 // Set frame title to the current version
+        setJMenuBar(getMainMenuBar());                  // Set the main MenuBar
+        
+        // Set this class to handle events from changing grid types
+        m_noGridModeMenuItem.addActionListener(this);   
         m_squareGridModeMenuItem.addActionListener(this);
         m_hexGridModeMenuItem.addActionListener(this);
 
+        // Configure chat panel
         m_chatPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         m_chatPanel.setLayout(new BorderLayout());
 
+        // Configure chat typing panel
         m_textAndEntryPanel.setLayout(new BorderLayout());
 
         final JPanel entryPanel = new JPanel(new BorderLayout(0, 0));
@@ -2028,6 +2537,7 @@ public class GametableFrame extends JFrame implements ActionListener
             m_textAndEntryPanel.add(m_chatLog.getComponentToAdd(), BorderLayout.CENTER);
         }
         
+        // Configure the panel containing the map and the chat window
         m_mapChatSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
         m_mapChatSplitPane.setContinuousLayout(true);
         m_mapChatSplitPane.setResizeWeight(1.0);
@@ -2035,11 +2545,15 @@ public class GametableFrame extends JFrame implements ActionListener
 
         m_textAreaPanel.setLayout(new BorderLayout());
 
+        // Configure the panel that splits the map and the pog list
         m_mapPogSplitPane.setContinuousLayout(true);
         m_mapPogSplitPane.setBorder(null);
 
+        // Configure the color dropdown
         m_colorCombo.setMaximumSize(new Dimension(100, 21));
         m_colorCombo.setFocusable(false);
+        
+        // Configure the toolbar
         m_toolBar.setFloatable(false);
         m_toolBar.setRollover(true);
         m_toolBar.setBorder(new EmptyBorder(2, 5, 2, 5));
@@ -2055,6 +2569,8 @@ public class GametableFrame extends JFrame implements ActionListener
          */
         m_gridunitmultiplier = new JTextField("5", 3);
         m_gridunitmultiplier.setMaximumSize(new Dimension(42, 21));
+        
+        // Configure the units dropdown
         final String[] units = {
             "ft", "m", "u"
         };
@@ -2062,8 +2578,11 @@ public class GametableFrame extends JFrame implements ActionListener
         m_gridunit.setMaximumSize(new Dimension(42, 21));
         m_toolBar.add(m_gridunitmultiplier);
         m_toolBar.add(m_gridunit);
+        // Add methods to react to changes to the unit multiplier
+        // TODO: this is definitely better somewhere else
         m_gridunitmultiplier.getDocument().addDocumentListener(new DocumentListener()
         {
+            //TODO: exceptions should be captured
             public void changedUpdate(final DocumentEvent e)
             {
                 grid_multiplier = Double.parseDouble(m_gridunitmultiplier.getText());
@@ -2081,7 +2600,9 @@ public class GametableFrame extends JFrame implements ActionListener
         });
         m_gridunit.addActionListener(this);
 
+        // Configure the checkbox to show names
         m_showNamesCheckbox.setFocusable(false);
+        // TODO: consider to place this somewhere else
         m_showNamesCheckbox.addActionListener(new ActionListener()
         {
             /*
@@ -2123,7 +2644,7 @@ public class GametableFrame extends JFrame implements ActionListener
         getContentPane().add(m_status, BorderLayout.SOUTH);
         updateStatus();
 
-        m_disconnectMenuItem.setEnabled(false);
+        m_disconnectMenuItem.setEnabled(false); // when the program starts we are disconnected so disable this menu item
 
         final ColorComboCellRenderer renderer = new ColorComboCellRenderer();
         m_colorCombo.setRenderer(renderer);
@@ -2164,6 +2685,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
         });
 
+        // handle window events
         addWindowListener(new WindowAdapter()
         {
             /*
@@ -2283,6 +2805,9 @@ public class GametableFrame extends JFrame implements ActionListener
         initializeExecutorThread();
     }
 
+    /**
+     * starts the execution thread
+     */
     private void initializeExecutorThread()
     {
         if (m_executorThread != null)
@@ -2357,20 +2882,23 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    /**
+     * joins a network game
+     */
     public void join()
     {
-        if (m_netStatus == NETSTATE_HOST)
+        if (m_netStatus == NETSTATE_HOST) // we can't join if we're hosting
         {
             logAlertMessage("You are hosting. If you wish to join a game, disconnect first.");
             return;
         }
-        if (m_netStatus == NETSTATE_JOINED)
+        if (m_netStatus == NETSTATE_JOINED) // we can't join if we are already connected
         {
             logAlertMessage("You are already in a game. You must disconnect before joining another.");
             return;
         }
 
-        boolean res = runJoinDialog();
+        boolean res = runJoinDialog(); // get details of where to connect to
         if (!res)
         {
             // they cancelled out
@@ -2400,10 +2928,10 @@ public class GametableFrame extends JFrame implements ActionListener
             // PacketManager.g_imagelessPogs.clear();
 
             // send the packet
-            while (!conn.isConnected())
+            while (!conn.isConnected()) // this waits until the connection is established
             {
             }
-            conn.sendPacket(PacketManager.makePlayerPacket(me, m_password));
+            conn.sendPacket(PacketManager.makePlayerPacket(me, m_password)); // send my data to the host
 
             PacketSourceState.beginHostDump();
 
@@ -2412,9 +2940,9 @@ public class GametableFrame extends JFrame implements ActionListener
 
             logSystemMessage("Joined game");
 
-            m_hostMenuItem.setEnabled(false);
-            m_joinMenuItem.setEnabled(false);
-            m_disconnectMenuItem.setEnabled(true);
+            m_hostMenuItem.setEnabled(false); // disable the host menu item
+            m_joinMenuItem.setEnabled(false); // disable the join menu item
+            m_disconnectMenuItem.setEnabled(true); // enable the disconnect menu item
             setTitle(GametableApp.VERSION + " - " + me.getCharacterName());
         }
         catch (final Exception ex)
@@ -2426,12 +2954,23 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    /**
+     * close a connection indicating a reason
+     * @param conn connection to close
+     * @param reason code for the reason to be booted
+     */
     public void kick(final Connection conn, final int reason)
     {
         send(PacketManager.makeRejectPacket(reason), conn);
         conn.close();
     }
 
+    /**
+     * handle a lines packet (a player painted lines)
+     * @param lines array of line segments
+     * @param authorID author
+     * @param state
+     */
     public void linesPacketReceived(final LineSegment[] lines, final int authorID, final int state)
     {
         int stateId = state;
@@ -2452,14 +2991,15 @@ public class GametableFrame extends JFrame implements ActionListener
      */
     private void dockPogWindow()
     {
-        if (!b_pogWindowDocked)
+        if (!b_pogWindowDocked) // dock the pog window
         {
             if (pogWindow != null)
             {
-                pogWindow.setVisible(false);
+                pogWindow.setVisible(false); // hide the undocked window
             }
 
             pogWindow.getContentPane().remove(m_pogsTabbedPane);
+            // remove panels depending on whether the chat window is docked or undocked
             if (b_chatWindowDocked)
             {
                 GametableFrame.getGametableFrame().getContentPane().remove(m_mapChatSplitPane);
@@ -2468,6 +3008,7 @@ public class GametableFrame extends JFrame implements ActionListener
             {
                 GametableFrame.getGametableFrame().getContentPane().remove(m_canvasPane);
             }
+            // re-add the panels
             GametableFrame.getGametableFrame().getContentPane().validate();
             GametableFrame.getGametableFrame().getContentPane().validate();
             GametableFrame.getGametableFrame().m_mapPogSplitPane.add(m_pogsTabbedPane, JSplitPane.LEFT);
@@ -2485,9 +3026,9 @@ public class GametableFrame extends JFrame implements ActionListener
 
             b_pogWindowDocked = true;
         }
-        else
+        else // undock the pog window
         {
-            if (pogWindow == null)
+            if (pogWindow == null) // create a window for the undocked panel
             {
                 pogWindow = new JFrame();
                 pogWindow.setTitle("Pog Window");
@@ -2498,6 +3039,7 @@ public class GametableFrame extends JFrame implements ActionListener
             }
             pogWindow.setJMenuBar(getNewWindowMenuBar());
 
+            // remove and add panels depending on wether the chat panel is docked or undocked
             GametableFrame.getGametableFrame().getContentPane().remove(m_mapPogSplitPane);
             if (b_chatWindowDocked)
             {
@@ -2526,7 +3068,7 @@ public class GametableFrame extends JFrame implements ActionListener
     }
 
     /**
-     * Docks or undocks the Pog Panel from from the main Gametable frame
+     * Docks or undocks the chat window from from the main Gametable frame
      */
     private void dockChatWindow()
     {
@@ -2656,10 +3198,12 @@ public class GametableFrame extends JFrame implements ActionListener
     {
         try
         {
+            // macros are contained in an XML document that will be parsed using a SAXParser
+            // the SAXParser generates events for XML tags as it founds them.
             final SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
             final DiceMacroSaxHandler handler = new DiceMacroSaxHandler();
             parser.parse(file, handler);
-
+            // we are done parsing the file. The handler contains all the macros, ready to be added to the macro map
             // clear the state
             m_macroMap.clear();
             for (final Iterator iterator = handler.getMacros().iterator(); iterator.hasNext();)
@@ -2677,13 +3221,16 @@ public class GametableFrame extends JFrame implements ActionListener
             throw new SAXException(pce);
         }
 
-        m_macroPanel.refreshMacroList();
+        m_macroPanel.refreshMacroList(); // displays the macro list
     }
 
+    /**
+     * loads preferences from file
+     */
     public void loadPrefs()
     {
         final File file = new File("prefs.prf");
-        if (!file.exists())
+        if (!file.exists()) // if the file doesn't exist, set some hard-coded defaults and return
         {
             // DEFAULTS
             m_mapChatSplitPane.setDividerLocation(0.7);
@@ -2708,6 +3255,7 @@ public class GametableFrame extends JFrame implements ActionListener
             return;
         }
 
+        // try reading preferences from file
         try
         {
             final FileInputStream prefFile = new FileInputStream(file);
