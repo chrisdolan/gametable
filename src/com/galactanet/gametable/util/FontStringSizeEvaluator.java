@@ -7,7 +7,6 @@ package com.galactanet.gametable.util;
 
 import java.awt.Font;
 import java.awt.Rectangle;
-import java.awt.RenderingHints;
 import java.awt.font.FontRenderContext;
 
 
@@ -17,9 +16,7 @@ import java.awt.font.FontRenderContext;
  */
 public class FontStringSizeEvaluator implements StringSizeEvaluator
 {
-    private static final FontRenderContext FONT_RENDER_CONTEXT = new FontRenderContext(null,
-                                                                   RenderingHints.VALUE_TEXT_ANTIALIAS_ON,
-                                                                   RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+    private static final FontRenderContext FONT_RENDER_CONTEXT = new FontRenderContext(null, true, false);
 
     private final Font                     font;
 

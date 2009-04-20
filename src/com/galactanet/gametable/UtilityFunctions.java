@@ -142,32 +142,40 @@ public class UtilityFunctions
         final int returnVal = chooser.showSaveDialog(null);
         if (returnVal == JFileChooser.APPROVE_OPTION)
         {
+            //The selected file's name
+            String f = chooser.getSelectedFile().getName();
+            //The selected file's path
             lastDir = chooser.getSelectedFile().getParent();
 
-            System.out.println(chooser.getSelectedFile());
-            
-            //ensure file extension is .grm
+            //Check if file extension is .grm
             String ext = "";
             String filename = "";
-            String f = chooser.getSelectedFile().getName();
+
+            //Get the selected file's extension
             int i = f.lastIndexOf(".");
             if (i > 0 && i < f.length() - 1)
             {
                ext = f.substring(i + 1).toLowerCase();
             }
-            if (ext.equals(""))
+            if (ext.equals("grm"))      //if extension is .grm, return the selected file.
+            {
+                return chooser.getSelectedFile();
+            }
+            else if (ext.equals(""))    //if extension is missing, add .grm
             {
                 filename = f + ".grm";
             }
-            else
+            else                        //if any other extension, change to .grm 
             {
                 filename = f.replaceAll("." + ext, ".grm");
             }
+            //If it hasn't already returned, then the extension was not .grm
+            //Create new file using the selected path and file name with .grm extension
             File saveFile = new File(lastDir + "/" + filename);
-            chooser.setSelectedFile(saveFile);
-            return chooser.getSelectedFile();
+            //return the file with proper extension
+            return saveFile;
         }
-
+        //Only get here if action was canceled, so return null to cancel save
         return null;
     }
 

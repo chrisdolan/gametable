@@ -26,90 +26,6 @@ public class PogType
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
-    public static boolean hasAlpha(final Image image)
-    {
-        // If buffered image, the color model is readily available
-        if (image instanceof BufferedImage)
-        {
-            final BufferedImage bimage = (BufferedImage)image;
-            return bimage.getColorModel().hasAlpha();
-        }
-
-        // Use a pixel grabber to retrieve the image's color model;
-        // grabbing a single pixel is usually sufficient
-        final PixelGrabber pg = new PixelGrabber(image, 0, 0, 1, 1, false);
-        try
-        {
-            pg.grabPixels();
-        }
-        catch (final InterruptedException e)
-        {
-        }
-
-        // Get the image's color model
-        final ColorModel cm = pg.getColorModel();
-        return cm.hasAlpha();
-    }
-
-    private static BufferedImage toBufferedImage(final Image image)
-    {
-        if (image instanceof BufferedImage)
-        {
-            return (BufferedImage)image;
-        }
-
-        Image outImage = image;
-
-        // This code ensures that all the pixels in the image are loaded
-        outImage = new ImageIcon(outImage).getImage();
-
-        // Determine if the image has transparent pixels; for this method's
-        // implementation, see e661 Determining If an Image Has Transparent Pixels
-        final boolean hasAlpha = hasAlpha(outImage);
-
-        // Create a buffered image with a format that's compatible with the screen
-        BufferedImage bimage = null;
-        final GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        try
-        {
-            // Determine the type of transparency of the new buffered image
-            int transparency = Transparency.OPAQUE;
-            if (hasAlpha)
-            {
-                transparency = Transparency.BITMASK;
-            }
-
-            // Create the buffered image
-            final GraphicsDevice gs = ge.getDefaultScreenDevice();
-            final GraphicsConfiguration gc = gs.getDefaultConfiguration();
-            bimage = gc.createCompatibleImage(outImage.getWidth(null), outImage.getHeight(null), transparency);
-        }
-        catch (final HeadlessException e)
-        {
-            // The system does not have a screen
-        }
-
-        if (bimage == null)
-        {
-            // Create a buffered image using the default color model
-            int type = BufferedImage.TYPE_INT_RGB;
-            if (hasAlpha)
-            {
-                type = BufferedImage.TYPE_INT_ARGB;
-            }
-            bimage = new BufferedImage(outImage.getWidth(null), outImage.getHeight(null), type);
-        }
-
-        // Copy image to buffered image
-        final Graphics g = bimage.createGraphics();
-
-        // Paint the image onto the buffered image
-        g.drawImage(outImage, 0, 0, null);
-        g.dispose();
-
-        return bimage;
-    }
-
     private final boolean   m_bUnderlay;
     private boolean         m_bUnknown;
 
@@ -118,15 +34,16 @@ public class PogType
     private BitSet          m_hitMap;
     private final Hashtable m_iconcache = new Hashtable();
     private Image           m_image;
+    /*
+     * m_lastScaledImage is NOT used in current code, except in load(), where it is never read.
+     * It has been retained for backwards compatibility with older map saves.
+     */
     private float           m_lastScale;
-
-    // --- Constructors ----------------------------------------------------------------------------------------------
-
     private Image           m_lastScaledImage;
 
-    // --- Methods ---------------------------------------------------------------------------------------------------
-
     private Image           m_listIcon;
+
+    // --- Methods ---------------------------------------------------------------------------------------------------
 
     /**
      * Constructor.
@@ -139,18 +56,20 @@ public class PogType
         load();
     }
 
+    // --- Drawing Methods ---
+
     /**
      * Draws the pog onto the given graphics context.
+     * Used for images that are never rotated.
      * 
      * @param g Context to draw onto.
      * @param x X position to draw at.
      * @param y Y position to draw at.
      */
-    public void draw(final Graphics g, final int x, final int y, final double angle, final int flipH, final int flipV)
+    public void draw(final Graphics g, final int x, final int y)
     {
-        g.drawImage(rotate(flip(m_image, flipH, flipV), angle), x, y, null);
+        g.drawImage(m_image, x, y, null);
     }
-
     /**
      * Draws the pog onto the given graphics context in "ghostly" form.
      * 
@@ -158,9 +77,25 @@ public class PogType
      * @param x X position to draw at.
      * @param y Y position to draw at.
      */
-    public void drawGhostly(final Graphics g, final int x, final int y, final double angle, final int flipH, final int flipV)
+    public void drawGhostly(final Graphics g, final int x, final int y)
     {
-        drawTranslucent(g, x, y, 0.5f, angle, flipH, flipV);
+        drawTranslucent(g, x, y, 0.5f);
+    }
+    /**
+     * Draws the pog onto the given graphics context at the given opacity.
+     * 
+     * @param g Context to draw onto.
+     * @param x X position to draw at.
+     * @param y Y position to draw at.
+     * @param opacity 0 for fully transparent - 1 for fully opaque.
+     */
+    public void drawTranslucent(final Graphics g, final int x, final int y, final float opacity)
+    {
+        final Graphics2D g2 = (Graphics2D)g.create();
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
+        draw(g2, x, y);
+        g2.dispose();
+        g.dispose();
     }
 
     /**
@@ -173,7 +108,32 @@ public class PogType
      */
     public void drawListIcon(final Graphics g, final int x, final int y)
     {
-        g.drawImage(getListIcon(), x, y, null);
+        if(m_listIcon == null)
+        {   //Only call getListIcon() if it hasn't yet been set.
+            g.drawImage(getListIcon(), x, y, null);
+        }
+        else
+        {   //Cached icon exists. Use it.
+            g.drawImage(m_listIcon, x, y, null);   
+        }
+    }
+
+    /**
+     * Draws a tint for the pog onto the given graphics context.
+     * 
+     * @param g Context to draw onto.
+     * @param x X position to draw at.
+     * @param y Y position to draw at.
+     * @param scale What scale to draw the pog at.
+     * @param tint Color with which to tint the pog.
+     */
+    public void drawTint(final Graphics g, final int x, final int y, final float scale, final Color tint,
+        final double angle)
+    {
+        final Graphics2D g2 = (Graphics2D)g.create();
+        g2.setColor(new Color(tint.getRed(), tint.getGreen(), tint.getBlue(), 0x7f));
+        g2.fillRect(x, y, Math.round(getWidth(angle) * scale), Math.round(getHeight(angle) * scale));
+        g2.dispose();
     }
 
     /**
@@ -206,39 +166,7 @@ public class PogType
         }
     }
 
-    /**
-     * Draws a tint for the pog onto the given graphics context.
-     * 
-     * @param g Context to draw onto.
-     * @param x X position to draw at.
-     * @param y Y position to draw at.
-     * @param scale What scale to draw the pog at.
-     * @param tint Color with which to tint the pog.
-     */
-    public void drawTint(final Graphics g, final int x, final int y, final float scale, final Color tint,
-        final double angle)
-    {
-        final Graphics2D g2 = (Graphics2D)g.create();
-        g2.setColor(new Color(tint.getRed(), tint.getGreen(), tint.getBlue(), 0x7f));
-        g2.fillRect(x, y, Math.round(getWidth(angle) * scale), Math.round(getHeight(angle) * scale));
-        g2.dispose();
-    }
-
-    /**
-     * Draws the pog onto the given graphics context at the given opacity.
-     * 
-     * @param g Context to draw onto.
-     * @param x X position to draw at.
-     * @param y Y position to draw at.
-     * @param opacity 0 for fully transparent - 1 for fully opaque.
-     */
-    public void drawTranslucent(final Graphics g, final int x, final int y, final float opacity, final double angle, final int flipH, final int flipV)
-    {
-        final Graphics2D g2 = (Graphics2D)g.create();
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
-        draw(g2, x, y, angle, flipH, flipV);
-        g2.dispose();
-    }
+    // --- END Drawing Methods ---
 
     /**
      * @return The face size in squares.
@@ -254,6 +182,64 @@ public class PogType
     public String getFilename()
     {
         return m_filename;
+    }
+
+    /**
+     * @return A nice label for this pog.
+     */
+    public String getLabel()
+    {
+        String label = getFilename();
+        final int start = label.lastIndexOf(UtilityFunctions.LOCAL_SEPARATOR) + 1;
+        int end = label.lastIndexOf('.');
+        if (end < 0)
+        {
+            end = label.length();
+        }
+
+        label = label.substring(start, end);
+
+        return new String(label);
+    }
+
+    private Image getListIcon()
+    {
+        if (m_listIcon == null)
+        {
+            final int maxDim = Math.max(getWidth(0), getHeight(0));
+            final float scale = PogPanel.POG_ICON_SIZE / (float)maxDim;
+            m_listIcon = UtilityFunctions.getScaledInstance(m_image, scale);
+        }
+        return m_listIcon;
+    }
+
+    public int getListIconHeight()
+    {
+        return getListIcon().getHeight(null);
+    }
+
+    public int getListIconWidth()
+    {
+        return getListIcon().getWidth(null);
+    }
+
+    /**
+     * @return The scaling factor of this pog.
+     */
+    private Image getScaledImage(final float scale)
+    {
+        if (scale == 1.0)
+        {
+            return m_image;
+        }
+
+        if ((m_lastScaledImage == null) || (Math.round(m_lastScale * 100) != Math.round(scale * 100)))
+        {
+            // System.out.println(this + " scale: " + m_lastScale + " -> " + scale);
+            m_lastScale = scale;
+            m_lastScaledImage = UtilityFunctions.getScaledInstance(m_image, m_lastScale);
+        }
+        return m_lastScaledImage;
     }
 
     /**
@@ -280,63 +266,6 @@ public class PogType
         // If caching images instead of dimensions, this should be
         // return (int)(bounds.getHeight(null));
         return (int)(bounds.getHeight());
-    }
-
-    /**
-     * @return A nice label for this pog.
-     */
-    public String getLabel()
-    {
-        String label = getFilename();
-        final int start = label.lastIndexOf(UtilityFunctions.LOCAL_SEPARATOR) + 1;
-        int end = label.lastIndexOf('.');
-        if (end < 0)
-        {
-            end = label.length();
-        }
-
-        label = label.substring(start, end);
-
-        return new String(label);
-    }
-
-    // --- Drawing Methods ---
-
-    private Image getListIcon()
-    {
-        if (m_listIcon == null)
-        {
-            final int maxDim = Math.max(getWidth(0), getHeight(0));
-            final float scale = PogPanel.POG_ICON_SIZE / (float)maxDim;
-            m_listIcon = UtilityFunctions.getScaledInstance(m_image, scale);
-        }
-        return m_listIcon;
-    }
-
-    public int getListIconHeight()
-    {
-        return getListIcon().getHeight(null);
-    }
-
-    public int getListIconWidth()
-    {
-        return getListIcon().getWidth(null);
-    }
-
-    private Image getScaledImage(final float scale)
-    {
-        if (scale == 1.0)
-        {
-            return m_image;
-        }
-
-        if ((m_lastScaledImage == null) || (Math.round(m_lastScale * 100) != Math.round(scale * 100)))
-        {
-            // System.out.println(this + " scale: " + m_lastScale + " -> " + scale);
-            m_lastScale = scale;
-            m_lastScaledImage = UtilityFunctions.getScaledInstance(m_image, m_lastScale);
-        }
-        return m_lastScaledImage;
     }
 
     /**
@@ -378,13 +307,6 @@ public class PogType
 
         final BufferedImage bufferedImage = new BufferedImage(getWidth(angle), getHeight(angle),
             BufferedImage.TYPE_INT_RGB);
-        {
-            final Graphics2D g = bufferedImage.createGraphics();
-            g.setColor(new Color(0xff00ff));
-            g.fillRect(0, 0, getWidth(angle), getHeight(angle));
-            draw(g, 0, 0, angle, flipH, flipV);
-            g.dispose();
-        }
 
         final DataBuffer buffer = bufferedImage.getData().getDataBuffer();
         final int len = getWidth(angle) * getHeight(angle);
@@ -425,6 +347,9 @@ public class PogType
         final Image oldImage = m_image;
         m_image = UtilityFunctions.getImage(m_filename);
         m_listIcon = null;
+        // m_lastScaledImage does nothing but was left here for backwards compatibility reasons.
+        // It is stored in older map saves and thus must be read to load the map properly.
+        // We just no longer use it in current code.
         m_lastScaledImage = null;
         if (m_image == null)
         {
@@ -511,6 +436,64 @@ public class PogType
 
         return returnedImage;
     }
+
+
+    /*
+     * This is my attempt to fix some minor issues and speed up rotations.
+     */
+/*    private Image rotate(final Image i, final double angle)
+    {
+        if (angle == 0)
+        {
+            return i;
+        }
+
+        final BufferedImage bufferedImage = toBufferedImage(i);
+        final AffineTransform tx = new AffineTransform(); //.getRotateInstance(Math.toRadians(angle), bufferedImage.getWidth() / 2, bufferedImage.getHeight() / 2);
+
+        System.out.println(bufferedImage.getWidth());
+        System.out.println(bufferedImage.getHeight());
+
+        int width  = bufferedImage.getWidth() / 64;
+        int height = bufferedImage.getHeight() / 64;
+        
+        if (width != height)
+        {
+            int modifier = 1;
+            if (width > height)
+            {
+                modifier = -1;
+            }
+            if (width%2 != 0)
+            {
+                width = width + modifier;
+            }
+            if (height%2 != 0)
+            {
+                height = height + modifier;
+            }
+        }
+        
+        width  = width * 32;
+        height = height * 32;
+
+        tx.rotate(Math.toRadians(angle), width, height);
+        
+        final AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
+
+        final Image returnedImage = Toolkit.getDefaultToolkit().createImage(op.filter(bufferedImage, null).getSource());
+        
+        if (!m_iconcache.containsKey(Double.valueOf(angle)))
+        {
+            final Dimension bounds = new Dimension(returnedImage.getWidth(null), returnedImage.getHeight(null));
+            m_iconcache.put(Double.valueOf(angle), bounds);
+            // m_iconcache.put(Double.valueOf(angle),returnedImage);
+        }
+
+        //initializeHitMap(angle, returnedImage);
+
+        return returnedImage;
+    }*/
 
     private Image flip(final Image i, final int flipH, final int flipV)
     {
@@ -607,5 +590,89 @@ public class PogType
     {
         return "[PogType@" + hashCode() + " name: " + m_filename + " size: " + m_faceSize + ", unknown: " + isUnknown()
             + "]";
+    }
+
+    public static boolean hasAlpha(final Image image)
+    {
+        // If buffered image, the color model is readily available
+        if (image instanceof BufferedImage)
+        {
+            final BufferedImage bimage = (BufferedImage)image;
+            return bimage.getColorModel().hasAlpha();
+        }
+
+        // Use a pixel grabber to retrieve the image's color model;
+        // grabbing a single pixel is usually sufficient
+        final PixelGrabber pg = new PixelGrabber(image, 0, 0, 1, 1, false);
+        try
+        {
+            pg.grabPixels();
+        }
+        catch (final InterruptedException e)
+        {
+        }
+
+        // Get the image's color model
+        final ColorModel cm = pg.getColorModel();
+        return cm.hasAlpha();
+    }
+
+    private static BufferedImage toBufferedImage(final Image image)
+    {
+        if (image instanceof BufferedImage)
+        {
+            return (BufferedImage)image;
+        }
+
+        Image outImage = image;
+
+        // This code ensures that all the pixels in the image are loaded
+        outImage = new ImageIcon(outImage).getImage();
+
+        // Determine if the image has transparent pixels; for this method's
+        // implementation, see e661 Determining If an Image Has Transparent Pixels
+        final boolean hasAlpha = hasAlpha(outImage);
+
+        // Create a buffered image with a format that's compatible with the screen
+        BufferedImage bimage = null;
+        final GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        try
+        {
+            // Determine the type of transparency of the new buffered image
+            int transparency = Transparency.OPAQUE;
+            if (hasAlpha)
+            {
+                transparency = Transparency.BITMASK;
+            }
+
+            // Create the buffered image
+            final GraphicsDevice gs = ge.getDefaultScreenDevice();
+            final GraphicsConfiguration gc = gs.getDefaultConfiguration();
+            bimage = gc.createCompatibleImage(outImage.getWidth(null), outImage.getHeight(null), transparency);
+        }
+        catch (final HeadlessException e)
+        {
+            // The system does not have a screen
+        }
+
+        if (bimage == null)
+        {
+            // Create a buffered image using the default color model
+            int type = BufferedImage.TYPE_INT_RGB;
+            if (hasAlpha)
+            {
+                type = BufferedImage.TYPE_INT_ARGB;
+            }
+            bimage = new BufferedImage(outImage.getWidth(null), outImage.getHeight(null), type);
+        }
+
+        // Copy image to buffered image
+        final Graphics g = bimage.createGraphics();
+
+        // Paint the image onto the buffered image
+        g.drawImage(outImage, 0, 0, null);
+        g.dispose();
+
+        return bimage;
     }
 }

@@ -156,8 +156,8 @@ public class BoxTool extends NullTool
             --modelRect.height;
             double squaresWidth = m_canvas.modelToSquares(modelRect.width);
             double squaresHeight = m_canvas.modelToSquares(modelRect.height);
-            final double indicatorThreshold = .75 * GametableFrame.getGametableFrame().grid_multiplier;
-            if (squaresWidth > indicatorThreshold)
+
+            if (squaresWidth >= 0.75)
             {
                 squaresWidth = Math.round(squaresWidth * 100) / 100.0;
 
@@ -194,7 +194,8 @@ public class BoxTool extends NullTool
                 g3.dispose();
 
             }
-            if (squaresHeight > indicatorThreshold)
+
+            if (squaresHeight > 0.75)
             {
                 final Point drawPoint = m_canvas.modelToDraw(m_mouseAnchor);
                 final Point mousePoint = m_canvas.modelToDraw(m_mouseFloat);

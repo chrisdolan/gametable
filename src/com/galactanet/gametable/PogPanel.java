@@ -937,7 +937,7 @@ public class PogPanel extends JPanel
             final Point localPos = UtilityFunctions.getComponentCoordinates(this, getGrabPosition());
             final Point offset = getGrabOffset();
             g2.translate(localPos.x - offset.x, localPos.y - offset.y);
-            m_grabbedPog.getPogType().drawGhostly(g2, 0, 0, 0, 1, 1);
+            m_grabbedPog.getPogType().drawGhostly(g2, 0, 0);
             g2.dispose();
         }
         else if ((m_hoverPog != null) && (m_mousePosition != null))
@@ -970,7 +970,7 @@ public class PogPanel extends JPanel
             g2.drawRect(-POG_PADDING, -POG_PADDING, m_hoverPog.getWidth(0) + POG_PADDING * 2 - 1, m_hoverPog
                 .getHeight(0)
                 + POG_PADDING * 2 - 1);
-            m_hoverPog.drawTranslucent(g2, 0, 0, 0.9f, 0, 1, 1);
+            m_hoverPog.drawTranslucent(g2, 0, 0, 0.9f);
             g2.dispose();
         }
     }

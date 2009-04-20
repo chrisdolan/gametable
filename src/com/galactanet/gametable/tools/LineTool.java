@@ -133,8 +133,7 @@ public class LineTool extends NullTool
             final Point drawFloat = m_canvas.modelToDraw(m_mouseFloat);
             g2.drawLine(drawAnchor.x, drawAnchor.y, drawFloat.x, drawFloat.y);
 
-            final double indicatorThreshold = .75 * GametableFrame.getGametableFrame().grid_multiplier;
-            if (squaresDistance >= indicatorThreshold)
+            if (squaresDistance >= 0.75)
             {
                 final Graphics2D g3 = (Graphics2D)g.create();
                 g3.setFont(Font.decode("sans-12"));

@@ -1316,7 +1316,7 @@ public class GametableFrame extends JFrame implements ActionListener
             {
                 // show the about message
                 UtilityFunctions.msgBox(GametableFrame.this, GametableApp.VERSION
-                    + " by Michael Rumm and the Gametable Community\n"
+                    + " by the Gametable Community\n"
                     + "Orignal program by Andy Weir and David Ghandehari", "Version");
             }
         });
