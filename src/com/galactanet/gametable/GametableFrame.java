@@ -2237,7 +2237,7 @@ public class GametableFrame extends JFrame implements ActionListener
             {
                 try
                 {
-                    saveMacros(m_actingFilePrivate);
+                    saveMacros(m_actingFileMacros);
                 }
                 catch (final IOException ioe)
                 {
@@ -4286,7 +4286,8 @@ public class GametableFrame extends JFrame implements ActionListener
     }
 
     /**
-     * 
+     * Saves everything: both maps, macros, and preferences. 
+     * Called on program exit.
      */
     private void saveAll()
     {

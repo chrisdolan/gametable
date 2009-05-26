@@ -1049,6 +1049,60 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         return m_gametableFrame.getPogPanel();
     }
 
+    public Rectangle getVisibleCanvasRect(final int level)
+    {
+        final Point topLeft = viewToModel(0, 0);
+
+        int canvasW = 0;
+        int canvasH = 0;
+        
+        switch (level)
+        {
+            case 0:
+            {
+                canvasW = getWidth();
+                canvasH = getHeight();
+            }
+            break;
+
+            case 1:
+            {
+                canvasW = (getWidth() * 4) / 3;
+                canvasH = (getHeight() * 4) / 3;
+            }
+            break;
+
+            case 2:
+            {
+                canvasW = getWidth() * 2;
+                canvasH = getHeight() * 2;
+            }
+            break;
+
+            case 3:
+            {
+                canvasW = getWidth() * 4;
+                canvasH = getHeight() * 4;
+            }
+            break;
+
+            case 4:
+            {
+                canvasW = getWidth() * 8;
+                canvasH = getHeight() * 8;
+            }
+            break;
+        }
+
+        //final Point bottomRight = m_canvas.viewToModel(bottomRightX, bottomRightY);
+        final Rectangle visbleCanvas = new Rectangle(topLeft.x, topLeft.y, canvasW, canvasH);
+        
+        //System.out.println(topLeft.x + " " + topLeft.y);
+        //System.out.println(bottomRight.x + " " + bottomRight.y);
+
+        return visbleCanvas;        
+    }
+
     public static int getSquareSizeForZoom(final int level)
     {
         int ret = BASE_SQUARE_SIZE;
@@ -2055,9 +2109,11 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         // now, snap to grid if they don't have the control key down
         if (!m_bControlKeyDown)
         {
-            final Point adjustment = grabbedPog.getSnapDragAdjustment();
-            grabbedPog.setPosition(canvasModel.x - pogGrabOffset.x + adjustment.x, canvasModel.y - pogGrabOffset.y
-                + adjustment.y);
+// Removed the adjustment part, because it was actually making the dragging worse
+//            final Point adjustment = grabbedPog.getSnapDragAdjustment();
+//            grabbedPog.setPosition(canvasModel.x - pogGrabOffset.x + adjustment.x, canvasModel.y - pogGrabOffset.y
+//                + adjustment.y);
+            grabbedPog.setPosition(canvasModel.x - pogGrabOffset.x, canvasModel.y - pogGrabOffset.y);
             snapPogToGrid(grabbedPog);
         }
         else

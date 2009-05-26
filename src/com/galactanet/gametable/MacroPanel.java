@@ -8,6 +8,8 @@ package com.galactanet.gametable;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -113,18 +115,19 @@ public class MacroPanel extends JPanel
          */
         public void actionPerformed(final ActionEvent e)
         {
-            if ((e.getModifiers() & ActionEvent.CTRL_MASK) != 0)
+            if (privateMacroRoll == 2) //private roll
             {
-                if (semiPrivate)
-                {
-                    GametableFrame.getGametableFrame().postMessage(
-                        GametableFrame.DIEROLL_MESSAGE_FONT
-                            + UtilityFunctions.emitUserLink(GametableFrame.getGametableFrame().getMyPlayer()
-                                .getCharacterName()) + " is rolling dice..." + GametableFrame.END_DIEROLL_MESSAGE_FONT);
-                }
                 GametableFrame.getGametableFrame().parseSlashCommand("/proll " + macro.getMacro());
             }
-            else
+            else if (privateMacroRoll == 1) //semiprivate roll
+            {
+                GametableFrame.getGametableFrame().postMessage(
+                    GametableFrame.DIEROLL_MESSAGE_FONT
+                        + UtilityFunctions.emitUserLink(GametableFrame.getGametableFrame().getMyPlayer()
+                            .getCharacterName()) + " is rolling dice..." + GametableFrame.END_DIEROLL_MESSAGE_FONT);
+                GametableFrame.getGametableFrame().parseSlashCommand("/proll " + macro.getMacro());
+            }
+            else //public roll
             {
                 GametableFrame.getGametableFrame().postMessage(macro.doMacro());
             }
@@ -277,7 +280,7 @@ public class MacroPanel extends JPanel
         }
     }
 
-    private static boolean    semiPrivate;
+    public static int    privateMacroRoll = 0;
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
@@ -287,8 +290,13 @@ public class MacroPanel extends JPanel
     private static final long serialVersionUID = -8000107664792911955L;
     private JPanel            macroPanel       = null;
     private JScrollPane       scrollPane       = null;
-    private JCheckBox         semiPrivateBox   = null;
-    private JPanel            topPanel         = null;
+    //private JCheckBox         semiPrivateBox   = null;
+    private JRadioButton      publicRoll       = null;
+    private JRadioButton      semiprivateRoll  = null;
+    private JRadioButton      privateRoll      = null;
+    private JSplitPane        topPanel         = null;
+    private JPanel            privateRolls     = null;
+    private JPanel            addMacro         = null;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -337,39 +345,68 @@ public class MacroPanel extends JPanel
         return scrollPane;
     }
 
-    private JPanel getTopPanel()
+    private JSplitPane getTopPanel()
     {
         if (topPanel == null)
         {
-            topPanel = new JPanel();
-            topPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
-            final JButton addButton = new JButton("Add...");
-            semiPrivateBox = new JCheckBox("Semiprivate rolls");
-            addButton.setFocusable(false);
-            semiPrivateBox.setFocusable(false);
-            addButton.addActionListener(new ActionListener()
+            topPanel = new JSplitPane();
+            //topPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+
+            topPanel.setOrientation(JSplitPane.HORIZONTAL_SPLIT);
+            topPanel.setContinuousLayout(true);
+            topPanel.setBorder(null);
+
+            if (privateRolls == null)
             {
-                /*
-                 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-                 */
-                public void actionPerformed(final ActionEvent e)
-                {
-                    GametableFrame.getGametableFrame().addDieMacro();
-                }
-            });
-            semiPrivateBox.addActionListener(new ActionListener()
+                privateRolls = new JPanel();
+                privateRolls.setLayout(new FlowLayout(FlowLayout.LEFT));
+                privateRolls.setLayout(new GridLayout(0, 1));
+                
+                ButtonGroup group = new ButtonGroup();
+                
+                publicRoll = new JRadioButton("Public rolls", true);
+                semiprivateRoll = new JRadioButton("Semiprivate rolls");
+                privateRoll = new JRadioButton("Private rolls");
+                
+                publicRoll.setFocusable(false);
+                semiprivateRoll.setFocusable(false);
+                privateRoll.setFocusable(false);
+
+                publicRoll.addItemListener(new SelectItemListener());
+                semiprivateRoll.addItemListener(new SelectItemListener());
+                privateRoll.addItemListener(new SelectItemListener());
+
+                group.add(publicRoll);
+                group.add(semiprivateRoll);
+                group.add(privateRoll);
+
+                privateRolls.add(publicRoll);
+                privateRolls.add(semiprivateRoll);
+                privateRolls.add(privateRoll);
+            }
+            if (addMacro == null)
             {
-                /*
-                 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
-                 */
-                public void actionPerformed(final ActionEvent e)
+                addMacro = new JPanel();
+                addMacro.setLayout(new FlowLayout(FlowLayout.RIGHT));
+                
+                final JButton addButton = new JButton("Add...");
+                addButton.setFocusable(false);
+                addButton.addActionListener(new ActionListener()
                 {
-                    semiPrivate = semiPrivateBox.isSelected();
-                }
-            });
-            topPanel.add(semiPrivateBox);
-            topPanel.add(addButton);
+                    /*
+                     * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+                     */
+                    public void actionPerformed(final ActionEvent e)
+                    {
+                        GametableFrame.getGametableFrame().addDieMacro();
+                    }
+                });
+                addMacro.add(addButton);
+            }
         }
+        topPanel.add(privateRolls, JSplitPane.LEFT);
+        topPanel.add(addMacro, JSplitPane.RIGHT);
+
         return topPanel;
     }
 
@@ -405,3 +442,25 @@ public class MacroPanel extends JPanel
     }
 
 }
+class SelectItemListener implements ItemListener{
+    public void itemStateChanged(ItemEvent e){
+        //get object
+        AbstractButton sel = (AbstractButton)e.getItemSelectable();
+        //checkbox select or not
+        if(e.getStateChange() == ItemEvent.SELECTED){
+            if (sel.getText().equals("Semiprivate rolls"))
+            {
+                MacroPanel.privateMacroRoll = 1;
+            }
+            else if (sel.getText().equals("Private rolls"))
+            {
+                MacroPanel.privateMacroRoll = 2;
+            }
+            else
+            {
+                MacroPanel.privateMacroRoll = 0;
+            }
+        }
+    }
+}
+

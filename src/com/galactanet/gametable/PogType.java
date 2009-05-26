@@ -202,7 +202,7 @@ public class PogType
         return new String(label);
     }
 
-    private Image getListIcon()
+    public Image getListIcon()
     {
         if (m_listIcon == null)
         {
@@ -223,6 +223,10 @@ public class PogType
         return getListIcon().getWidth(null);
     }
 
+    public Image getImage()
+    {
+        return m_image;
+    }
     /**
      * @return The scaling factor of this pog.
      */
@@ -297,8 +301,7 @@ public class PogType
     /**
      * Initializes the hit map from the source image.
      */
-    private void initializeHitMap(final double angle, final int flipH, final int flipV)
-    // TODO get the hit detection to work
+    private void initializeHitMap(final double angle, final float scale, final int flipH, final int flipV)
     {
         if ((m_image == null) || (getWidth(angle) < 0) || (getHeight(angle) < 0))
         {
@@ -307,6 +310,13 @@ public class PogType
 
         final BufferedImage bufferedImage = new BufferedImage(getWidth(angle), getHeight(angle),
             BufferedImage.TYPE_INT_RGB);
+        {
+            final Graphics2D g = bufferedImage.createGraphics();
+            g.setColor(new Color(0xff00ff));
+            g.fillRect(0, 0, getWidth(angle), getHeight(angle));
+            drawScaled(g, 0, 0, scale, angle, flipH, flipV);
+            g.dispose();
+        }
 
         final DataBuffer buffer = bufferedImage.getData().getDataBuffer();
         final int len = getWidth(angle) * getHeight(angle);
@@ -319,6 +329,16 @@ public class PogType
         }
     }
 
+    public BitSet getHitMap()
+    {
+        if (m_hitMap != null)
+        {
+            return m_hitMap;
+        }
+        initializeHitMap(0, 1f, 0, 0);
+        return m_hitMap;
+    }
+    
     // --- Object Implementation ---
 
     /**
@@ -404,10 +424,10 @@ public class PogType
         }
 
         // prepare the hit map
-        initializeHitMap(0, 0, 0);
+        initializeHitMap(0, 1f, 0, 0);
     }
 
-    private Image rotate(final Image i, final double angle)
+    public Image rotate(final Image i, final double angle)
     {
         if (angle == 0)
         {
@@ -437,65 +457,7 @@ public class PogType
         return returnedImage;
     }
 
-
-    /*
-     * This is my attempt to fix some minor issues and speed up rotations.
-     */
-/*    private Image rotate(final Image i, final double angle)
-    {
-        if (angle == 0)
-        {
-            return i;
-        }
-
-        final BufferedImage bufferedImage = toBufferedImage(i);
-        final AffineTransform tx = new AffineTransform(); //.getRotateInstance(Math.toRadians(angle), bufferedImage.getWidth() / 2, bufferedImage.getHeight() / 2);
-
-        System.out.println(bufferedImage.getWidth());
-        System.out.println(bufferedImage.getHeight());
-
-        int width  = bufferedImage.getWidth() / 64;
-        int height = bufferedImage.getHeight() / 64;
-        
-        if (width != height)
-        {
-            int modifier = 1;
-            if (width > height)
-            {
-                modifier = -1;
-            }
-            if (width%2 != 0)
-            {
-                width = width + modifier;
-            }
-            if (height%2 != 0)
-            {
-                height = height + modifier;
-            }
-        }
-        
-        width  = width * 32;
-        height = height * 32;
-
-        tx.rotate(Math.toRadians(angle), width, height);
-        
-        final AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
-
-        final Image returnedImage = Toolkit.getDefaultToolkit().createImage(op.filter(bufferedImage, null).getSource());
-        
-        if (!m_iconcache.containsKey(Double.valueOf(angle)))
-        {
-            final Dimension bounds = new Dimension(returnedImage.getWidth(null), returnedImage.getHeight(null));
-            m_iconcache.put(Double.valueOf(angle), bounds);
-            // m_iconcache.put(Double.valueOf(angle),returnedImage);
-        }
-
-        //initializeHitMap(angle, returnedImage);
-
-        return returnedImage;
-    }*/
-
-    private Image flip(final Image i, final int flipH, final int flipV)
+    public Image flip(final Image i, final int flipH, final int flipV)
     {
         if (flipH == 0 && flipV == 0)
         {
@@ -516,71 +478,6 @@ public class PogType
         }
 
         return returnedImage;
-    }
-
-    /**
-     * Tests whether a point hits one of this pog's pixels.
-     * 
-     * @param x X coordinate of point to test relative to upper-left corner of pog.
-     * @param y Y coordinate of point to test relative to upper-left corner of pog.
-     * @return Returns true if the point hits this pog.
-     */
-    public boolean testHit(final int x, final int y, final double angle)
-    {
-        // if it's not in our rect, then forget it.
-        if (x < 0)
-        {
-            return false;
-        }
-
-        if (x >= getWidth(angle))
-        {
-            return false;
-        }
-
-        if (y < 0)
-        {
-            return false;
-        }
-
-        if (y >= getHeight(angle))
-        {
-            return false;
-        }
-
-        // if we are unknown, then let's just go with it.
-        if (m_hitMap == null)
-        {
-            initializeHitMap(angle, 0, 0);
-            if (m_hitMap == null)
-            {
-                initializeHitMap(0, 0, 0);
-                return true;
-            }
-        }
-
-        // otherwise, let's see if they hit an actual pixel
-        // TODO buggy?
-        if (m_hitMap == null)
-        {
-            return false;
-        }
-        //initializeHitMap(angle, 0, 0);
-        final int idx = x + (y * getWidth(angle));
-        final boolean value = m_hitMap.get(idx);
-        //initializeHitMap(0, 0, 0);
-        return value;
-    }
-
-    /**
-     * Tests whether a point hits one of this pog's pixels.
-     * 
-     * @param p Point to test, relative to upper-left corner of pog.
-     * @return Returns true if the point hits this pog.
-     */
-    public boolean testHit(final Point p, final double angle)
-    {
-        return testHit(p.x, p.y, angle);
     }
 
     /*

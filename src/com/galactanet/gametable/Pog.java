@@ -6,6 +6,8 @@
 package com.galactanet.gametable;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -85,7 +87,7 @@ public class Pog implements Comparable
     private double             m_angle                    = 0.;
 
     /**
-     * Name/value pairs of the attributes assigned to this pog.
+     * The direction which a pog has been flipped.
      */
     private int                 m_flipH                   = 0;
     private int                 m_flipV                   = 0;
@@ -98,7 +100,7 @@ public class Pog implements Comparable
     // a special kind of hack-ish value that will cause a pog
     // to set itself to not be loaded if the values for it are
     // too out of whack to be correct. This is to prevent bad saves caused
-    // by other bugs from permanantly destroying a map.
+    // by other bugs from permanently destroying a map.
     public boolean             m_bStillborn               = false;
 
     /**
@@ -154,6 +156,11 @@ public class Pog implements Comparable
      * The primary label for the Pog.
      */
     private String             m_text                     = "";
+
+    /**
+     * Hit map for this pog.
+     */
+    public BitSet              m_hitMap;
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -321,12 +328,48 @@ public class Pog implements Comparable
         g2.dispose();
     }
 
-    public void drawScaled(final Graphics g, final int x, final int y)
+    public void drawScaled(final Graphics g, final int x, final int y, final float scale, final double angle, final int flipH, final int flipV)
     {
-        // we have to work with ratios, cause the pog could be large or huge, gargantuan, etc.
-        final float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
-            / (float)GametableCanvas.BASE_SQUARE_SIZE;
-        m_pogType.drawScaled(g, x, y, scale * m_scale, m_angle, m_flipH, m_flipV);
+        final int drawWidth = Math.round(getWidth() * scale);
+        final int drawHeight = Math.round(getHeight() * scale);
+
+        if ((m_pogType.getListIcon() != null) && (drawWidth == m_pogType.getListIcon().getWidth(null))
+        && (drawHeight == m_pogType.getListIcon().getHeight(null)))
+        {
+            m_pogType.drawListIcon(g, x, y);
+        }
+        else
+        {
+            g.drawImage(m_pogType.rotate(m_pogType.flip(m_pogType.getImage(), m_flipH, m_flipV), m_angle), x, y, drawWidth, drawHeight, null);
+        }
+    }
+
+    private void reinitializeHitMap()
+    {
+        if ((m_pogType.getImage() == null) || (getWidth() < 0) || (getHeight() < 0))
+        {
+            m_hitMap = m_pogType.getHitMap();
+        }
+
+        final BufferedImage bufferedImage = new BufferedImage(getWidth(), getHeight(),
+            BufferedImage.TYPE_INT_RGB);
+        {
+            final Graphics2D g = bufferedImage.createGraphics();
+            g.setColor(new Color(0xff00ff));
+            g.fillRect(0, 0, getWidth(), getHeight());
+            drawScaled(g, 0, 0, m_scale, m_angle, m_flipH, m_flipV);
+            g.dispose();
+        }
+
+        final DataBuffer buffer = bufferedImage.getData().getDataBuffer();
+        final int len = getWidth() * getHeight();
+        m_hitMap = new BitSet(len);
+        m_hitMap.clear();
+        for (int i = 0; i < len; ++i)
+        {
+            final int pixel = buffer.getElem(i) & 0xFFFFFF;
+            m_hitMap.set(i, (pixel != 0xFF00FF));
+        }
     }
 
     // --- Accessors ---
@@ -416,17 +459,28 @@ public class Pog implements Comparable
 
     public void drawToCanvas(final Graphics g)
     {
-        // convert our model coordinates to draw coordinates
-        final Point drawCoords = m_canvas.modelToDraw(getPosition());
-        final float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
-            / (float)GametableCanvas.BASE_SQUARE_SIZE;
-
-        m_pogType.drawScaled(g, drawCoords.x, drawCoords.y, scale * m_scale, m_angle, m_flipH, m_flipV);
-
-        // if we're tinted, draw tinted
-        if (m_bTinted)
+        // determine the visible area of the gametable canvas
+        final Rectangle visbleCanvas = m_canvas.getVisibleCanvasRect(m_canvas.m_zoom);
+        // determine the area covered by the pog - replaced with a set value m_bounds
+        // final Rectangle pogArea = getBounds(m_canvas);
+        
+        if (visbleCanvas.intersects(getBounds(m_canvas)))
         {
-            m_pogType.drawTint(g, drawCoords.x, drawCoords.y, scale * m_scale, Color.GREEN, m_angle);
+            // Some portion of the pog's area overlaps the visible canvas area, so
+            // we paint the pog to the canvas.  
+
+            // convert our model coordinates to draw coordinates
+            final Point drawCoords = m_canvas.modelToDraw(getPosition());
+            final float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
+                / (float)GametableCanvas.BASE_SQUARE_SIZE;
+
+            drawScaled(g, drawCoords.x, drawCoords.y, scale * m_scale, m_angle, m_flipH, m_flipV);
+
+            // if we're tinted, draw tinted
+            if (m_bTinted)
+            {
+                m_pogType.drawTint(g, drawCoords.x, drawCoords.y, scale * m_scale, Color.GREEN, m_angle);
+            }
         }
     }
     
@@ -436,17 +490,19 @@ public class Pog implements Comparable
      */
     public Rectangle getBounds(GametableCanvas canvas)
     {
-        final Point drawCoords = m_canvas.modelToDraw(getPosition());
-        final float scale = 
-            m_scale * GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom) / 
-            GametableCanvas.BASE_SQUARE_SIZE;
-        
-        final int drawWidth = Math.round(m_pogType.getWidth(m_angle) * scale);
-        final int drawHeight = Math.round(m_pogType.getHeight(m_angle) * scale);
-        
-        return new Rectangle(
-            drawCoords.x, drawCoords.y,
-            drawWidth, drawHeight);
+//        final Point drawCoords = m_canvas.modelToDraw(getPosition());
+//        final float scale = 
+//            m_scale * GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom) / 
+//            GametableCanvas.BASE_SQUARE_SIZE;
+//        
+//        final int drawWidth = Math.round(m_pogType.getWidth(m_angle) * scale);
+//        final int drawHeight = Math.round(m_pogType.getHeight(m_angle) * scale);
+//        
+//        return new Rectangle(
+//            drawCoords.x, drawCoords.y,
+//            drawWidth, drawHeight);
+        final Rectangle pogArea = new Rectangle(m_position.x, m_position.y, getWidth(), getHeight());
+        return pogArea;
     }
 
     /*
@@ -835,12 +891,14 @@ public class Pog implements Comparable
     public void setAngle(final double angle)
     {
         m_angle = angle;
+        reinitializeHitMap();
     }
 
     public void setFlip(final int flipH, final int flipV)
     {
         m_flipH = flipH;
         m_flipV = flipV;
+        reinitializeHitMap();
     }
 
    public void setAttribute(final String name, final String value)
@@ -923,7 +981,62 @@ public class Pog implements Comparable
 
     public boolean testHit(final Point modelPoint)
     {
-        return m_pogType.testHit(modelToPog(modelPoint), m_angle);
+        return testHit(modelToPog(modelPoint), m_angle);
+    }
+
+    /**
+     * Tests whether a point hits one of this pog's pixels.
+     * 
+     * @param x X coordinate of point to test relative to upper-left corner of pog.
+     * @param y Y coordinate of point to test relative to upper-left corner of pog.
+     * @return Returns true if the point hits this pog.
+     */
+    public boolean testHit(final int x, final int y, final double angle)
+    {
+        // if it's not in our rect, then forget it.
+        if (x < 0)
+        {
+            return false;
+        }
+
+        if (x >= getWidth())
+        {
+            return false;
+        }
+
+        if (y < 0)
+        {
+            return false;
+        }
+
+        if (y >= getHeight())
+        {
+            return false;
+        }
+
+        // if we are unknown, then let's just go with it.
+        if (m_hitMap == null)
+        {
+            m_hitMap = m_pogType.getHitMap();
+        }
+
+        // otherwise, let's see if they hit an actual pixel
+
+        final int idx = x + (y * getWidth());
+        final boolean value = m_hitMap.get(idx);
+
+        return value;
+    }
+
+    /**
+     * Tests whether a point hits one of this pog's pixels.
+     * 
+     * @param p Point to test, relative to upper-left corner of pog.
+     * @return Returns true if the point hits this pog.
+     */
+    public boolean testHit(final Point p, final double angle)
+    {
+        return testHit(p.x, p.y, angle);
     }
 
     /*
