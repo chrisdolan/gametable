@@ -12,6 +12,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.galactanet.gametable.util.UtilityFunctions;
+import com.galactanet.gametable.util.XmlSerializer;
+
 
 
 /**

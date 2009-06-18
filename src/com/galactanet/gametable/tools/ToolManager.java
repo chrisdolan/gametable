@@ -3,7 +3,7 @@
  */
 
 
-package com.galactanet.gametable;
+package com.galactanet.gametable.tools;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -16,6 +16,10 @@ import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.util.*;
 import java.util.List;
+
+import com.galactanet.gametable.GametableFrame;
+import com.galactanet.gametable.Log;
+import com.galactanet.gametable.util.UtilityFunctions;
 
 
 

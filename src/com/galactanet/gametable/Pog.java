@@ -14,6 +14,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import com.galactanet.gametable.ui.PogLibrary;
+import com.galactanet.gametable.util.UtilityFunctions;
+
 
 
 /**
@@ -328,20 +331,19 @@ public class Pog implements Comparable
         g2.dispose();
     }
 
-    public void drawScaled(final Graphics g, final int x, final int y, final float scale, final double angle, final int flipH, final int flipV)
+    public void drawScaled(final Graphics g, final int x, final int y, final float scale)
     {
-        final int drawWidth = Math.round(getWidth() * scale);
-        final int drawHeight = Math.round(getHeight() * scale);
-
-        if ((m_pogType.getListIcon() != null) && (drawWidth == m_pogType.getListIcon().getWidth(null))
-        && (drawHeight == m_pogType.getListIcon().getHeight(null)))
-        {
-            m_pogType.drawListIcon(g, x, y);
-        }
-        else
-        {
-            g.drawImage(m_pogType.rotate(m_pogType.flip(m_pogType.getImage(), m_flipH, m_flipV), m_angle), x, y, drawWidth, drawHeight, null);
-        }
+          final int drawWidth = Math.round(m_pogType.getWidth(m_angle) * scale);
+          final int drawHeight = Math.round(m_pogType.getHeight(m_angle) * scale);
+          if ((m_pogType.getListIcon() != null) && (drawWidth == m_pogType.getListIcon().getWidth(null))
+              && (drawHeight == m_pogType.getListIcon().getHeight(null)))
+          {
+              m_pogType.drawListIcon(g, x, y);
+          }
+          else
+          {
+              g.drawImage(m_pogType.rotate(m_pogType.flip(m_pogType.m_image, m_flipH, m_flipV), m_angle), x, y, drawWidth, drawHeight, null);
+          }
     }
 
     private void reinitializeHitMap()
@@ -351,13 +353,16 @@ public class Pog implements Comparable
             m_hitMap = m_pogType.getHitMap();
         }
 
+        final float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
+        / (float)GametableCanvas.BASE_SQUARE_SIZE;
+
         final BufferedImage bufferedImage = new BufferedImage(getWidth(), getHeight(),
             BufferedImage.TYPE_INT_RGB);
         {
             final Graphics2D g = bufferedImage.createGraphics();
             g.setColor(new Color(0xff00ff));
             g.fillRect(0, 0, getWidth(), getHeight());
-            drawScaled(g, 0, 0, m_scale, m_angle, m_flipH, m_flipV);
+            drawScaled(g, 0, 0, scale);
             g.dispose();
         }
 
@@ -472,9 +477,9 @@ public class Pog implements Comparable
             // convert our model coordinates to draw coordinates
             final Point drawCoords = m_canvas.modelToDraw(getPosition());
             final float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
-                / (float)GametableCanvas.BASE_SQUARE_SIZE;
+            / (float)GametableCanvas.BASE_SQUARE_SIZE;
 
-            drawScaled(g, drawCoords.x, drawCoords.y, scale * m_scale, m_angle, m_flipH, m_flipV);
+            drawScaled(g, drawCoords.x, drawCoords.y, scale * m_scale);
 
             // if we're tinted, draw tinted
             if (m_bTinted)
@@ -913,6 +918,7 @@ public class Pog implements Comparable
         if (faceSize <= 0)
         {
             m_scale = 1;
+            reinitializeHitMap();
             return;
         }
 
@@ -923,9 +929,11 @@ public class Pog implements Comparable
             throw new ArithmeticException("Zero sized pog dimension: " + this);
         }
         m_scale = targetDimension / maxDimension;
+        reinitializeHitMap();
+        return;
     }
 
-    // --- Miscellany ---
+    // --- Miscellaneous ---
 
     public void setLocked(final boolean b)
     {

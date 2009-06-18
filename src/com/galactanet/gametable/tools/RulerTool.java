@@ -9,7 +9,7 @@ import java.awt.*;
 
 import com.galactanet.gametable.GametableCanvas;
 import com.galactanet.gametable.GametableFrame;
-import com.galactanet.gametable.UtilityFunctions;
+import com.galactanet.gametable.util.UtilityFunctions;
 
 
 

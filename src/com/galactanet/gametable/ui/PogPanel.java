@@ -3,7 +3,7 @@
  */
 
 
-package com.galactanet.gametable;
+package com.galactanet.gametable.ui;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -18,6 +18,11 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
+
+import com.galactanet.gametable.GametableCanvas;
+import com.galactanet.gametable.Pog;
+import com.galactanet.gametable.PogType;
+import com.galactanet.gametable.util.UtilityFunctions;
 
 
 

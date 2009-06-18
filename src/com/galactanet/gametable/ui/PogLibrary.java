@@ -3,11 +3,15 @@
  */
 
 
-package com.galactanet.gametable;
+package com.galactanet.gametable.ui;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+
+import com.galactanet.gametable.Log;
+import com.galactanet.gametable.PogType;
+import com.galactanet.gametable.util.UtilityFunctions;
 
 
 
@@ -64,7 +68,7 @@ public class PogLibrary
             {
                 final PogType pa = (PogType)a;
                 final PogType pb = (PogType)b;
-                return pa.getLabel().compareTo(pb.getLabel());
+                return pa.getNormalizedLabel().compareTo(pb.getNormalizedLabel());
             }
         });
     }

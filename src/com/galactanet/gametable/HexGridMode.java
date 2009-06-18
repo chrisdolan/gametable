@@ -9,6 +9,8 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Point;
 
+import com.galactanet.gametable.util.UtilityFunctions;
+
 
 
 /**

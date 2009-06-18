@@ -10,6 +10,7 @@ import java.io.*;
 import java.util.*;
 
 import com.galactanet.gametable.net.Connection;
+import com.galactanet.gametable.util.UtilityFunctions;
 
 
 
@@ -125,6 +126,9 @@ public class PacketManager
     // Packet with text to go to the text log
     public static final int PACKET_TEXT               = 2;
 
+    // Locks all pogs on map
+    public static final int PACKET_LOCKALLPOG         = 100;
+    
     // --- Static Members --------------------------------------------------------------------------------------------
 
     // Player is typing
@@ -186,6 +190,8 @@ public class PacketManager
                 return "PACKET_MOVEPOG";
             case PACKET_LOCKPOG:
                 return "PACKET_LOCKPOG";
+            case PACKET_LOCKALLPOG:
+                return "PACKET_LOCKALLPOG";
             case PACKET_POINT:
                 return "PACKET_POINT";
             case PACKET_POGDATA:
@@ -471,6 +477,25 @@ public class PacketManager
     }
 
     /* ************************ LOCKPOG PACKET ********************************* */
+    public static byte[] makeLockAllPogPacket(final boolean newLocked)
+    {
+        try
+        {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_LOCKALLPOG); // type           
+            dos.writeBoolean(newLocked);
+
+            return baos.toByteArray();
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
     public static byte[] makeLockPogPacket(final int id, final boolean newLocked)
     {
         try
@@ -1283,6 +1308,22 @@ public class PacketManager
 
     /* *********************** PNG PACKET *********************************** */
 
+    public static void readLockAllPogPacket(final DataInputStream dis)
+    {
+        try
+        {           
+            final boolean newLocked = dis.readBoolean();
+
+            // tell the model
+            final GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.lockAllPogPacketReceived(newLocked);
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+
     public static void readLockPogPacket(final DataInputStream dis)
     {
         try
@@ -1417,6 +1458,12 @@ public class PacketManager
                 case PACKET_LOCKPOG:
                 {
                     readLockPogPacket(dis);
+                }
+                break;
+
+                case PACKET_LOCKALLPOG:
+                {
+                    readLockAllPogPacket(dis);
                 }
                 break;
 

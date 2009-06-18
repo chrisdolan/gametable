@@ -14,6 +14,9 @@ import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 
+import com.galactanet.gametable.ui.ChatLogEntryPane;
+import com.galactanet.gametable.util.UtilityFunctions;
+
 
 
 /**

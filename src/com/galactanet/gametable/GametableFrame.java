@@ -2,7 +2,6 @@
  * GametableFrame.java: GameTable is in the Public Domain.
  */
 
-
 package com.galactanet.gametable;
 
 import java.awt.BorderLayout;
@@ -78,14 +77,20 @@ import javax.xml.parsers.SAXParserFactory;
 
 import org.xml.sax.SAXException;
 
-import com.galactanet.gametable.chat.ChatPane;
 import com.galactanet.gametable.net.Connection;
 import com.galactanet.gametable.net.NetworkThread;
 import com.galactanet.gametable.net.Packet;
 import com.galactanet.gametable.prefs.PreferenceDescriptor;
 import com.galactanet.gametable.prefs.Preferences;
-
-
+import com.galactanet.gametable.tools.ToolManager;
+import com.galactanet.gametable.ui.ActivePogsPanel;
+import com.galactanet.gametable.ui.ChatLogEntryPane;
+import com.galactanet.gametable.ui.ChatLogPane;
+import com.galactanet.gametable.ui.MacroPanel;
+import com.galactanet.gametable.ui.PogLibrary;
+import com.galactanet.gametable.ui.PogPanel;
+import com.galactanet.gametable.util.UtilityFunctions;
+import com.galactanet.gametable.util.XmlSerializer;
 
 /**
  * The main Gametable Frame class.
@@ -249,7 +254,7 @@ public class GametableFrame extends JFrame implements ActionListener
     public final static int       REJECT_VERSION_MISMATCH  = 1;
 
     private final static boolean  SEND_PINGS               = true;
-    private final static boolean  USE_NEW_CHAT_PANE        = true;
+//    private final static boolean  USE_NEW_CHAT_PANE        = true;
 
     /**
      * 
@@ -389,8 +394,7 @@ public class GametableFrame extends JFrame implements ActionListener
     private final JPanel            m_chatPanel              = new JPanel(); // Panel for chat
     private final JPanel            m_textAreaPanel          = new JPanel();
     private final JPanel            m_textAndEntryPanel      = new JPanel();
-    private final ChatLogPane       m_chatLog                = (USE_NEW_CHAT_PANE ? null : new ChatLogPane()); // This seems like always is null?
-    private final ChatPane          m_newChatLog             = (USE_NEW_CHAT_PANE ? new ChatPane() : null); //This is always set to a new ChatPane
+    private final ChatLogPane       m_chatLog                = new ChatLogPane();
     private final ChatLogEntryPane  m_textEntry              = new ChatLogEntryPane(this);
     
     // The status goes at the bottom of the pane
@@ -1101,6 +1105,7 @@ public class GametableFrame extends JFrame implements ActionListener
         if (m_networkThread != null)
         {
             // stop the network thread
+            m_networkThread.closeAllConnections();
             m_networkThread.interrupt();
             m_networkThread = null;
         }
@@ -1720,7 +1725,9 @@ public class GametableFrame extends JFrame implements ActionListener
         menu.add(getGridModeMenu());
         menu.add(getTogglePrivateMapMenuItem());
         menu.add(getExportMapMenuItem());
-
+        menu.addSeparator();
+        menu.add(getLockMenuItem(true));
+        menu.add(getLockMenuItem(false));
         return menu;
     }
 
@@ -1738,6 +1745,22 @@ public class GametableFrame extends JFrame implements ActionListener
             public void actionPerformed(ActionEvent e)
             {
               exportMap();
+            }
+        });
+
+      return item;
+    }
+
+    private JMenuItem getLockMenuItem(final boolean lock)
+    {
+        String str;
+        if(lock) str = "Lock all Map";
+        else str = "Unlock all Map";
+        final JMenuItem item = new JMenuItem(str);
+        item.addActionListener(new ActionListener() {           
+            public void actionPerformed(ActionEvent e)
+            {
+               doLockMap(lock);
             }
         });
 
@@ -2528,14 +2551,7 @@ public class GametableFrame extends JFrame implements ActionListener
         entryPanel.add(m_textEntry.getComponentToAdd(), BorderLayout.SOUTH);
         m_textAndEntryPanel.add(entryPanel, BorderLayout.SOUTH);
 
-        if (USE_NEW_CHAT_PANE)
-        {
-            m_textAndEntryPanel.add(m_newChatLog.getComponentToAdd(), BorderLayout.CENTER);
-        }
-        else
-        {
-            m_textAndEntryPanel.add(m_chatLog.getComponentToAdd(), BorderLayout.CENTER);
-        }
+        m_textAndEntryPanel.add(m_chatLog.getComponentToAdd(), BorderLayout.CENTER);
         
         // Configure the panel containing the map and the chat window
         m_mapChatSplitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
@@ -2595,7 +2611,8 @@ public class GametableFrame extends JFrame implements ActionListener
 
             public void removeUpdate(final DocumentEvent e)
             {
-                grid_multiplier = Double.parseDouble(m_gridunitmultiplier.getText());
+                // Commented out to fix grid measurement size error
+                //grid_multiplier = Double.parseDouble(m_gridunitmultiplier.getText());
             }
         });
         m_gridunit.addActionListener(this);
@@ -3246,7 +3263,10 @@ public class GametableFrame extends JFrame implements ActionListener
             m_actingFileMacros = new File("macros.xml");
             try
             {
-                loadMacros(m_actingFileMacros);
+                if (m_actingFileMacros.exists())
+                {
+                    loadMacros(m_actingFileMacros);
+                }
             }
             catch (final SAXException se)
             {
@@ -3296,7 +3316,10 @@ public class GametableFrame extends JFrame implements ActionListener
 
         try
         {
-            loadMacros(m_actingFileMacros);
+            if (m_actingFileMacros.exists())
+            {
+                loadMacros(m_actingFileMacros);
+            }
         }
         catch (final SAXException se)
         {
@@ -3400,6 +3423,38 @@ public class GametableFrame extends JFrame implements ActionListener
         }
     }
 
+    public void lockAllPogPacketReceived(final boolean lock) {
+        lockMap(getGametableCanvas().getPublicMap(),lock);
+        if(m_netStatus == NETSTATE_HOST) {
+            m_networkThread.send(PacketManager.makeLockAllPogPacket(lock));
+        }
+    }
+
+    private void lockMap(final GametableMap mapToLock, final boolean lock) {
+        for (int i = 0; i < mapToLock.getNumPogs(); i++) {
+            final Pog pog = mapToLock.getPog(i);
+            pog.setLocked(lock);
+        }
+    }
+
+    private void doLockMap(final boolean lock)
+    {
+        final GametableMap mapToLock = m_gametableCanvas.getActiveMap();
+        boolean priv = true;
+        if(mapToLock == getGametableCanvas().getPublicMap()) priv = false;
+
+        if(priv || (m_netStatus == NETSTATE_NONE))
+        {
+            lockMap(mapToLock, lock);
+            if(lock) logMessage("You have locked the Map.");
+            else logMessage("You have unlocked the Map.");
+        } else {
+            if(lock) postSystemMessage(getMyPlayer().getPlayerName() + " has locked the Map.");
+            else postSystemMessage(getMyPlayer().getPlayerName() + " has unlocked the Map.");           
+            send(PacketManager.makeLockAllPogPacket(lock));
+        }       
+    }
+
     public void logAlertMessage(final String text)
     {
         logMessage(ALERT_MESSAGE_FONT + text + END_ALERT_MESSAGE_FONT);
@@ -3420,11 +3475,7 @@ public class GametableFrame extends JFrame implements ActionListener
 
     public void logMessage(final String text)
     {
-        if (USE_NEW_CHAT_PANE) {
-            m_newChatLog.getModel().receiveLine(text);
-        } else {
-            m_chatLog.addText(text);
-        }
+        m_chatLog.addText(text);
     }
 
     public void logPrivateMessage(final String fromName, final String toName, final String text)
@@ -3829,11 +3880,7 @@ public class GametableFrame extends JFrame implements ActionListener
         }
         else if (words[0].equals("/clearlog"))
         {
-            if (USE_NEW_CHAT_PANE) {
-                m_newChatLog.getModel().clear();
-            } else {
-                m_chatLog.clearText();
-            }
+            m_chatLog.clearText();
         }
         else if (words[0].equals("/deck"))
         {

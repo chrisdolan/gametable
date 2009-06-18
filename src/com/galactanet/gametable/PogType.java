@@ -12,6 +12,9 @@ import java.util.BitSet;
 import java.util.Hashtable;
 import javax.swing.ImageIcon;
 
+import com.galactanet.gametable.ui.PogPanel;
+import com.galactanet.gametable.util.UtilityFunctions;
+
 
 
 /**
@@ -33,7 +36,7 @@ public class PogType
     private final String    m_filename;
     private BitSet          m_hitMap;
     private final Hashtable m_iconcache = new Hashtable();
-    private Image           m_image;
+    public Image           m_image;
     /*
      * m_lastScaledImage is NOT used in current code, except in load(), where it is never read.
      * It has been retained for backwards compatibility with older map saves.
@@ -202,6 +205,14 @@ public class PogType
         return new String(label);
     }
 
+    /**
+     * @return A normalized label.
+     */
+    public String getNormalizedLabel()
+    {
+        return UtilityFunctions.normalizeName(getLabel());
+    }
+    
     public Image getListIcon()
     {
         if (m_listIcon == null)

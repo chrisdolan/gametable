@@ -3,7 +3,7 @@
  */
 
 
-package com.galactanet.gametable;
+package com.galactanet.gametable.ui;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -16,6 +16,11 @@ import java.util.Iterator;
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.MatteBorder;
+
+import com.galactanet.gametable.DiceMacro;
+import com.galactanet.gametable.GametableFrame;
+import com.galactanet.gametable.NewMacroDialog;
+import com.galactanet.gametable.util.UtilityFunctions;
 
 
 

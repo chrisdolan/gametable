@@ -3,7 +3,7 @@
  */
 
 
-package com.galactanet.gametable;
+package com.galactanet.gametable.util;
 
 import java.io.IOException;
 import java.io.StringReader;

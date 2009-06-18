@@ -25,6 +25,9 @@ import javax.swing.border.LineBorder;
 import javax.swing.text.JTextComponent;
 
 import com.galactanet.gametable.tools.NullTool;
+import com.galactanet.gametable.tools.Tool;
+import com.galactanet.gametable.ui.PogPanel;
+import com.galactanet.gametable.util.UtilityFunctions;
 
 
 

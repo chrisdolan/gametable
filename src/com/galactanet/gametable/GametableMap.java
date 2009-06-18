@@ -8,6 +8,8 @@ package com.galactanet.gametable;
 import java.awt.Point;
 import java.util.*;
 
+import com.galactanet.gametable.util.UtilityFunctions;
+
 
 
 /**

@@ -3,7 +3,7 @@
  */
 
 
-package com.galactanet.gametable;
+package com.galactanet.gametable.ui;
 
 import java.awt.Component;
 import java.awt.event.*;
@@ -20,6 +20,12 @@ import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 import javax.swing.text.*;
 import javax.swing.text.html.HTMLDocument;
+
+import com.galactanet.gametable.GametableFrame;
+import com.galactanet.gametable.Log;
+import com.galactanet.gametable.PacketManager;
+import com.galactanet.gametable.StyledEntryToolbar;
+import com.galactanet.gametable.util.UtilityFunctions;
 
 
 

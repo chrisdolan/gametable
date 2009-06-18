@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.List;
 
 import com.galactanet.gametable.GametableCanvas;
-import com.galactanet.gametable.Tool;
 
 
 

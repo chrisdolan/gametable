@@ -3,7 +3,7 @@
  */
 
 
-package com.galactanet.gametable;
+package com.galactanet.gametable.util;
 
 import java.awt.*;
 import java.io.*;
@@ -20,6 +20,9 @@ import java.util.List;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileFilter;
+
+import com.galactanet.gametable.GametableFrame;
+import com.galactanet.gametable.Log;
 
 
 

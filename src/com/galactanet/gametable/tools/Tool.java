@@ -3,10 +3,12 @@
  */
 
 
-package com.galactanet.gametable;
+package com.galactanet.gametable.tools;
 
 import java.awt.Graphics;
 import java.util.List;
+
+import com.galactanet.gametable.GametableCanvas;
 
 
 

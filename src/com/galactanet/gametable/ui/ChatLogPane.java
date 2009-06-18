@@ -3,12 +3,12 @@
  */
 
 
-package com.galactanet.gametable;
+package com.galactanet.gametable.ui;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
@@ -22,6 +22,11 @@ import javax.swing.event.HyperlinkListener;
 import javax.swing.text.AbstractDocument.AbstractElement;
 import javax.swing.text.AbstractDocument.BranchElement;
 import javax.swing.text.html.HTMLDocument;
+
+import com.galactanet.gametable.GametableApp;
+import com.galactanet.gametable.GametableFrame;
+import com.galactanet.gametable.Log;
+import com.galactanet.gametable.util.UtilityFunctions;
 
 
 
@@ -101,7 +106,8 @@ public class ChatLogPane extends JEditorPane
     public static final String DEFAULT_TEXT        = DEFAULT_TEXT_HEADER + DEFAULT_TEXT_FOOTER;
     private static final Font  FONT_ROLLOVER       = Font.decode("sans-12");
 
-    private static final int   MAX_ENTRIES         = 1000;
+    private static final int   MAX_ENTRIES         = 1000; // Max lines to show
+    private static final int   MIN_ENTRIES         = 900; // Min lines to keep
 
     // --- Types -----------------------------------------------------------------------------------------------------
 
@@ -230,8 +236,7 @@ public class ChatLogPane extends JEditorPane
         return out.toString();
     }
 
-    private int         endIndex         = 0;
-    private List        entries          = new ArrayList();
+    private LinkedList  entries          = new LinkedList();
     private boolean     jumpToBottom     = true;
     private final Point mousePosition    = new Point();
     private Point       rolloverPosition = null;
@@ -354,46 +359,41 @@ public class ChatLogPane extends JEditorPane
             }
         });
 
-        addText("<br>Welcome to <a href=\"http://gametable.mornproductions.com/forum/\">" + GametableApp.VERSION + "</a>.");
+        addText("<br>Welcome to <a href=\"http://gametable.mornproductions.com/\">" + GametableApp.VERSION + "</a>.");
     }
 
     public void addText(final String text)
     {
         final String entryStr = highlightUrls(text);
         final String entryArray[] = entryStr.split("<br[\\s]?>");
+
         for (int i = 0, size = entryArray.length; i < size; ++i)
         {
             entries.add(entryArray[i]);
             Log.log(Log.PLAY, entryArray[i] + "<br>");
         }
 
-        boolean set = false;
-        int visibleLines = (entries.size() - endIndex);
-        if (visibleLines > MAX_ENTRIES)
+        if(entries.size() > MAX_ENTRIES)
         {
-            // System.out.println("shrinking from: " + visibleLines + " ( " + endIndex + " )");
-            endIndex += visibleLines / 2;
-            visibleLines = (entries.size() - endIndex);
-            // System.out.println(" to: " + visibleLines + " ( " + endIndex + " )");
-            set = true;
-        }
+            while(entries.size() > MIN_ENTRIES)
+            {
+                entries.removeFirst(); // Remove entries from list so the list doesnt keep getting bigger
+            }
 
-        final HTMLDocument doc = (HTMLDocument)getDocument();
-        if (set || (entries.size() < 2))
-        {
             final StringBuffer bodyContent = new StringBuffer();
             bodyContent.append(DEFAULT_TEXT_HEADER);
-            for (int i = endIndex, size = entries.size(); i < size; ++i)
-            {
-                final String entry = (String)entries.get(i);
+
+            Iterator iterator = entries.iterator();
+            for (;iterator.hasNext();)
+            {               
+                final String entry = (String)iterator.next();
                 bodyContent.append(entry);
                 bodyContent.append("<br>\n");
             }
             bodyContent.append(DEFAULT_TEXT_FOOTER);
             setText(bodyContent.toString());
-        }
-        else
-        {
+        } else {
+            final HTMLDocument doc = (HTMLDocument)getDocument();
             final BranchElement body = (BranchElement)doc.getElement("bodycontent");
             final AbstractElement elem = (AbstractElement)body.getChildAt(body.getChildCount() - 1);
             try
@@ -423,7 +423,7 @@ public class ChatLogPane extends JEditorPane
     public void clearText()
     {
         setText(DEFAULT_TEXT);
-        entries = new ArrayList();
+        entries = new LinkedList();
         addText("Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>.");
     }
 
