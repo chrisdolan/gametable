@@ -160,20 +160,14 @@ public class UtilityFunctions
             {
                ext = f.substring(i + 1).toLowerCase();
             }
-            if (ext.equals("grm"))      //if extension is .grm, return the selected file.
-            {
+            if (ext.equals("") == false) { //if extension not is missing, do nothing
                 return chooser.getSelectedFile();
             }
-            else if (ext.equals(""))    //if extension is missing, add .grm
-            {
-                filename = f + ".grm";
-            }
-            else                        //if any other extension, change to .grm 
-            {
-                filename = f.replaceAll("." + ext, ".grm");
-            }
-            //If it hasn't already returned, then the extension was not .grm
-            //Create new file using the selected path and file name with .grm extension
+            
+            // If we're here, the filename is missing, so we append it.
+            filename = f + "." + extension;
+            
+            //Create new file using the selected path and file name with right extension
             File saveFile = new File(lastDir + "/" + filename);
             //return the file with proper extension
             return saveFile;
