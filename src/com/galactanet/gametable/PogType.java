@@ -153,7 +153,7 @@ public class PogType
         {
             final int drawWidth = Math.round(getWidth(angle) * scale);
             final int drawHeight = Math.round(getHeight(angle) * scale);
-            if ((m_listIcon != null) && (drawWidth == m_listIcon.getWidth(null))
+            if ((angle == 0) && (m_listIcon != null) && (drawWidth == m_listIcon.getWidth(null))
                 && (drawHeight == m_listIcon.getHeight(null)))
             {
                 drawListIcon(g, x, y);
@@ -500,13 +500,20 @@ public class PogType
             + "]";
     }
 
-    public static boolean hasAlpha(final Image image)
+    /** *****************************************************************
+     * Returns the Tranparency of the specified Image
+     * @param image
+     * @return int value of the transparency
+     */
+    //public static boolean hasAlpha(final Image image)
+    public static int getTransparency(final Image image)
     {
         // If buffered image, the color model is readily available
         if (image instanceof BufferedImage)
         {
             final BufferedImage bimage = (BufferedImage)image;
-            return bimage.getColorModel().hasAlpha();
+            //return bimage.getColorModel().hasAlpha();
+            return bimage.getColorModel().getTransparency();
         }
 
         // Use a pixel grabber to retrieve the image's color model;
@@ -522,9 +529,15 @@ public class PogType
 
         // Get the image's color model
         final ColorModel cm = pg.getColorModel();
-        return cm.hasAlpha();
+        //return cm.hasAlpha();
+        return cm.getTransparency();
     }
 
+    /** *******************************************************************
+     * Creates a buffered image of the specified input image
+     * @param image
+     * @return
+     */
     private static BufferedImage toBufferedImage(final Image image)
     {
         if (image instanceof BufferedImage)
@@ -539,7 +552,8 @@ public class PogType
 
         // Determine if the image has transparent pixels; for this method's
         // implementation, see e661 Determining If an Image Has Transparent Pixels
-        final boolean hasAlpha = hasAlpha(outImage);
+        //final boolean hasAlpha = hasAlpha(outImage);
+        final int transparency = getTransparency(outImage);
 
         // Create a buffered image with a format that's compatible with the screen
         BufferedImage bimage = null;
@@ -547,12 +561,13 @@ public class PogType
         try
         {
             // Determine the type of transparency of the new buffered image
-            int transparency = Transparency.OPAQUE;
-            if (hasAlpha)
-            {
-                transparency = Transparency.BITMASK;
-            }
-
+            /* int transparency = Transparency.OPAQUE;
+             * if (hasAlpha)
+             * {
+             *     transparency = Transparency.BITMASK;
+             * }
+             */
+            
             // Create the buffered image
             final GraphicsDevice gs = ge.getDefaultScreenDevice();
             final GraphicsConfiguration gc = gs.getDefaultConfiguration();
@@ -567,10 +582,7 @@ public class PogType
         {
             // Create a buffered image using the default color model
             int type = BufferedImage.TYPE_INT_RGB;
-            if (hasAlpha)
-            {
-                type = BufferedImage.TYPE_INT_ARGB;
-            }
+            if (transparency != Transparency.OPAQUE) type = BufferedImage.TYPE_INT_ARGB;
             bimage = new BufferedImage(outImage.getWidth(null), outImage.getHeight(null), type);
         }
 
