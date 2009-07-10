@@ -7,6 +7,7 @@ package com.galactanet.gametable;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Event;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.KeyboardFocusManager;
@@ -256,6 +257,8 @@ public class GametableFrame extends JFrame implements ActionListener
     private final static boolean  SEND_PINGS               = true;
 //    private final static boolean  USE_NEW_CHAT_PANE        = true;
 
+    private final static String   MENU_ACCELERATOR         = getMenuAccelerator();
+
     /**
      * 
      */
@@ -267,6 +270,22 @@ public class GametableFrame extends JFrame implements ActionListener
     public static GametableFrame getGametableFrame()
     {
         return g_gametableFrame; // TODO: This could always return this, making g_gametableFrame unnecessary
+    }
+
+    private static String getMenuAccelerator()
+    {
+        switch (Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()) {
+            case Event.CTRL_MASK:
+                return "ctrl";
+            case Event.META_MASK:
+                return "meta";
+            case Event.ALT_MASK:
+                return "alt";
+            case Event.SHIFT_MASK:
+                return "shift";
+            default: // Others?
+                return "ctrl";
+        }
     }
 
     public double                   grid_multiplier          = 5.0;
@@ -1634,7 +1653,7 @@ public class GametableFrame extends JFrame implements ActionListener
     private JMenuItem getListPlayersMenuItem()
     {
         final JMenuItem item = new JMenuItem("List Players");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl W"));
+        item.setAccelerator(KeyStroke.getKeyStroke(MENU_ACCELERATOR + " W"));
         item.addActionListener(new ActionListener()
         {
             public void actionPerformed(final ActionEvent e)
@@ -1938,7 +1957,7 @@ public class GametableFrame extends JFrame implements ActionListener
     private JMenuItem getOpenMapMenuItem()
     {
         final JMenuItem item = new JMenuItem("Open Map...");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl pressed O"));
+        item.setAccelerator(KeyStroke.getKeyStroke(MENU_ACCELERATOR + " pressed O"));
         item.addActionListener(new ActionListener()
         {
             /*
@@ -2090,7 +2109,7 @@ public class GametableFrame extends JFrame implements ActionListener
     private JMenuItem getQuitMenuItem()
     {
         final JMenuItem item = new JMenuItem("Quit");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl Q"));
+        item.setAccelerator(KeyStroke.getKeyStroke(MENU_ACCELERATOR + " Q"));
         item.addActionListener(new ActionListener()
         {
             public void actionPerformed(final ActionEvent e)
@@ -2114,7 +2133,7 @@ public class GametableFrame extends JFrame implements ActionListener
     private JMenuItem getPogWindowMenuItem()
     {
         final JMenuItem item = new JMenuItem("Un/Dock Pog Window");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl P"));
+        item.setAccelerator(KeyStroke.getKeyStroke(MENU_ACCELERATOR + " P"));
         item.addActionListener(new ActionListener()
         {
             public void actionPerformed(final ActionEvent e)
@@ -2133,7 +2152,7 @@ public class GametableFrame extends JFrame implements ActionListener
     private JMenuItem getChatWindowMenuItem()
     {
         final JMenuItem item = new JMenuItem("Un/Dock Chat Window");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl L"));
+        item.setAccelerator(KeyStroke.getKeyStroke(MENU_ACCELERATOR + " L"));
         item.addActionListener(new ActionListener()
         {
             public void actionPerformed(final ActionEvent e)
@@ -2184,7 +2203,7 @@ public class GametableFrame extends JFrame implements ActionListener
     private JMenuItem getRedoMenuItem()
     {
         final JMenuItem item = new JMenuItem("Redo");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl Y"));
+        item.setAccelerator(KeyStroke.getKeyStroke(MENU_ACCELERATOR + " Y"));
         item.addActionListener(new ActionListener()
         {
             public void actionPerformed(final ActionEvent e)
@@ -2220,7 +2239,7 @@ public class GametableFrame extends JFrame implements ActionListener
     public JMenuItem getSaveAsMapMenuItem()
     {
         final JMenuItem item = new JMenuItem("Save Map As...");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl shift pressed S"));
+        item.setAccelerator(KeyStroke.getKeyStroke(MENU_ACCELERATOR + " shift pressed S"));
         item.addActionListener(new ActionListener()
         {
             public void actionPerformed(final ActionEvent e)
@@ -2278,7 +2297,7 @@ public class GametableFrame extends JFrame implements ActionListener
     public JMenuItem getSaveMapMenuItem()
     {
         final JMenuItem item = new JMenuItem("Save Map");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl pressed S"));
+        item.setAccelerator(KeyStroke.getKeyStroke(MENU_ACCELERATOR + " pressed S"));
         item.addActionListener(new ActionListener()
         {
             /*
@@ -2346,7 +2365,7 @@ public class GametableFrame extends JFrame implements ActionListener
         if (m_togglePrivateMapMenuItem == null)
         {
             final JCheckBoxMenuItem item = new JCheckBoxMenuItem("Edit Private Map");
-            item.setAccelerator(KeyStroke.getKeyStroke("ctrl F"));
+            item.setAccelerator(KeyStroke.getKeyStroke(MENU_ACCELERATOR + " F"));
             item.addActionListener(new ActionListener()
             {
                 public void actionPerformed(final ActionEvent e)
@@ -2377,7 +2396,7 @@ public class GametableFrame extends JFrame implements ActionListener
     private JMenuItem getUndoMenuItem()
     {
         final JMenuItem item = new JMenuItem("Undo");
-        item.setAccelerator(KeyStroke.getKeyStroke("ctrl Z"));
+        item.setAccelerator(KeyStroke.getKeyStroke(MENU_ACCELERATOR + " Z"));
         item.addActionListener(new ActionListener()
         {
             public void actionPerformed(final ActionEvent e)
@@ -2880,9 +2899,9 @@ public class GametableFrame extends JFrame implements ActionListener
                 {
                     final String actionId = "tool" + toolId + "Action";
                     getGametableCanvas().getActionMap().put(actionId, new ToolButtonAbstractAction(toolId));
-                    final KeyStroke keystroke = KeyStroke.getKeyStroke("ctrl " + info.getQuickKey());
+                    final KeyStroke keystroke = KeyStroke.getKeyStroke(MENU_ACCELERATOR + " " + info.getQuickKey());
                     getGametableCanvas().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(keystroke, actionId);
-                    keyInfo = " (Ctrl+" + info.getQuickKey() + ")";
+                    keyInfo = " (" + MENU_ACCELERATOR + "+" + info.getQuickKey() + ")";
                 }
                 button.setToolTipText(info.getName() + keyInfo);
                 final List prefs = info.getTool().getPreferences();
