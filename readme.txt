@@ -21,7 +21,7 @@ Zoom in-zoom out: The + and - keys zoom in and out, as does the mouse wheel. The
 
 Point at the map: Press space while your mouse if anywhere on the map. A hand will appear in your color (you can see all player's colors in the player list in the lower left). All players will see this hand. It stays for as long as you hold the space bar down. 
 
-Recenter the view for all players: In the "Map" menu, there is an option to "Recenter for all players". This will set all players' views to be the same thing you're looking at. Same soom, same location on the map. This is pretty rude to do if you're not the GM. This feature is needed because with an infinitely large map, some asstard will inevitably get lost in it. Recenter allows the GM to get everyone (literally) on the same page.
+Recenter the view for all players: In the "Map" menu, there is an option to "Recenter for all players". This will set all players' views to be the same thing you're looking at. Same zoom, same location on the map. This is pretty rude to do if you're not the GM. This feature is needed because with an infinitely large map, some asstard will inevitably get lost in it. Recenter allows the GM to get everyone (literally) on the same page.
 
 Draw an arbitrary line: Select the pencil tool and click drag to scribble a line.
 
