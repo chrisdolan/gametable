@@ -1,2 +1,13 @@
+# local
 *~
 update.sh
+
+# from .cvsignore
+gen
+gametable.jar
+dist
+autosave.grm
+prefs.prf
+autosavepvt.grm
+macros.xml
+gt.play.html
