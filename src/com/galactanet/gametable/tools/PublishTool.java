@@ -87,9 +87,12 @@ public class PublishTool extends NullTool
 
         if (m_canvas.isPublicMap())
         {
-            // this tool is not useable on the public map. So we cancel this action
-            // GametableFrame.getGametableFrame().getToolManager().cancelToolAction();
-            // return;
+            /* this tool is not usable on the public map. So we cancel this action
+             * GametableFrame.getGametableFrame().getToolManager().cancelToolAction();
+             * return;
+             * 
+             * Use from public map to return objects to private map.
+             */
             m_from = m_canvas.getPublicMap();
             m_to = m_canvas.getPrivateMap();
         }
@@ -116,7 +119,7 @@ public class PublishTool extends NullTool
             for (int i = 0; i < m_from.getNumPogs(); i++)
             {
                 final Pog pog = m_from.getPog(i);
-                if (pog.isTinted() & !pog.isLocked())
+                if (pog.isTinted() && (!pog.isLocked() || (modifierMask & MODIFIER_SHIFT) != 0))
                 {
                     // this pog gets copied
                     final Pog newPog = new Pog(pog);
@@ -124,6 +127,10 @@ public class PublishTool extends NullTool
 
                     m_canvas.setActiveMap(m_to);
                     m_canvas.addPog(newPog);
+                    if (pog.isLocked())
+                    {
+                        newPog.setLocked(true);
+                    }
                     m_canvas.setActiveMap(m_from);
                 }
             }
@@ -171,7 +178,7 @@ public class PublishTool extends NullTool
                 for (int i = 0; i < m_from.getNumPogs(); i++)
                 {
                     final Pog pog = m_from.getPog(i);
-                    if (pog.isTinted() & !pog.isLocked())
+                    if (pog.isTinted() && (!pog.isLocked() || (modifierMask & MODIFIER_SHIFT) != 0))
                     {
                         m_canvas.removePog(pog.getId(), false);
                         //i--; // causing me an infinite loop for some reason.
@@ -201,7 +208,7 @@ public class PublishTool extends NullTool
         if (m_mouseAnchor != null)
         {
             m_mouseFloat = new Point(x, y);
-            setTints();
+            setTints(modifierMask);
             m_canvas.repaint();
         }
     }
@@ -226,7 +233,7 @@ public class PublishTool extends NullTool
     }
 
     // sets all the pogs we're touching to be tinted
-    public void setTints()
+    public void setTints(final int modifierMask)
     {
         final Rectangle selRect = createRectangle(m_mouseAnchor, m_mouseFloat);
 
@@ -241,7 +248,7 @@ public class PublishTool extends NullTool
             br.y += size;
             final Rectangle pogRect = createRectangle(tl, br);
 
-            if (selRect.intersects(pogRect) & !pog.isLocked())
+            if (selRect.intersects(pogRect) && (!pog.isLocked() || (modifierMask & MODIFIER_SHIFT) != 0))
             {
                 // this pog will be sent
                 pog.setTinted(true);

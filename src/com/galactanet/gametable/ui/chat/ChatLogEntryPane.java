@@ -3,7 +3,7 @@
  */
 
 
-package com.galactanet.gametable.ui;
+package com.galactanet.gametable.ui.chat;
 
 import java.awt.Component;
 import java.awt.event.*;
@@ -24,7 +24,6 @@ import javax.swing.text.html.HTMLDocument;
 import com.galactanet.gametable.GametableFrame;
 import com.galactanet.gametable.Log;
 import com.galactanet.gametable.PacketManager;
-import com.galactanet.gametable.StyledEntryToolbar;
 import com.galactanet.gametable.util.UtilityFunctions;
 
 
@@ -151,7 +150,7 @@ public class ChatLogEntryPane extends JEditorPane
         return retVal;
     }
 
-    private final GametableFrame frame;
+//    private final GametableFrame frame;
     /**
      * List of sent items.
      */
@@ -161,6 +160,8 @@ public class ChatLogEntryPane extends JEditorPane
     // --- Constructors ----------------------------------------------------------------------------------------------
 
     private boolean              ignoreCaret     = false;
+    
+    private GametableFrame       frame           = null;
 
     private boolean              lastTypedSent   = false;
 
@@ -170,10 +171,11 @@ public class ChatLogEntryPane extends JEditorPane
 
     private StyledEntryToolbar   toolbar         = null;
 
-    public ChatLogEntryPane(final GametableFrame parentFrame)
+//    public ChatLogEntryPane(final GametableFrame parentFrame)
+    public ChatLogEntryPane()
     {
         super("text/html", ChatLogPane.DEFAULT_TEXT);
-        frame = parentFrame;
+        frame = GametableFrame.getGametableFrame();
         initialize();
         clear();
     }
@@ -440,7 +442,7 @@ public class ChatLogEntryPane extends JEditorPane
                 final String plain = getPlainText().trim();
                 if ((plain.length() > 0) && (plain.charAt(0) == '/'))
                 {
-                    frame.parseSlashCommand(plain);
+                    SlashCommands.parseSlashCommand(plain);
                 }
                 else
                 {

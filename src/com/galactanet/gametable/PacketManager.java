@@ -119,6 +119,7 @@ public class PacketManager
 
     // Pog rotated
     public static final int PACKET_ROTATEPOG          = 27;
+    public static final int PACKET_FORCEGRIDSNAP      = 106;
 
     // Pog flipped
     public static final int PACKET_FLIPPOG            = 30;
@@ -126,8 +127,16 @@ public class PacketManager
     // Packet with text to go to the text log
     public static final int PACKET_TEXT               = 2;
 
+    public static final int PACKET_BGCOL              = 101;
+
     // Locks all pogs on map
-    public static final int PACKET_LOCKALLPOG         = 100;
+    public static final int PACKET_LOCKALLPOG         = 102;    
+
+    public static final int PACKET_POGLAYER           = 103; // Changing the layer of the Pog
+
+    // Sends a Machanics Packet    
+    public static final int PACKET_MECHANICS          = 104;
+    public static final int PACKET_PRIVMECH           = 105;
     
     // --- Static Members --------------------------------------------------------------------------------------------
 
@@ -176,6 +185,10 @@ public class PacketManager
                 return "PACKET_CAST";
             case PACKET_TEXT:
                 return "PACKET_TEXT";
+            case PACKET_MECHANICS:
+                return "PACKET_MECHANICS";
+            case PACKET_PRIVMECH:
+                return "PACKET_PRIVMECH";
             case PACKET_TYPING:
                 return "PACKET_TYPING";
             case PACKET_LINES:
@@ -190,6 +203,8 @@ public class PacketManager
                 return "PACKET_MOVEPOG";
             case PACKET_LOCKPOG:
                 return "PACKET_LOCKPOG";
+            case PACKET_POGLAYER:
+                return "PACKET_POGLAYER"; 
             case PACKET_LOCKALLPOG:
                 return "PACKET_LOCKALLPOG";
             case PACKET_POINT:
@@ -228,6 +243,8 @@ public class PacketManager
                 return "PACKET_DECK_CLEAR_DECK";
             case PACKET_DECK_DISCARD_CARDS:
                 return "PACKET_DECK_DISCARD_CARDS";
+            case PACKET_BGCOL:
+                return "PACKET_BGCOL";
             default:
                 return "PACKET_UNKNOWN";
         }
@@ -262,6 +279,52 @@ public class PacketManager
         }
     }
 
+    /** *******************************************************************************************
+     * 
+     * @param color
+     * @return
+     */
+    public static byte[] makeBGColPacket(final int color, final boolean pog) {
+        try
+        {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_BGCOL); // type            
+            dos.writeInt(color);
+            dos.writeBoolean(pog);
+            
+            return baos.toByteArray();
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        } 
+    }
+    
+    // This is for future use........
+    public static byte[] makeBGColPacket(final Pog pog) {
+        try
+        {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_BGCOL); // type            
+            dos.writeInt(-1);
+            dos.writeBoolean(true);            
+            dos.writeUTF(pog.getPogType().getFilename());
+            
+            return baos.toByteArray();
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        } 
+    }
+      
+    
     public static byte[] makeCastPacket(final Player recipient)
     {
         try
@@ -724,6 +787,32 @@ public class PacketManager
         }
     }
 
+    /** *******************************************************************************************
+     * 
+     * @param id
+     * @param layer
+     * @return
+     */
+    public static byte[] makePogLayerPacket(final int id, final int layer)
+    {
+        try
+        {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_POGLAYER);
+            dos.writeInt(id);
+            dos.writeInt(layer);
+
+            return baos.toByteArray();
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+    
     /* *********************** REMOVEPOG PACKET *********************************** */
 
     public static byte[] makePogReorderPacket(final Map changes)
@@ -797,6 +886,26 @@ public class PacketManager
         }
     }
 
+    public static byte[] makePrivMechanicsPacket(final String toName, final String text)
+    {
+        try
+        {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_PRIVMECH); // type
+            dos.writeUTF(toName);
+            dos.writeUTF(text);
+
+            return baos.toByteArray();
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+    
     public static byte[] makePrivateTextPacket(final String fromName, final String toName, final String text)
     {
         try
@@ -976,6 +1085,26 @@ public class PacketManager
         }
     }
 
+    public static byte[] makeForceSnapPogPacket(final int id, final boolean forceGridSnap)
+    {
+        try
+        {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_FORCEGRIDSNAP); // type
+            dos.writeInt(id);
+            dos.writeBoolean(forceGridSnap);
+
+            return baos.toByteArray();
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+
     /* *********************** FLIPPOG PACKET ********************************* */
     public static byte[] makeFlipPogPacket(final int id, final int left, final int right)
     {
@@ -1006,6 +1135,25 @@ public class PacketManager
             final DataOutputStream dos = new DataOutputStream(baos);
 
             dos.writeInt(PACKET_TEXT); // type
+            dos.writeUTF(text);
+
+            return baos.toByteArray();
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+            return null;
+        }
+    }
+    
+    public static byte[] makeMechanicsPacket(final String text)
+    {
+        try
+        {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final DataOutputStream dos = new DataOutputStream(baos);
+
+            dos.writeInt(PACKET_MECHANICS); // type
             dos.writeUTF(text);
 
             return baos.toByteArray();
@@ -1088,9 +1236,25 @@ public class PacketManager
             Log.log(Log.NET, ex);
         }
     }
+    /** *******************************************************************************************
+     * 
+     * @param dis
+     */
 
-    /* *********************** UNDO PACKET *********************************** */
-
+    public static void readBGColPacket(final DataInputStream dis)
+    {
+        try
+        {           
+            final int col = dis.readInt();
+            final boolean pog = dis.readBoolean();
+            GametableFrame.getGametableFrame().changeBGPacketRec(col,pog);
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+    
     public static void readCastPacket(final DataInputStream dis)
     {
         try
@@ -1350,8 +1514,23 @@ public class PacketManager
         gtFrame.loginCompletePacketReceived();
     }
 
-    /* *********************** GRM PACKET *********************************** */
 
+    public static void readMechanicsPacket(final DataInputStream dis)
+    {
+        try
+        {
+            final String text = dis.readUTF();
+
+            // tell the model
+            final GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.mechanicsPacketReceived(text);
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+    
     public static void readMovePogPacket(final DataInputStream dis)
     {
         try
@@ -1394,7 +1573,9 @@ public class PacketManager
                     readRejectPacket(dis);
                 }
                 break;
-
+                case PACKET_BGCOL:
+                    readBGColPacket(dis);
+                    break;
                 case PACKET_CAST:
                 {
                     readCastPacket(dis);
@@ -1406,7 +1587,16 @@ public class PacketManager
                     readTextPacket(dis);
                 }
                 break;
-
+                case PACKET_MECHANICS:
+                {
+                    readMechanicsPacket(dis);
+                }
+                break;
+                case PACKET_PRIVMECH:
+                {
+                    readPrivMechanicsPacket(dis);
+                }
+                break;
                 case PACKET_TYPING:
                 {
                     readTypingPacket(dis);
@@ -1436,7 +1626,9 @@ public class PacketManager
                     readRemovePogsPacket(dis);
                 }
                 break;
-
+                case PACKET_POGLAYER:
+                    readPogLayer(dis);
+                    break;
                 case PACKET_MOVEPOG:
                 {
                     readMovePogPacket(dis);
@@ -1649,7 +1841,7 @@ public class PacketManager
             // validate PNG file
             if (!UtilityFunctions.isPngData(pngFile))
             {
-                GametableFrame.getGametableFrame().logAlertMessage(
+                GametableFrame.getGametableFrame().getChatPanel().logAlertMessage(
                     "Illegal pog data: \"" + filename + "\", aborting transfer.");
                 return;
             }
@@ -1659,7 +1851,7 @@ public class PacketManager
             File target = new File(filename).getAbsoluteFile();
             if (!UtilityFunctions.isAncestorFile(here, target))
             {
-                GametableFrame.getGametableFrame().logAlertMessage("Malicious pog path? \"" + filename + "\"");
+                GametableFrame.getGametableFrame().getChatPanel().logAlertMessage("Malicious pog path? \"" + filename + "\"");
                 final String temp = filename.toLowerCase();
                 if (temp.contains("underlay"))
                 {
@@ -1671,7 +1863,7 @@ public class PacketManager
                 }
                 else
                 {
-                    GametableFrame.getGametableFrame().logAlertMessage(
+                    GametableFrame.getGametableFrame().getChatPanel().logAlertMessage(
                         "Illegal pog path: \"" + filename + "\", aborting transfer.");
                     return;
                 }
@@ -1800,6 +1992,22 @@ public class PacketManager
         }
     }
 
+    /** ********************************************************************************************
+     * Reads the layer of the pog from the packet.
+     * @param dis
+     */
+    public static void readPogLayer(final DataInputStream dis) {
+        try {
+            final int id = dis.readInt();
+            final int layer = dis.readInt();
+            GametableFrame.getGametableFrame().pogLayerPacketReceived(id, layer);
+            
+        } catch (final IOException ex) {
+            Log.log(Log.SYS, ex);
+        }
+        
+    }
+    
     public static void readPogReorderPacket(final DataInputStream dis)
     {
         try
@@ -1860,6 +2068,23 @@ public class PacketManager
         }
     }
 
+    public static void readPrivMechanicsPacket(final DataInputStream dis)
+    {
+        try
+        {
+            final String toName = dis.readUTF();
+            final String text = dis.readUTF();
+
+            // tell the model
+            final GametableFrame gtFrame = GametableFrame.getGametableFrame();
+            gtFrame.privMechanicsPacketReceived(toName, text);
+        }
+        catch (final IOException ex)
+        {
+            Log.log(Log.SYS, ex);
+        }
+    }
+    
     public static void readPrivateTextPacket(final DataInputStream dis)
     {
         try
@@ -2034,7 +2259,6 @@ public class PacketManager
 
     public static void readTextPacket(final DataInputStream dis)
     {
-
         try
         {
             final String text = dis.readUTF();
