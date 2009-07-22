@@ -20,20 +20,22 @@ public class GametableApp
     /**
      * Name of the networking log file
      */
-    private static final String NET_LOG_FILE  = "gt.net.log";
+    private static final String NET_LOG_FILE  = "logs/gt.net.log";
     /**
      * Name of the play log file
      */
-    private static final String PLAY_LOG_FILE = "gt.play.html";
+    private static final String PLAY_LOG_FILE = "logs/gt.play.html";
     /**
      * Name of the system log file
      */
-    private static final String SYS_LOG_FILE  = "gt.sys.log";
+    private static final String SYS_LOG_FILE  = "logs/gt.sys.log";
     /**
      * String to describe gametable's chat version
      */
-    public static final String  VERSION       = "Gametable 2.0.RC6";
-
+    public static final String VERSION        = "Gametable 2.0.RC7";
+    
+    public static final String LANGUAGE       = "En";
+    
     /**
      * Main method
      * This is the entry point of the application. 

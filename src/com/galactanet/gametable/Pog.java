@@ -26,6 +26,12 @@ import com.galactanet.gametable.util.UtilityFunctions;
  */
 public class Pog implements Comparable
 {
+    
+    public final static int LAYER_UNDERLAY  = 0;
+    public final static int LAYER_OVERLAY   = 1;
+    public final static int LAYER_ENV       = 2;
+    public final static int LAYER_POG       = 3;
+    
     // --- Constants -------------------------------------------------------------------------------------------------
 
     private static class Attribute
@@ -87,7 +93,9 @@ public class Pog implements Comparable
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
+    private int                m_layer                    = 0;
     private double             m_angle                    = 0.;
+    private boolean            m_forceGridSnap            = false;
 
     /**
      * The direction which a pog has been flipped.
@@ -333,41 +341,48 @@ public class Pog implements Comparable
 
     public void drawScaled(final Graphics g, final int x, final int y, final float scale)
     {
-          final int drawWidth = Math.round(m_pogType.getWidth(m_angle) * scale);
-          final int drawHeight = Math.round(m_pogType.getHeight(m_angle) * scale);
-          if ((m_pogType.getListIcon() != null) && (drawWidth == m_pogType.getListIcon().getWidth(null))
-              && (drawHeight == m_pogType.getListIcon().getHeight(null)))
-          {
-              m_pogType.drawListIcon(g, x, y);
+          final int drawWidth = Math.round(m_pogType.getWidth(m_angle, m_forceGridSnap) * scale);
+          final int drawHeight = Math.round(m_pogType.getHeight(m_angle, m_forceGridSnap) * scale);
+
+//          g.drawImage(m_pogType.rotate(m_pogType.flip(m_pogType.m_image, m_flipH, m_flipV), m_angle), x, y, drawWidth, drawHeight, null);
+          //m_pogType.flip(, m_flipH, m_flipV)
+          Image im = m_pogType.rotate(m_pogType.getImage(), m_angle, m_forceGridSnap);       
+
+          // Center the image into a square, taking into consideration the height and width
+          int mw = 0;
+          int mh = 0;
+          if(m_angle != 0) {
+              mw = Math.round(drawWidth - (m_pogType.getWidth(0, m_forceGridSnap) * scale));       
+              mh = Math.round(drawHeight - (m_pogType.getWidth(0, m_forceGridSnap) * scale));       
           }
-          else
-          {
-              g.drawImage(m_pogType.rotate(m_pogType.flip(m_pogType.m_image, m_flipH, m_flipV), m_angle), x, y, drawWidth, drawHeight, null);
-          }
+          g.drawImage(im,x-mw/2,y-mh/2,drawWidth,drawHeight,null);
     }
 
     private void reinitializeHitMap()
     {
-        if ((m_pogType.getImage() == null) || (getWidth() < 0) || (getHeight() < 0))
-        {
+        final Image img = m_pogType.getImage();
+        if (img == null)  {
+            m_hitMap = m_pogType.getHitMap();
+        }
+       
+        final int iw = m_pogType.getWidth(m_angle, m_forceGridSnap);
+        final int ih = m_pogType.getHeight(m_angle, m_forceGridSnap);
+        if(( ih < 0) || ( iw < 0)) {
             m_hitMap = m_pogType.getHitMap();
         }
 
-        final float scale = (float)GametableCanvas.getSquareSizeForZoom(m_canvas.m_zoom)
-        / (float)GametableCanvas.BASE_SQUARE_SIZE;
-
-        final BufferedImage bufferedImage = new BufferedImage(getWidth(), getHeight(),
-            BufferedImage.TYPE_INT_RGB);
+        final BufferedImage bufferedImage = new BufferedImage(iw,ih, BufferedImage.TYPE_INT_RGB);
         {
             final Graphics2D g = bufferedImage.createGraphics();
             g.setColor(new Color(0xff00ff));
-            g.fillRect(0, 0, getWidth(), getHeight());
-            drawScaled(g, 0, 0, scale);
+            g.fillRect(0, 0, iw, ih);
+            g.drawImage(m_pogType.rotate(m_pogType.flip(img, m_flipH, m_flipV), m_angle, m_forceGridSnap)
+                , 0,0, iw, ih, null);
             g.dispose();
         }
 
         final DataBuffer buffer = bufferedImage.getData().getDataBuffer();
-        final int len = getWidth() * getHeight();
+        final int len = iw * ih;
         m_hitMap = new BitSet(len);
         m_hitMap.clear();
         for (int i = 0; i < len; ++i)
@@ -484,7 +499,7 @@ public class Pog implements Comparable
             // if we're tinted, draw tinted
             if (m_bTinted)
             {
-                m_pogType.drawTint(g, drawCoords.x, drawCoords.y, scale * m_scale, Color.GREEN, m_angle);
+                m_pogType.drawTint(g, drawCoords.x, drawCoords.y, scale * m_scale, Color.GREEN, m_angle, m_forceGridSnap);
             }
         }
     }
@@ -527,6 +542,11 @@ public class Pog implements Comparable
     public double getAngle()
     {
         return m_angle;
+    }
+
+    public boolean getForceGridSnap()
+    {
+        return m_forceGridSnap;
     }
 
     public int getFlipH()
@@ -573,7 +593,7 @@ public class Pog implements Comparable
             return m_pogType.getFaceSize();
         }
 
-        return Math.max(Math.round(Math.max(m_pogType.getWidth(m_angle), m_pogType.getHeight(m_angle)) * m_scale
+        return Math.max(Math.round(Math.max(m_pogType.getWidth(m_angle, m_forceGridSnap), m_pogType.getHeight(m_angle, m_forceGridSnap)) * m_scale
             / GametableCanvas.BASE_SQUARE_SIZE), 1);
     }
 
@@ -586,10 +606,10 @@ public class Pog implements Comparable
     {
         if (m_scale == 1f)
         {
-            return m_pogType.getHeight(m_angle);
+            return m_pogType.getHeight(m_angle, m_forceGridSnap);
         }
 
-        return Math.round(m_pogType.getHeight(m_angle) * m_scale);
+        return Math.round(m_pogType.getHeight(m_angle, m_forceGridSnap) * m_scale);
     }
 
     public int getHeightForZoomLevel()
@@ -605,6 +625,10 @@ public class Pog implements Comparable
         return m_id;
     }
 
+    public int getLayer() {
+        return m_layer;
+    }
+    
     public PogType getPogType()
     {
         return m_pogType;
@@ -650,10 +674,10 @@ public class Pog implements Comparable
     {
         if (m_scale == 1f)
         {
-            return m_pogType.getWidth(m_angle);
+            return m_pogType.getWidth(m_angle, m_forceGridSnap);
         }
 
-        return Math.round(m_pogType.getWidth(m_angle) * m_scale);
+        return Math.round(m_pogType.getWidth(m_angle, m_forceGridSnap) * m_scale);
     }
 
     public int getWidthForZoomLevel()
@@ -693,18 +717,20 @@ public class Pog implements Comparable
     {
         m_pogType = type;
         m_canvas = canvas;
+        m_layer = (type.getType());
     }
 
     private void init(final Pog orig)
     {
         m_position = orig.m_position;
-        m_pogType = orig.m_pogType;
-        m_canvas = orig.m_canvas;
-        m_scale = orig.m_scale;
-        m_angle = orig.m_angle;
-        m_flipH = orig.m_flipH;
-        m_flipV = orig.m_flipV;
-        m_text = orig.m_text;
+        m_pogType  = orig.m_pogType;
+        m_canvas   = orig.m_canvas;
+        m_scale    = orig.m_scale;
+        m_angle    = orig.m_angle;
+        m_flipH    = orig.m_flipH;
+        m_flipV    = orig.m_flipV;
+        m_text     = orig.m_text;
+        m_layer    = orig.m_layer;
 
         if (orig.m_card == null)
         {
@@ -722,6 +748,8 @@ public class Pog implements Comparable
             setAttribute(attribute.name, attribute.value);
         }
         stopDisplayPogDataChange();
+
+        reinitializeHitMap();
     }
 
     private void initFromPacket(final DataInputStream dis) throws IOException
@@ -737,8 +765,7 @@ public class Pog implements Comparable
         m_id = dis.readInt();
         m_sortOrder = dis.readLong();
         m_text = dis.readUTF();
-        // boolean underlay =
-        dis.readBoolean();
+        boolean underlay = dis.readBoolean();
         try {
             m_scale = dis.readFloat();
         }
@@ -800,6 +827,15 @@ public class Pog implements Comparable
             m_card = null;
         }
         
+        int layer;
+        try {
+            layer = dis.readInt();
+        }
+        catch(IOException exp) {
+            if(underlay) layer = LAYER_UNDERLAY;
+            else layer = LAYER_POG;
+        }
+        
         // special case psuedo-hack check
         // through reasons unclear to me, sometimes a pog will get
         // a size of around 2 billion. A more typical size would
@@ -818,6 +854,9 @@ public class Pog implements Comparable
             type = lib.createPlaceholder(filename, size);
         }
         init(GametableFrame.getGametableFrame().getGametableCanvas(), type);
+        m_layer = layer; // Saving here as the init updates the layer for newly dropped pogs.
+
+        reinitializeHitMap();
     }
 
     public boolean isCardPog()
@@ -841,7 +880,7 @@ public class Pog implements Comparable
 
     public boolean isUnderlay()
     {
-        return m_pogType.isUnderlay();
+        return (m_layer==LAYER_POG?false:true);
     }
 
     public boolean isUnknown()
@@ -879,9 +918,27 @@ public class Pog implements Comparable
 
     private Point modelToPog(final Point modelPoint)
     {
-        int x = modelPoint.x - m_position.x;
+        // translation for x & y
+        int sx = 0;
+        int sy = 0;
+        if(m_angle != 0) {
+            final int dw = m_pogType.getWidth(m_angle, m_forceGridSnap);
+            final int dh = m_pogType.getHeight(m_angle, m_forceGridSnap);
+            final int iw = m_pogType.getWidth(0, m_forceGridSnap);
+            final int ih = m_pogType.getHeight(0, m_forceGridSnap);
+            // Point Shift for the drawing
+            sx = Math.round((dw - iw)/2 * m_scale);
+            sy = Math.round((dh - ih)/2 * m_scale);
+        }
+       
+//        int x = modelPoint.x - m_position.x;
+//        x = Math.round(x / m_scale);
+//        int y = modelPoint.y - m_position.y;
+//        y = Math.round(y / m_scale);
+
+        int x = modelPoint.x - (m_position.x - sx);
         x = Math.round(x / m_scale);
-        int y = modelPoint.y - m_position.y;
+        int y = modelPoint.y - (m_position.y - sy);
         y = Math.round(y / m_scale);
 
         return new Point(x, y);
@@ -896,6 +953,12 @@ public class Pog implements Comparable
     public void setAngle(final double angle)
     {
         m_angle = angle;
+        reinitializeHitMap();
+    }
+
+    public void setForceGridSnap(final boolean forceGridSnap)
+    {
+        m_forceGridSnap = forceGridSnap;
         reinitializeHitMap();
     }
 
@@ -917,13 +980,16 @@ public class Pog implements Comparable
     {
         if (faceSize <= 0)
         {
-            m_scale = 1;
-            reinitializeHitMap();
+            if (m_scale != 1)
+            {
+                m_scale = 1;
+                reinitializeHitMap();
+            }
             return;
         }
 
         final float targetDimension = GametableCanvas.BASE_SQUARE_SIZE * faceSize;
-        final float maxDimension = Math.max(getPogType().getWidth(m_angle), getPogType().getHeight(m_angle));
+        final float maxDimension = Math.max(getPogType().getWidth(0, m_forceGridSnap), getPogType().getHeight(0, m_forceGridSnap));
         if (maxDimension == 0)
         {
             throw new ArithmeticException("Zero sized pog dimension: " + this);
@@ -935,11 +1001,24 @@ public class Pog implements Comparable
 
     // --- Miscellaneous ---
 
+    public void setId(final int id) {
+        m_id = id;
+    }
+    
+    public void setLayer(final int l) {
+        m_layer = l;       
+    }
+    
     public void setLocked(final boolean b)
     {
         m_locked = b;
     }
 
+    public void setPogType(final PogType pt) {
+        m_pogType = pt;
+        reinitializeHitMap();
+    }
+    
     // --- Comparable Implementation ---
 
     public void setPosition(final int x, final int y)
@@ -1007,7 +1086,7 @@ public class Pog implements Comparable
             return false;
         }
 
-        if (x >= getWidth())
+        if (x >= m_pogType.getWidth(angle, m_forceGridSnap))
         {
             return false;
         }
@@ -1017,7 +1096,7 @@ public class Pog implements Comparable
             return false;
         }
 
-        if (y >= getHeight())
+        if (y >= m_pogType.getHeight(angle, m_forceGridSnap))
         {
             return false;
         }
@@ -1030,7 +1109,7 @@ public class Pog implements Comparable
 
         // otherwise, let's see if they hit an actual pixel
 
-        final int idx = x + (y * getWidth());
+        final int idx = x + (y * m_pogType.getWidth(angle, m_forceGridSnap));
         final boolean value = m_hitMap.get(idx);
 
         return value;
@@ -1090,6 +1169,7 @@ public class Pog implements Comparable
             dos.writeUTF(attribute.name);
             dos.writeUTF(attribute.value);
         }
+        dos.writeInt(m_layer);
     }
 
 }

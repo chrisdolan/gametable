@@ -157,7 +157,7 @@ public class DiceMacroSaxHandler extends DefaultHandler
                 return;
             }
 
-            final DiceMacro macro = new DiceMacro(macroDefinition, macroName);
+            final DiceMacro macro = new DiceMacro(macroDefinition, macroName, null);
             if (!macro.isInitialized())
             {
                 error(new SAXParseException("Unable to parse macro " + macroName + ": " + macroDefinition, locator));

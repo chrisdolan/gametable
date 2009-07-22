@@ -3,7 +3,7 @@
  */
 
 
-package com.galactanet.gametable;
+package com.galactanet.gametable.ui.chat;
 
 import java.awt.FlowLayout;
 import java.awt.Insets;
@@ -14,7 +14,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 
-import com.galactanet.gametable.ui.ChatLogEntryPane;
 import com.galactanet.gametable.util.UtilityFunctions;
 
 

@@ -20,6 +20,7 @@ import javax.swing.border.MatteBorder;
 import com.galactanet.gametable.DiceMacro;
 import com.galactanet.gametable.GametableFrame;
 import com.galactanet.gametable.NewMacroDialog;
+import com.galactanet.gametable.Player;
 import com.galactanet.gametable.util.UtilityFunctions;
 
 
@@ -76,11 +77,12 @@ public class MacroPanel extends JPanel
         public void actionPerformed(final ActionEvent e)
         {
             final NewMacroDialog dialog = new NewMacroDialog();
-            dialog.initializeValues(macro.getName(), macro.getMacro());
+            dialog.initializeValues(macro.getName(), macro.getMacro(), macro.getParent());
             dialog.setVisible(true);
             if (dialog.isAccepted())
             {
                 final String name = dialog.getMacroName();
+                final String parent = dialog.getMacroParent();
                 final String def = dialog.getMacroDefinition();
                 final DiceMacro existingMacro = GametableFrame.getGametableFrame().getMacro(name);
                 if ((existingMacro != null) && (existingMacro != macro))
@@ -91,12 +93,12 @@ public class MacroPanel extends JPanel
                     if (result == UtilityFunctions.YES)
                     {
                         GametableFrame.getGametableFrame().removeMacro(name);
-                        GametableFrame.getGametableFrame().addMacro(name, def);
+                        GametableFrame.getGametableFrame().addMacro(name, def, parent);
                     }
                     return;
                 }
                 GametableFrame.getGametableFrame().removeMacro(macro);
-                GametableFrame.getGametableFrame().addMacro(name, def);
+                GametableFrame.getGametableFrame().addMacro(name, def, parent);
             }
         }
     }
@@ -109,7 +111,7 @@ public class MacroPanel extends JPanel
     private static class MacroActionListener implements ActionListener
     {
         private final DiceMacro macro;
-
+        
         public MacroActionListener(final DiceMacro mac)
         {
             macro = mac;
@@ -120,22 +122,26 @@ public class MacroPanel extends JPanel
          */
         public void actionPerformed(final ActionEvent e)
         {
-            if (privateMacroRoll == 2) //private roll
-            {
-                GametableFrame.getGametableFrame().parseSlashCommand("/proll " + macro.getMacro());
+            if (privateMacroRoll == 0) { //public roll
+                macro.doMacro(false);
+                return;
             }
-            else if (privateMacroRoll == 1) //semiprivate roll
+            if (privateMacroRoll == 2) { //private roll
+                macro.doMacro(true);
+                return;
+            }
+            
+            if (privateMacroRoll != 2) //semiprivate roll
             {
                 GametableFrame.getGametableFrame().postMessage(
                     GametableFrame.DIEROLL_MESSAGE_FONT
                         + UtilityFunctions.emitUserLink(GametableFrame.getGametableFrame().getMyPlayer()
                             .getCharacterName()) + " is rolling dice..." + GametableFrame.END_DIEROLL_MESSAGE_FONT);
-                GametableFrame.getGametableFrame().parseSlashCommand("/proll " + macro.getMacro());
+                macro.doMacro(true);
             }
-            else //public roll
-            {
-                GametableFrame.getGametableFrame().postMessage(macro.doMacro());
-            }
+            if (privateMacroRoll == 3) {
+                macro.sendTo(sendToPlayer);                
+            } 
         }
     }
 
@@ -155,6 +161,7 @@ public class MacroPanel extends JPanel
         private final DiceMacro   macro;
         private JLabel            nameLabel;
         private JButton           rollButton;
+        public  JTextField        m_toplayer;
 
         /**
          * This is the default constructor
@@ -286,6 +293,7 @@ public class MacroPanel extends JPanel
     }
 
     public static int    privateMacroRoll = 0;
+    public static String sendToPlayer = "";
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
@@ -298,10 +306,12 @@ public class MacroPanel extends JPanel
     //private JCheckBox         semiPrivateBox   = null;
     private JRadioButton      publicRoll       = null;
     private JRadioButton      semiprivateRoll  = null;
+    private JRadioButton      semiprivateRollTo = null;
     private JRadioButton      privateRoll      = null;
     private JSplitPane        topPanel         = null;
     private JPanel            privateRolls     = null;
     private JPanel            addMacro         = null;
+    private final JComboBox   sendTo           = new JComboBox();
 
     // --- Constructors ----------------------------------------------------------------------------------------------
 
@@ -372,28 +382,33 @@ public class MacroPanel extends JPanel
                 publicRoll = new JRadioButton("Public rolls", true);
                 semiprivateRoll = new JRadioButton("Semiprivate rolls");
                 privateRoll = new JRadioButton("Private rolls");
+                semiprivateRollTo = new JRadioButton("Semiprivate rolls to");
                 
                 publicRoll.setFocusable(false);
                 semiprivateRoll.setFocusable(false);
                 privateRoll.setFocusable(false);
+                semiprivateRollTo.setFocusable(false);
 
                 publicRoll.addItemListener(new SelectItemListener());
                 semiprivateRoll.addItemListener(new SelectItemListener());
                 privateRoll.addItemListener(new SelectItemListener());
+                semiprivateRollTo.addItemListener(new SelectItemListener());
 
                 group.add(publicRoll);
                 group.add(semiprivateRoll);
                 group.add(privateRoll);
-
+                group.add(semiprivateRollTo);
+                
                 privateRolls.add(publicRoll);
                 privateRolls.add(semiprivateRoll);
                 privateRolls.add(privateRoll);
+                privateRolls.add(semiprivateRollTo);
             }
             if (addMacro == null)
             {
                 addMacro = new JPanel();
-                addMacro.setLayout(new FlowLayout(FlowLayout.RIGHT));
-                
+                addMacro.setLayout(new BoxLayout(addMacro, BoxLayout.Y_AXIS));
+
                 final JButton addButton = new JButton("Add...");
                 addButton.setFocusable(false);
                 addButton.addActionListener(new ActionListener()
@@ -406,7 +421,21 @@ public class MacroPanel extends JPanel
                         GametableFrame.getGametableFrame().addDieMacro();
                     }
                 });
-                addMacro.add(addButton);
+               //Make sure both are properly aligned with one another
+                addButton.setAlignmentX(0);
+                sendTo.setAlignmentX(0);
+
+                addMacro.add(addButton);                
+                
+                //Make dropdown menu conform to a specific size so it doesn't stretch
+                //to fill all available space. Minimum width of 81 so default name
+                //"Anonymous" fits without being truncated at smallest size.
+                sendTo.setMinimumSize(new Dimension(81, 20));
+                sendTo.setPreferredSize(new Dimension(100, 20));
+                sendTo.setMaximumSize(new Dimension(100, 20));
+                //Make sendTo stick to the bottom so it aligns with "Semiprivate rolls to"
+                addMacro.add(Box.createVerticalGlue());
+                addMacro.add(sendTo);
             }
         }
         topPanel.add(privateRolls, JSplitPane.LEFT);
@@ -423,10 +452,19 @@ public class MacroPanel extends JPanel
     private void initialize()
     {
         setLayout(new BorderLayout());
+        sendTo.addItemListener(new SendToListener());
         add(getTopPanel(), BorderLayout.SOUTH);
         add(getScrollPane(), BorderLayout.CENTER);
     }
 
+    public void init_sendTo() {        
+        sendTo.removeAllItems();
+        for(int i = 0;i < GametableFrame.getGametableFrame().getPlayers().size(); i++) {
+            final Player player = (Player)GametableFrame.getGametableFrame().getPlayers().get(i);
+            sendTo.addItem(player.getCharacterName()); 
+        }        
+    }
+    
     /**
      * Updates the macro list from the latest data.
      */
@@ -444,27 +482,29 @@ public class MacroPanel extends JPanel
         macroPanel.validate();
         scrollPane.validate();
         macroPanel.repaint();
-    }
-
+    }    
 }
+
+class SendToListener implements ItemListener {
+    public void itemStateChanged(ItemEvent e) {
+        MacroPanel.sendToPlayer = (String)e.getItem();
+    }
+}
+
 class SelectItemListener implements ItemListener{
     public void itemStateChanged(ItemEvent e){
         //get object
         AbstractButton sel = (AbstractButton)e.getItemSelectable();
         //checkbox select or not
         if(e.getStateChange() == ItemEvent.SELECTED){
-            if (sel.getText().equals("Semiprivate rolls"))
-            {
+            if (sel.getText().equals("Semiprivate rolls")) 
                 MacroPanel.privateMacroRoll = 1;
-            }
             else if (sel.getText().equals("Private rolls"))
-            {
                 MacroPanel.privateMacroRoll = 2;
-            }
+            else if (sel.getText().equals("Semiprivate rolls to"))
+                MacroPanel.privateMacroRoll = 3;
             else
-            {
                 MacroPanel.privateMacroRoll = 0;
-            }
         }
     }
 }

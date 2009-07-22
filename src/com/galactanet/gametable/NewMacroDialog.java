@@ -36,9 +36,12 @@ public class NewMacroDialog extends JDialog implements FocusListener
     private boolean           m_bAccepted;
     private final JButton     m_cancel         = new JButton();
     private final JTextField  m_nameEntry      = new JTextField();
+    private final JTextField  m_parentEntry    = new JTextField();
     private final JButton     m_ok             = new JButton();
     private final JTextField  m_rollEntry      = new JTextField();
     private final JLabel      nameLabel        = new JLabel();
+//    private final JLabel      parentLabel      = new JLabel();
+//    private final JLabel      parentHelpLabel1 = new JLabel();
 
     public NewMacroDialog()
     {
@@ -97,12 +100,18 @@ public class NewMacroDialog extends JDialog implements FocusListener
         return m_nameEntry.getText();
     }
 
+    public String getMacroParent()
+    {
+        return m_parentEntry.getText();
+    }
+
     private void initialize()
     {
         setTitle("Add a Dice Macro");
         setResizable(false);
         m_rollEntry.setText("d20");
         m_nameEntry.setText("");
+        m_parentEntry.setText("");
         m_ok.setText("OK");
         m_ok.addActionListener(new ActionListener()
         {
@@ -132,6 +141,8 @@ public class NewMacroDialog extends JDialog implements FocusListener
         });
 
         nameLabel.setText("Macro Name:");
+//        parentLabel.setText("Macro Group:");
+//        parentHelpLabel1.setText("Enter the group in which the macro belongs.");
         dieLabel.setText("Die Roll:");
         dieHelpLabel1.setText("Enter a name, and a die roll in standard");
         dieHelpLabel2.setText("notation. (Ex: 3d6 + d8 + 4)");
@@ -155,12 +166,23 @@ public class NewMacroDialog extends JDialog implements FocusListener
 
         outerBox.add(Box.createVerticalStrut(PADDING * 2));
 
+//        panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+//        final Box nextBox = Box.createVerticalBox();
+//        nextBox.add(parentLabel);
+//        nextBox.add(parentHelpLabel1);
+//        panel.add(nextBox);
+//        outerBox.add(panel);
+//        outerBox.add(Box.createVerticalStrut(PADDING));
+//        outerBox.add(m_parentEntry);
+//
+//        outerBox.add(Box.createVerticalStrut(PADDING * 2));
+
         panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        final Box nextBox = Box.createVerticalBox();
-        nextBox.add(dieLabel);
-        nextBox.add(dieHelpLabel1);
-        nextBox.add(dieHelpLabel2);
-        panel.add(nextBox);
+        final Box nextBox2 = Box.createVerticalBox();
+        nextBox2.add(dieLabel);
+        nextBox2.add(dieHelpLabel1);
+        nextBox2.add(dieHelpLabel2);
+        panel.add(nextBox2);
         outerBox.add(panel);
         outerBox.add(Box.createVerticalStrut(PADDING));
         outerBox.add(m_rollEntry);
@@ -178,13 +200,15 @@ public class NewMacroDialog extends JDialog implements FocusListener
 
         // we want to know if any of those text entry areas get focus
         m_nameEntry.addFocusListener(this);
+        m_parentEntry.addFocusListener(this);
         m_rollEntry.addFocusListener(this);
         setModal(true);
     }
 
-    public void initializeValues(final String name, final String definition)
+    public void initializeValues(final String name, final String definition, final String parent)
     {
         m_nameEntry.setText(name);
+        m_parentEntry.setText(parent);
         m_rollEntry.setText(definition);
     }
 

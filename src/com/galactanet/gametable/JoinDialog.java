@@ -95,7 +95,6 @@ public class JoinDialog extends JDialog implements FocusListener
     private void initialize()
     {
         setModal(true);
-        setTitle("Join a Game");
         setResizable(false);
 
         m_ok.setText("OK");
@@ -228,10 +227,12 @@ public class JoinDialog extends JDialog implements FocusListener
     public void setUpForHostDlg()
     {
         m_hostPanelLayout.show(m_hostPanel, "host");
+        setTitle("Host a game");
     }
 
     public void setUpForJoinDlg()
     {
         m_hostPanelLayout.show(m_hostPanel, "join");
+        setTitle("Join a game");
     }
 }

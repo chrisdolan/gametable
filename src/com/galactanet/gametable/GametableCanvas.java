@@ -809,6 +809,23 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         repaint();
     }
 
+    public void doForceGridSnapPog(final int id, final boolean forceGridSnap)
+    {
+        final Pog toForceSnap = getActiveMap().getPogByID(id);
+        if (toForceSnap == null)
+        {
+            return;
+        }
+
+        toForceSnap.setForceGridSnap(forceGridSnap);
+
+        // this pog moves to the end of the array
+        getActiveMap().removePog(toForceSnap);
+        getActiveMap().addPog(toForceSnap);
+
+        repaint();
+    }
+
     public void doFlipPog(final int id, final int flipH, final int flipV)
     {
         final Pog toFlip = getActiveMap().getPogByID(id);
@@ -861,6 +878,24 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         repaint();
     }
 
+    /** **********************************************************************************************
+     * 
+     * @param id
+     * @param layer
+     */
+    public void doSetPogLayer(final int id, final int layer)
+    {
+        final Pog pog = getActiveMap().getPogByID(id);
+        if (pog == null)
+        {
+            return;
+        }
+        if(layer == Pog.LAYER_POG) getActiveMap().addOrderedPog(pog);
+        if(pog.getLayer() == Pog.LAYER_POG) getActiveMap().removeOrderedPog(pog);
+        pog.setLayer(layer);        
+        repaint();
+    }
+    
     public void doSetPogSize(final int id, final float size)
     {
         final Pog pog = getActiveMap().getPogByID(id);
@@ -1162,7 +1197,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
 
         m_pointingImage = UtilityFunctions.getImage("assets/whiteHand.png");
 
-        setPrimaryScroll(m_publicMap, 0, 0);
+        //setPrimaryScroll(m_publicMap, 0, 0);
 
         // set up the grid modes
         m_squareGridMode.init(this);
@@ -1171,10 +1206,103 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         m_gridMode = m_squareGridMode;
 
         addMouseWheelListener(this);
-        setZoom(0);
+        //setZoom(0);
         setActiveTool(0);
     }
 
+    public final static int BG_DEFAULT  = 0;
+    public final static int BG_GREEN    = 1;
+    public final static int BG_DGREY    = 2;
+    public final static int BG_GREY     = 3;
+    public final static int BG_BLUE     = 4;    
+    public final static int BG_BLACK    = 5;
+    public final static int BG_WHITE    = 6;
+    public final static int BG_DBLUE    = 7;
+    public final static int BG_DGREEN   = 8;
+    public final static int BG_BROWN    = 9;
+
+    public final int BG_CNT      = 10;
+    public int cur_bg_col = BG_DEFAULT;
+    public boolean cur_bg_type = false;
+
+    public final static String[] BGCol = {
+        "Default", "Green", "Dark Grey",
+        "Grey", "Blue", "Black",
+        "White", "Dark Blue", "Dark Green", 
+        "Brown"
+    };
+
+    /** **********************************************************************************************
+     * 
+     * @param color
+     * @return
+     */
+    public String getBGColorString(final int color) {
+        return BGCol[color]; 
+    }
+    /** **********************************************************************************************
+     * 
+     * @param color
+     */
+    public void changeBackground(final int color, final boolean pog) {
+        if(pog) {
+            changeBackground(getActiveMap().getPogByID(color));
+        } else { 
+            switch (color) {        
+                case BG_GREEN :
+                    m_mapBackground = UtilityFunctions.getImage("assets/mapbk_green.png");
+                    break;
+                case BG_DGREY :
+                    m_mapBackground = UtilityFunctions.getImage("assets/mapbk_dgrey.png");
+                    break;
+                case BG_GREY :
+                    m_mapBackground = UtilityFunctions.getImage("assets/mapbk_grey.png");
+                    break;
+                case BG_BLUE :
+                    m_mapBackground = UtilityFunctions.getImage("assets/mapbk_blue.png");
+                    break;
+                case BG_BLACK :
+                    m_mapBackground = UtilityFunctions.getImage("assets/mapbk_black.png");
+                    break;
+                case BG_WHITE :
+                    m_mapBackground = UtilityFunctions.getImage("assets/mapbk_white.png");
+                    break;
+                case BG_DBLUE :
+                    m_mapBackground = UtilityFunctions.getImage("assets/mapbk_dblue.png");
+                    break;
+                case BG_DGREEN :
+                    m_mapBackground = UtilityFunctions.getImage("assets/mapbk_dgreen.png");
+                    break;
+                case BG_BROWN :
+                    m_mapBackground = UtilityFunctions.getImage("assets/mapbk_brown.png");
+                    break;
+                default :
+                    m_mapBackground = UtilityFunctions.getImage("assets/mapbk.png");
+                break;
+
+            }
+            cur_bg_col = color;
+            cur_bg_type = false;
+        }
+    }
+
+    public void changeBackground(final Pog pog) {
+        if(pog == null) return;
+        m_mapBackground = pog.getPogType().getImage();
+        cur_bg_type = true;
+    }
+    
+    public void changeBackgroundCP(final int color, final boolean pog) {
+        if(m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_NONE) {
+            m_gametableFrame.send(PacketManager.makeBGColPacket(color,pog));
+            m_gametableFrame.postSystemMessage(
+                m_gametableFrame.getMyPlayer().getPlayerName() + " has change the background.");
+            return;
+        }
+        changeBackground(color,pog);        
+    }
+    
+    
     private boolean isPointing()
     {
         final Player me = m_gametableFrame.getMyPlayer();
@@ -1407,6 +1535,18 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         }
     }
 
+    public void replacePogs(final PogType toReplace, final PogType replaceWith) {
+        GametableMap mapToReplace;
+        if (isPublicMap()) mapToReplace = m_publicMap;
+        else mapToReplace = m_privateMap;
+        for (int i = 0; i < mapToReplace.getNumPogs(); i++) {
+            final Pog pog = mapToReplace.getPog(i);
+            if(pog.getPogType() == toReplace) {
+                pog.setPogType(replaceWith);
+            }
+        }
+    }
+
     public void paintComponent(final Graphics graphics)
     {
         paintComponent(graphics, getWidth(), getHeight());
@@ -1567,6 +1707,16 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
             }
         }
 
+        // Overlays
+        for (int i = 0; i < mapToDraw.getNumPogs(); i++)
+        {
+            final Pog pog = mapToDraw.getPog(i);
+            if (pog.getLayer() == Pog.LAYER_OVERLAY)
+            {
+                pog.drawToCanvas(g);
+            }
+        }
+        
         // we don't draw the grid if we're on the private map)
         if (mapToDraw != m_privateMap)
         {
@@ -1583,11 +1733,20 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
             ls.draw(g, this);
         }
 
+        // env
+        for (int i = 0; i < mapToDraw.getNumPogs(); i++)
+        {
+            final Pog pog = mapToDraw.getPog(i);
+            if (pog.getLayer() == Pog.LAYER_ENV)
+            {
+                pog.drawToCanvas(g);
+            }
+        }
         // pogs
         for (int i = 0; i < mapToDraw.getNumPogs(); i++)
         {
             final Pog pog = mapToDraw.getPog(i);
-            if (!pog.isUnderlay())
+            if (pog.getLayer() == Pog.LAYER_POG)
             {
                 pog.drawToCanvas(g);
             }
@@ -1611,6 +1770,7 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
                 }
             }
         }
+        
 
         // draw the cursor overlays
         final List players = m_gametableFrame.getPlayers();
@@ -1868,6 +2028,23 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         }
     }
 
+    public void forceGridSnapPog(final int id, final boolean forceGridSnap)
+    {
+        if (isPublicMap())
+        {
+            m_gametableFrame.send(PacketManager.makeForceSnapPogPacket(id, forceGridSnap));
+
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED)
+            {
+                doForceGridSnapPog(id, forceGridSnap);
+            }
+        }
+        else
+        {
+            doForceGridSnapPog(id, forceGridSnap);
+        }
+    }
+
     public void flipPog(final int id, final int flipH, final int flipV)
     {
         if (isPublicMap())
@@ -1960,6 +2137,23 @@ public class GametableCanvas extends JComponent implements MouseListener, MouseM
         }
     }
 
+    /** **********************************************************************************************
+     * 
+     * @param id
+     * @param size
+     */
+    public void setPogLayer(final int id, final int layer)
+    {
+        if (isPublicMap()) {
+            m_gametableFrame.send(PacketManager.makePogLayerPacket(id, layer));
+            if (m_gametableFrame.getNetStatus() != GametableFrame.NETSTATE_JOINED) 
+                doSetPogLayer(id, layer);            
+        } else {
+            doSetPogLayer(id, layer);
+        }
+        m_gametableFrame.refreshActivePogList();
+    }
+    
     public void setPogSize(final int id, final float size)
     {
         if (isPublicMap())

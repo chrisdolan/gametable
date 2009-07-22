@@ -76,7 +76,9 @@ public class GametableMap
             m_orderedPogs.add(pog);
         }
     }
-
+    public void addOrderedPog(final Pog pog) {
+        m_orderedPogs.add(pog);
+    }
     private void adoptState(final MapState state)
     {
         // adopt the lines from the MapState
@@ -232,6 +234,8 @@ public class GametableMap
         }
 
         Pog pogHit = null;
+        Pog envHit = null;
+        Pog overlayHit = null;
         Pog underlayHit = null;
 
         for (int i = 0; i < getNumPogs(); i++)
@@ -241,23 +245,17 @@ public class GametableMap
             if (pog.testHit(modelPosition))
             {
                 // they clicked this pog
-                if (pog.isUnderlay())
-                {
-                    underlayHit = pog;
-                }
-                else
-                {
-                    pogHit = pog;
-                }
+                if (pog.getLayer() == Pog.LAYER_UNDERLAY) underlayHit = pog;
+                else if (pog.getLayer() == Pog.LAYER_OVERLAY) overlayHit = pog;
+                else if (pog.getLayer() == Pog.LAYER_ENV) envHit = pog;
+                else if (pog.getLayer() == Pog.LAYER_POG) pogHit = pog;
             }
         }
 
         // pogs take priority over underlays
-        if (pogHit != null)
-        {
-            return pogHit;
-        }
-
+        if (pogHit != null) return pogHit;
+        if (envHit != null) return envHit;
+        if (overlayHit != null) return overlayHit;
         return underlayHit;
     }
 
@@ -471,6 +469,10 @@ public class GametableMap
     public void removeLine(final LineSegment ls)
     {
         m_lines.remove(ls);
+    }
+
+    public void removeOrderedPog(final Pog pog) {        
+        m_orderedPogs.remove(pog);
     }
 
     public void removePog(final Pog pog)
