@@ -9,69 +9,105 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.util.HashMap;
 
 import javax.swing.*;
 
-
-
 /**
  * TODO: comment
- * 
+ *
  * @author iffy
  */
 public class SetPogAttributeDialog extends JDialog
 {
-
     /**
-     * 
+     *
      */
     private static final long serialVersionUID      = 1204064083654715689L;
     private JPanel            bottomPanel           = null;
+    private JButton           okButton              = null;
     private JButton           cancelButton          = null;
+    private JButton           applyButton          = null;
+
     private JPanel            centerPanel           = null;
-    private boolean           confirmed             = false;
     private JPanel            contentPanel          = null;
     private JPanel            horizontalSpacerPanel = null;
-    private String            name                  = null;
+
+    private JLabel            valueLabel            = null;
     private JLabel            nameLabel             = null;
+    private JTextField        valueTextField        = null;
     private JTextField        nameTextField         = null;
-    private JButton           okButton              = null;
+
+    private boolean           confirmed             = false;
+    private boolean           b_edit                = false;
 
     private String            value                 = null;
-    private JLabel            valueLabel            = null;
-    private JTextField        valueTextField        = null;
+    private String            name                  = null;
+    private HashMap           toAdd                 = new HashMap();
 
     /**
      * This is the default constructor
      */
-    public SetPogAttributeDialog()
+    public SetPogAttributeDialog(final boolean edit)
     {
         super();
-        initialize();
+        b_edit = edit;
+        initialize();       
     }
 
+    private void applyAttrib() {
+        name = nameTextField.getText();
+        value = valueTextField.getText();
+        nameTextField.setText("");
+        valueTextField.setText("");
+        if((name == null) || (name.length() < 1))
+            return;
+        toAdd.put(name, value);
+    }
+       
+    private JButton getApplyButton() {
+        if (applyButton == null)
+        {
+            applyButton = new JButton();
+            applyButton.setText("Add another");
+            applyButton.setSelected(false);
+            applyButton.addActionListener(new java.awt.event.ActionListener()
+            {
+                public void actionPerformed(final java.awt.event.ActionEvent e)
+                {
+                    applyAttrib();
+                }
+            });
+        }
+        return applyButton;
+    }
+
+    public HashMap getAttribs() {
+        return toAdd;
+    }
+       
     /**
      * This method initializes bottomPanel
-     * 
+     *
      * @return javax.swing.JPanel
      */
     private JPanel getBottomPanel()
     {
-        if (bottomPanel == null)
-        {
+        if (bottomPanel == null) {
             final FlowLayout flowLayout = new FlowLayout();
             flowLayout.setAlignment(java.awt.FlowLayout.RIGHT);
             bottomPanel = new JPanel();
             bottomPanel.setLayout(flowLayout);
             bottomPanel.add(getOkButton(), null);
             bottomPanel.add(getCancelButton(), null);
+            if(!b_edit) bottomPanel.add(getApplyButton());
         }
         return bottomPanel;
     }
 
     /**
      * This method initializes cancelButton
-     * 
+     *
      * @return javax.swing.JButton
      */
     private JButton getCancelButton()
@@ -93,7 +129,7 @@ public class SetPogAttributeDialog extends JDialog
 
     /**
      * This method initializes centerPanel
-     * 
+     *
      * @return javax.swing.JPanel
      */
     private JPanel getCenterPanel()
@@ -137,7 +173,7 @@ public class SetPogAttributeDialog extends JDialog
 
     /**
      * This method initializes jContentPane
-     * 
+     *
      * @return javax.swing.JPanel
      */
     private JPanel getContentPanel()
@@ -154,7 +190,7 @@ public class SetPogAttributeDialog extends JDialog
 
     /**
      * This method initializes horizontalSpacerPanel
-     * 
+     *
      * @return javax.swing.JPanel
      */
     private JPanel getHorizontalSpacerPanel()
@@ -172,12 +208,12 @@ public class SetPogAttributeDialog extends JDialog
      */
     public String getName()
     {
-        return name;
+        return nameTextField.getText();
     }
 
     /**
      * This method initializes nameTextField
-     * 
+     *
      * @return javax.swing.JTextField
      */
     private JTextField getNameTextField()
@@ -192,7 +228,7 @@ public class SetPogAttributeDialog extends JDialog
 
     /**
      * This method initializes okButton
-     * 
+     *
      * @return javax.swing.JButton
      */
     private JButton getOkButton()
@@ -205,9 +241,8 @@ public class SetPogAttributeDialog extends JDialog
             okButton.addActionListener(new java.awt.event.ActionListener()
             {
                 public void actionPerformed(final java.awt.event.ActionEvent e)
-                {
-                    name = nameTextField.getText();
-                    value = valueTextField.getText();
+                {       
+                    if(!b_edit) applyAttrib();                       
                     confirmed = true;
                     dispose();
                 }
@@ -221,12 +256,12 @@ public class SetPogAttributeDialog extends JDialog
      */
     public String getValue()
     {
-        return value;
+        return valueTextField.getText();
     }
 
     /**
      * This method initializes valueTextField
-     * 
+     *
      * @return javax.swing.JTextField
      */
     private JTextField getValueTextField()
@@ -241,7 +276,7 @@ public class SetPogAttributeDialog extends JDialog
 
     /**
      * This method initializes this
-     * 
+     *
      * @return void
      */
     private void initialize()
@@ -264,7 +299,7 @@ public class SetPogAttributeDialog extends JDialog
 
     /**
      * Loads the dialog with some existing values.
-     * 
+     *
      * @param newName
      * @param newValue
      */

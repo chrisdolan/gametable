@@ -3,12 +3,14 @@
  */
 
 
-package com.galactanet.gametable.ui;
+package com.galactanet.gametable.ui.chat;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
@@ -242,6 +244,12 @@ public class ChatLogPane extends JEditorPane
     private Point       rolloverPosition = null;
     private String      rolloverText     = null;
 
+    private int         m_id = 0;
+
+    protected List      privMsgLogs      = new ArrayList();
+    private int         playerA          = 0;
+    private int         playerB          = 0;
+    
     // --- Constructors ----------------------------------------------------------------------------------------------
 
     private JScrollPane scrollPane;
@@ -251,13 +259,27 @@ public class ChatLogPane extends JEditorPane
     /**
      * Default Constructor;
      */
-    public ChatLogPane()
-    {
+    public ChatLogPane(final int id, final boolean privMsg)
+    {        
         super("text/html", DEFAULT_TEXT);
         setEditable(false);
         setFocusable(true);
         setLayout(null);
 
+        m_id = id;
+
+        // For setting up private messages
+        if (privMsg)
+        {
+            playerA = GametableFrame.getGametableFrame().getMyPlayerId();
+            
+            if (playerB == 0)
+            {
+                // nobody by that name is in the session
+//                logAlertMessage("There is no player or character named \"" + toName + "\" in the session.");
+                return;
+            }
+        }
         // clear all default keystrokes
         final InputMap map = new InputMap();
         final InputMap oldMap = getInputMap(WHEN_FOCUSED);
@@ -359,7 +381,8 @@ public class ChatLogPane extends JEditorPane
             }
         });
 
-        addText("<br>Welcome to <a href=\"http://gametable.mornproductions.com/\">" + GametableApp.VERSION + "</a>.");
+        if(m_id == 0)
+        addText("Welcome to <a href=\"http://gametable.mornproductions.com/\">" + GametableApp.VERSION + "</a>.");
     }
 
     public void addText(final String text)
@@ -384,11 +407,11 @@ public class ChatLogPane extends JEditorPane
             bodyContent.append(DEFAULT_TEXT_HEADER);
 
             Iterator iterator = entries.iterator();
-            for (;iterator.hasNext();)
+            while(iterator.hasNext())
             {               
                 final String entry = (String)iterator.next();
                 bodyContent.append(entry);
-                bodyContent.append("<br>\n");
+                if(iterator.hasNext()) bodyContent.append("<br>\n");
             }
             bodyContent.append(DEFAULT_TEXT_FOOTER);
             setText(bodyContent.toString());
@@ -398,7 +421,7 @@ public class ChatLogPane extends JEditorPane
             final AbstractElement elem = (AbstractElement)body.getChildAt(body.getChildCount() - 1);
             try
             {
-                doc.insertBeforeEnd(elem, entryStr + "<br>");
+                doc.insertBeforeEnd(elem, "<br>" + entryStr); // + "<br>");
             }
             catch (final Exception e)
             {
@@ -424,7 +447,8 @@ public class ChatLogPane extends JEditorPane
     {
         setText(DEFAULT_TEXT);
         entries = new LinkedList();
-        addText("Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>.");
+        if(m_id == 0)
+            addText("Welcome to <a href=\"http://gametable.galactanet.com/\">" + GametableApp.VERSION + "</a>.");
     }
 
     /**
@@ -543,5 +567,10 @@ public class ChatLogPane extends JEditorPane
         rolloverText = text;
         rolloverPosition = location;
         repaint();
+    }
+
+    public void setPlayerB(final int test)
+    {
+        playerB = test;
     }
 }

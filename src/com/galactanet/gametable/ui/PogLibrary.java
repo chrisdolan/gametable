@@ -24,8 +24,10 @@ public class PogLibrary
 {
     // --- Constants -------------------------------------------------------------------------------------------------
 
-    public static final int LIBRARY_TYPE_POG      = 0;
-    public static final int LIBRARY_TYPE_UNDERLAY = 1;
+    public static final int LIBRARY_TYPE_POG      = 3;
+    public static final int LIBRARY_TYPE_ENV      = 2;
+    public static final int LIBRARY_TYPE_OVERLAY  = 1;
+    public static final int LIBRARY_TYPE_UNDERLAY = 0;
 
     // --- Members ---------------------------------------------------------------------------------------------------
 
@@ -127,6 +129,8 @@ public class PogLibrary
         location = new File(".").getCanonicalFile();
         name = getNameFromDirectory(location);
         addLibrary("pogs", LIBRARY_TYPE_POG);
+        addLibrary("environment", LIBRARY_TYPE_ENV);
+        addLibrary("overlays", LIBRARY_TYPE_OVERLAY);
         addLibrary("underlays", LIBRARY_TYPE_UNDERLAY);
     }
 
@@ -260,7 +264,7 @@ public class PogLibrary
                 return null;
             }
 
-            final PogType pog = new PogType(pogName, facing, (type == LIBRARY_TYPE_UNDERLAY));
+            final PogType pog = new PogType(pogName, facing, type);
             if (!ignoreOnFail || !pog.isUnknown())
             {
                 // Log.log(Log.SYS, new Exception(this + " added: " + pog));
@@ -523,6 +527,10 @@ public class PogLibrary
         }
 
         return parent.getRoot();
+    }
+
+    public void removePog(final PogType pt) {
+        pogs.remove(pt);       
     }
 
     /*

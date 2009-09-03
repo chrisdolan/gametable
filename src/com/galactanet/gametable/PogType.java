@@ -10,7 +10,6 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.*;
 import java.util.BitSet;
 import java.util.Hashtable;
-import javax.swing.ImageIcon;
 
 import com.galactanet.gametable.ui.PogPanel;
 import com.galactanet.gametable.util.UtilityFunctions;
@@ -30,13 +29,14 @@ public class PogType
     // --- Members ---------------------------------------------------------------------------------------------------
 
     private final boolean   m_bUnderlay;
+    private int             m_type;
     private boolean         m_bUnknown;
 
     private int             m_faceSize;
     private final String    m_filename;
     private BitSet          m_hitMap;
     private final Hashtable m_iconcache = new Hashtable();
-    public Image           m_image;
+    public Image            m_image;
     /*
      * m_lastScaledImage is NOT used in current code, except in load(), where it is never read.
      * It has been retained for backwards compatibility with older map saves.
@@ -51,10 +51,11 @@ public class PogType
     /**
      * Constructor.
      */
-    public PogType(final String filename, final int reportedFaceSize, final boolean underlay)
+    public PogType(final String filename, final int reportedFaceSize, final int type)
     {
         m_filename = UtilityFunctions.getLocalPath(filename);
-        m_bUnderlay = underlay;
+        m_bUnderlay = type==0?true:false;
+        m_type = type;
         m_faceSize = reportedFaceSize;
         load();
     }
@@ -131,11 +132,11 @@ public class PogType
      * @param tint Color with which to tint the pog.
      */
     public void drawTint(final Graphics g, final int x, final int y, final float scale, final Color tint,
-        final double angle)
+        final double angle, final boolean forceGridSnap)
     {
         final Graphics2D g2 = (Graphics2D)g.create();
         g2.setColor(new Color(tint.getRed(), tint.getGreen(), tint.getBlue(), 0x7f));
-        g2.fillRect(x, y, Math.round(getWidth(angle) * scale), Math.round(getHeight(angle) * scale));
+        g2.fillRect(x, y, Math.round(getWidth(angle, forceGridSnap) * scale), Math.round(getHeight(angle, forceGridSnap) * scale));
         g2.dispose();
     }
 
@@ -147,12 +148,12 @@ public class PogType
      * @param y Y position to draw at.
      * @param scale What scale to draw the pog at.
      */
-    public void drawScaled(final Graphics g, final int x, final int y, final float scale, final double angle, final int flipH, final int flipV)
+    public void drawScaled(final Graphics g, final int x, final int y, final float scale, final double angle, final boolean forceGridSnap, final int flipH, final int flipV)
     {
         if (FAST_SCALING)
         {
-            final int drawWidth = Math.round(getWidth(angle) * scale);
-            final int drawHeight = Math.round(getHeight(angle) * scale);
+            final int drawWidth = Math.round(getWidth(angle, forceGridSnap) * scale);
+            final int drawHeight = Math.round(getHeight(angle, forceGridSnap) * scale);
             if ((angle == 0) && (m_listIcon != null) && (drawWidth == m_listIcon.getWidth(null))
                 && (drawHeight == m_listIcon.getHeight(null)))
             {
@@ -160,12 +161,12 @@ public class PogType
             }
             else
             {
-                g.drawImage(rotate(flip(m_image, flipH, flipV), angle), x, y, drawWidth, drawHeight, null);
+                g.drawImage(rotate(flip(m_image, flipH, flipV), angle, forceGridSnap), x, y, drawWidth, drawHeight, null);
             }
         }
         else
         {
-            g.drawImage(rotate(flip(getScaledImage(scale), flipH, flipV), angle), x, y, null);
+            g.drawImage(rotate(flip(getScaledImage(scale), flipH, flipV), angle, forceGridSnap), x, y, null);
         }
     }
 
@@ -217,7 +218,7 @@ public class PogType
     {
         if (m_listIcon == null)
         {
-            final int maxDim = Math.max(getWidth(0), getHeight(0));
+            final int maxDim = Math.max(getWidth(0, false), getHeight(0, false));
             final float scale = PogPanel.POG_ICON_SIZE / (float)maxDim;
             m_listIcon = UtilityFunctions.getScaledInstance(m_image, scale);
         }
@@ -257,10 +258,14 @@ public class PogType
         return m_lastScaledImage;
     }
 
+    public int getType() {
+        return m_type;
+    }
+    
     /**
      * @return The native height of this pog.
      */
-    public int getHeight(final double angle)
+    public int getHeight(final double angle, final boolean forceGridSnap)
     {
 
         if (m_image == null)
@@ -268,45 +273,32 @@ public class PogType
             return m_faceSize * GametableCanvas.BASE_SQUARE_SIZE;
         }
 
-        if (angle == 0)
-        {
-            return m_image.getHeight(null);
-        }
         Dimension bounds = (Dimension)(m_iconcache.get(Double.valueOf(angle)));
         if (bounds == null)
         {
-            rotate(m_image, angle);
+            rotate(m_image, angle, forceGridSnap);
             bounds = (Dimension)(m_iconcache.get(Double.valueOf(angle)));
         }
-        // If caching images instead of dimensions, this should be
-        // return (int)(bounds.getHeight(null));
         return (int)(bounds.getHeight());
     }
 
     /**
      * @return The native width of this pog.
      */
-    public int getWidth(final double angle)
+    public int getWidth(final double angle, final boolean forceGridSnap)
     {
         if (m_image == null)
         {
             return m_faceSize * GametableCanvas.BASE_SQUARE_SIZE;
         }
 
-        if (angle == 0)
-        {
-            return m_image.getWidth(null);
-        }
         Dimension bounds = (Dimension)(m_iconcache.get(Double.valueOf(angle)));
         if (bounds == null)
         {
-            rotate(m_image, angle);
+            rotate(m_image, angle, forceGridSnap);
             bounds = (Dimension)(m_iconcache.get(Double.valueOf(angle)));
         }
-        // If caching images instead of dimensions, this should be
-        // return (int)(bounds.getWidth(null));
         return (int)(bounds.getWidth());
-
     }
 
     /**
@@ -314,23 +306,23 @@ public class PogType
      */
     private void initializeHitMap(final double angle, final float scale, final int flipH, final int flipV)
     {
-        if ((m_image == null) || (getWidth(angle) < 0) || (getHeight(angle) < 0))
+        if ((m_image == null) || (getWidth(angle, false) < 0) || (getHeight(angle, false) < 0))
         {
             return;
         }
 
-        final BufferedImage bufferedImage = new BufferedImage(getWidth(angle), getHeight(angle),
+        final BufferedImage bufferedImage = new BufferedImage(getWidth(angle, false), getHeight(angle, false),
             BufferedImage.TYPE_INT_RGB);
         {
             final Graphics2D g = bufferedImage.createGraphics();
             g.setColor(new Color(0xff00ff));
-            g.fillRect(0, 0, getWidth(angle), getHeight(angle));
-            drawScaled(g, 0, 0, scale, angle, flipH, flipV);
+            g.fillRect(0, 0, getWidth(angle, false), getHeight(angle, false));
+            drawScaled(g, 0, 0, scale, angle, false, flipH, flipV);
             g.dispose();
         }
 
         final DataBuffer buffer = bufferedImage.getData().getDataBuffer();
-        final int len = getWidth(angle) * getHeight(angle);
+        final int len = getWidth(angle, false) * getHeight(angle, false);
         m_hitMap = new BitSet(len);
         m_hitMap.clear();
         for (int i = 0; i < len; ++i)
@@ -438,34 +430,65 @@ public class PogType
         initializeHitMap(0, 1f, 0, 0);
     }
 
-    public Image rotate(final Image i, final double angle)
+    public Image rotate(final Image i, final double dangle, final boolean forceGridSnap)
     {
-        if (angle == 0)
-        {
-            return i;
-            /*
-             * This will speed up the program, but require more memory as it caches the image not dimensions, remove the
-             * uncommented lines in the lower if. uncomment the commented line and change Dimension to Image in the
-             * getHeight() and getWidth() methods to fully implement this if
-             * (m_iconcache.containsKey(Double.valueOf(angle))) { return
-             * (Image)(m_iconcache.get(Double.valueOf(angle))); }
-             */
+        BufferedImage image = null;
+        final int ih = i.getHeight(null);       
+        final int iw = i.getWidth(null);
+        if(ih == iw) { 
+            if (dangle == 0)
+            {
+                putBounds(i,0);
+                return i;
+            }
+            image = UtilityFunctions.toBufferedImage(i); 
+        } else {
+            int is = 0;
+            if(iw > ih) is = iw;           
+            else is = ih;
+            image = new BufferedImage(is,is,BufferedImage.TYPE_INT_ARGB);
+           
+            Graphics gi = image.getGraphics();           
+            if (forceGridSnap)
+                gi.drawImage(i,0,0,null);
+            else
+                gi.drawImage(i,(is-iw)/2,(is-ih)/2, null);
+            
+            gi.dispose();
+            if(dangle == 0) {
+                putBounds(image,0);
+                return image;
+            }
         }
 
-        final BufferedImage bufferedImage = toBufferedImage(i);
-        final AffineTransform tx = new AffineTransform();
-        tx.rotate(Math.toRadians(angle), bufferedImage.getWidth() / 2, bufferedImage.getHeight() / 2);
-        final AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
-        final Image returnedImage = Toolkit.getDefaultToolkit().createImage(op.filter(bufferedImage, null).getSource());
+        final double angle = Math.toRadians(dangle);
+        double sin = Math.abs(Math.sin(angle)), cos = Math.abs(Math.cos(angle));
+        int w = image.getWidth(), h = image.getHeight();
+        int neww = (int)Math.floor(w*cos+h*sin), newh = (int)Math.floor(h*cos+w*sin);
+        GraphicsConfiguration gc = getDefaultConfiguration();
+        BufferedImage result = gc.createCompatibleImage(neww, newh, Transparency.TRANSLUCENT);
+        Graphics2D g = result.createGraphics();
+        g.translate((neww-w)/2, (newh-h)/2);
+        g.rotate(angle, w/2, h/2);
+        g.drawRenderedImage(image, null);
+        g.dispose();       
+        putBounds(result, dangle);
+        return result;
+    }
 
+    private void putBounds(final Image result, final double angle) {
+       
         if (!m_iconcache.containsKey(Double.valueOf(angle)))
-        {
-            final Dimension bounds = new Dimension(returnedImage.getWidth(null), returnedImage.getHeight(null));
+        {           
+            final Dimension bounds = new Dimension(result.getWidth(null), result.getHeight(null));
             m_iconcache.put(Double.valueOf(angle), bounds);
             // m_iconcache.put(Double.valueOf(angle),returnedImage);
         }
-
-        return returnedImage;
+    }
+    public static GraphicsConfiguration getDefaultConfiguration() {
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        GraphicsDevice gd = ge.getDefaultScreenDevice();
+        return gd.getDefaultConfiguration();
     }
 
     public Image flip(final Image i, final int flipH, final int flipV)
@@ -475,7 +498,7 @@ public class PogType
             return i;
         }
 
-        final BufferedImage bufferedImage = toBufferedImage(i);
+        final BufferedImage bufferedImage = UtilityFunctions.toBufferedImage(i);
         final AffineTransform tx = AffineTransform.getScaleInstance(flipH, flipV);
         tx.translate((flipH >= 0 ? 1 : (flipH * bufferedImage.getWidth())), (flipV >= 0 ? 1 : (flipV * bufferedImage.getHeight())));
         AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
@@ -485,7 +508,7 @@ public class PogType
         {
             final Dimension bounds = new Dimension(returnedImage.getWidth(null), returnedImage.getHeight(null));
             m_iconcache.put(Double.valueOf(0), bounds);
-            // m_iconcache.put(Double.valueOf(angle),returnedImage);
+            // m_iconcache.put(Double.valueOf(0),returnedImage);
         }
 
         return returnedImage;
@@ -498,101 +521,5 @@ public class PogType
     {
         return "[PogType@" + hashCode() + " name: " + m_filename + " size: " + m_faceSize + ", unknown: " + isUnknown()
             + "]";
-    }
-
-    /** *****************************************************************
-     * Returns the Tranparency of the specified Image
-     * @param image
-     * @return int value of the transparency
-     */
-    //public static boolean hasAlpha(final Image image)
-    public static int getTransparency(final Image image)
-    {
-        // If buffered image, the color model is readily available
-        if (image instanceof BufferedImage)
-        {
-            final BufferedImage bimage = (BufferedImage)image;
-            //return bimage.getColorModel().hasAlpha();
-            return bimage.getColorModel().getTransparency();
-        }
-
-        // Use a pixel grabber to retrieve the image's color model;
-        // grabbing a single pixel is usually sufficient
-        final PixelGrabber pg = new PixelGrabber(image, 0, 0, 1, 1, false);
-        try
-        {
-            pg.grabPixels();
-        }
-        catch (final InterruptedException e)
-        {
-        }
-
-        // Get the image's color model
-        final ColorModel cm = pg.getColorModel();
-        //return cm.hasAlpha();
-        return cm.getTransparency();
-    }
-
-    /** *******************************************************************
-     * Creates a buffered image of the specified input image
-     * @param image
-     * @return
-     */
-    private static BufferedImage toBufferedImage(final Image image)
-    {
-        if (image instanceof BufferedImage)
-        {
-            return (BufferedImage)image;
-        }
-
-        Image outImage = image;
-
-        // This code ensures that all the pixels in the image are loaded
-        outImage = new ImageIcon(outImage).getImage();
-
-        // Determine if the image has transparent pixels; for this method's
-        // implementation, see e661 Determining If an Image Has Transparent Pixels
-        //final boolean hasAlpha = hasAlpha(outImage);
-        final int transparency = getTransparency(outImage);
-
-        // Create a buffered image with a format that's compatible with the screen
-        BufferedImage bimage = null;
-        final GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        try
-        {
-            // Determine the type of transparency of the new buffered image
-            /* int transparency = Transparency.OPAQUE;
-             * if (hasAlpha)
-             * {
-             *     transparency = Transparency.BITMASK;
-             * }
-             */
-            
-            // Create the buffered image
-            final GraphicsDevice gs = ge.getDefaultScreenDevice();
-            final GraphicsConfiguration gc = gs.getDefaultConfiguration();
-            bimage = gc.createCompatibleImage(outImage.getWidth(null), outImage.getHeight(null), transparency);
-        }
-        catch (final HeadlessException e)
-        {
-            // The system does not have a screen
-        }
-
-        if (bimage == null)
-        {
-            // Create a buffered image using the default color model
-            int type = BufferedImage.TYPE_INT_RGB;
-            if (transparency != Transparency.OPAQUE) type = BufferedImage.TYPE_INT_ARGB;
-            bimage = new BufferedImage(outImage.getWidth(null), outImage.getHeight(null), type);
-        }
-
-        // Copy image to buffered image
-        final Graphics g = bimage.createGraphics();
-
-        // Paint the image onto the buffered image
-        g.drawImage(outImage, 0, 0, null);
-        g.dispose();
-
-        return bimage;
     }
 }

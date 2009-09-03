@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.border.BevelBorder;
 import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeExpansionListener;
 import javax.swing.tree.DefaultTreeModel;
@@ -20,6 +21,7 @@ import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
 import com.galactanet.gametable.GametableCanvas;
+import com.galactanet.gametable.GametableFrame;
 import com.galactanet.gametable.Pog;
 import com.galactanet.gametable.PogType;
 import com.galactanet.gametable.util.UtilityFunctions;
@@ -649,6 +651,9 @@ public class PogPanel extends JPanel
      */
     private final GametableCanvas m_canvas;
 
+    private PogNode               m_markedPog          = null;
+    private PogNode               m_tomarkPog          = null;
+
     // --- Pog Dragging Members ---
 
     /**
@@ -768,8 +773,26 @@ public class PogPanel extends JPanel
                 /*
                  * @see java.awt.event.MouseAdapter#mousePressed(java.awt.event.MouseEvent)
                  */
-                public void mousePressed(final MouseEvent e)
+                public void mouseReleased(final MouseEvent e)
                 {
+                    if(e.getButton() == MouseEvent.BUTTON3) {
+                        if(m_tomarkPog == null) return;
+                       
+                        if(m_markedPog == null) {
+                            if(!m_tomarkPog.getPog().isUnknown()) m_tomarkPog = null;
+                        } else {
+                            if(m_tomarkPog.getPog().isUnknown()) m_tomarkPog = null;
+                        }
+                       
+                        if(m_tomarkPog != null) ShowMarkedMenu();
+                        return;
+                    }
+                    releasePog();                   
+                }
+
+                public void mousePressed(final MouseEvent e)
+                {   
+                    m_tomarkPog = null;
                     final TreePath path = pogTree.getClosestPathForLocation(e.getX(), e.getY());
                     final Object val = path.getLastPathComponent();
                     if (val instanceof PogNode)
@@ -777,18 +800,20 @@ public class PogPanel extends JPanel
                         final PogNode node = (PogNode)val;
                         final Point screenCoords = UtilityFunctions.getScreenCoordinates(pogTree, new Point(e.getX(), e
                             .getY()));
-                        final Point localCoords = new Point(node.getPog().getWidth(0) / 2,
-                            node.getPog().getHeight(0) / 2);
+                        final Point localCoords = new Point(node.getPog().getWidth(0, false) / 2,
+                            node.getPog().getHeight(0, false) / 2);
+                        if(e.getButton() == MouseEvent.BUTTON3) {
+                            // Only do this on Private Maps, or if not in a network game as this would cause problems
+                            // with no easy solutions atm.
+                            if((GametableFrame.getGametableFrame().getNetStatus() == GametableFrame.NETSTATE_NONE) ||
+                              (!GametableFrame.getGametableFrame().getGametableCanvas().isPublicMap())) {
+                                // Only set to mark on unknown pogs, or other pogs if one is marked
+                                m_tomarkPog = node;
+                                return;
+                            }
+                        }     
                         grabPog(node.getPog(), screenCoords, localCoords);
                     }
-                }
-
-                /*
-                 * @see java.awt.event.MouseAdapter#mouseReleased(java.awt.event.MouseEvent)
-                 */
-                public void mouseReleased(final MouseEvent e)
-                {
-                    releasePog();
                 }
 
             });
@@ -950,16 +975,16 @@ public class PogPanel extends JPanel
             final Graphics2D g2 = (Graphics2D)g;
             int drawX = m_mousePosition.x;
             int drawY = m_mousePosition.y + 16;
-            final int overBottom = (drawY + m_hoverPog.getHeight(0)) - getHeight();
-            final int overTop = -(drawY - (m_hoverPog.getHeight(0) + 16));
+            final int overBottom = (drawY + m_hoverPog.getHeight(0, false)) - getHeight();
+            final int overTop = -(drawY - (m_hoverPog.getHeight(0, false) + 16));
             if (overBottom > overTop)
             {
-                drawY -= m_hoverPog.getHeight(0) + 16;
+                drawY -= m_hoverPog.getHeight(0, false) + 16;
             }
 
-            if (drawX > getWidth() - m_hoverPog.getWidth(0) - HOVER_MARGIN)
+            if (drawX > getWidth() - m_hoverPog.getWidth(0, false) - HOVER_MARGIN)
             {
-                drawX = getWidth() - m_hoverPog.getWidth(0) - HOVER_MARGIN;
+                drawX = getWidth() - m_hoverPog.getWidth(0, false) - HOVER_MARGIN;
             }
 
             if (drawX < HOVER_MARGIN)
@@ -969,11 +994,11 @@ public class PogPanel extends JPanel
 
             g2.translate(drawX, drawY);
             g2.setColor(POG_BACKGROUND_COLOR);
-            g2.fillRect(-POG_PADDING, -POG_PADDING, m_hoverPog.getWidth(0) + POG_PADDING * 2, m_hoverPog.getHeight(0)
+            g2.fillRect(-POG_PADDING, -POG_PADDING, m_hoverPog.getWidth(0, false) + POG_PADDING * 2, m_hoverPog.getHeight(0, false)
                 + POG_PADDING * 2);
             g2.setColor(POG_BORDER_COLOR);
-            g2.drawRect(-POG_PADDING, -POG_PADDING, m_hoverPog.getWidth(0) + POG_PADDING * 2 - 1, m_hoverPog
-                .getHeight(0)
+            g2.drawRect(-POG_PADDING, -POG_PADDING, m_hoverPog.getWidth(0, false) + POG_PADDING * 2 - 1, m_hoverPog
+                .getHeight(0, false)
                 + POG_PADDING * 2 - 1);
             m_hoverPog.drawTranslucent(g2, 0, 0, 0.9f);
             g2.dispose();
@@ -999,5 +1024,55 @@ public class PogPanel extends JPanel
             m_grabbedPogOffset = null;
             repaint();
         }
+    }
+    private void ShowMarkedMenu() {
+        final JPopupMenu menu = new JPopupMenu("Mark Pog");
+        JMenuItem item = null;
+        if(m_markedPog == null) {
+            item = new JMenuItem("Mark Pog");           
+            item.setToolTipText("Marks this pog for replacement");
+        } else {
+            if(m_markedPog == m_tomarkPog) {
+                item = new JMenuItem("Unmark Pog");
+                item.setToolTipText("Unmark Current Pog.");
+            } else {
+                item = new JMenuItem("Replace");
+                item.setToolTipText("Replaces all pogs of the marked type on the map with this pog.");
+            }
+        }
+       
+        item.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(final ActionEvent e)
+            {
+                if(m_markedPog == null) {
+                    m_markedPog = m_tomarkPog;                   
+                } else {
+                    if(m_markedPog != m_tomarkPog)
+                        replacePogs(m_markedPog,m_tomarkPog);
+                    m_markedPog = null;                   
+                }
+                m_tomarkPog = null;                               
+            }
+        });
+        menu.setBorder(new BevelBorder(BevelBorder.RAISED));
+        menu.add(item);
+       
+        item = new JMenuItem("Cancel");
+        menu.add(item);
+        menu.show(this,m_mousePosition.x,m_mousePosition.y);       
+    }
+       
+    private void replacePogs(final PogNode toReplace, final PogNode replaceWith) {
+        final int res = UtilityFunctions.yesNoDialog(GametableFrame.getGametableFrame(),
+            "Are you sure you wish to replace the unknown Pog with this Pog.", "Confirm Pog Replacement.");
+        if (res != UtilityFunctions.YES) return;       
+        GametableFrame.getGametableFrame().getGametableCanvas().replacePogs(toReplace.getPog(), replaceWith.getPog());
+        if(toReplace.getPog().isUnknown()) {           
+            toReplace.parent.library.removePog(toReplace.getPog());
+            populateChildren();
+            repaint();
+        }
+       
     }
 }

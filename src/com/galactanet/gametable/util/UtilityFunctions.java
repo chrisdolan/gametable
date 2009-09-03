@@ -6,6 +6,9 @@
 package com.galactanet.gametable.util;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.PixelGrabber;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -17,6 +20,7 @@ import java.security.SecureRandom;
 import java.util.*;
 import java.util.List;
 
+import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileFilter;
@@ -61,6 +65,20 @@ public class UtilityFunctions
 
     public final static int            YES                      = 1;
 
+    /** ****************************************************************************************************88
+     * Reverses a standard Int Array
+     * @param array
+     * @return
+     */
+    public static int[] ArrayReverse(int array[]) {
+        final int size = array.length;
+        int newarray[] = new int[size];
+        for(int i = 0;i < size; ++i) {
+            newarray[i] = array[size-i-1];            
+        }
+        return newarray;
+    }
+    
     /**
      * @param line String to break into words.
      * @return An array of words found in the string.
@@ -525,6 +543,39 @@ public class UtilityFunctions
         return retVal;
     }
 
+    /** *****************************************************************
+     * Returns the Tranparency of the specified Image
+     * @param image
+     * @return int value of the transparency
+     */
+    //public static boolean hasAlpha(final Image image)
+    public static int getTransparency(final Image image)
+    {
+        // If buffered image, the color model is readily available
+        if (image instanceof BufferedImage)
+        {
+            final BufferedImage bimage = (BufferedImage)image;
+            //return bimage.getColorModel().hasAlpha();
+            return bimage.getColorModel().getTransparency();
+        }
+
+        // Use a pixel grabber to retrieve the image's color model;
+        // grabbing a single pixel is usually sufficient
+        final PixelGrabber pg = new PixelGrabber(image, 0, 0, 1, 1, false);
+        try
+        {
+            pg.grabPixels();
+        }
+        catch (final InterruptedException e)
+        {
+        }
+
+        // Get the image's color model
+        final ColorModel cm = pg.getColorModel();
+        //return cm.hasAlpha();
+        return cm.getTransparency();
+    }
+
     /**
      * Converts the filename to use UNIVERSAL_SEPERATOR.
      * 
@@ -834,6 +885,69 @@ public class UtilityFunctions
         return retVal.toString();
     }
 
+    /** *******************************************************************
+     * Creates a buffered image of the specified input image
+     * @param image
+     * @return
+     */
+    public static BufferedImage toBufferedImage(final Image image)
+    {
+        if (image instanceof BufferedImage)
+        {
+            return (BufferedImage)image;
+        }
+
+        Image outImage = image;
+
+        // This code ensures that all the pixels in the image are loaded
+        outImage = new ImageIcon(outImage).getImage();
+
+        // Determine if the image has transparent pixels; for this method's
+        // implementation, see e661 Determining If an Image Has Transparent Pixels
+        //final boolean hasAlpha = hasAlpha(outImage);
+        final int transparency = getTransparency(outImage);
+
+        // Create a buffered image with a format that's compatible with the screen
+        BufferedImage bimage = null;
+        final GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        try
+        {
+            // Determine the type of transparency of the new buffered image
+            /* int transparency = Transparency.OPAQUE;
+             * if (hasAlpha)
+             * {
+             *     transparency = Transparency.BITMASK;
+             * }
+             */
+            
+            // Create the buffered image
+            final GraphicsDevice gs = ge.getDefaultScreenDevice();
+            final GraphicsConfiguration gc = gs.getDefaultConfiguration();
+            bimage = gc.createCompatibleImage(outImage.getWidth(null), outImage.getHeight(null), transparency);
+        }
+        catch (final HeadlessException e)
+        {
+            // The system does not have a screen
+        }
+
+        if (bimage == null)
+        {
+            // Create a buffered image using the default color model
+            int type = BufferedImage.TYPE_INT_RGB;
+            if (transparency != Transparency.OPAQUE) type = BufferedImage.TYPE_INT_ARGB;
+            bimage = new BufferedImage(outImage.getWidth(null), outImage.getHeight(null), type);
+        }
+
+        // Copy image to buffered image
+        final Graphics g = bimage.createGraphics();
+
+        // Paint the image onto the buffered image
+        g.drawImage(outImage, 0, 0, null);
+        g.dispose();
+
+        return bimage;
+    }
+    
     /**
      * Decodes the given string using the URL decoding method.
      * 

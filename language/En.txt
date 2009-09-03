@@ -1,0 +1,257 @@
+/**
+ * English Language File
+ * 
+ * @author: Rizban
+ */
+
+/**
+ * Format is
+ * /**
+ *  * Group Name, such as Menu Bar
+ *  */
+/* //Subgroup Name (if any)
+ * public final String CONSTANT_NAME = String
+ * // Description of how the string is used (optional)
+ *
+ * When translating, do NOT change the CONSTANT_NAME, only change the String
+ *
+ * Do not change spacing or the order of entries.
+ */
+
+LANGUAGE                    = English
+
+/**
+ *  Network
+ */
+CONNECT_FAIL                = Failed to connect.
+CONNECTED                   = Connected
+CONNECTION_LEFT             = has left the session
+CONNECTION_LOST             = Your connection to the host was lost.
+CONNECTION_REJECTED         = Someone tried to log in, but was rejected.
+CONNECTION_NO_DISCONNECT    = Nothing to disconnect from.
+CONFIRM_HOST_FAIL           = Confirm Host failure
+DISCONNECTED                = Disconnected
+HOST_ERROR_HOST             = You are already hosting.
+HOST_ERROR_JOIN             = You can not host until you disconnect from the game you joined.
+HOST_ERROR_FAIL             = Failed to host.
+HOSTING                     = Hosting
+IP_CHECK                    = Click here to see the IP address you are hosting on.
+IP_CHECK2                   = Making you click the link ensures you have control over your privacy.
+JOIN_BAD_PASS               = Invalid Password. Connection refused.
+JOIN_BAD_VERSION            = The host is using a different version of the Gametable network protocol. Connection aborted.
+JOIN_ERROR_HOST             = You are hosting. If you wish to join a game, disconnect first.
+JOIN_ERROR_JOIN             = You are already in a game. You must disconnect before joining another.
+JOINED                      = Joined game
+PLAYER                      = player
+PLAYERS                     = players
+PLAYER_JOINED               = has joined the session.
+//PlayerName + PLAYER_JOINED
+
+UNKNOWN_STATE               = Unknown state
+
+/**
+ *   Menu Bar
+ */
+
+//File
+FILE                        = File
+MAP_OPEN                    = Open map
+MAP_OPEN_BAD_VERSION        = Invalid save file version.
+MAP_OPEN_CONFIRM            = Confirm Load
+MAP_OPEN_DONE               = loads a new map.
+//PlayerName + MAP_OPEN_DONE
+
+MAP_OPEN_WARN               = This will load a map file, replacing all existing map data for you and all players in the session. Are you sure you want to do this?
+MAP_SAVE                    = Save map
+MAP_SAVE_AS                 = Save map as
+OPEN                        = Open
+POG_SCAN                    = Scan for Pogs
+QUIT                        = Quit
+SAVE_AS                     = Save as
+
+//Edit
+EDIT                        = Edit
+REDO                        = Redo
+UNDO                        = Undo
+
+//Network
+DISCONNECT                  = Disconnect
+HOST                        = Host
+JOIN                        = Join
+LIST_PLAYERS                = List Players
+NETWORK                     = Network
+
+//Map
+MAP                         = Map
+MAP_BG_CHANGE               = Change background
+MAP_CENTER                  = Recenter?
+MAP_CENTER_DONE             = recenters everyone's view
+//PlayerName + MAP_CENTER_DONE
+
+MAP_CENTER_PLAYERS          = Recenter all players
+MAP_CENTER_PLAYERS_WARN     = This will recenter everyone's map view to match yours, and will set their zoom levels to match yours. Are you sure you want to do this?
+MAP_EXPORT                  = Export Map
+MAP_GRID_MODE               = Grid Mode
+MAP_LOCK_ALL                = Lock all pogs
+MAP_LOCK_ALL_DONE           = You have locked the map.
+MAP_LOCK_ALL_DONE2          = has locked the Map.
+//PLayerName + MAP_LOCK_ALL_DONE2
+
+MAP_UNLOCK_ALL             = Unlock all pogs
+MAP_UNLOCK_ALL_DONE         = You have locked the map.
+MAP_UNLOCK_ALL_DONE2        = has unlocked the Map.
+//PLayerName + MAP_UNLOCK_ALL_DONE2
+
+MAP_PRIVATE_EDIT            = Edit Private Map
+MAP_SAVE_IMG                = Export Map to JPeg File
+MAP_SAVE_EXISTS             = The specified file already exists.
+MAP_SAVE_FILE_FAIL          = Cannot Export Map
+MAP_SAVE_IMG_FAIL           = Failed saving JPeg File.
+MAP_SAVE_NO_ACCESS          = Gametable does not have write access to
+//MAP_SAVE_NO_ACCESS + FileLocation
+
+MAP_SAVE_OVERWRITE          = Do you want to overwrite
+//MAP_SAVE_OVERWRITE + FileName + ?
+
+
+POG_LOAD                    = Load Pog
+
+//Map -> Grid Mode
+MAP_CLEAR                   = Clear map
+MAP_CLEAR_WARNING           = This will clear all lines, pogs, and underlays on the entire layer. Are you sure?
+MAP_GRID_CHANGE             = changes the grid mode.
+MAP_GRID_HEX                = Hex Grid
+MAP_GRID_NONE               = No Grid
+MAP_GRID_SQUARE             = Square Grid
+
+//Dice
+DICE                        = Dice
+MACRO_ADD                   = Add macro
+MACRO_DELETE                = Delete macro
+MACRO_DELETE_INFO           = Select Dice Macro to remove:
+MACRO_LOAD                  = Load macros
+MACRO_LOAD_CONFIRM          = Confirm Load Macros
+MACRO_LOAD_DONE             = Loaded macros from
+//MACRO_LOAD_DONE + FileName
+
+MACRO_LOAD_WARN             = This will load a macro file, replacing all your existing macros. Are you sure you want to do this?
+MACRO_SAVE                  = Save macros
+MACRO_SAVE_AS               = Save macros as
+MACRO_SAVE_DONE             = Wrote macros to
+//MACRO_SAVE_DONE + FileLocation + FileName
+
+//Window
+WINDOW                      = Window
+CHAT_WINDOW_DOCK            = Undock Chat Window
+MECHANICS_WINDOW_USE        = Use Mechanics Window
+POG_WINDOW_DOCK             = Undock Pog Window
+
+//Help
+HELP                        = Help
+ABOUT                       = About
+ABOUT2                      = by the Gametable Community
+ABOUT3                      = Orignal program by Andy Weir and David Ghandehari
+VERSION                     = Version
+
+/**
+ *   Tool Bar
+ */
+SHOW_POG_NAMES              = Show pog names
+TOOLBAR_FAIL                = Failure initializing tools.
+
+
+/**
+ *   Macro Panel
+ */
+DICE_MACROS                 = Dice Macros
+MACRO_ERROR                 = Error in macro
+MACRO_EXISTS_1              = You already have a macro named \"
+MACRO_EXISTS_2              = \", are you sure you want to replace it with \"
+MACRO_EXISTS_3              = \"?
+// MACRO_EXISTS_1 + MacroName + MACRO_EXISTS_2 + NewMacro + MACRO_EXISTS_3
+
+MACRO_REPLACE               = Replace Macro?
+
+/**
+ *   Pog Panel
+ */
+POG_LIBRARY                 = Pog Library
+POG_ACTIVE                  = Active Pogs
+
+/**
+ *   Chat Window
+ */
+AND                         = and
+TELL                        = You tell
+//TELL + PlayerName + Message you typed
+
+TELL_SELF                   = You tell yourself:
+//TELL_SELF + Message you typed
+
+IS_TYPING                   = is typing.
+//PlayerName + IS_TYPING
+ARE_TYPING                  = are typing.
+//Player1Name + Player2Name + ARE_TYPING
+
+
+
+/****************************************
+ *  Deck Data                           *
+ ****************************************/
+DECK                        = deck
+DECK_ALREADY_EXISTS         = Error - There is already a deck named
+
+DECK_CARD_NONE              = There is no card named
+DECK_CARDS                  = cards
+DECK_CARDS_COLLECT_ALL_1    = collects all the cards from the
+DECK_CARDS_COLLECT_ALL_2    = deck from all players and shuffles them.
+// PlayerName + DECK_CARDS_COLLECT_ALL_1 + DeckName + DECK_CARDS_COLLECT_ALL_2
+
+DECK_CARDS_INVALID_NUMBER   = is not a valid number of cards to draw
+DECK_CREATE_SUCCESS_1       = creates a new
+DECK_CREATE_SUCCESS_2       = deck named
+// PlayerName + DECK_CREATE_SUCCESS_1 + DeckType + DECK_CREATE_SUCCESS_2 + DeckName
+
+DECK_DECKS                  = decks
+DECK_DESTROY                = destroys the deck named
+// PlayerName + DECK_DESTROY + DeckName
+
+DECK_DISCARDS               = discards
+DECK_DRAW_PLAYER            = draws from the
+//PlayerName + DECK_DRAW_PLAYER + DeckName + DECK
+
+DECK_DRAWS                  = draws
+DECK_DRAWS2                 = cards from the
+//PlayerName DECK_DRAWS + Number + DECK_DRAWS2 + DeckName + DECK
+
+DECK_DREW                   = You drew:
+//DECK_DREW + CardName
+
+DECK_ERROR_CREATE           = Could not create the deck.
+DECK_ERROR_DODISCARD        = doDiscardCards should only be done by the host.
+DECK_ERROR_HOST_DECKLIST    = Host received deckListPacket.
+
+DECK_HAND_EMPTY             = You have no cards
+DECK_HAS                    = has
+
+DECK_NO_DECKS               = There are no decks
+DECK_NONE                   = There is no deck named
+// DECK_NONE +  ' + DeckName + '.
+
+DECK_NOT_CONNECTED          = You must be in a session to use /deck commands.
+DECK_NOT_HOST_CREATE        = Only the host can create a deck.
+DECK_NOT_HOST_DESTROY       = Only the host can destroy a deck.
+DECK_NOT_HOST_SHUFFLE       = Only the host can shuffle a deck.
+
+DECK_OUT_OF_CARDS           = is out of cards.
+// DeckName + DECK_OUT_OF_CARDS
+
+DECK_SHUFFLE                = shuffles the discards back into the
+// PlayerName + DeECK_SHUFFLE + DeckName + DECK
+
+DECK_SHUFFLE_INVALID        = is not a valid type of shuffle. This parameter must be either 'all' or 'discards'.
+
+DECK_THERE_ARE              = There are
+// DECK_THERE_ARE + number + DECK_DECKS
+
+DECK_YOU_HAVE               = You have
