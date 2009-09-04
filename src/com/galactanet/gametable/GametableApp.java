@@ -8,6 +8,7 @@ package com.galactanet.gametable;
 import java.awt.Toolkit;
 
 import javax.swing.UIManager;
+import com.galactanet.gametable.applet.WebServer;
 
 
 
@@ -54,6 +55,8 @@ public class GametableApp
             Log.log(Log.SYS, VERSION);                          // Write the version name to the system log
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());    // Set the Look and Feel
             Toolkit.getDefaultToolkit().setDynamicLayout(true); // Turns dynamic layout on
+            WebServer webServer = new WebServer(8080);
+            webServer.start();
             new GametableFrame().setVisible(true);              // Creates an instance of the main UI object and shows it.
                                                                 // The app won't end until the main frame is closed
         }

@@ -5,8 +5,11 @@
 
 package com.galactanet.gametable.lang;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.Scanner;
 
 import com.galactanet.gametable.Log;
@@ -171,10 +174,19 @@ public class Language
     
     public void setLanguage(final String language)
     {
-        final File langFile = new File("./language/" + language + ".txt");
+        //final File langFile = new File("./language/" + language + ".txt");
         try
         {
-            processLineByLine(langFile);
+            //FileInputStream is = new FileInputStream(langFile);
+            String path = getClass().getPackage().getName().replace(".", "/") + "/" + language + ".txt";
+            InputStream is = getClass().getClassLoader().getResourceAsStream(path);
+            if (is == null)
+                throw new FileNotFoundException(path);
+            try {
+                processLineByLine(new BufferedInputStream(is));
+            } finally {
+                is.close();
+            }
         }
         catch (final Exception e)
         {
@@ -183,7 +195,7 @@ public class Language
     }
 
     /** Template method that calls {@link #processLine(String)}.  */
-    public final void processLineByLine(final File fFile) throws FileNotFoundException {
+    public final void processLineByLine(final InputStream fFile) throws FileNotFoundException {
         Scanner scanner = new Scanner(fFile);
         try {
             //first use a Scanner to get each line
